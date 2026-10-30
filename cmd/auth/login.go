@@ -343,7 +343,7 @@ a new profile is created.
 		}
 		// Check the host once it is resolved, before setAccountID prompts for
 		// an account ID for account and unified hosts. A workspace without
-		// device code login enabled is rejected later by DeviceCodeChallenge.
+		// device code login enabled is rejected later by deviceCodeLogin.
 		if useDeviceCode {
 			// The host prompt accepts an empty answer. Without this check,
 			// login would resolve the host from DATABRICKS_HOST instead.
@@ -401,7 +401,7 @@ a new profile is created.
 
 		var token *oauth2.Token
 		if useDeviceCode {
-			token, err = persistentAuth.DeviceCodeChallenge(ctx, promptForConfirmationCode)
+			token, err = deviceCodeLogin(ctx, persistentAuth)
 		} else {
 			token, err = persistentAuth.Challenge()
 		}

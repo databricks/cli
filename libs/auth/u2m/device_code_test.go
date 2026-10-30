@@ -119,20 +119,34 @@ func newDeviceCodeAuth(t *testing.T, f *fakeDeviceServer, advertise bool, opts .
 	return p
 }
 
-func TestDeviceCodeChallenge(t *testing.T) {
-	f := &fakeDeviceServer{expiresIn: 600}
-	p := newDeviceCodeAuth(t, f, true)
+func newDeviceCodeLogin(t *testing.T, f *fakeDeviceServer, opts ...PersistentAuthOption) *DeviceCodeLogin {
+	l, err := newDeviceCodeAuth(t, f, true, opts...).NewDeviceCodeLogin(t.Context())
+	require.NoError(t, err)
+	return l
+}
 
-	var got DeviceAuthorization
-	tok, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, da DeviceAuthorization, _ error, _ int) (string, error) {
-		got = da
-		return " ftfa-qqky\t", nil
-	})
+// runDeviceCodeLogin runs both steps of a device code login.
+func runDeviceCodeLogin(ctx context.Context, l *DeviceCodeLogin, confirmationCode string) (*oauth2.Token, error) {
+	da, err := l.RequestDeviceAuthorization(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return l.RequestDeviceAccessToken(ctx, da.DeviceCode, confirmationCode)
+}
+
+func TestDeviceCodeLogin(t *testing.T) {
+	f := &fakeDeviceServer{expiresIn: 600}
+	l := newDeviceCodeLogin(t, f)
+
+	got, err := l.RequestDeviceAuthorization(t.Context())
+	require.NoError(t, err)
+	tok, err := l.RequestDeviceAccessToken(t.Context(), got.DeviceCode, " ftfa-qqky\t")
 	require.NoError(t, err)
 
-	assert.Equal(t, DeviceAuthorization{
+	assert.Equal(t, &DeviceAuthorization{
 		UserCode:        testUserCode,
 		VerificationURI: "https://workspace.test/device/verification",
+		DeviceCode:      testDeviceCode,
 	}, got)
 	assert.Equal(t, "access-token", tok.AccessToken)
 	assert.Equal(t, "refresh-token", tok.RefreshToken)
@@ -140,26 +154,28 @@ func TestDeviceCodeChallenge(t *testing.T) {
 	assert.Equal(t, int32(1), f.tokenRequests.Load())
 }
 
-func TestDeviceCodeChallenge_ConfirmationAfterInitialExpiry(t *testing.T) {
+func TestDeviceCodeLogin_ConfirmationAfterInitialExpiry(t *testing.T) {
 	// The server extends the device code's lifetime once the user approves
 	// the login, so a confirmation code entered after the initial expires_in
 	// must still be exchanged.
 	f := &fakeDeviceServer{expiresIn: 1}
-	p := newDeviceCodeAuth(t, f, true)
+	l := newDeviceCodeLogin(t, f)
 
-	tok, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		time.Sleep(1100 * time.Millisecond)
-		return testConfirmationCode, nil
-	})
+	da, err := l.RequestDeviceAuthorization(t.Context())
+	require.NoError(t, err)
+	time.Sleep(1100 * time.Millisecond)
+	tok, err := l.RequestDeviceAccessToken(t.Context(), da.DeviceCode, testConfirmationCode)
 	require.NoError(t, err)
 	assert.Equal(t, "access-token", tok.AccessToken)
 }
 
-func TestDeviceCodeChallenge_Errors(t *testing.T) {
+func TestDeviceCodeLogin_Errors(t *testing.T) {
 	tests := []struct {
-		name    string
-		server  *fakeDeviceServer
-		wantErr string
+		name                  string
+		server                *fakeDeviceServer
+		wantErr               string
+		wantTokenRequests     int32
+		wantInvalidDeviceCode bool
 	}{
 		{
 			name: "device authorization rejected",
@@ -175,7 +191,8 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 				tokenStatus: http.StatusBadRequest,
 				tokenBody:   `{"error": "invalid_client", "error_description": "Client is not allowed to use device code"}`,
 			},
-			wantErr: "token exchange: Client is not allowed to use device code (error code: invalid_client)",
+			wantErr:           "Client is not allowed to use device code (error code: invalid_client)",
+			wantTokenRequests: 1,
 		},
 		{
 			name: "token request rate limited",
@@ -183,7 +200,8 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 				tokenStatus: http.StatusTooManyRequests,
 				tokenBody:   `{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"}`,
 			},
-			wantErr: "token exchange: Device grant rate limit exceeded (error code: invalid_request)",
+			wantErr:           "Device grant rate limit exceeded (error code: invalid_request)",
+			wantTokenRequests: 1,
 		},
 		{
 			name: "unknown device code",
@@ -191,24 +209,26 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 				tokenStatus: http.StatusBadRequest,
 				tokenBody:   `{"error": "invalid_request", "error_description": "Invalid device code"}`,
 			},
-			wantErr: "token exchange: Invalid device code (error code: invalid_request)",
+			wantErr:               "Invalid device code (error code: invalid_request)",
+			wantTokenRequests:     1,
+			wantInvalidDeviceCode: true,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.server.expiresIn = 600
-			p := newDeviceCodeAuth(t, tc.server, true)
-			_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-				return testConfirmationCode, nil
-			})
+			_, err := runDeviceCodeLogin(t.Context(), newDeviceCodeLogin(t, tc.server), testConfirmationCode)
 			assert.EqualError(t, err, tc.wantErr)
-			// None of these errors asks for the confirmation code again.
-			assert.LessOrEqual(t, tc.server.tokenRequests.Load(), int32(1))
+			assert.Equal(t, tc.wantTokenRequests, tc.server.tokenRequests.Load())
+			// None of these errors can be fixed by entering the confirmation
+			// code again.
+			assert.NotErrorIs(t, err, ErrInvalidConfirmationCode)
+			assert.Equal(t, tc.wantInvalidDeviceCode, errors.Is(err, ErrInvalidDeviceCode))
 		})
 	}
 }
 
-func TestDeviceCodeChallenge_IncompleteDeviceAuthorization(t *testing.T) {
+func TestRequestDeviceAuthorization_Incomplete(t *testing.T) {
 	for _, missing := range []string{"device_code", "user_code", "verification_uri"} {
 		t.Run(missing, func(t *testing.T) {
 			resp := map[string]any{
@@ -221,90 +241,50 @@ func TestDeviceCodeChallenge_IncompleteDeviceAuthorization(t *testing.T) {
 			body, err := json.Marshal(resp)
 			require.NoError(t, err)
 			f := &fakeDeviceServer{deviceAuthStatus: http.StatusOK, deviceAuthBody: string(body)}
-			p := newDeviceCodeAuth(t, f, true)
 
-			_, err = p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-				t.Fatal("confirm must not be called")
-				return "", nil
-			})
+			_, err = newDeviceCodeLogin(t, f).RequestDeviceAuthorization(t.Context())
 			assert.EqualError(t, err, "device authorization: server response missing "+missing)
 			assert.Equal(t, int32(0), f.tokenRequests.Load())
 		})
 	}
 }
 
-func TestDeviceCodeChallenge_ErrorKeepsHTTPError(t *testing.T) {
+func TestRequestDeviceAccessToken_ErrorKeepsHTTPError(t *testing.T) {
 	f := &fakeDeviceServer{
 		expiresIn:   600,
 		tokenStatus: http.StatusBadRequest,
 		tokenBody:   `{"error": "invalid_client", "error_description": "Client is not allowed to use device code"}`,
 	}
-	confirm := func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		return testConfirmationCode, nil
-	}
 
-	_, err := newDeviceCodeAuth(t, f, true).DeviceCodeChallenge(t.Context(), confirm)
+	_, err := newDeviceCodeLogin(t, f).RequestDeviceAccessToken(t.Context(), testDeviceCode, testConfirmationCode)
 	httpErr, ok := errors.AsType[*httpclient.HttpError](err)
 	require.True(t, ok, "want *httpclient.HttpError in %v", err)
 	assert.Equal(t, http.StatusBadRequest, httpErr.StatusCode)
 
 	// A plain HTTP client hands the error response to the CLI as is.
-	_, err = newDeviceCodeAuth(t, f, true, WithHttpClient(&http.Client{})).DeviceCodeChallenge(t.Context(), confirm)
+	_, err = newDeviceCodeLogin(t, f, WithHttpClient(&http.Client{})).RequestDeviceAccessToken(t.Context(), testDeviceCode, testConfirmationCode)
 	retrieveErr, ok := errors.AsType[*oauth2.RetrieveError](err)
 	require.True(t, ok, "want *oauth2.RetrieveError in %v", err)
 	assert.Equal(t, http.StatusBadRequest, retrieveErr.Response.StatusCode)
-	assert.EqualError(t, err, "token exchange: Client is not allowed to use device code (error code: invalid_client)")
+	assert.EqualError(t, err, "Client is not allowed to use device code (error code: invalid_client)")
 }
 
-func TestDeviceCodeChallenge_RetriesWrongConfirmationCode(t *testing.T) {
+func TestRequestDeviceAccessToken_WrongConfirmationCode(t *testing.T) {
 	f := &fakeDeviceServer{expiresIn: 600}
-	p := newDeviceCodeAuth(t, f, true)
+	l := newDeviceCodeLogin(t, f)
 
-	var lastErrs []string
-	tok, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, lastErr error, _ int) (string, error) {
-		if lastErr == nil {
-			lastErrs = append(lastErrs, "")
-			return "AAAAAAAA", nil
-		}
-		lastErrs = append(lastErrs, lastErr.Error())
-		return testConfirmationCode, nil
-	})
+	_, err := l.RequestDeviceAccessToken(t.Context(), testDeviceCode, "AAAAAAAA")
+	assert.ErrorIs(t, err, ErrInvalidConfirmationCode)
+	assert.EqualError(t, err, "Invalid confirmation code (error code: invalid_request)")
+	_, ok := errors.AsType[*httpclient.HttpError](err)
+	assert.True(t, ok, "want *httpclient.HttpError in %v", err)
+	tok, err := l.RequestDeviceAccessToken(t.Context(), testDeviceCode, testConfirmationCode)
 	require.NoError(t, err)
 	assert.Equal(t, "access-token", tok.AccessToken)
-	assert.Equal(t, []string{"", "Invalid confirmation code (error code: invalid_request)"}, lastErrs)
 	assert.Equal(t, int32(2), f.tokenRequests.Load())
 }
 
-func TestDeviceCodeChallenge_TooManyWrongConfirmationCodes(t *testing.T) {
-	f := &fakeDeviceServer{expiresIn: 600}
-	p := newDeviceCodeAuth(t, f, true)
-
-	var attemptsLeft []int
-	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, left int) (string, error) {
-		attemptsLeft = append(attemptsLeft, left)
-		return "AAAAAAAA", nil
-	})
-	assert.EqualError(t, err, "Invalid confirmation code (error code: invalid_request). Start login from scratch")
-	assert.Equal(t, []int{3, 2, 1}, attemptsLeft)
-	assert.Equal(t, int32(maxConfirmationAttempts), f.tokenRequests.Load())
-}
-
-func TestDeviceCodeChallenge_ConfirmErrorOnRetry(t *testing.T) {
-	f := &fakeDeviceServer{expiresIn: 600}
-	p := newDeviceCodeAuth(t, f, true)
-	confirmErr := errors.New("no input")
-
-	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, lastErr error, _ int) (string, error) {
-		if lastErr != nil {
-			return "", confirmErr
-		}
-		return "AAAAAAAA", nil
-	})
-	assert.ErrorIs(t, err, confirmErr)
-	assert.Equal(t, int32(1), f.tokenRequests.Load())
-}
-
-func TestDeviceCodeChallenge_DoesNotPoll(t *testing.T) {
+func TestRequestDeviceAccessToken_DoesNotPoll(t *testing.T) {
 	// A plain HTTP client hands the error response to the CLI as is, rather
 	// than turning it into an HttpError. A pending login must fail right away
 	// instead of being polled until it is approved.
@@ -313,78 +293,53 @@ func TestDeviceCodeChallenge_DoesNotPoll(t *testing.T) {
 		tokenStatus: http.StatusBadRequest,
 		tokenBody:   `{"error": "authorization_pending", "error_description": "Login is not approved yet"}`,
 	}
-	p := newDeviceCodeAuth(t, f, true, WithHttpClient(&http.Client{}))
+	l := newDeviceCodeLogin(t, f, WithHttpClient(&http.Client{}))
 
-	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		return testConfirmationCode, nil
-	})
-	assert.EqualError(t, err, "token exchange: Login is not approved yet (error code: authorization_pending)")
+	_, err := l.RequestDeviceAccessToken(t.Context(), testDeviceCode, testConfirmationCode)
+	assert.EqualError(t, err, "Login is not approved yet (error code: authorization_pending)")
 	assert.Equal(t, int32(1), f.tokenRequests.Load())
 }
 
-func TestDeviceCodeChallenge_MissingAccessToken(t *testing.T) {
+func TestRequestDeviceAccessToken_MissingAccessToken(t *testing.T) {
 	f := &fakeDeviceServer{
 		expiresIn:   600,
 		tokenStatus: http.StatusOK,
 		tokenBody:   `{"token_type": "Bearer"}`,
 	}
-	p := newDeviceCodeAuth(t, f, true)
+	l := newDeviceCodeLogin(t, f)
 
-	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		return testConfirmationCode, nil
-	})
-	assert.EqualError(t, err, "token exchange: server response missing access_token")
+	_, err := l.RequestDeviceAccessToken(t.Context(), testDeviceCode, testConfirmationCode)
+	assert.EqualError(t, err, "server response missing access_token")
 }
 
-func TestDeviceCodeChallenge_ConfirmError(t *testing.T) {
-	f := &fakeDeviceServer{expiresIn: 600}
-	p := newDeviceCodeAuth(t, f, true)
-	confirmErr := errors.New("no input")
-
-	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		return "", confirmErr
-	})
-	assert.ErrorIs(t, err, confirmErr)
-	assert.Equal(t, int32(0), f.tokenRequests.Load())
-}
-
-func TestDeviceCodeChallenge_DeviceAuthorizationCancelled(t *testing.T) {
-	p := newDeviceCodeAuth(t, &fakeDeviceServer{deviceAuthStalls: true}, true)
+func TestRequestDeviceAuthorization_Cancelled(t *testing.T) {
+	l := newDeviceCodeLogin(t, &fakeDeviceServer{deviceAuthStalls: true})
 	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	defer cancel()
 
 	start := time.Now()
-	_, err := p.DeviceCodeChallenge(ctx, func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		t.Fatal("confirm must not be called")
-		return "", nil
-	})
+	_, err := l.RequestDeviceAuthorization(ctx)
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 	// The HTTP client's own 30 second timeout also ends the request with
 	// DeadlineExceeded, so check that the context ended it.
 	assert.Less(t, time.Since(start), 10*time.Second)
 }
 
-func TestDeviceCodeChallenge_NotAdvertised(t *testing.T) {
+func TestNewDeviceCodeLogin_NotAdvertised(t *testing.T) {
 	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, false)
 
-	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		t.Fatal("confirm must not be called")
-		return "", nil
-	})
+	_, err := p.NewDeviceCodeLogin(t.Context())
 	assert.ErrorIs(t, err, ErrDeviceCodeNotSupported)
 }
 
-func TestDeviceCodeChallenge_Resources(t *testing.T) {
+func TestNewDeviceCodeLogin_Resources(t *testing.T) {
 	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, true, WithResources([]string{"https://resource.test"}))
 
-	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		t.Fatal("confirm must not be called")
-		return "", nil
-	})
+	_, err := p.NewDeviceCodeLogin(t.Context())
 	assert.EqualError(t, err, "device code login does not support resource indicators")
 }
 
-func TestDeviceCodeChallenge_AccountHost(t *testing.T) {
+func TestNewDeviceCodeLogin_AccountHost(t *testing.T) {
 	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
 	require.NoError(t, err)
 	p, err := NewPersistentAuth(t.Context(),
@@ -394,10 +349,7 @@ func TestDeviceCodeChallenge_AccountHost(t *testing.T) {
 	require.NoError(t, err)
 	defer p.Close()
 
-	_, err = p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
-		t.Fatal("confirm must not be called")
-		return "", nil
-	})
+	_, err = p.NewDeviceCodeLogin(t.Context())
 	assert.EqualError(t, err, "device code login is only supported for workspace hosts")
 }
 
