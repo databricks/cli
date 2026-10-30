@@ -184,7 +184,7 @@ func TestStaticListTable(t *testing.T) {
 }
 
 func TestEmptyListMessage(t *testing.T) {
-	assert.Equal(t, "No active runs found.\n", emptyListMessage(true))
+	assert.Equal(t, "No active runs found. Use --all-status to include runs that are no longer active.\n", emptyListMessage(true))
 	assert.Equal(t, "No runs found.\n", emptyListMessage(false))
 }
 

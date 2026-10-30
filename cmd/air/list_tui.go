@@ -63,7 +63,7 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int, activeOnly boo
 
 func emptyListMessage(activeOnly bool) string {
 	if activeOnly {
-		return "No active runs found.\n"
+		return "No active runs found. Use --all-status to include runs that are no longer active.\n"
 	}
 	return "No runs found.\n"
 }
