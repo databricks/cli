@@ -532,6 +532,31 @@ func TestSetDefaultProfile_RoundTrip(t *testing.T) {
 	assert.Equal(t, "xyz", section.Key("token").String())
 }
 
+func TestValidateProfileName(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		profile string
+		wantErr string
+	}{
+		{name: "plain", profile: "my-workspace"},
+		{name: "dotted", profile: "team.prod"},
+		{name: "reserved", profile: "__settings__", wantErr: "reserved for internal use"},
+		{name: "newline", profile: "foo\nbar", wantErr: "must not contain line breaks"},
+		{name: "carriage return", profile: "foo\rbar", wantErr: "must not contain line breaks"},
+		{name: "opening bracket", profile: "[foo", wantErr: "must not contain square brackets"},
+		{name: "closing bracket", profile: "foo]", wantErr: "must not contain square brackets"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateProfileName(tc.profile)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorContains(t, err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestSaveToProfile_RejectsReservedProfileName(t *testing.T) {
 	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")

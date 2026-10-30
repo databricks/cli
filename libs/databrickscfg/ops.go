@@ -232,10 +232,18 @@ func isFirstProfileInFile(configFile *config.File) bool {
 }
 
 // ValidateProfileName returns an error if profileName is reserved for the
-// [__settings__] section.
+// [__settings__] section or cannot be written as a section header.
 func ValidateProfileName(profileName string) error {
 	if profileName == databricksSettingsSection {
 		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	}
+	// go-ini writes section headers unescaped, so these characters would
+	// produce a config file that no longer parses.
+	if strings.ContainsAny(profileName, "\r\n") {
+		return fmt.Errorf("profile name %q must not contain line breaks", profileName)
+	}
+	if strings.ContainsAny(profileName, "[]") {
+		return fmt.Errorf("profile name %q must not contain square brackets", profileName)
 	}
 	return nil
 }
