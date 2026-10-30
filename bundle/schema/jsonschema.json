@@ -1723,6 +1723,36 @@
                   }
                 ]
               },
+              "resources.MaterializationSet": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "A group of materialized features created and managed as a single unit.",
+                    "properties": {
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "materialization_set_id": {
+                        "description": "[Private Preview] Server-assigned unique identifier for the materialization set.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "materialized_features": {
+                        "description": "[Private Preview] The materialized features in this set. Order is not significant.\nUpdating the set with a materialized feature removed from this set will cause it to be deleted.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.McpService": {
                 "oneOf": [
                   {
@@ -4202,6 +4232,9 @@
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
                       "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)."
+                    },
+                    "materialization_sets": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MaterializationSet"
                     },
                     "mcp_services": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.McpService"
@@ -12835,6 +12868,58 @@
                 }
               ]
             },
+            "ml.CronSchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A cron-based schedule trigger for the materialization pipeline.",
+                  "properties": {
+                    "cron_expression": {
+                      "description": "The cron expression defining the schedule (e.g., \"0 0 * * *\" for daily at midnight). The\nschedule is interpreted in timezone_id (defaults to UTC). Required when mode is MANUAL (or\nunset). Left empty when mode is DERIVED, where the service computes it (aligned to UTC) from\nthe features' window timing and fills it in on the response.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "mode": {
+                      "description": "[Private Preview] How the schedule is determined. Defaults to MANUAL when unset.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronScheduleMode",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "timezone_id": {
+                      "description": "[Private Preview] A Java timezone ID. The schedule is resolved with respect to this timezone. Defaults to UTC\nwhen omitted. Can only be configured for MANUAL schedules; DERIVED schedules are always aligned\nto UTC.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.CronScheduleMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The way a materialization schedule is arrived at.",
+                  "enum": [
+                    "MANUAL",
+                    "DERIVED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.CustomUdf": {
               "oneOf": [
                 {
@@ -13569,6 +13654,199 @@
                 }
               ]
             },
+            "ml.MaterializationFailureNotification": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Recipients to notify when a materialization run fails.",
+                  "properties": {
+                    "destination_ids": {
+                      "description": "[Private Preview] IDs of the notification destinations (for example Slack, Microsoft Teams, PagerDuty, or a\ngeneric webhook) to notify. Not supported for streaming materialized features.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "email_addresses": {
+                      "description": "[Private Preview] Email addresses to notify.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "final_attempt_only": {
+                      "description": "[Private Preview] If true, notify only when the final attempt of a run fails. If false or unset, notify on\nevery failed attempt, including attempts that will be retried.\n\nBatch materialization does not retry failures that need a fix on your side, such as missing\npermissions or invalid configuration, so the first attempt is the final one. Other batch\nfailures are retried up to twice.\n\nStreaming materialization restarts a failed update indefinitely unless the error cannot be\nretried. With this set, a streaming materialized feature notifies only on errors that cannot\nbe retried, and never on failures that are restarted.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializationNotifications": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Notifications for the jobs and pipelines that materialize a feature, one field per trigger.",
+                  "properties": {
+                    "on_failure": {
+                      "description": "[Private Preview] Who to notify when a run fails, and on which attempts.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationFailureNotification",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "on_success": {
+                      "description": "[Private Preview] Who to notify when a run succeeds.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationSuccessNotification",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializationSuccessNotification": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Recipients to notify when a materialization run succeeds.",
+                  "properties": {
+                    "destination_ids": {
+                      "description": "[Private Preview] IDs of the notification destinations (for example Slack, Microsoft Teams, PagerDuty, or a\ngeneric webhook) to notify. Not supported for streaming materialized features.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "email_addresses": {
+                      "description": "[Private Preview] Email addresses to notify.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializedFeature": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A materialized feature represents a feature that is continuously computed and stored.",
+                  "properties": {
+                    "budget_policy_id": {
+                      "description": "[Private Preview] The ID of the budget policy used to attribute the serverless compute cost of this\nmaterialization. If not specified, a default budget policy may be applied.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "cron_schedule": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "cron_schedule_trigger": {
+                      "description": "A cron-based schedule trigger for the materialization pipeline.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "feature_name": {
+                      "description": "The full name of the feature in Unity Catalog.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "materialized_feature_id": {
+                      "description": "Server-assigned unique identifier for the materialized feature.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "notifications": {
+                      "description": "[Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are\napplied to every job and pipeline that materializes this feature. Features which are\nmaterialized in the same pipeline will share the same notification.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "offline_store_config": {
+                      "description": "Destination for writing feature values to an offline Delta table. The resulting table is\nreturned as `table_name`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "online_store_config": {
+                      "description": "Destination for writing feature values to an online Lakebase table. The resulting table is\nreturned as `table_name`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "pipeline_schedule_state": {
+                      "description": "[Private Preview] The schedule state of the materialization pipeline.\nHidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "streaming_mode": {
+                      "description": "The Structured Streaming trigger mode used for materialization. Real-time mode (RTM) targets\nsub-second latency for operational workloads; micro-batch mode (MBM) favors cost efficiency\nfor ETL and analytics workloads.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingMode",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "table_trigger": {
+                      "description": "A trigger that fires when the upstream source table changes.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "tags": {
+                      "description": "[Private Preview] Custom tags to associate with this materialization. They are applied to the materialization\njob (for batch features) or pipeline (for streaming features) and forwarded to the underlying\ncompute as cluster tags, so materialization cost can be attributed in the billing system\ntables. These tags apply only to the materialization compute; they are not applied to the\nUnity Catalog Feature resource itself, whose tags are managed separately through the Unity\nCatalog tagging API. A maximum of 25 tags is supported; keys and values are subject to the\nsame limitations as cluster tags.",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "feature_name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializedFeaturePipelineScheduleState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SNAPSHOT",
+                    "ACTIVE",
+                    "PAUSED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.MaxFunction": {
               "oneOf": [
                 {
@@ -13633,6 +13911,82 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.OfflineStoreConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for offline store destination.",
+                  "properties": {
+                    "catalog_name": {
+                      "description": "The Unity Catalog catalog name.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "schema_name": {
+                      "description": "The Unity Catalog schema name.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "table_name_prefix": {
+                      "description": "Prefix for Unity Catalog table name.\nThe materialized feature will be stored in a table with this prefix and a generated postfix.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "catalog_name",
+                    "schema_name",
+                    "table_name_prefix"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.OnlineStoreConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for online store destination.",
+                  "properties": {
+                    "catalog_name": {
+                      "description": "The Unity Catalog catalog name. This name is also used as the Lakebase logical database name.\nQuoting is handled by the backend where needed, do not pre-quote it.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "online_store_name": {
+                      "description": "The name of the target online store.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "schema_name": {
+                      "description": "The Unity Catalog schema name. This name is also used as the Lakebase schema name under the database.\nQuoting is handled by the backend where needed, do not pre-quote it.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "table_name_prefix": {
+                      "description": "Prefix for Unity Catalog table name.\nThe materialized feature will be stored in a Lakebase table with this prefix and a generated postfix.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "catalog_name",
+                    "online_store_name",
+                    "schema_name",
+                    "table_name_prefix"
+                  ]
                 },
                 {
                   "type": "string",
@@ -13981,6 +14335,53 @@
                 }
               ]
             },
+            "ml.StreamingMode": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The streaming mode configuration for a streaming materialization pipeline.",
+                  "properties": {
+                    "freshness_target": {
+                      "description": "[Private Preview] The desired data freshness for feature materialization, expressed as a\nduration string (e.g. \"1 minute\").",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "mode": {
+                      "description": "The type of streaming mode used by the materialization pipeline.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingModeStreamingModeType",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "shuffle_partitions": {
+                      "description": "[Private Preview] Number of shuffle partitions for streaming materialization of this feature.\nHigher values process high-throughput features with more parallelism at higher compute cost.\nMaterialized features which are computed together will use the largest value set among them.",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.StreamingModeStreamingModeType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "STREAMING_MODE_TYPE_RTM",
+                    "STREAMING_MODE_TYPE_MBM"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.SumFunction": {
               "oneOf": [
                 {
@@ -13996,6 +14397,59 @@
                   "additionalProperties": false,
                   "required": [
                     "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.TableTrigger": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an\nSdpSource's input_tables.",
+                  "properties": {
+                    "condition": {
+                      "description": "[Private Preview] Which source table updates trigger a materialization run. If not set, any source table update\ntriggers a run.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTriggerTableTriggerCondition",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "min_time_between_triggers": {
+                      "description": "[Private Preview] The minimum time between two triggered runs, so a frequently updated source table does not\ntrigger runs too often. If not set, a feature with a sliding window uses half its\nslide_duration and a feature with a tumbling window uses half its window_duration, clamped to\nbetween 5 minutes and 1 hour. Other features have no minimum.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "wait_after_last_change": {
+                      "description": "[Private Preview] How long the source table must go without updates before a run starts, so a series of\nupdates settles before the run. If not set, a run starts as soon as the source table updates.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.TableTriggerTableTriggerCondition": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Which source table updates trigger a materialization run.",
+                  "enum": [
+                    "TABLE_TRIGGER_CONDITION_ANY_UPDATED",
+                    "TABLE_TRIGGER_CONDITION_ALL_UPDATED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -20233,6 +20687,20 @@
                     }
                   ]
                 },
+                "resources.MaterializationSet": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.MaterializationSet"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.McpService": {
                   "oneOf": [
                     {
@@ -21474,6 +21942,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.InputBinding"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.MaterializedFeature": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature"
                     }
                   },
                   {

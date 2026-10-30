@@ -32,6 +32,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.models.test_mlflow_model":                                    {ID: "1"},
 		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
 		"resources.features.test_feature":                                       {ID: "main.default.test_feature"},
+		"resources.materialization_sets.test_materialization_set":               {ID: "set1"},
 		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
 		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
 		"resources.mcp_services.test_mcp_service":                               {ID: "main.default.test_mcp_service"},
@@ -222,6 +223,15 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_feature": {
 					Feature: ml.Feature{
 						FullName: "main.default.test_feature",
+					},
+				},
+			},
+			MaterializationSets: map[string]*resources.MaterializationSet{
+				"test_materialization_set": {
+					MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{FeatureName: "main.default.test_feature"},
+						},
 					},
 				},
 			},
@@ -661,6 +671,15 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_feature_new": {
 					Feature: ml.Feature{
 						FullName: "main.default.test_feature_new",
+					},
+				},
+			},
+			MaterializationSets: map[string]*resources.MaterializationSet{
+				"test_materialization_set": {
+					MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{FeatureName: "main.default.test_feature"},
+						},
 					},
 				},
 			},

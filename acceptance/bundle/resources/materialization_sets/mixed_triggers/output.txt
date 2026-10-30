@@ -1,0 +1,22 @@
+
+>>> create_table.py danielb.fs2680.src_[UNIQUE_NAME]
+Created table danielb.fs2680.src_[UNIQUE_NAME]
+Inserted sample data into danielb.fs2680.src_[UNIQUE_NAME]
+Table danielb.fs2680.src_[UNIQUE_NAME] is now visible (catalog_name=danielb)
+
+=== A set cannot hold one feature that materializes in batch and one that materializes from a
+=== stream, because the two need different triggers. The create endpoint reserves its operation
+=== record before it reaches this rule, so the refusal settles that record and arrives as
+=== HTTP 200 rather than as an error on the call.
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-mixed-triggers-[UNIQUE_NAME]/default/files...
+Created features.batchfeat
+Created features.streamfeat
+Error: cannot create resources.materialization_sets.set1: materialization set [UUID] operation failed: Batch and streaming features cannot be mixed in a single materialize_features call because they require different trigger types. Issue two separate calls: one for batch features and one for streaming features. Batch features: danielb.fs2680.batch_[UNIQUE_NAME]. Streaming features: danielb.fs2680.batchstream_[UNIQUE_NAME] (200 INVALID_PARAMETER_VALUE)
+
+Endpoint: n/a
+HTTP Status: 200
+API error_code: INVALID_PARAMETER_VALUE
+API message: materialization set [UUID] operation failed: Batch and streaming features cannot be mixed in a single materialize_features call because they require different trigger types. Issue two separate calls: one for batch features and one for streaming features. Batch features: danielb.fs2680.batch_[UNIQUE_NAME]. Streaming features: danielb.fs2680.batchstream_[UNIQUE_NAME]
+
+Files: 2 uploaded, 0 deleted

@@ -1,0 +1,28 @@
+export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+
+render() {
+    envsubst < "$1" > databricks.yml
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+trace create_table.py "$TABLE_NAME"
+render databricks.yml.tmpl
+
+title "A set cannot hold one feature that materializes in batch and one that materializes from a"
+title "stream, because the two need different triggers. The create endpoint reserves its operation"
+title "record before it reaches this rule, so the refusal settles that record and arrives as"
+title "HTTP 200 rather than as an error on the call."
+trace musterr $CLI bundle deploy --auto-approve
+
+rm -f out.requests.txt

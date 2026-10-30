@@ -1265,6 +1265,18 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "materialization_sets":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "materialized_features":
+          "$fields":
+            "cron_schedule":
+              "description": |-
+                PLACEHOLDER
     "mcp_services":
       "description": |-
         PLACEHOLDER

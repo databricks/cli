@@ -49,6 +49,11 @@ index drops all upserted vectors. Both can be expensive to rebuild:`
 	deleteOrRecreateGenieSpaceMessage = `
 This action will result in the deletion or recreation of the following Genie spaces.
 The conversation history attached to a deleted space is permanently lost:`
+
+	deleteOrRecreateMaterializationSetMessage = `
+This action will result in the deletion or recreation of the following materialization sets.
+Every materialized feature in a recreated set is dropped and recomputed from scratch, including
+the members whose configuration did not change:`
 )
 
 // DataLossWarning is the warning shown when a non-interactive command is about

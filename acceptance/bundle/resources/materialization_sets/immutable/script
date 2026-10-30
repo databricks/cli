@@ -1,0 +1,54 @@
+export CATALOG_NAME="${MATSET_CATALOG:-main}"
+export SCHEMA_NAME="matset_${UNIQUE_NAME}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+
+# Each phase is its own template rather than a string edit, so the fixture a phase deploys is
+# readable on its own.
+render() {
+    envsubst < "$1" > databricks.yml
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+set_action() {
+    jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+    $CLI schemas delete "$CATALOG_NAME.$SCHEMA_NAME" --force > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+trace $CLI schemas create "$SCHEMA_NAME" "$CATALOG_NAME" -o json | jq '{full_name}'
+trace create_table.py "$TABLE_NAME"
+render databricks.yml.tmpl
+
+trace $CLI bundle deploy
+
+title "A member field the endpoint cannot alter is caught by the planner as a recreate, so the"
+title "request never reaches the server"
+update_file.py databricks.yml '0 0 * * * ?' '0 30 * * * ?'
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+title "Adding a member is routed to update, where the server refuses it by name rather than"
+title "recreating the set and destroying the members the config left alone"
+render added-member.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy --auto-approve
+
+title "Every refusal above leaves destroy and redeploy as the only route, so that pair is what a"
+title "member-field change costs. The delete settles its own operation, and the re-created set"
+title "plans clean."
+render databricks.yml.tmpl
+trace $CLI bundle destroy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace $CLI bundle deploy
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+rm -f out.requests.txt out.plan.json

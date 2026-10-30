@@ -1,0 +1,24 @@
+recreate_on_changes:
+  - field: materialized_features[*].feature_name
+    reason: immutable
+  - field: materialized_features[*].cron_schedule
+    reason: immutable
+  - field: materialized_features[*].cron_schedule_trigger
+    reason: immutable
+  - field: materialized_features[*].table_trigger
+    reason: immutable
+  - field: materialized_features[*].streaming_mode
+    reason: immutable
+  - field: materialized_features[*].pipeline_schedule_state
+    reason: immutable
+  - field: materialized_features[*].tags
+    reason: immutable
+  - field: materialized_features[*].budget_policy_id
+    reason: immutable
+  - field: materialized_features[*].notifications
+    reason: immutable
+
+backend_defaults:
+  # A member the config leaves unset still reports the state the server set on create, which the
+  # bundle never wrote, so the undeclared case diffs as old=nil, new=nil, remote=ACTIVE.
+  - field: materialized_features[*].pipeline_schedule_state

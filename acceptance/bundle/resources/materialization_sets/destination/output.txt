@@ -1,0 +1,101 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A destination the read never returns is not drift: the config holds a value the server
+=== never echoes, and with no persisted value to compare it to the suppression lives in
+=== OverrideChangeDesc
+>>> [CLI] bundle plan -o json
+
+>>> destination_changes
+{
+  "action": "skip",
+  "store_config_changes": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    }
+  }
+}
+
+=== Repointing the online destination is a real change the config asked for, so it keeps its
+=== persisted value and still recreates
+>>> update_file.py databricks.yml             catalog_name: main
+            schema_name: myschema
+            table_name_prefix: destfeat_on             catalog_name: other
+            schema_name: myschema
+            table_name_prefix: destfeat_on
+
+>>> [CLI] bundle plan -o json
+
+>>> destination_changes
+{
+  "action": "recreate",
+  "store_config_changes": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
+      "action": "recreate",
+      "reason": "spec:immutable"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    }
+  }
+}
+
+>>> update_file.py databricks.yml             catalog_name: other             catalog_name: main
+
+=== The offline block is input-only whole, and repointing it recreates the same way
+>>> update_file.py databricks.yml table_name_prefix: destfeat_off table_name_prefix: destfeat_moved
+
+>>> [CLI] bundle plan -o json
+
+>>> destination_changes
+{
+  "action": "recreate",
+  "store_config_changes": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config.table_name_prefix": {
+      "action": "recreate",
+      "reason": "spec:immutable"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    }
+  }
+}

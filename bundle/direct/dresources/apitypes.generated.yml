@@ -30,6 +30,8 @@ job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings
 
+materialization_sets: ml.MaterializationSet
+
 mcp_services: catalog.CreateMcpServiceRequest
 
 model_provider_services: catalog.CreateModelProviderServiceRequest

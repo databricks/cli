@@ -1,0 +1,34 @@
+bundle:
+  name: test-matset-batch-$UNIQUE_NAME
+
+resources:
+  features:
+    batchfeat:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.batch_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+
+  materialization_sets:
+    set1:
+      materialized_features:
+        - feature_name: ${resources.features.batchfeat.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: moved_${UNIQUE_NAME}_off
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

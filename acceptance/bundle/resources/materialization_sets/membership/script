@@ -1,0 +1,55 @@
+export CATALOG_NAME="${MATSET_CATALOG:-main}"
+export SCHEMA_NAME="matset_${UNIQUE_NAME}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+export PREFIX="mat_$UNIQUE_NAME"
+
+# Each phase is its own template rather than a string edit, so the membership a phase declares is
+# readable on its own.
+render() {
+    envsubst < "$1" > databricks.yml
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+set_action() {
+    jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+}
+
+set_members() {
+    $CLI bundle summary -o json | jq '.resources.materialization_sets.set1.materialized_features | map({feature_name, is_online})'
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+    $CLI schemas delete "$CATALOG_NAME.$SCHEMA_NAME" --force > /dev/null 2>&1 || true
+}
+
+trap cleanup EXIT
+
+trace $CLI schemas create "$SCHEMA_NAME" "$CATALOG_NAME" -o json | jq '{full_name}'
+trace create_table.py "$TABLE_NAME"
+render databricks.yml.tmpl
+
+trace $CLI bundle deploy
+
+title "The cascade is per feature and runs both ways. Removing feata's online member alone is"
+title "refused, because the delete also reaches the offline member the config still declares"
+render no-online.yml.tmpl
+trace musterr $CLI bundle deploy --auto-approve
+
+title "And removing feata's offline member alone is refused for the same reason, from the other"
+title "direction"
+render no-offline.yml.tmpl
+trace musterr $CLI bundle deploy --auto-approve
+
+title "Removing a whole feature's pair plans as update, not recreate, and the other feature's"
+title "members keep their ids, so the set was reconciled rather than rebuilt"
+render no-feata.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace $CLI bundle deploy --auto-approve
+trace set_members
+
+rm -f out.plan.json

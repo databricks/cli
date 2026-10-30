@@ -1,0 +1,75 @@
+
+>>> [CLI] schemas create matset_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.matset_[UNIQUE_NAME]"
+}
+
+>>> create_table.py main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Created table main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Inserted sample data into main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Table main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME] is now visible (catalog_name=main)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-removal-scope-[UNIQUE_NAME]/default/files...
+Created features.featf1
+Created features.featf2
+Created materialization_sets.set1
+Files: 3 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A feature contributing one member can have it removed alone: the cascade set is that one
+=== member, and the feature the request says nothing about is untouched
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-removal-scope-[UNIQUE_NAME]/default/files...
+Updated materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> set_members
+[
+  {
+    "feature_name": "${resources.features.featf2.full_name}",
+    "is_online": null
+  }
+]
+
+=== The update returns a long-running operation, and the reconciled set is read back from it
+>>> print_requests.py --keep //materialization-sets
+{
+  "method": "PATCH",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "q": {
+    "request_id": "[UUID]",
+    "update_mask": "*"
+  },
+  "body": {
+    "materialization_set_id": "[UUID]",
+    "materialized_features": [
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.matset_[UNIQUE_NAME].featf2_[UNIQUE_NAME]",
+        "offline_store_config": {
+          "catalog_name": "main",
+          "schema_name": "matset_[UNIQUE_NAME]",
+          "table_name_prefix": "mat_[UNIQUE_NAME]"
+        }
+      }
+    ]
+  }
+}
+
+>>> print_requests.py --get //feature-engineering/operations
+{
+  "method": "GET",
+  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+}

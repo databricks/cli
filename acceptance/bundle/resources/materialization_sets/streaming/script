@@ -1,0 +1,64 @@
+# Like the sawtooth case, this references an existing Stream rather than creating one.
+export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
+
+# The harness resolves auth from the ambient environment, which on a cloud run is the workspace
+# under test. Pointing a local run at a named profile needs it in the bundle, because
+# DATABRICKS_CONFIG_PROFILE does not survive into the CLI subprocess.
+pin_profile() {
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+render() {
+    envsubst < "$1" > databricks.yml
+    pin_profile
+}
+
+set_action() {
+    jq -r '.plan["resources.materialization_sets.set1"].action' out.plan.json
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+pin_profile
+
+title "A streaming member carries a trigger and no schedule, so none of the batch rules apply"
+trace $CLI bundle deploy
+
+title "A redeploy plans nothing. The schedule state the server assigns to a lone streaming member"
+title "must not read as drift, and neither must its online destination."
+trace $CLI bundle plan -o json > out.plan.json
+trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+trace $CLI bundle deploy
+
+title "The schedule state is write-once, so declaring one on a streaming member that had none"
+title "plans as a recreate rather than an in-place update"
+trace update_file.py databricks.yml '          streaming_mode:' '          pipeline_schedule_state: PAUSED
+          streaming_mode:'
+trace $CLI bundle plan -o json > out.plan.json
+trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+
+title "Repointing a member's online destination is a recreate: the server cannot move a"
+title "materialization in place, so the whole set is rebuilt at the new location"
+render moved.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+title "Removing one feature's streaming member is an update the endpoint accepts. With no offline"
+title "member to cascade from, each online member is its own cascade group, so the other feature's"
+title "member is untouched and the set is left non-empty."
+render drop-one.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+rm -f out.requests.txt out.plan.json

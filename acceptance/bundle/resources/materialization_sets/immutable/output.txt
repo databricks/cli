@@ -1,0 +1,82 @@
+
+>>> [CLI] schemas create matset_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.matset_[UNIQUE_NAME]"
+}
+
+>>> create_table.py main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Created table main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Inserted sample data into main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Table main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME] is now visible (catalog_name=main)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
+Created features.feata
+Created features.featb
+Created materialization_sets.set1
+Files: 3 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A member field the endpoint cannot alter is caught by the planner as a recreate, so the
+=== request never reaches the server
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+{
+  "resources.materialization_sets.set1": "recreate"
+}
+
+=== Adding a member is routed to update, where the server refuses it by name rather than
+=== recreating the set and destroying the members the config left alone
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features cannot be added to an existing materialization set, and feature 'main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]' does not match any member of this set. Recreate the set instead. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Materialized features cannot be added to an existing materialization set, and feature 'main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]' does not match any member of this set. Recreate the set instead.
+
+Files: 2 uploaded, 0 deleted
+
+=== Every refusal above leaves destroy and redeploy as the only route, so that pair is what a
+=== member-field change costs. The delete settles its own operation, and the re-created set
+=== plans clean.
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.feata
+  delete resources.features.featb
+  delete resources.materialization_sets.set1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted
+
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+{
+  "resources.materialization_sets.set1": "create"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
+Created features.feata
+Created features.featb
+Created materialization_sets.set1
+Files: 4 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+{
+  "resources.materialization_sets.set1": "skip"
+}

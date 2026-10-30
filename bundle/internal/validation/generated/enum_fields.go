@@ -169,6 +169,11 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.triggers[*].sql_condition.trigger_mode":                                                            {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
 	"resources.jobs.*.triggers[*].table_update.condition":                                                                {"ALL_UPDATED", "ANY_UPDATED"},
 
+	"resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger.mode": {"DERIVED", "MANUAL"},
+	"resources.materialization_sets.*.materialized_features[*].pipeline_schedule_state":    {"ACTIVE", "PAUSED", "SNAPSHOT"},
+	"resources.materialization_sets.*.materialized_features[*].streaming_mode.mode":        {"STREAMING_MODE_TYPE_MBM", "STREAMING_MODE_TYPE_RTM"},
+	"resources.materialization_sets.*.materialized_features[*].table_trigger.condition":    {"TABLE_TRIGGER_CONDITION_ALL_UPDATED", "TABLE_TRIGGER_CONDITION_ANY_UPDATED"},
+
 	"resources.mcp_services.*.config.rate_limits[*].key":            {"RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
 	"resources.mcp_services.*.config.rate_limits[*].renewal_period": {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
 	"resources.mcp_services.*.grants[*].privileges[*]":              {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
