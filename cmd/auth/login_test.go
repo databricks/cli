@@ -1472,7 +1472,7 @@ func TestPromptForProfileRejectsTakenName(t *testing.T) {
 	tm.Type(termtest.KeyEnter)
 	tm.WaitFor(">> profile name is required")
 	tm.Type("taken" + termtest.KeyEnter)
-	tm.WaitFor(">> profile taken already exists")
+	tm.WaitFor(">> profile taken already exists. Choose a different name, or rerun with --profile taken to use it")
 	tm.Type(strings.Repeat(termtest.KeyBackspace, len("taken")) + "__settings__" + termtest.KeyEnter)
 	tm.WaitFor(`>> profile name "__settings__" is reserved for internal use`)
 	tm.Type(strings.Repeat(termtest.KeyBackspace, len("__settings__")) + "take" + termtest.KeyEnter)

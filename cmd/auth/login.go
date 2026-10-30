@@ -55,7 +55,7 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 				return err
 			}
 			if slices.Contains(takenNames, input) {
-				return fmt.Errorf("profile %s already exists. Choose a different name", input)
+				return fmt.Errorf("profile %s already exists. Choose a different name, or rerun with --profile %s to use it", input, input)
 			}
 			return nil
 		},
