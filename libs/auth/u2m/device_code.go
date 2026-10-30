@@ -42,6 +42,11 @@ var ErrInvalidConfirmationCode = errors.New("invalid confirmation code")
 // login has to be started again.
 var ErrInvalidDeviceCode = errors.New("invalid device code")
 
+// ErrDeviceCodeRateLimited matches the token exchange error for a device code
+// the server received too many token requests for. The login has to be
+// started again.
+var ErrDeviceCodeRateLimited = errors.New("device code rate limited")
+
 // DeviceAuthorization holds what the user needs to approve a device code
 // login from another device, and the device code to exchange afterwards.
 type DeviceAuthorization struct {
@@ -113,9 +118,10 @@ func (l *DeviceCodeLogin) RequestDeviceAuthorization(ctx context.Context) (*Devi
 // RequestDeviceAccessToken completes the login with a single token request.
 // The confirmation code is accepted the way the browser displays it. An error
 // matches ErrInvalidConfirmationCode or ErrInvalidDeviceCode when the server
-// rejects one of the codes. A rejected confirmation code leaves the device
-// code valid, so the exchange can be retried with the right code. The caller
-// is responsible for storing the returned token.
+// rejects one of the codes, and ErrDeviceCodeRateLimited when it rate limits
+// the token requests for the device code. A rejected confirmation code leaves
+// the device code valid, so the exchange can be retried with the right code.
+// The caller is responsible for storing the returned token.
 func (l *DeviceCodeLogin) RequestDeviceAccessToken(ctx context.Context, deviceCode, confirmationCode string) (*oauth2.Token, error) {
 	t, err := l.auth.exchangeDeviceCode(ctx, l.cfg, deviceCode, NormalizeCode(confirmationCode))
 	if err == nil {
@@ -131,6 +137,8 @@ func (l *DeviceCodeLogin) RequestDeviceAccessToken(ctx context.Context, deviceCo
 	status, errCode, description := oauthErrorResponse(err)
 	err = oauthError(err)
 	switch {
+	case status == http.StatusTooManyRequests:
+		return nil, &codeRejectedError{err: err, sentinel: ErrDeviceCodeRateLimited}
 	case status != http.StatusBadRequest || errCode != "invalid_request":
 		return nil, err
 	case description == invalidDeviceCodeDescription:

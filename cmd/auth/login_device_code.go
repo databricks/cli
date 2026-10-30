@@ -232,11 +232,12 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	if err != nil {
 		err = fmt.Errorf("token exchange: %w", err)
 	}
-	// The server no longer accepts an invalid device code, so its pending
-	// login is deleted. A wrong confirmation code leaves the device code
-	// valid, so the pending login is kept for a rerun. After a successful
-	// exchange, storeLoginToken deletes it.
-	if errors.Is(err, u2m.ErrInvalidDeviceCode) {
+	// The server no longer accepts an invalid or rate limited device code,
+	// so its pending login is deleted. A wrong confirmation code leaves the
+	// device code valid, so the pending login is kept for a rerun. After a
+	// successful exchange, storeLoginToken deletes it.
+	deviceCodeUnusable := errors.Is(err, u2m.ErrInvalidDeviceCode) || errors.Is(err, u2m.ErrDeviceCodeRateLimited)
+	if deviceCodeUnusable {
 		if err := l.tokenStore.Delete(l.key); err != nil {
 			log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
 		}
@@ -244,7 +245,7 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	switch {
 	case errors.Is(err, u2m.ErrInvalidConfirmationCode):
 		return nil, fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
-	case errors.Is(err, u2m.ErrInvalidDeviceCode):
+	case deviceCodeUnusable:
 		return nil, fmt.Errorf("%w. %s", err, startNewLoginHint)
 	}
 	return token, err

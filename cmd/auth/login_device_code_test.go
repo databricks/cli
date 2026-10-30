@@ -589,6 +589,31 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 	}
 }
 
+// The server keeps rejecting the token requests for a rate limited device
+// code, so its pending login is deleted.
+func TestLoginDeviceCodeCompletionRateLimited(t *testing.T) {
+	server := testserver.New(t)
+	// The router keeps the first handler registered for a route, so this one
+	// replaces the default token endpoint.
+	server.Handle("POST", "/oidc/v1/token", func(_ testserver.Request) any {
+		return testserver.Response{
+			StatusCode: http.StatusTooManyRequests,
+			Body:       map[string]string{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"},
+		}
+	})
+	testserver.AddDefaultHandlers(server)
+	setUpDeviceCodeLogin(t, "")
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
+
+	args := []string{"--host", server.URL, "--profile", "test", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY"}
+	err := runDeviceCodeLogin(ctx, args...)
+	assert.EqualError(t, err, "token exchange: Device grant rate limit exceeded (error code: invalid_request). "+startNewLoginHint)
+
+	err = runDeviceCodeLogin(ctx, args...)
+	assert.EqualError(t, err, "no pending device code login for profile test. "+startNewLoginHint)
+}
+
 func TestLoginDeviceCodeCompletionWithoutHostSkipsPicker(t *testing.T) {
 	tm := startDeviceCodeLogin(t, "", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
 	_, err := tm.Result()
