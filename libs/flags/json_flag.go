@@ -8,9 +8,9 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/jsonloader"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"go.yaml.in/yaml/v3"
 )
 
 type JsonFlag struct {
@@ -48,27 +48,18 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 		return nil
 	}
 
-	dv, err := jsonloader.LoadJSON(j.raw, j.source)
+	node, err := structvar.ParseJSON(j.source, j.raw)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// First normalize the input data.
-	// It will convert all the values to the correct types.
+	// Convert the input to the types of the target, in a fresh value: fields set by
+	// other flags are already in v and must be kept.
 	// For example string literals for booleans and integers will be converted to the correct types.
-	nv, diags := convert.Normalize(v, dv)
-	if diags.HasError() {
-		return diags
-	}
-
-	if !nv.IsValid() {
-		kind := reflect.TypeOf(v).Kind()
-		if kind == reflect.Pointer {
-			kind = reflect.TypeOf(v).Elem().Kind()
-		}
-
+	sv, diags, err := structvar.DecodeYAMLNode(j.source, node, reflect.New(reflect.TypeOf(v).Elem()).Interface(), nil)
+	if err != nil {
 		var expectedJsonType string
-		switch kind {
+		switch reflect.TypeOf(v).Elem().Kind() {
 		case reflect.Struct, reflect.Map:
 			expectedJsonType = "object"
 		case reflect.Slice:
@@ -80,37 +71,28 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 		return diags.Append(diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Invalid command input",
-			Detail:   fmt.Sprintf("expected JSON %s, received %s", expectedJsonType, dv.Kind()),
+			Detail:   fmt.Sprintf("expected JSON %s, received %s", expectedJsonType, nodeKind(node)),
 		})
 	}
 
 	// Then marshal the normalized data to the output.
 	// It will serialize all set data with the correct types.
-	data, err := json.Marshal(nv.AsAny())
+	data, err := json.Marshal(sv.View().AsAny())
 	if err != nil {
 		return diags.Extend(diag.FromErr(err))
 	}
 
-	kind := reflect.ValueOf(v).Kind()
-	if kind == reflect.Pointer {
-		kind = reflect.ValueOf(v).Elem().Kind()
-	}
-
-	if kind == reflect.Struct {
+	if reflect.TypeOf(v).Elem().Kind() == reflect.Struct {
 		// Finally unmarshal the normalized data to the output.
 		// It will fill in the ForceSendFields field if the struct contains it.
 		err = marshal.Unmarshal(data, v)
-		if err != nil {
-			return diags.Extend(diag.FromErr(err))
-		}
 	} else {
 		// If the output is not a struct, just unmarshal the data to the output.
 		err = json.Unmarshal(data, v)
-		if err != nil {
-			return diags.Extend(diag.FromErr(err))
-		}
 	}
-
+	if err != nil {
+		return diags.Extend(diag.FromErr(err))
+	}
 	return diags
 }
 
@@ -133,7 +115,7 @@ func (j *JsonFlag) Validate() error {
 	if j.raw == nil {
 		return nil
 	}
-	_, err := jsonloader.LoadJSON(j.raw, j.source)
+	_, err := structvar.ParseJSON(j.source, j.raw)
 	return err
 }
 
@@ -169,4 +151,16 @@ func (j *JsonFlag) RejectWrappedJSON(outerKey, example string) error {
 		msg += "\n\nExample:\n\n  " + example
 	}
 	return fmt.Errorf("%s", msg)
+}
+
+// nodeKind returns the kind of the JSON value in node, as a user sees it.
+func nodeKind(node *yaml.Node) string {
+	switch node.Kind {
+	case yaml.MappingNode:
+		return "map"
+	case yaml.SequenceNode:
+		return "sequence"
+	default:
+		return map[string]string{"!!str": "string", "!!bool": "bool", "!!int": "int", "!!float": "float", "!!null": "nil"}[node.Tag]
+	}
 }

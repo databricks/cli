@@ -1,18 +1,23 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-func VisitGenieSpacePaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	pattern := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("genie_spaces"),
-		dyn.AnyKey(),
-		dyn.Key("file_path"),
-	)
-
-	return dyn.MapByPattern(value, pattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		return fn(path, TranslateModeLocalRelative, value)
-	})
+func VisitGenieSpacePaths(root *config.Root, fn VisitFunc) error {
+	for _, name := range sortedKeys(root.Resources.GenieSpaces) {
+		if g := root.Resources.GenieSpaces[name]; g != nil {
+			if err := visit(fn, visitArgs{
+				owner: g,
+				field: "file_path",
+				value: &g.FilePath,
+				mode:  TranslateModeLocalRelative,
+				path:  structpath.NewPath(resourcePath("genie_spaces", name), "file_path"),
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

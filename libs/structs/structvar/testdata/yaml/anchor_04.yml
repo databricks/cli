@@ -1,0 +1,16 @@
+# 4. Nested Anchors
+# This demonstrates the reuse of nested content.
+address: &ADDRESS
+  city: San Francisco
+  state: CA
+  country: USA
+
+person1:
+  name: Alice
+  address: *ADDRESS
+
+person2:
+  name: Bob
+  address:
+    <<: *ADDRESS
+    city: Los Angeles

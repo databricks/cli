@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -156,9 +155,6 @@ func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
 			},
 		},
 	}
-
-	// Initialize the dynamic representation so GetResourceConfig can query it.
-	require.NoError(t, rootCfg.Mutate(func(v dyn.Value) (dyn.Value, error) { return v, nil }))
 
 	b := &Bundle{Config: rootCfg}
 

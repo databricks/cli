@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,8 +101,9 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 			},
 		},
 	}
-	require.NoError(t, root.initializeDynamicValue())
+	startLoadingFromTyped(t, root)
 	require.NoError(t, root.MergeTargetOverrides("development"))
+	finishLoading(t, root)
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
 
@@ -156,8 +158,9 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 			},
 		},
 	}
-	require.NoError(t, root.initializeDynamicValue())
+	startLoadingFromTyped(t, root)
 	require.NoError(t, root.MergeTargetOverrides("development"))
+	finishLoading(t, root)
 	assert.Equal(t, "bar", root.Variables["foo"].Default)
 	assert.Equal(t, "foo var", root.Variables["foo"].Description)
 
@@ -251,4 +254,73 @@ func TestIsFullVariableOverrideDef(t *testing.T) {
 	for i, tc := range testCases {
 		assert.Equal(t, tc.expected, isFullVariableOverrideDef(tc.value), "test case %d", i)
 	}
+}
+
+func startLoadingFromTyped(t *testing.T, root *Root) {
+	require.NoError(t, root.StartLoading())
+}
+
+func finishLoading(t *testing.T, root *Root) {
+	diags, err := root.FinishLoading()
+	require.NoError(t, err)
+	require.Empty(t, diags)
+}
+
+func loadDyn(t *testing.T, path, content string) *Root {
+	r, diags := LoadDynFromBytes(path, []byte(content))
+	require.NoError(t, diags.Error())
+	return r
+}
+
+func TestLoadFromBytesNotAMap(t *testing.T) {
+	for _, content := range []string{"hello\n", "- a\n- b\n"} {
+		r, diags := LoadFromBytes("databricks.yml", []byte(content))
+		assert.Nil(t, r)
+		assert.ErrorContains(t, diags.Error(), "failed to load databricks.yml")
+	}
+}
+
+func TestMergeComplexVariableSequenceDefaults(t *testing.T) {
+	a := loadDyn(t, "a.yml", "variables:\n  v:\n    type: complex\n    default: [1, 2]\n")
+	b := loadDyn(t, "b.yml", "variables:\n  v:\n    type: complex\n    default: [3]\n")
+	require.NoError(t, a.Merge(b))
+	finishLoading(t, a)
+	assert.Equal(t, []any{1, 2, 3}, a.Variables["v"].Default)
+}
+
+func TestTargetVariableShorthandThroughAliases(t *testing.T) {
+	r := loadDyn(t, "a.yml", `
+x: &dev dev_value
+y: &common {b: from_anchor, c: from_anchor}
+variables:
+  a: {default: d}
+  b: {default: d}
+  c: {default: d}
+targets:
+  dev:
+    variables:
+      <<: *common
+      a: *dev
+      c: explicit
+`)
+	require.NoError(t, r.MergeTargetOverrides("dev"))
+	finishLoading(t, r)
+	assert.Equal(t, "dev_value", r.Variables["a"].Default)
+	assert.Equal(t, "from_anchor", r.Variables["b"].Default)
+	assert.Equal(t, "explicit", r.Variables["c"].Default)
+}
+
+func TestSetReferenceAtPointerField(t *testing.T) {
+	r, diags := LoadFromBytes("a.yml", []byte("resources:\n  jobs:\n    j:\n      name: j\n"))
+	require.NoError(t, diags.Error())
+	path := structpath.MustParsePath("resources.jobs.j.trigger")
+	require.NoError(t, r.SetReference(path, "${var.t}"))
+	s, ok := r.View().Lookup(path).AsString()
+	require.True(t, ok)
+	assert.Equal(t, "${var.t}", s)
+}
+
+func TestNestedYAMLAnchorCycle(t *testing.T) {
+	_, diags := LoadFromBytes("a.yml", []byte("variables:\n  v:\n    default: &x {a: [*x]}\n"))
+	assert.ErrorContains(t, diags.Error(), `cyclic reference to anchor "x"`)
 }

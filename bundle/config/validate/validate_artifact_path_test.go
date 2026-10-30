@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -209,7 +208,7 @@ func TestFindVolumeInBundle(t *testing.T) {
 		Line:   1,
 		Column: 2,
 	}}, locations)
-	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
+	assert.Equal(t, structpath.MustParsePath("resources.volumes.foo"), path)
 
 	// wrong volume name
 	_, _, ok = findVolumeInBundle(b.Config, "main", "my_schema", "doesnotexist")
@@ -238,5 +237,5 @@ func TestFindVolumeInBundle(t *testing.T) {
 		Line:   1,
 		Column: 2,
 	}}, locations)
-	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
+	assert.Equal(t, structpath.MustParsePath("resources.volumes.foo"), path)
 }

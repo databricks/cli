@@ -3,12 +3,12 @@ package structpath_test
 import (
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPureReferenceMatchesDynvar(t *testing.T) {
+func TestPureReferenceMatchesStructvar(t *testing.T) {
 	for _, s := range []string{
 		"${var.foo}",
 		"${resources.jobs.foo.tasks[1].env.key}",
@@ -25,6 +25,6 @@ func TestPureReferenceMatchesDynvar(t *testing.T) {
 		"plain_string",
 	} {
 		_, ok := structpath.PureReferenceToPath(s)
-		assert.Equal(t, dynvar.IsPureVariableReference(s), ok, s)
+		assert.Equal(t, structvar.IsPureVariableReference(s), ok, s)
 	}
 }

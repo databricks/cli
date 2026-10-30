@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle validate -o json
+Warning: expected string, found map
+  at resources.jobs.j.email_notifications.on_failure[1]
+  in databricks.yml:15:40
+
+Warning: expected string, found map
+  at resources.jobs.j.email_notifications.on_failure[3]
+  in databricks.yml:15:72
+
+Warning: expected string, found map
+  at resources.jobs.j.email_notifications.on_failure[4]
+  in databricks.yml:15:86
+
+{
+  "on_failure": [
+    "a@example.test",
+    "b@example.test",
+    "c@example.test"
+  ]
+}

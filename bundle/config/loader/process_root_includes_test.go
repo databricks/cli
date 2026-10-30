@@ -1,16 +1,15 @@
 package loader_test
 
 import (
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/loader"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +18,7 @@ func TestProcessRootIncludesEmpty(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: ".",
 	}
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 }
 
@@ -39,7 +38,7 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 	require.True(t, diags.HasError())
 	assert.ErrorContains(t, diags.Error(), "must be relative paths")
 }
@@ -58,7 +57,7 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 	testutil.Touch(t, b.BundleRootPath, "a.yml")
 	testutil.Touch(t, b.BundleRootPath, "b.yml")
 
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a.yml", "b.yml"}, b.Config.Include)
 }
@@ -77,7 +76,7 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 	testutil.Touch(t, b.BundleRootPath, "a1.yml")
 	testutil.Touch(t, b.BundleRootPath, "b1.yml")
 
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a1.yml", "b1.yml"}, b.Config.Include)
 }
@@ -95,32 +94,9 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 
 	testutil.Touch(t, b.BundleRootPath, "a.yml")
 
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
-}
-
-// The expanded include list must be visible in both the typed and the dynamic
-// configuration: merging the per-file includes reloads the typed configuration from the
-// dynamic tree, so the expanded list must not be overwritten by the raw patterns.
-func TestProcessRootIncludesUpdatesDynamicValue(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Include: []string{
-				"*.yml",
-			},
-		},
-	}
-
-	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
-	testutil.Touch(t, b.BundleRootPath, "a.yml")
-
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
-	require.NoError(t, diags.Error())
-	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
-
-	assert.Equal(t, []any{"a.yml"}, b.Config.Value().Get("include").AsAny())
 }
 
 // An empty include list must stay absent from the dynamic tree: the typed field is
@@ -137,32 +113,10 @@ func TestProcessRootIncludesEmptyOmitsDynamicValue(t *testing.T) {
 
 	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
 
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Include)
-	assert.Equal(t, dyn.KindInvalid, b.Config.Value().Get("include").Kind())
-}
-
-// Include sections of included files are not applied, but they are merged into the
-// include list after the expanded globs.
-func TestProcessRootIncludesKeepsIncludesOfIncludedFiles(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Include: []string{
-				"*.yml",
-			},
-		},
-	}
-
-	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
-	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, "a.yml"), "include:\n  - c.yml\n")
-	testutil.Touch(t, b.BundleRootPath, "b.yml")
-
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
-	require.NoError(t, diags.Error())
-	assert.Equal(t, []string{"a.yml", "b.yml", "c.yml"}, b.Config.Include)
-	assert.Equal(t, []any{"a.yml", "b.yml", "c.yml"}, b.Config.Value().Get("include").AsAny())
+	assert.Nil(t, b.Config.Include)
 }
 
 func TestProcessRootIncludesNotExists(t *testing.T) {
@@ -174,7 +128,7 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 	require.True(t, diags.HasError())
 	assert.ErrorContains(t, diags.Error(), "notexist.yml defined in 'include' section does not match any files")
 }
@@ -238,7 +192,7 @@ func TestProcessRootIncludesGlobInRootPath(t *testing.T) {
 				BundleRootPath: test.root,
 			}
 
-			diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+			diags := bundletest.ApplyLoading(t, b, loader.ProcessRootIncludes())
 			require.True(t, diags.HasError())
 			assert.Len(t, diags, 1)
 			assert.Equal(t, test.diag, diags[0])

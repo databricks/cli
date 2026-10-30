@@ -3,13 +3,14 @@ package mutator
 import (
 	"context"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
-	return paths.VisitArtifactPaths(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
+func (t *translateContext) applyArtifactTranslations(ctx context.Context, r *config.Root) error {
+	return paths.VisitArtifactPaths(r, func(p *structpath.PathNode, mode paths.TranslateMode, s *string) error {
 		opts := translateOptions{
 			Mode: mode,
 
@@ -18,6 +19,6 @@ func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.
 			AllowPathOutsideSyncRoot: true,
 		}
 
-		return t.rewriteValue(ctx, p, v, t.b.BundleRootPath, opts)
+		return t.rewriteAt(ctx, p, s, opts)
 	})
 }

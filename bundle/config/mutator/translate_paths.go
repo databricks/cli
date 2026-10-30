@@ -17,8 +17,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // translateOptions control path translation behavior.
@@ -299,37 +299,54 @@ func (t *translateContext) translateLocalRelativeWithPrefixPath(ctx context.Cont
 	return localRelPath, nil
 }
 
-func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, dir string, opts translateOptions) (dyn.Value, error) {
-	out, err := t.rewritePath(ctx, dir, v.MustString(), opts)
+// rewriteValue rewrites the path input found at p. It returns an empty string if the path was not rewritten.
+func (t *translateContext) rewriteValue(ctx context.Context, p *structpath.PathNode, input, dir string, opts translateOptions) (string, error) {
+	out, err := t.rewritePath(ctx, dir, input, opts)
 	if err != nil {
 		if target, ok := errors.AsType[ErrIsNotebook](err); ok {
-			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
+			return "", fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
 		}
 		if target, ok := errors.AsType[ErrIsNotNotebook](err); ok {
-			return dyn.InvalidValue, fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
+			return "", fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
 		}
-		return dyn.InvalidValue, err
+		return "", err
 	}
 
-	// If the path was not rewritten, return the original value.
-	if out == "" {
-		return v, nil
-	}
-
-	return dyn.NewValue(out, v.Locations()), nil
+	return out, nil
 }
 
-func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
+// setRewritten stores the rewritten path in s (the value keeps its locations) unless
+// the path was not rewritten.
+func setRewritten(s *string, out string) {
+	if out != "" {
+		*s = out
+	}
+}
+
+// rewriteAt rewrites the path value s found at p relative to the bundle root.
+func (t *translateContext) rewriteAt(ctx context.Context, p *structpath.PathNode, s *string, opts translateOptions) error {
+	out, err := t.rewriteValue(ctx, p, *s, t.b.BundleRootPath, opts)
+	if err != nil {
+		return err
+	}
+	setRewritten(s, out)
+	return nil
+}
+
+func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []translateFunc) diag.Diagnostics {
 	switch {
 	case b.IsImmutableFolder():
 		// Reject an explicit workspace.file_path: immutable bundles set it
 		// automatically to the content-addressed snapshot location. A user-supplied
 		// value would be silently discarded during path translation, so we error early.
-		if loc := b.Config.GetLocation("workspace.file_path"); loc.File != "" {
+		// DefineDefaultWorkspacePaths sets the snapshot location, or root/files if
+		// immutable_folder was a reference not resolved yet; any other value is the user's.
+		// Clean: the default is joined before root_path's references are resolved.
+		if fp := path.Clean(b.Config.Workspace.FilePath); fp != resources.SnapshotFullPathRef+"/files" && fp != path.Join(b.Config.Workspace.RootPath, "files") {
 			return diag.Diagnostics{{
 				Severity:  diag.Error,
 				Summary:   "workspace.file_path cannot be configured when workspace.sync_mode is immutable",
-				Locations: []diag.Location{loc},
+				Locations: b.Config.GetLocations("workspace.file_path"),
 			}}
 		}
 		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
@@ -339,18 +356,13 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 		t.remoteRoot = t.b.Config.Workspace.FilePath
 	}
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		var err error
-		for _, fn := range translations {
-			v, err = fn(ctx, v)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+	for _, fn := range translations {
+		if err := fn(ctx, &b.Config); err != nil {
+			return diag.FromErr(err)
 		}
-		return v, nil
-	})
+	}
 
-	return diag.FromErr(err)
+	return nil
 }
 
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -360,7 +372,7 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
-	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
+	return applyTranslations(ctx, b, t, []translateFunc{
 		t.applyJobTranslations(paths.VisitJobPaths, false),
 		t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
 		t.applyPipelineTranslations(paths.VisitPipelinePaths, false),
@@ -377,7 +389,7 @@ func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) 
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
-	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
+	return applyTranslations(ctx, b, t, []translateFunc{
 		t.applyDashboardTranslations,
 		t.applyGenieSpaceTranslations,
 	})

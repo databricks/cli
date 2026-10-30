@@ -1021,8 +1021,11 @@ tasks:
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/config/validate/*_walk.go
+      - bundle/config/walk/*_walk.go
+      - bundle/config/mutator/resourcemutator/defaults_walk.go
+      - bundle/config/resources_iterate.go
     cmds:
-      - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/config/validate/required_walk.go ./bundle/config/validate/enum_walk.go'"
+      - "go run ./bundle/internal/validation/."
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)

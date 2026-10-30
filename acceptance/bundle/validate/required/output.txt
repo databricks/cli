@@ -5,6 +5,10 @@ Warning: required field "catalog_name" is not set
   in databricks.yml:35:7
 
 Warning: required field "job_id" is not set
+  at resources.jobs.my_job_1.tasks[0].run_job_task
+  in databricks.yml:25:13
+
+Warning: required field "job_id" is not set
   at resources.jobs.my_job_1.tasks[1].run_job_task
   in databricks.yml:29:24
 
@@ -26,4 +30,4 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 5 warnings
+Found 6 warnings

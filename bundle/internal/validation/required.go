@@ -1,16 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
+// formatSliceToString formats a list of values into string of the form `{value1, value2, ...}`
+// representing a Go slice literal.
+func formatSliceToString(values []string) string {
+	if len(values) == 0 {
+		return "{}"
+	}
+
+	var quoted []string
+	for _, value := range values {
+		quoted = append(quoted, fmt.Sprintf("%q", value))
+	}
+
+	return "{" + strings.Join(quoted, ", ") + "}"
+}
+
 // extractRequiredFields walks through a struct type and returns the required fields
-// (JSON names, in declaration order) by the pattern of their parent.
+// (JSON names) by the pattern of the struct that has them.
 func extractRequiredFields(typ reflect.Type) (map[string][]string, error) {
 	fieldsByPattern := make(map[string][]string)
 
@@ -53,4 +70,17 @@ func extractRequiredFields(typ reflect.Type) (map[string][]string, error) {
 	})
 
 	return fieldsByPattern, err
+}
+
+// getGroupingKey determines the grouping key for organizing patterns
+func getGroupingKey(pattern string) string {
+	parts := strings.Split(pattern, ".")
+
+	// Group resources by their resource type (e.g., "resources.jobs")
+	if parts[0] == "resources" && len(parts) > 1 {
+		return parts[0] + "." + parts[1]
+	}
+
+	// Use the top level key for other fields
+	return parts[0]
 }

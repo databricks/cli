@@ -2,23 +2,25 @@ package config
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
+	"io"
+	"iter"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/loctable"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/dynloc"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -35,8 +37,16 @@ type Script struct {
 }
 
 type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
+	// value holds the configuration tree while the configuration is loading
+	// (see [Root.Loading]); the fields below are zero until then.
 	value dyn.Value
-	depth int
+
+	// refs holds the pure variable references in fields that cannot hold a string
+	// (e.g. `max_retries: ${var.n}`, where the typed field is zero), keyed by path.
+	refs map[string]string
+
+	// locations holds the source locations of the values.
+	locations *structvar.Locations
 
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
@@ -88,7 +98,7 @@ type Root struct { //nolint:recvcheck // value receivers for read-only accessors
 
 	// Locations is an output-only field that holds configuration location
 	// information for every path in the configuration tree.
-	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
+	Locations *loctable.Locations `json:"__locations,omitempty" bundle:"internal"`
 
 	Scripts map[string]Script `json:"scripts,omitempty"`
 
@@ -99,7 +109,8 @@ type Root struct { //nolint:recvcheck // value receivers for read-only accessors
 	Definitions any `json:"definitions,omitempty" bundle:"internal"`
 }
 
-// Load loads the bundle configuration file at the specified path.
+// Load loads the bundle configuration file at the specified path into a typed
+// configuration (see [LoadDyn] to load it for merging).
 func Load(path string) (*Root, diag.Diagnostics) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -109,9 +120,33 @@ func Load(path string) (*Root, diag.Diagnostics) {
 	return LoadFromBytes(path, raw)
 }
 
+// LoadFromBytes is [Load] for the contents of a file.
 func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
-	r := Root{}
+	r, diags := LoadDynFromBytes(path, raw)
+	if diags.HasError() {
+		return nil, diags
+	}
+	finishDiags, err := r.FinishLoading()
+	diags = diags.Extend(finishDiags)
+	if err != nil {
+		return nil, diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+	}
+	return r, diags
+}
 
+// LoadDyn loads the bundle configuration file at the specified path into a
+// configuration that is loading (see [Root.Loading]), to be merged with others.
+func LoadDyn(path string) (*Root, diag.Diagnostics) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return LoadDynFromBytes(path, raw)
+}
+
+// LoadDynFromBytes is [LoadDyn] for the contents of a file.
+func LoadDynFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Load configuration tree from YAML.
 	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
@@ -132,139 +167,101 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
-	v, diags := convert.Normalize(r, v)
-
-	// Convert normalized configuration tree to typed configuration.
-	err = r.updateWithDynamicValue(v)
-	if err != nil {
-		diags = diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
-		return nil, diags
+	nv, diags := convert.Normalize(Root{}, v)
+	if !nv.IsValid() {
+		// The document is not a map: report the error main's conversion to the
+		// typed configuration reported.
+		err := convert.ToTyped(&Root{}, v)
+		return nil, diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
 	}
-	return &r, diags
+	return &Root{value: nv}, diags
 }
 
-func (r *Root) initializeDynamicValue() error {
-	// Many test cases initialize a config as a Go struct literal.
-	// The value will be invalid and we need to populate it from the typed configuration.
-	if r.value.IsValid() {
+// LoadFromReader decodes the configuration in r, recording the locations mapLocations
+// returns (if not nil) instead of the locations in the file.
+func LoadFromReader(path string, r io.Reader, mapLocations structvar.LocationMapper) (*Root, diag.Diagnostics, error) {
+	node, err := structvar.ParseYAML(r)
+	if err != nil {
+		return nil, nil, err
+	}
+	var root Root
+	sv, diags, err := structvar.DecodeYAMLNode(path, node, &root, mapLocations)
+	if err != nil {
+		return nil, diags, err
+	}
+	root.store(sv)
+	return &root, diags, nil
+}
+
+// Loading reports whether the configuration is loading: it is a configuration tree
+// that the load phase merges (includes, target overrides) and only [Root.Value],
+// [Root.Mutate], [Root.Merge] and [Root.MergeTargetOverrides] may be used. The typed
+// fields are zero until [Root.FinishLoading] converts the tree into them.
+func (r *Root) Loading() bool {
+	return r.value.IsValid()
+}
+
+// Value returns the configuration tree of a loading configuration
+// (invalid if it is not loading).
+func (r *Root) Value() dyn.Value {
+	return r.value
+}
+
+// StartLoading makes the configuration loading, converting the typed configuration
+// into a configuration tree if it is not (like main did on entry of the first
+// mutator). A bundle's configuration starts out empty and the entry point merges the
+// loaded configuration into it; tests may start with a typed configuration.
+func (r *Root) StartLoading() error {
+	if r.Loading() {
 		return nil
 	}
-
-	nv, err := convert.FromTyped(r, dyn.NilValue)
+	v, err := convert.FromTyped(r, dyn.NilValue)
 	if err != nil {
 		return err
 	}
-
-	r.value = nv
+	*r = Root{value: v}
 	return nil
 }
 
-func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
-	// Hack: restore state; it may be cleared by [ToTyped] if
-	// the configuration equals nil (happens in tests).
-	depth := r.depth
-
-	defer func() {
-		r.depth = depth
-	}()
-
-	// Convert normalized configuration tree to typed configuration.
-	err := convert.ToTyped(r, nv)
-	if err != nil {
-		return err
-	}
-
-	// Assign the normalized configuration tree.
-	r.value = nv
-	return nil
-}
-
-// Mutate applies a transformation to the dynamic configuration value of a Root object.
-//
-// Parameters:
-// - fn: A function that mutates a dyn.Value object
-//
-// Example usage, setting bundle.deployment.lock.enabled to false:
-//
-//	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-//	    return dyn.Map(v, "bundle.deployment.lock", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-//	        return dyn.Set(v, "enabled", dyn.V(false))
-//	    })
-//	})
+// Mutate applies fn to the configuration tree of a loading configuration.
 func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
-	err := r.initializeDynamicValue()
-	if err != nil {
+	if err := r.StartLoading(); err != nil {
 		return err
 	}
 	nv, err := fn(r.value)
 	if err != nil {
 		return err
 	}
-	err = r.updateWithDynamicValue(nv)
-	if err != nil {
-		return err
-	}
+	r.value = nv
 	return nil
 }
 
-func (r *Root) MarkMutatorEntry(ctx context.Context) error {
-	err := r.initializeDynamicValue()
+// FinishLoading converts the configuration tree of a loading configuration into the
+// typed configuration, its references and locations, once. The diagnostics explain
+// values that could not be converted and were dropped.
+func (r *Root) FinishLoading() (diag.Diagnostics, error) {
+	if !r.Loading() {
+		return nil, nil
+	}
+	var out Root
+	sv, diags, err := structvar.DecodeDyn(r.value, &out)
 	if err != nil {
-		return err
+		return diags, err
 	}
-
-	r.depth++
-
-	// If we are entering a mutator at depth 1, we need to convert
-	// the dynamic configuration tree to typed configuration.
-	if r.depth == 1 {
-		// Always run ToTyped upon entering a mutator.
-		// Convert normalized configuration tree to typed configuration.
-		err := r.updateWithDynamicValue(r.value)
-		if err != nil {
-			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
-			return err
-		}
-
-	} else {
-		nv, err := convert.FromTyped(r, r.value)
-		if err != nil {
-			log.Warnf(ctx, "unable to convert typed configuration to dynamic configuration: %v", err)
-			return err
-		}
-
-		// Re-run ToTyped to ensure that no state is piggybacked
-		err = r.updateWithDynamicValue(nv)
-		if err != nil {
-			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
-			return err
-		}
-	}
-
-	return nil
+	*r = out
+	r.store(sv)
+	return diags, nil
 }
 
-func (r *Root) MarkMutatorExit(ctx context.Context) error {
-	r.depth--
+// vars returns the configuration as a [structvar.StructVar]; use [Root.store] to
+// keep changes made to its references and locations.
+func (r *Root) vars() *structvar.StructVar {
+	return &structvar.StructVar{Value: r, Refs: r.refs, Locations: r.locations}
+}
 
-	// If we are exiting a mutator at depth 0, we need to convert
-	// the typed configuration to a dynamic configuration tree.
-	if r.depth == 0 {
-		nv, err := convert.FromTyped(r, r.value)
-		if err != nil {
-			log.Warnf(ctx, "unable to convert typed configuration to dynamic configuration: %v", err)
-			return err
-		}
-
-		// Re-run ToTyped to ensure that no state is piggybacked
-		err = r.updateWithDynamicValue(nv)
-		if err != nil {
-			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
-			return err
-		}
-	}
-
-	return nil
+func (r *Root) store(sv *structvar.StructVar) {
+	r.refs = sv.Refs
+	r.locations = sv.Locations
 }
 
 // Initializes variables using values passed from the command line flag
@@ -295,11 +292,25 @@ func (r *Root) InitializeVariables(vars []string) error {
 	return nil
 }
 
-func (r *Root) Merge(other *Root) error {
-	// Merge dynamic configuration values.
-	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return merge.Merge(root, other.value)
-	})
+// Merge merges the other loading configurations into this one, in order.
+func (r *Root) Merge(others ...*Root) error {
+	if err := r.StartLoading(); err != nil {
+		return err
+	}
+	for _, other := range others {
+		nv, err := merge.Merge(r.value, other.value)
+		if err != nil {
+			return err
+		}
+		r.value = nv
+	}
+	return nil
+}
+
+// HasTarget reports whether the loading configuration defines the target name.
+func (r *Root) HasTarget(name string) bool {
+	_, err := dyn.GetByPath(r.value, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
+	return err == nil
 }
 
 func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
@@ -329,6 +340,14 @@ func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 func (r *Root) MergeTargetOverrides(name string) error {
 	root := r.value
 	target, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
+	if err != nil {
+		return err
+	}
+
+	// Main converted the configuration to the typed configuration and back around
+	// every mutator, so the target only held what its typed form holds (e.g. not an
+	// explicitly null run_as, which would otherwise replace the root's run_as below).
+	target, err = roundTripTarget(target)
 	if err != nil {
 		return err
 	}
@@ -446,8 +465,17 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	// Convert normalized configuration tree to typed configuration.
-	return r.updateWithDynamicValue(root)
+	r.value = root
+	return nil
+}
+
+// roundTripTarget converts the target to the typed [Target] and back.
+func roundTripTarget(v dyn.Value) (dyn.Value, error) {
+	var t *Target
+	if err := convert.ToTyped(&t, v); err != nil {
+		return dyn.InvalidValue, err
+	}
+	return convert.FromTyped(t, v)
 }
 
 var allowedVariableDefinitions = []([]string){
@@ -554,83 +582,173 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 // validateVariableOverrides checks that all variables specified
 // in the target override are also defined in the root.
-func validateVariableOverrides(root, target dyn.Value) (err error) {
-	var rv map[string]variable.Variable
-	var tv map[string]variable.Variable
-
-	// Collect variables from the root.
-	if v := root.Get("variables"); v.Kind() != dyn.KindInvalid {
-		err = convert.ToTyped(&rv, v)
-		if err != nil {
-			return fmt.Errorf("unable to collect variables from root: %w", err)
-		}
-	}
-
-	// Collect variables from the target.
-	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
-		err = convert.ToTyped(&tv, v)
-		if err != nil {
-			return fmt.Errorf("unable to collect variables from target: %w", err)
-		}
-	}
+func validateVariableOverrides(root, target dyn.Value) error {
+	rv, _ := root.Get("variables").AsMap()
+	tv, _ := target.Get("variables").AsMap()
 
 	// Check that all variables in the target exist in the root.
-	for k := range tv {
-		if _, ok := rv[k]; !ok {
-			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+	for _, p := range tv.Pairs() {
+		if _, ok := rv.GetPair(p.Key); !ok {
+			return fmt.Errorf("variable %s is not defined but is assigned a value", p.Key.MustString())
 		}
 	}
 
 	return nil
 }
 
-// Best effort to get the location of configuration value at the specified path.
-// This function is useful to annotate error messages with the location, because
-// we don't want to fail with a different error message if we cannot retrieve the location.
+// Set sets value at path (see [structvar.StructVar.Set]).
+func (r *Root) Set(path *structpath.PathNode, value any) error {
+	sv := r.vars()
+	defer r.store(sv)
+	return sv.Set(path, value)
+}
+
+// SetReference records the pure reference ref at path, a field that cannot hold a string.
+func (r *Root) SetReference(path *structpath.PathNode, ref string) error {
+	sv := r.vars()
+	defer r.store(sv)
+	return sv.SetReference(path, ref)
+}
+
+// Assign sets the value described by v at path, with its locations and references.
+func (r *Root) Assign(path *structpath.PathNode, v structvar.View) error {
+	_, err := r.Decode(path, v)
+	return err
+}
+
+// Decode sets the value described by v at path, converting it to the type at path;
+// the diagnostics explain values that could not be converted and were dropped.
+func (r *Root) Decode(path *structpath.PathNode, v structvar.View) (diag.Diagnostics, error) {
+	sv := r.vars()
+	defer r.store(sv)
+	return sv.Assign(path, v)
+}
+
+// Delete removes the value at path (see [structvar.StructVar.Delete]).
+func (r *Root) Delete(path *structpath.PathNode) error {
+	sv := r.vars()
+	defer r.store(sv)
+	return sv.Delete(path)
+}
+
+// MergeAt merges the value described by v into the value at path (see [structvar.StructVar.Merge]).
+func (r *Root) MergeAt(path *structpath.PathNode, v structvar.View) error {
+	sv := r.vars()
+	defer r.store(sv)
+	return sv.Merge(path, v)
+}
+
+// MergeElementsByKey merges the elements of the sequence at path that have the same
+// key (see [structvar.StructVar.MergeElementsByKey]).
+func (r *Root) MergeElementsByKey(path *structpath.PathNode, keyField string, keyFn func(structvar.View) string, sortKeys bool) error {
+	sv := r.vars()
+	defer r.store(sv)
+	return sv.MergeElementsByKey(path, keyField, keyFn, sortKeys)
+}
+
+// SetLocations sets the locations of the value at path and all values below it.
+func (r *Root) SetLocations(path *structpath.PathNode, locs []diag.Location) {
+	sv := r.vars()
+	sv.SetLocations(path, locs)
+	r.store(sv)
+}
+
+// CopyMetadata replaces the locations and references of the value at path with those in
+// src (see [structvar.StructVar.CopyMetadata]).
+func (r *Root) CopyMetadata(src *Root, path *structpath.PathNode) {
+	sv := r.vars()
+	sv.CopyMetadata(src.vars(), path)
+	r.store(sv)
+}
+
+// MoveMetadata moves the locations and references of the value at path from to the
+// path to (see [structvar.StructVar.MoveMetadata]).
+func (r *Root) MoveMetadata(from, to *structpath.PathNode) {
+	sv := r.vars()
+	sv.MoveMetadata(from, to)
+	r.store(sv)
+}
+
+// CopyMetadataAt copies the locations and references of the value at path from to the
+// path to (see [structvar.StructVar.CopyMetadataAt]).
+func (r *Root) CopyMetadataAt(from, to *structpath.PathNode) {
+	sv := r.vars()
+	sv.CopyMetadataAt(from, to)
+	r.store(sv)
+}
+
+// UpdateSequence records that the elements of the sequence at path were rebuilt from
+// the old ones (see [structvar.StructVar.UpdateSequence]).
+func (r *Root) UpdateSequence(path *structpath.PathNode, sources [][]int) {
+	sv := r.vars()
+	sv.UpdateSequence(path, sources)
+	r.store(sv)
+}
+
+// GetLocation is [Root.GetLocationOf] for a path string, like main's.
 func (r Root) GetLocation(path string) diag.Location {
-	v, err := dyn.Get(r.value, path)
-	if err != nil {
-		return diag.Location{}
-	}
-	return v.Location()
+	return firstLocation(r.GetLocations(path))
 }
 
-// Get all locations of the configuration value at the specified path. We need both
-// this function and it's singular version (GetLocation) because some diagnostics just need
-// the primary location and some need all locations associated with a configuration value.
+// GetLocations is [Root.GetLocationsOf] for a path string, like main's.
 func (r Root) GetLocations(path string) []diag.Location {
-	v, err := dyn.Get(r.value, path)
+	if r.Loading() {
+		v, err := dyn.Get(r.value, path)
+		if err != nil {
+			return nil
+		}
+		return v.Locations()
+	}
+	p, err := structpath.ParsePath(path)
 	if err != nil {
 		return nil
 	}
-	return v.Locations()
+	return r.GetLocationsOf(p)
 }
 
-// GetLocationOf is [Root.GetLocation] for a path node.
+// GetLocationsOf returns the locations of the configuration value at path or, if it
+// has none (e.g. it was set by a mutator), those of its closest ancestor that has some.
+// Use it to point diagnostics at the most specific place there is; use
+// [Root.GetLocationsOfExact] to find where a value is written.
+func (r Root) GetLocationsOf(path *structpath.PathNode) []diag.Location {
+	if r.Loading() {
+		return r.GetLocationsOfExact(path)
+	}
+	return r.locations.Nearest(path)
+}
+
+// GetLocationOf returns the primary location of [Root.GetLocationsOf].
 func (r Root) GetLocationOf(path *structpath.PathNode) diag.Location {
-	v, ok := r.valueOf(path)
-	if !ok {
+	return firstLocation(r.GetLocationsOf(path))
+}
+
+// GetLocationsOfExact returns the locations the configuration value at path is written at,
+// or none if it was set by a mutator.
+func (r Root) GetLocationsOfExact(path *structpath.PathNode) []diag.Location {
+	if r.Loading() {
+		p, ok := dyn.FromStructPath(path)
+		if !ok {
+			return nil
+		}
+		v, err := dyn.GetByPath(r.value, p)
+		if err != nil {
+			return nil
+		}
+		return v.Locations()
+	}
+	return r.locations.Exact(path)
+}
+
+// GetLocationOfExact returns the primary location of [Root.GetLocationsOfExact].
+func (r Root) GetLocationOfExact(path *structpath.PathNode) diag.Location {
+	return firstLocation(r.GetLocationsOfExact(path))
+}
+
+func firstLocation(locs []diag.Location) diag.Location {
+	if len(locs) == 0 {
 		return diag.Location{}
 	}
-	return v.Location()
-}
-
-// GetLocationsOf is [Root.GetLocations] for a path node.
-func (r Root) GetLocationsOf(path *structpath.PathNode) []diag.Location {
-	v, ok := r.valueOf(path)
-	if !ok {
-		return nil
-	}
-	return v.Locations()
-}
-
-func (r Root) valueOf(path *structpath.PathNode) (dyn.Value, bool) {
-	p, ok := dyn.FromStructPath(path)
-	if !ok {
-		return dyn.InvalidValue, false
-	}
-	v, err := dyn.GetByPath(r.value, p)
-	return v, err == nil
+	return locs[0]
 }
 
 // GetNodeAndType and returns parent resource node and type of the resource in direct backend.
@@ -638,33 +756,33 @@ func (r Root) valueOf(path *structpath.PathNode) (dyn.Value, bool) {
 //
 //	"resources.jobs.foo.name" -> ("resources.jobs.foo", "jobs")
 //	"resources.jobs.foo.permissions[0].level -> ("resources.jobs.foo.permissions", "jobs.permissions")
-func GetNodeAndType(path dyn.Path) (dyn.Path, string) {
-	if len(path) < 3 {
+func GetNodeAndType(path *structpath.PathNode) (*structpath.PathNode, string) {
+	if path.Len() < 3 {
 		return nil, ""
 	}
 
-	if path[0].Key() != "resources" {
+	if path.KeyAt(0) != "resources" {
 		return nil, ""
 	}
 
-	if len(path) >= 4 {
-		if path[3].Key() == "permissions" || path[3].Key() == "grants" {
-			return path[:4], path[1].Key() + "." + path[3].Key()
+	if path.Len() >= 4 {
+		if k := path.KeyAt(3); k == "permissions" || k == "grants" {
+			return path.Prefix(4), path.KeyAt(1) + "." + k
 		}
 	}
 
-	return path[:3], path[1].Key()
+	return path.Prefix(3), path.KeyAt(1)
 }
 
 // GetResourceTypeFromKey extracts the resource group from a resource path.
 // For example, "resources.jobs.foo" returns "jobs".
 // Returns empty string if the path is not in the expected format.
 func GetResourceTypeFromKey(path string) string {
-	dp, err := dyn.NewPathFromString(path)
+	p, err := structpath.ParsePath(path)
 	if err != nil {
 		return ""
 	}
-	_, rType := GetNodeAndType(dp)
+	_, rType := GetNodeAndType(p)
 	return rType
 }
 
@@ -673,13 +791,13 @@ func GetResourceTypeFromKey(path string) string {
 // The returned value is a pointer to the concrete struct that represents that resource type.
 // When the path is invalid or resource is not found, the second return value is false.
 func (r *Root) GetResourceConfig(path string) (any, error) {
-	dynPath, err := dyn.NewPathFromString(path)
+	p, err := structpath.ParsePath(path)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract and validate the resource group from the path
-	node, resourceType := GetNodeAndType(dynPath)
+	node, resourceType := GetNodeAndType(p)
 	if resourceType == "" {
 		return nil, fmt.Errorf("path does not correspond to resource: %q", path)
 	}
@@ -690,18 +808,15 @@ func (r *Root) GetResourceConfig(path string) (any, error) {
 		return nil, fmt.Errorf("no such resource type in the config: %q", resourceType)
 	}
 
-	// Fetch the raw value from the dynamic representation of the bundle config.
-	v, err := dyn.GetByPath(r.Value(), node)
-	if err != nil {
-		if dyn.IsNoSuchKeyError(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("cannot fetch config for %s: %w", node, err)
+	// Copy the value, so that the caller can't change the configuration through it.
+	v := r.View().Lookup(node)
+	if !v.IsValid() {
+		return nil, nil
 	}
 
 	typedConfigPtr := reflect.New(typ)
 
-	err = convert.ToTyped(typedConfigPtr.Interface(), v)
+	_, err = (&structvar.StructVar{Value: typedConfigPtr.Interface()}).Assign(nil, v)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert config to %s: %w", typ.String(), err)
 	}
@@ -709,8 +824,84 @@ func (r *Root) GetResourceConfig(path string) (any, error) {
 	return typedConfigPtr.Interface(), nil
 }
 
-// Value returns the dynamic configuration value of the root object. This value
-// is the source of truth and is kept in sync with values in the typed configuration.
-func (r Root) Value() dyn.Value {
-	return r.value
+// IsReferenceAt is [Root.IsReference] for a path node.
+func (r Root) IsReferenceAt(path *structpath.PathNode) bool {
+	_, ok := r.refs[path.String()]
+	return ok
+}
+
+// ReferenceAt returns the pure variable reference held by the field at path that
+// cannot hold a string, or "" if there is none.
+func (r Root) ReferenceAt(path *structpath.PathNode) string {
+	return r.refs[path.String()]
+}
+
+// References returns all pure variable references in fields that cannot hold a string,
+// keyed by path. References in string fields are part of their value.
+func (r Root) References() iter.Seq2[*structpath.PathNode, string] {
+	return r.ReferencesUnder(nil)
+}
+
+// ReferencesUnder returns the pure variable references (see [Root.References]) at path
+// and below it, in path order. References below a value that a mutator removed (e.g. a
+// cleared new_cluster) are skipped: only those in the typed value are returned.
+func (r Root) ReferencesUnder(path *structpath.PathNode) iter.Seq2[*structpath.PathNode, string] {
+	return func(yield func(*structpath.PathNode, string) bool) {
+		prefix := path.String()
+		var keys []string
+		for k := range r.refs {
+			if prefix == "" || k == prefix || strings.HasPrefix(k, prefix+".") || strings.HasPrefix(k, prefix+"[") {
+				keys = append(keys, k)
+			}
+		}
+		slices.Sort(keys)
+		view := r.View()
+		for _, k := range keys {
+			p, err := structpath.ParsePath(k)
+			if err != nil {
+				continue
+			}
+			// The view shows a present reference as a string. A reference below or at a
+			// nil pointer (even a forced one), a missing map key or an index out of range
+			// is gone.
+			if view.Lookup(p).Kind() != structvar.KindString {
+				continue
+			}
+			if !yield(p, r.refs[k]) {
+				return
+			}
+		}
+	}
+}
+
+// LocationTree returns the tree of the source locations of the configuration values.
+func (r *Root) LocationTree() *structvar.Locations {
+	return r.locations
+}
+
+// View returns the read-only view of the configuration tree.
+func (r *Root) View() structvar.View {
+	return structvar.NewView(r, r.refs, r.locations)
+}
+
+// Override replaces the configuration with the result of plan (see [structvar.PlanOverride]).
+func (r *Root) Override(plan *structvar.OverridePlan) error {
+	sv := r.vars()
+	defer r.store(sv)
+	return sv.Override(plan)
+}
+
+// DecodeLoading converts the value at the path of keys in the configuration tree of a
+// loading configuration into dst, a pointer to a typed value; dst is left unchanged
+// if there is no value there.
+func (r *Root) DecodeLoading(dst any, keys ...string) error {
+	v := r.value
+	for _, k := range keys {
+		v = v.Get(k)
+	}
+	if !v.IsValid() {
+		return nil
+	}
+	_, _, err := structvar.DecodeDyn(v, dst)
+	return err
 }

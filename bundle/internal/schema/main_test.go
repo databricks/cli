@@ -1,21 +1,20 @@
 package main
 
 import (
-	"bytes"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 const cliJSONPath = "../../../.codegen/cli.json"
@@ -73,34 +72,43 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	require.NoError(t, err)
 	currentFile, err := os.ReadFile(annotationsPath)
 	require.NoError(t, err)
-	original, err := yamlloader.LoadYAML("", bytes.NewBuffer(originalFile))
-	require.NoError(t, err)
-	current, err := yamlloader.LoadYAML("", bytes.NewBuffer(currentFile))
-	require.NoError(t, err)
+	var original, current any
+	require.NoError(t, yaml.Unmarshal(originalFile, &original))
+	require.NoError(t, yaml.Unmarshal(currentFile, &current))
 
 	// Regenerating from the committed file must be a no-op: no new placeholders
 	// (a new undocumented config field) and no deletes/updates (stale
-	// placeholders not yet pruned). VisitDelete/VisitUpdate must be set or
-	// Override panics on any change.
+	// placeholders not yet pruned).
 	var addedFieldPaths []string
 	var changedFieldPaths []string
-	_, err = merge.Override(original, current, merge.OverrideVisitor{
-		VisitInsert: func(basePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			addedFieldPaths = append(addedFieldPaths, basePath.String())
-			return right, nil
-		},
-		VisitDelete: func(basePath dyn.Path, left dyn.Value) error {
-			changedFieldPaths = append(changedFieldPaths, basePath.String())
-			return nil
-		},
-		VisitUpdate: func(basePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
-			changedFieldPaths = append(changedFieldPaths, basePath.String())
-			return right, nil
-		},
-	})
-	assert.NoError(t, err)
+	diffYAML("", original, current, &addedFieldPaths, &changedFieldPaths)
 	assert.Empty(t, addedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(addedFieldPaths, "\n"))
 	assert.Empty(t, changedFieldPaths, "annotations.yml is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(changedFieldPaths, "\n"))
+}
+
+// diffYAML records the paths of the values added to, and removed from or changed in, left to get right.
+func diffYAML(path string, left, right any, added, changed *[]string) {
+	l, lok := left.(map[string]any)
+	r, rok := right.(map[string]any)
+	if !lok || !rok {
+		if !reflect.DeepEqual(left, right) {
+			*changed = append(*changed, path)
+		}
+		return
+	}
+	for _, k := range slices.Sorted(maps.Keys(l)) {
+		if _, ok := r[k]; !ok {
+			*changed = append(*changed, strings.TrimPrefix(path+"."+k, "."))
+		}
+	}
+	for _, k := range slices.Sorted(maps.Keys(r)) {
+		p := strings.TrimPrefix(path+"."+k, ".")
+		if lv, ok := l[k]; ok {
+			diffYAML(p, lv, r[k], added, changed)
+		} else {
+			*added = append(*added, p)
+		}
+	}
 }
 
 // Checks that the annotations file only contains entries that match the

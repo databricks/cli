@@ -1,2 +1,2 @@
-# A value replaced by a later duplicate key is still loaded, so its invalid (integer) key is rejected.
+# An invalid (integer) key inside a value that a later duplicate key replaces.
 errcode trace $CLI bundle validate

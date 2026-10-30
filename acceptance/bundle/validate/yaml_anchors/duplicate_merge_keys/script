@@ -1,2 +1,4 @@
 # Two '<<' keys in target variables are an error.
 errcode trace $CLI bundle validate -t dev
+# What was merged into the variable:
+errcode trace $CLI bundle validate -t dev -o json | jq .variables.x

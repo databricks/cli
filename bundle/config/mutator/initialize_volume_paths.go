@@ -3,13 +3,13 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type initializeVolumePaths struct{}
@@ -32,29 +32,35 @@ func (m *initializeVolumePaths) Name() string {
 }
 
 func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("volumes"), dyn.AnyKey())
-		return dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// volume_path is computed and read-only; reject a user-provided value instead of overwriting it.
-			if existing, ok := v.Get("volume_path").AsString(); ok && existing != "" {
-				return dyn.InvalidValue, fmt.Errorf("%s.volume_path is computed and read-only; remove it from the configuration", p.String())
-			}
+	// Skip converting the configuration if there are no volumes.
+	if len(b.Config.Resources.Volumes) == 0 {
+		return nil
+	}
 
-			var vol resources.Volume
-			if err := convert.ToTyped(&vol, v); err != nil {
-				return dyn.InvalidValue, err
-			}
+	// References are resolved against the configuration tree (they can point anywhere).
+	view := b.Config.View()
+	volumes := b.Config.Resources.Volumes
+	for _, name := range slices.Sorted(maps.Keys(volumes)) {
+		v := volumes[name]
+		if v == nil {
+			continue
+		}
+		p := structpath.NewPath(nil, "resources", "volumes", name)
 
-			// Resolve references to compute the path only; the field values in v are left untouched.
-			vol.CatalogName = resolveResourceReference(root, vol.CatalogName)
-			vol.SchemaName = resolveResourceReference(root, vol.SchemaName)
-			vol.Name = resolveResourceReference(root, vol.Name)
+		// volume_path is computed and read-only; reject a user-provided value instead of overwriting it.
+		if v.VolumePath != "" {
+			return diag.FromErr(fmt.Errorf("%s.volume_path is computed and read-only; remove it from the configuration", p.String()))
+		}
 
-			return dyn.Set(v, "volume_path", dyn.V(vol.ComputeVolumePath()))
-		})
-	})
-	if err != nil {
-		return diag.FromErr(err)
+		// Resolve references to compute the path only; the field values are left untouched.
+		vol := *v
+		vol.CatalogName = resolveResourceReference(view, vol.CatalogName)
+		vol.SchemaName = resolveResourceReference(view, vol.SchemaName)
+		vol.Name = resolveResourceReference(view, vol.Name)
+
+		if err := b.Config.Set(structpath.NewStringKey(p, "volume_path"), vol.ComputeVolumePath()); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	return nil
 }
@@ -62,16 +68,12 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 // resolveResourceReference resolves a pure ${resources....} reference by looking it up in root.
 // Values that are not such a reference, or cannot be resolved, are returned unchanged (still
 // containing "${"), so the caller embeds the reference verbatim to be resolved later.
-func resolveResourceReference(root dyn.Value, s string) string {
-	p, ok := dynvar.PureReferenceToPath(s)
-	if !ok || p[0].Key() != "resources" {
+func resolveResourceReference(root structvar.View, s string) string {
+	p, ok := structvar.PureReferenceToPath(s)
+	if !ok || p.KeyAt(0) != "resources" {
 		return s
 	}
-	rv, err := dyn.GetByPath(root, p)
-	if err != nil {
-		return s
-	}
-	rs, ok := rv.AsString()
+	rs, ok := root.Lookup(p).AsString()
 	if !ok {
 		return s
 	}

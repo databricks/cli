@@ -41,6 +41,14 @@ type JobRunLifecycle struct {
 	TriggersState *JobRunTriggersState `json:"triggers_state,omitempty" bundle:"internal"`
 }
 
+// GetLifecycle returns the lifecycle settings, using JobRunLifecycle.
+func (r *JobRun) GetLifecycle() LifecycleConfig {
+	if r.Lifecycle == nil {
+		return JobRunLifecycle{}
+	}
+	return *r.Lifecycle
+}
+
 // JobRunTrigger is one lifecycle.triggers entry.
 type JobRunTrigger struct {
 	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
@@ -121,15 +129,6 @@ func (r *JobRun) ResourceDescription() ResourceDescription {
 		SingularTitle: "Job Run",
 		PluralTitle:   "Job Runs",
 	}
-}
-
-// GetLifecycle returns the lifecycle settings. Lifecycle shadows BaseResource.Lifecycle,
-// which therefore stays empty.
-func (r *JobRun) GetLifecycle() LifecycleConfig {
-	if r.Lifecycle == nil {
-		return Lifecycle{}
-	}
-	return r.Lifecycle.Lifecycle
 }
 
 // GetName returns the in-product name, which is empty: a run has no name.

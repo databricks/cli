@@ -7,3 +7,11 @@ Error: duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, u
 Found 1 error
 
 Exit code: 1
+
+>>> [CLI] bundle validate -t dev -o json
+Error: duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'
+  in databricks.yml:18:7
+
+
+Exit code: 1
+null

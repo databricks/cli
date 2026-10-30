@@ -1,18 +1,23 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-func VisitAlertPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	pattern := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("alerts"),
-		dyn.AnyKey(),
-		dyn.Key("file_path"),
-	)
-
-	return dyn.MapByPattern(value, pattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		return fn(path, TranslateModeLocalRelative, value)
-	})
+func VisitAlertPaths(root *config.Root, fn VisitFunc) error {
+	for _, name := range sortedKeys(root.Resources.Alerts) {
+		if a := root.Resources.Alerts[name]; a != nil {
+			if err := visit(fn, visitArgs{
+				owner: a,
+				field: "file_path",
+				value: &a.FilePath,
+				mode:  TranslateModeLocalRelative,
+				path:  structpath.NewPath(resourcePath("alerts", name), "file_path"),
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
