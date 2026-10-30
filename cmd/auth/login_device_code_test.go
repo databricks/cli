@@ -483,7 +483,7 @@ func TestLoginDeviceCodeRequestsScopes(t *testing.T) {
 func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 	server := newDeviceCodeServer(t)
 	setUpDeviceCodeLogin(t, "")
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL))
 
 	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
@@ -518,7 +518,7 @@ func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
 		}
 	}
 	setUpDeviceCodeLogin(t, "")
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
 
 	err := runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "AAAA-AAAA", "--confirmation-code", "FTFA-QQKY")
@@ -572,7 +572,7 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 				}
 			}
 			setUpDeviceCodeLogin(t, "")
-			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+			ctx := cmdio.MockDiscard(t.Context())
 			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL, "--profile", "test"}, tt.startArgs...)...))
 
 			host := server.URL
