@@ -16,8 +16,8 @@ require (
 	github.com/databricks/databricks-sdk-go v0.191.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
-	github.com/databricks/sdk-go/files v0.2.0 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.2.0 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.3.0 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.3.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
