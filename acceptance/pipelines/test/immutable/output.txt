@@ -1,0 +1,53 @@
+
+>>> [CLI] pipelines deploy
+Created internal_immutable_snapshots.immutable
+Created pipelines.my_pipeline
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+
+=== Local test paths are not supported with workspace.sync_mode immutable
+>>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py::test_backfill
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: cannot resolve test selection "tests/test_orders.py::test_backfill": local test paths are not supported with workspace.sync_mode immutable; pass an absolute workspace path
+
+=== Absolute workspace paths and running all tests still work
+>>> [CLI] pipelines test my_pipeline /Workspace/Users/someone@example.com/tests/test_orders.py::test_backfill
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+>>> [CLI] pipelines test my_pipeline
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {
+      "test_selection": [
+        "/Workspace/Users/someone@example.com/tests/test_orders.py::test_backfill"
+      ]
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true
+  }
+}
