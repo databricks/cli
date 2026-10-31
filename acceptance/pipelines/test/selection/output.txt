@@ -7,7 +7,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 === Run all tests of the only pipeline
->>> [CLI] pipelines test
+>>> [CLI] pipelines test --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -25,7 +25,7 @@ Update: [UUID]
 }
 
 === Select tests by relative path and test ID, with pytest arguments in both --pytest-arg forms
->>> MSYS_NO_PATHCONV=1 [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/tests/test_other.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg -m --pytest-arg smoke,fast
+>>> [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/tests/test_other.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg -m --pytest-arg smoke,fast --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -56,7 +56,7 @@ Update: [UUID]
 }
 
 === Relative paths resolve from the working directory
->>> [CLI] pipelines test my_pipeline test_orders.py::test_valid_order
+>>> [CLI] pipelines test my_pipeline test_orders.py::test_valid_order --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
