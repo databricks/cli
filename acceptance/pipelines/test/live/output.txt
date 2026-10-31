@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipelines-test-live-[UNIQUE_NAME]/default/files...
+Created pipelines.orders
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Run the tests and wait for the results
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+<testcase classname="tests.test_orders" name="test_order_total"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.orders
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.orders
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipelines-test-live-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

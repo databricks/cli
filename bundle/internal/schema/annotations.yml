@@ -1592,6 +1592,26 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
+        "testing":
+          "description": |-
+            The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.
+          "x-databricks-launch-stage": |-
+            PRIVATE_PREVIEW
+          "$fields":
+            "environment":
+              "description": |-
+                The packages that only the tests need. Test-only updates install them in addition to the pipeline's `environment`. Other updates do not.
+              "$fields":
+                "dependencies":
+                  "description": |-
+                    A list of files that declare the packages the tests need: a project folder, a requirements file, or a wheel, in the workspace or a UC volume. A project folder can take `--editable` and an extra, for example `--editable ${workspace.file_path}[test]`. Package names and URLs are rejected.
+            "sources":
+              "description": |-
+                The workspace files and folders that hold the pipeline's tests. They must not overlap the pipeline's `libraries`.
+              "$fields":
+                "glob":
+                  "description": |-
+                    A test file, or a folder followed by `/**`.
         "trigger":
           "deprecation_message": |-
             Use continuous instead

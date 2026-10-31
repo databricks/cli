@@ -1,0 +1,2 @@
+# Runs only against the local test server.
+Cloud = false

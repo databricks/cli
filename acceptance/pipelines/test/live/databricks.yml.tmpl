@@ -1,0 +1,19 @@
+bundle:
+  name: test-pipelines-test-live-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    orders:
+      # The Pipelines API rejects duplicate names, so the name is unique per run.
+      name: test-pipelines-test-live-$UNIQUE_NAME
+      catalog: main
+      schema: default
+      serverless: true
+      root_path: .
+      libraries:
+        - file:
+            path: ./transformations/orders.py
+      testing:
+        sources:
+          - glob:
+              include: ./tests/**
