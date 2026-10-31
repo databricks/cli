@@ -555,7 +555,9 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		if noWait && timeout > 0 {
 			return errors.New("--timeout cannot be used with --no-wait")
 		}
-		if resumeUpdateID != "" {
+		// An empty --resume, such as from an unset shell variable, must not start a new run.
+		resume := cmd.Flags().Changed("resume")
+		if resume {
 			selectionCount := len(args)
 			if pipelineID == "" {
 				selectionCount = max(len(args)-1, 0)
@@ -583,7 +585,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 			if !bundle.HasRoot(ctx) {
 				return errors.New("outside a project, identify the pipeline with --pipeline-id")
 			}
-			target, err = resolveTestTargetInBundle(cmd, args, resumeUpdateID != "")
+			target, err = resolveTestTargetInBundle(cmd, args, resume)
 		}
 		if err != nil {
 			return err
@@ -594,7 +596,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		out := cmd.OutOrStdout()
 
 		updateID := resumeUpdateID
-		if updateID == "" {
+		if !resume {
 			req := newStartTestUpdateRequest(target.selections, pytestArgs)
 			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
 			if err != nil {
