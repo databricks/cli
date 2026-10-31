@@ -25,7 +25,7 @@ Update: [UUID]
 }
 
 === Select tests by relative path and test ID, with pytest arguments
->>> [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Shared/tests/test_shared.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg=-msmoke,fast
+>>> [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Shared/tests/test_shared.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg=-m --pytest-arg=smoke,fast
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -48,7 +48,8 @@ Update: [UUID]
       "pytest_args": [
         "-k",
         "orders and not slow",
-        "-msmoke,fast"
+        "-m",
+        "smoke,fast"
       ]
     }
   }

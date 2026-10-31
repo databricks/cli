@@ -6,7 +6,7 @@ trace $CLI pipelines test
 trace print_requests.py //updates
 
 title "Select tests by relative path and test ID, with pytest arguments"
-trace $CLI pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Shared/tests/test_shared.py --pytest-arg=-k --pytest-arg='orders and not slow' --pytest-arg=-msmoke,fast
+trace $CLI pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Shared/tests/test_shared.py --pytest-arg=-k --pytest-arg='orders and not slow' --pytest-arg=-m --pytest-arg=smoke,fast
 trace print_requests.py //updates
 
 title "--pytest-arg also takes its value as the next argument"
