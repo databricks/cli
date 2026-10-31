@@ -10,5 +10,9 @@ trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-x
 trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-k
 trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=tests/test_orders.py
 
+title "-k and -m take their value in the next --pytest-arg"
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-korders
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-k --pytest-arg=-m
+
 title "JSON output is not supported"
 trace musterr $CLI pipelines test --pipeline-id 1234 -o json

@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/shellquote"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -51,8 +52,8 @@ func newStartTestUpdateRequest(selection, pytestArgs []string) startTestUpdateRe
 
 const pytestArgHint = "pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'"
 
-// validatePytestArgs accepts only -k and -m, each with a value in the next argument or attached to it.
-// A value in the next argument cannot start with "-", because pytest reads it as an option.
+// validatePytestArgs accepts only -k and -m, each followed by its value in the next argument, as the API
+// requires. The value cannot be empty or start with "-", because pytest reads it as an option.
 func validatePytestArgs(args []string) error {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -61,11 +62,17 @@ func validatePytestArgs(args []string) error {
 			if i == len(args)-1 {
 				return fmt.Errorf("pytest argument %s requires a value: pass it in the next --pytest-arg", arg)
 			}
-			if next := args[i+1]; strings.HasPrefix(next, "-") {
+			next := args[i+1]
+			if strings.TrimSpace(next) == "" {
+				return fmt.Errorf("pytest argument %s requires a non-empty value", arg)
+			}
+			if strings.HasPrefix(next, "-") {
 				return fmt.Errorf("pytest argument %s requires a value, not %q: pass it in the next --pytest-arg", arg, next)
 			}
 			i++
 		case strings.HasPrefix(arg, "-k") || strings.HasPrefix(arg, "-m"):
+			option, value := arg[:2], strings.TrimPrefix(arg[2:], "=")
+			return fmt.Errorf("pytest argument %q must be split: pass --pytest-arg=%s --pytest-arg=%s", arg, option, shellquote.BashArg(value))
 		case !strings.HasPrefix(arg, "-"):
 			return fmt.Errorf("unsupported pytest argument %q: pass test paths and test IDs as TEST_SELECTION arguments", arg)
 		default:
@@ -320,7 +327,8 @@ pipeline's root_path. Paths that start with / are workspace paths. Without a
 selection, all of the pipeline's tests run.
 
 Each --pytest-arg passes one argument to pytest, in the order given. Only -k
-and -m are supported, for example:
+and -m are supported, each followed by its value in the next --pytest-arg, for
+example:
 
   databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'`,
 	}

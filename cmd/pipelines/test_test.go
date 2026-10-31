@@ -21,7 +21,10 @@ func TestValidatePytestArgs(t *testing.T) {
 	}{
 		{args: nil},
 		{args: []string{"-k", "orders and not slow", "-m", "smoke,fast"}},
-		{args: []string{"-korders", "-msmoke"}},
+		{args: []string{"-korders"}, wantErr: `pytest argument "-korders" must be split: pass --pytest-arg=-k --pytest-arg=orders`},
+		{args: []string{"-msmoke,fast"}, wantErr: `pytest argument "-msmoke,fast" must be split: pass --pytest-arg=-m --pytest-arg='smoke,fast'`},
+		{args: []string{"-k=orders and not slow"}, wantErr: `pytest argument "-k=orders and not slow" must be split: pass --pytest-arg=-k --pytest-arg='orders and not slow'`},
+		{args: []string{"-k", " "}, wantErr: "pytest argument -k requires a non-empty value"},
 		{args: []string{"-k", "-m"}, wantErr: `pytest argument -k requires a value, not "-m": pass it in the next --pytest-arg`},
 		{args: []string{"-m", "--maxfail=1"}, wantErr: `pytest argument -m requires a value, not "--maxfail=1": pass it in the next --pytest-arg`},
 		{args: []string{"-k"}, wantErr: "pytest argument -k requires a value: pass it in the next --pytest-arg"},
