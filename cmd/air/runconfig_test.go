@@ -984,12 +984,19 @@ func TestRunCommandHelp_NoConfigPath(t *testing.T) {
 // -h with a config path documents the field instead of the command, and does so
 // without the otherwise-required --file.
 func TestRunCommandHelp_ConfigPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_FUTURE","per_node_accelerator_count":16}]}`))
+	}))
+	t.Cleanup(srv.Close)
+
 	var out strings.Builder
 	cmd := newRunCommand()
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL)))
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"-h", "config.compute.accelerator_type"})
 	require.NoError(t, cmd.Execute())
 	assert.Contains(t, out.String(), "config.compute.accelerator_type")
+	assert.Contains(t, out.String(), "GPU_FUTURE - 16 accelerators per node")
 	assert.Contains(t, out.String(), "Type:     string")
 	assert.NotContains(t, out.String(), "Usage:")
 }

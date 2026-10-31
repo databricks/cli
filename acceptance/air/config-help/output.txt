@@ -75,7 +75,7 @@ config.compute
   Which accelerators to run on and how many.
 
   Supported accelerator types:
-    GPU_1xH100 - 1 accelerator per node [Private Preview]
+    GPU_1xH100 - 1 accelerator per node
     GPU_8xH100 - 8 accelerators per node
     GPU_1xRTX6000 - 1 accelerator per node
 
@@ -127,6 +127,11 @@ config.environment.version
 >>> [CLI] air run -h config.compute.accelerator_type
 config.compute.accelerator_type
   Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively.
+
+  Supported accelerator types:
+    GPU_1xH100 - 1 accelerator per node
+    GPU_8xH100 - 8 accelerators per node
+    GPU_1xRTX6000 - 1 accelerator per node
 
   Type:     string
   Required: no
