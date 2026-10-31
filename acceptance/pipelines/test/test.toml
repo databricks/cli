@@ -1,0 +1,3 @@
+RecordRequests = true
+Ignore = ['.databricks']
+Env.MSYS_NO_PATHCONV = "1"

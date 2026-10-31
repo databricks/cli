@@ -1,0 +1,21 @@
+trace $CLI pipelines test --help
+
+title "pytest arguments must be passed with --pytest-arg"
+trace musterr $CLI pipelines test --pipeline-id 1234 -k orders
+trace musterr $CLI pipelines test --pipeline-id 1234 -msmoke
+trace musterr $CLI pipelines test --pipeline-id 1234 -- -k orders
+
+title "Only -k and -m are supported"
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-x
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-k
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=tests/test_orders.py
+
+title "Incompatible run-control flags"
+trace musterr $CLI pipelines test --pipeline-id 1234 tests --resume 5678
+trace musterr $CLI pipelines test --pipeline-id 1234 --resume 5678 --pytest-arg=-msmoke
+trace musterr $CLI pipelines test --pipeline-id 1234 --resume 5678 --no-wait
+trace musterr $CLI pipelines test --pipeline-id 1234 --no-wait --timeout 10m
+trace musterr $CLI pipelines test --pipeline-id 1234 --no-wait --junit-xml report.xml
+
+title "JSON output is not supported"
+trace musterr $CLI pipelines test --pipeline-id 1234 -o json

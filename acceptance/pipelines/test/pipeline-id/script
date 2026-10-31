@@ -1,0 +1,29 @@
+pipeline_id=$($CLI pipelines create --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
+no_root_pipeline_id=$($CLI pipelines create --json '{"name": "no-root"}' | jq -r .pipeline_id)
+$CLI workspace import-dir orders /Workspace/Users/someone@example.com/orders &> LOG.import
+rm "$OUT_REQUESTS"
+
+title "Relative test selections resolve against the pipeline root_path"
+trace $CLI pipelines test --pipeline-id $pipeline_id tests/test_orders.py::test_backfill /Workspace/Shared/tests --no-wait
+trace print_requests.py //updates
+# Like the service, the test server rejects a new update while one is active.
+$CLI api post /api/2.0/pipelines/$pipeline_id/stop &>> LOG.stop
+rm "$OUT_REQUESTS"
+
+title "Test case IDs are shown relative to the pipeline root_path"
+trace $CLI pipelines test --pipeline-id $pipeline_id tests
+rm "$OUT_REQUESTS"
+
+title "Without a root_path, test selections must be workspace paths"
+trace musterr $CLI pipelines test --pipeline-id $no_root_pipeline_id tests
+trace $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Shared/tests/test_shared.py::test_x --no-wait
+trace print_requests.py //updates
+$CLI api post /api/2.0/pipelines/$no_root_pipeline_id/stop &>> LOG.stop
+rm "$OUT_REQUESTS"
+
+title "Without a root_path, test case IDs are absolute workspace paths"
+trace $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Users/someone@example.com/orders/tests/test_orders.py
+rm "$OUT_REQUESTS"
+
+title "Outside a project, --pipeline-id is required"
+trace musterr $CLI pipelines test tests

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="my_pipeline" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="pipelines test">
+      <error message="An active update &#39;[UUID]&#39; already exists for pipeline &#39;[UUID]&#39;.">An active update &#39;[UUID]&#39; already exists for pipeline &#39;[UUID]&#39;.</error>
+    </testcase>
+  </testsuite>
+</testsuites>

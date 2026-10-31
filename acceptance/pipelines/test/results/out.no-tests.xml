@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="my_pipeline" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="update [UUID]">
+      <error message="No tests were collected.">No tests were collected.</error>
+    </testcase>
+  </testsuite>
+</testsuites>
