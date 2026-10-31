@@ -24,3 +24,6 @@ trace musterr $CLI pipelines test tests/test_orders.py
 
 title "Test selections must be in the synchronized files"
 trace musterr $CLI pipelines test my_pipeline ../test_outside.py
+
+title "Relative test selections must exist locally"
+trace musterr $CLI pipelines test my_pipeline tests/test_ordrs.py::test_backfill

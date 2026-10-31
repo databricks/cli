@@ -96,64 +96,13 @@ func TestBundleWorkspacePath(t *testing.T) {
 	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+syncRoot)
 }
 
-func TestTestIDBase(t *testing.T) {
-	tests := []struct {
-		name     string
-		rootPath string
-		sources  []string
-		want     string
-	}{
-		{
-			name:     "deepest folder holding the root path and every test source",
-			rootPath: "/Workspace/Users/u/files/src/my_pipeline",
-			sources:  []string{"/Workspace/Users/u/files/tests/**", "/Workspace/Users/u/files/checks/test_x.py"},
-			want:     "/Workspace/Users/u/files",
-		},
-		{
-			name:     "root path that holds the test sources",
-			rootPath: "/Users/u/sl",
-			sources:  []string{"/Users/u/sl/tests/**"},
-			want:     "/Workspace/Users/u/sl",
-		},
-		{
-			name:    "without a root path, the folder of a file test source",
-			sources: []string{"/Workspace/Users/u/tests/test_x.py"},
-			want:    "/Workspace/Users/u/tests",
-		},
-		{
-			name:    "without a root path, the deepest folder holding the folders of every test source",
-			sources: []string{"/Workspace/Users/u/a/tests/**", "/Workspace/Users/u/b/tests/**"},
-			want:    "/Workspace/Users/u",
-		},
-		{
-			name:    "without a root path, the parent of a folder test source",
-			sources: []string{"/Workspace/Users/u/tests/**"},
-			want:    "/Workspace/Users/u",
-		},
-		{
-			name:     "root path without test sources",
-			rootPath: "/Workspace/Users/u/orders",
-			want:     "/Workspace/Users/u/orders",
-		},
-		{
-			name: "neither",
-			want: "",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, testIDBase(tc.rootPath, tc.sources))
-		})
-	}
-}
-
-func TestTestIDBasePath(t *testing.T) {
-	got, err := testIDBasePath("/Workspace/Users/someone/orders", "tests/test_orders.py")
+func TestRootPathSelection(t *testing.T) {
+	got, err := rootPathSelection("/Workspace/Users/someone/orders", "tests/test_orders.py")
 	require.NoError(t, err)
 	assert.Equal(t, "/Workspace/Users/someone/orders/tests/test_orders.py", got)
 
-	_, err = testIDBasePath("", "tests")
-	assert.EqualError(t, err, "the pipeline has no root_path or testing.sources; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
+	_, err = rootPathSelection("", "tests")
+	assert.EqualError(t, err, "the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
 }
 
 func TestBundleFilesRoot(t *testing.T) {
@@ -181,41 +130,33 @@ func TestBundleTestSelectionPath(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(syncRoot, "pipeline", "tests"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(syncRoot, "pipeline", "tests", "test_a.py"), nil, 0o644))
 	filesRoot := "/Workspace/Users/someone/.bundle/orders/dev/files"
-	base := filesRoot + "/pipeline"
 
-	// A path that exists where the user stands is a local path.
-	got, err := bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, filesRoot, base, "tests/test_a.py")
+	// A local path maps to its deployed path, relative to where the user stands.
+	got, err := bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, filesRoot, "tests/test_a.py")
 	require.NoError(t, err)
 	assert.Equal(t, filesRoot+"/pipeline/tests/test_a.py", got)
 
-	// Otherwise it is a test ID, relative to the folder that test IDs are relative to.
-	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, base, "tests/test_a.py")
+	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, "pipeline/tests")
 	require.NoError(t, err)
-	assert.Equal(t, filesRoot+"/pipeline/tests/test_a.py", got)
+	assert.Equal(t, filesRoot+"/pipeline/tests", got)
 
-	// Without that folder, it is a local path.
-	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, "", "tests/test_a.py")
-	require.NoError(t, err)
-	assert.Equal(t, filesRoot+"/tests/test_a.py", got)
+	// A path that does not exist locally is an error, so that a typo fails before compute starts.
+	_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, "tests/test_a.py")
+	assert.EqualError(t, err, filepath.ToSlash(filepath.Join(syncRoot, "tests", "test_a.py"))+" does not exist; pass a local path or an absolute workspace path")
 
-	// A path that leaves that folder is a local path too. The error shows forward slashes.
-	for _, testIDBase := range []string{base, ""} {
-		_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, testIDBase, filepath.Join("..", "tests"))
-		assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+filepath.ToSlash(syncRoot))
-	}
+	// A path outside the synchronized files is an error. The error shows forward slashes.
+	_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, filepath.Join("..", "tests"))
+	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+filepath.ToSlash(syncRoot))
 
-	// When the deployed path of local files is unknown, a local path is an error, but a test ID still works.
-	_, err = bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, "", base, "tests/test_a.py")
-	assert.EqualError(t, err, "local test paths are not supported with workspace.sync_mode immutable; pass the test ID that the results show or an absolute workspace path")
-	got, err = bundleTestSelectionPath(syncRoot, syncRoot, "", base, "tests/test_a.py")
-	require.NoError(t, err)
-	assert.Equal(t, filesRoot+"/pipeline/tests/test_a.py", got)
+	// When the deployed path of local files is unknown, a local path is an error.
+	_, err = bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, "", "tests/test_a.py")
+	assert.EqualError(t, err, "local test paths are not supported with workspace.sync_mode immutable; pass an absolute workspace path")
 }
 
-func TestNeedsTestIDBase(t *testing.T) {
-	assert.False(t, needsTestIDBase(nil))
-	assert.False(t, needsTestIDBase([]string{"/Workspace/tests", "/Workspace/a.py::test_x"}))
-	assert.True(t, needsTestIDBase([]string{"/Workspace/tests", "tests/test_a.py::test_x"}))
+func TestHasRelativeSelection(t *testing.T) {
+	assert.False(t, hasRelativeSelection(nil))
+	assert.False(t, hasRelativeSelection([]string{"/Workspace/tests", "/Workspace/a.py::test_x"}))
+	assert.True(t, hasRelativeSelection([]string{"/Workspace/tests", "tests/test_a.py::test_x"}))
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {

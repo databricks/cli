@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -136,24 +137,29 @@ func bundleFilesRoot(b *bundle.Bundle) string {
 	}
 }
 
-// bundleTestSelectionPath maps a relative selection to a workspace path. A path that exists locally,
-// relative to the working directory, maps to its deployed path under filesRoot. Otherwise the
-// selection is a test ID that the CLI printed, relative to testIDBase, unless it leaves the working
-// directory.
-func bundleTestSelectionPath(cwd, syncRoot, filesRoot, testIDBase, localPath string) (string, error) {
-	rel := path.Clean(filepath.ToSlash(localPath))
-	leavesCwd := rel == ".." || strings.HasPrefix(rel, "../")
-	if _, err := os.Stat(filepath.Join(cwd, localPath)); err != nil && !leavesCwd && testIDBase != "" {
-		return testIDBasePath(testIDBase, localPath)
-	}
+// bundleTestSelectionPath maps a local path, relative to the working directory, to its deployed path
+// under filesRoot. The path must exist locally, so that a typo fails before compute starts.
+func bundleTestSelectionPath(cwd, syncRoot, filesRoot, localPath string) (string, error) {
 	if filesRoot == "" {
-		return "", errors.New("local test paths are not supported with workspace.sync_mode immutable; pass the test ID that the results show or an absolute workspace path")
+		return "", errors.New("local test paths are not supported with workspace.sync_mode immutable; pass an absolute workspace path")
 	}
-	return bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath)
+	workspacePath, err := bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath)
+	if err != nil {
+		return "", err
+	}
+	if !filepath.IsAbs(localPath) {
+		localPath = filepath.Join(cwd, localPath)
+	}
+	if _, err := os.Stat(localPath); errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("%s does not exist; pass a local path or an absolute workspace path", filepath.ToSlash(localPath))
+	} else if err != nil {
+		return "", err
+	}
+	return workspacePath, nil
 }
 
-// needsTestIDBase reports whether a selection is a relative path, which may be a test ID.
-func needsTestIDBase(selections []string) bool {
+// hasRelativeSelection reports whether a selection is a relative path.
+func hasRelativeSelection(selections []string) bool {
 	for _, selection := range selections {
 		if p, _, _ := strings.Cut(selection, "::"); !strings.HasPrefix(p, "/") {
 			return true
@@ -162,95 +168,24 @@ func needsTestIDBase(selections []string) bool {
 	return false
 }
 
-// testIDBase returns the folder that the service names test cases relative to, or "" if the
-// pipeline has neither a root_path nor test sources. pytest runs with this folder as its rootdir:
-// the deepest folder that holds the root path and every test source or, without a root path, the
-// folder of every test source.
-func testIDBase(rootPath string, sources []string) string {
-	var folders [][]string
-	if rootPath != "" {
-		folders = append(folders, pathSegments(normalizeWorkspacePath(rootPath)))
+// rootPathSelection resolves a relative path against the pipeline's root_path.
+func rootPathSelection(rootPath, relPath string) (string, error) {
+	if rootPath == "" {
+		return "", errors.New("the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
 	}
-	for _, source := range sources {
-		segments := pathSegments(normalizeWorkspacePath(strings.TrimSuffix(source, "/**")))
-		if rootPath == "" && len(segments) > 0 {
-			segments = segments[:len(segments)-1]
-		}
-		folders = append(folders, segments)
-	}
-	if len(folders) == 0 {
-		return ""
-	}
-	common := folders[0]
-	for _, folder := range folders[1:] {
-		n := 0
-		for n < len(common) && n < len(folder) && common[n] == folder[n] {
-			n++
-		}
-		common = common[:n]
-	}
-	return "/" + strings.Join(common, "/")
+	return path.Join(rootPath, filepath.ToSlash(relPath)), nil
 }
 
-// normalizeWorkspacePath adds the /Workspace prefix to an absolute path without it, as the service does.
-func normalizeWorkspacePath(p string) string {
-	if strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "/Workspace") {
-		return "/Workspace" + p
-	}
-	return p
-}
-
-func pathSegments(p string) []string {
-	var segments []string
-	for segment := range strings.SplitSeq(p, "/") {
-		if segment != "" {
-			segments = append(segments, segment)
-		}
-	}
-	return segments
-}
-
-// testIDBasePath resolves a relative path against the folder that test IDs are relative to.
-func testIDBasePath(base, relPath string) (string, error) {
-	if base == "" {
-		return "", errors.New("the pipeline has no root_path or testing.sources; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
-	}
-	return path.Join(base, filepath.ToSlash(relPath)), nil
-}
-
-// pipelineTestPaths holds the fields of a Get Pipeline response that decide the folder of test IDs.
-// The Go SDK has no spec.testing yet, so the response is decoded from the raw API call.
-type pipelineTestPaths struct {
-	Spec struct {
-		RootPath string `json:"root_path"`
-		Testing  struct {
-			Sources []struct {
-				Glob struct {
-					Include string `json:"include"`
-				} `json:"glob"`
-			} `json:"sources"`
-		} `json:"testing"`
-	} `json:"spec"`
-}
-
-// getTestIDBase reads the deployed pipeline and returns the folder that its test IDs are relative to.
-func getTestIDBase(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		return "", fmt.Errorf("failed to create API client: %w", err)
-	}
-	var response pipelineTestPaths
-	err = apiClient.Do(ctx, http.MethodGet, "/api/2.0/pipelines/"+pipelineID, auth.WorkspaceIDHeaders(w.Config), nil, nil, &response)
+// getRootPath reads the root_path of the deployed pipeline.
+func getRootPath(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
+	pipeline, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineID})
 	if err != nil {
 		return "", err
 	}
-	var sources []string
-	for _, source := range response.Spec.Testing.Sources {
-		if source.Glob.Include != "" {
-			sources = append(sources, source.Glob.Include)
-		}
+	if pipeline.Spec == nil {
+		return "", nil
 	}
-	return testIDBase(response.Spec.RootPath, sources), nil
+	return pipeline.Spec.RootPath, nil
 }
 
 // startTestUpdate starts a test-only update and returns its ID.
@@ -293,14 +228,6 @@ func (t testTarget) printHeader(out io.Writer, updateID string) {
 	fmt.Fprintf(out, "Update: %s\n", updateID)
 }
 
-// readTestIDBase reads the folder of test IDs from the deployed pipeline, if a selection needs it.
-func readTestIDBase(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, selections []string) (string, error) {
-	if !needsTestIDBase(selections) {
-		return "", nil
-	}
-	return getTestIDBase(ctx, w, pipelineID)
-}
-
 // resolveTestTargetByID identifies the pipeline by --pipeline-id; all positional arguments are selections.
 func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string) (testTarget, error) {
 	if cmd.Flag("target").Value.String() == "" {
@@ -312,12 +239,16 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 
-	base, err := readTestIDBase(ctx, w, pipelineID, args)
-	if err != nil {
-		return testTarget{}, err
+	var rootPath string
+	if hasRelativeSelection(args) {
+		var err error
+		rootPath, err = getRootPath(ctx, w, pipelineID)
+		if err != nil {
+			return testTarget{}, err
+		}
 	}
 	selections, err := resolveTestSelections(args, func(p string) (string, error) {
-		return testIDBasePath(base, p)
+		return rootPathSelection(rootPath, p)
 	})
 	if err != nil {
 		return testTarget{}, err
@@ -359,19 +290,14 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 	if len(args) > 1 {
 		selectionArgs = args[1:]
 	}
-	w := b.WorkspaceClient(ctx)
-	base, err := readTestIDBase(ctx, w, pipelineID, selectionArgs)
-	if err != nil {
-		return testTarget{}, err
-	}
 	filesRoot := bundleFilesRoot(b)
 	selections, err := resolveTestSelections(selectionArgs, func(p string) (string, error) {
-		return bundleTestSelectionPath(cwd, b.SyncRootPath, filesRoot, base, p)
+		return bundleTestSelectionPath(cwd, b.SyncRootPath, filesRoot, p)
 	})
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: w}, nil
+	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx)}, nil
 }
 
 func testCommand() *cobra.Command {
@@ -387,11 +313,11 @@ Outside a project, identify the pipeline with --pipeline-id; all positional
 arguments are then test selections.
 
 TEST_SELECTION is a test directory, file, or pytest test ID, for example
-tests/test_orders.py::test_backfill. A relative path that exists locally is
-converted to its deployed workspace path. Any other relative path is a test ID
-as the results show it: relative to the deepest folder that holds the
-pipeline's root_path and its test sources. Paths that start with / are
-workspace paths. Without a selection, all of the pipeline's tests run.
+tests/test_orders.py::test_backfill. In a project, a relative path is a local
+path, relative to the working directory, and is converted to its deployed
+workspace path. With --pipeline-id, a relative path is relative to the
+pipeline's root_path. Paths that start with / are workspace paths. Without a
+selection, all of the pipeline's tests run.
 
 Each --pytest-arg passes one argument to pytest, in the order given. Only -k
 and -m are supported, for example:

@@ -114,3 +114,11 @@ Recommendation: This command runs the last deployed version of the code
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
 Error: cannot resolve test selection "../test_outside.py": [TEST_TMP_DIR]_PARENT/test_outside.py is outside the synchronized bundle files in [TEST_TMP_DIR]
+
+=== Relative test selections must exist locally
+>>> musterr [CLI] pipelines test my_pipeline tests/test_ordrs.py::test_backfill
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: cannot resolve test selection "tests/test_ordrs.py::test_backfill": [TEST_TMP_DIR]/tests/test_ordrs.py does not exist; pass a local path or an absolute workspace path
