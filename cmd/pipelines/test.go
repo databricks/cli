@@ -652,7 +652,7 @@ names the cause.`,
 				return report.failed(ctx, err)
 			}
 		} else if err := checkTestUpdate(ctx, target.w, target.pipelineID, updateID); err != nil {
-			return err
+			return report.failed(ctx, err)
 		}
 		target.printHeader(out, updateID)
 		if noWait {
