@@ -1,0 +1,18 @@
+title "Create foo/bar.txt\n"
+mkdir src/foo
+touch src/foo/bar.txt
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Delete foo/bar.txt and the foo folder\n"
+rm -r src/foo
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Create a file named foo where the folder used to be\n"
+touch src/foo
+sync_once
+trace remote_tree
+trace snapshot_files
