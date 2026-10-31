@@ -30,3 +30,8 @@ trace musterr $CLI pipelines test my_pipeline tests/test_orders.py
 title "Stopping the pipeline cancels the test update"
 trace $CLI pipelines stop my_pipeline
 trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id
+
+title "--resume rejects an update that is not a test update"
+pipeline_id=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_pipeline.id')
+regular_update_id=$($CLI pipelines start-update $pipeline_id | jq -r .update_id)
+trace musterr $CLI pipelines test my_pipeline --resume $regular_update_id

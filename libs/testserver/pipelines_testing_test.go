@@ -27,7 +27,19 @@ func startTestUpdate(t *testing.T, workspace *FakeWorkspace, pipelineID, body st
 }
 
 func getUpdateState(workspace *FakeWorkspace, pipelineID, updateID string) pipelines.UpdateInfoState {
-	return workspace.PipelineGetUpdate(pipelineID, updateID).Body.(pipelines.GetUpdateResponse).Update.State
+	return workspace.PipelineGetUpdate(pipelineID, updateID).Body.(fakeGetUpdateResponse).Update.State
+}
+
+func TestPipelineGetUpdateReportsTestOnly(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipelineWithTests(t, workspace)
+
+	testUpdateID := startTestUpdate(t, workspace, pipelineID, `{"test_only": true}`)
+	assert.True(t, workspace.PipelineGetUpdate(pipelineID, testUpdateID).Body.(fakeGetUpdateResponse).Update.TestOnly)
+
+	workspace.PipelineStop(pipelineID)
+	updateID := startTestUpdate(t, workspace, pipelineID, `{}`)
+	assert.False(t, workspace.PipelineGetUpdate(pipelineID, updateID).Body.(fakeGetUpdateResponse).Update.TestOnly)
 }
 
 func listEvents(t *testing.T, workspace *FakeWorkspace, pipelineID string, query url.Values) ([]fakePipelineEvent, string) {

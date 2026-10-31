@@ -25,6 +25,7 @@ const (
 // fakePipelineUpdate is a pipeline update whose state advances by one step on each Get Update call.
 type fakePipelineUpdate struct {
 	pipelineID string
+	testOnly   bool
 	states     []pipelines.UpdateInfoState
 	polls      int
 
@@ -189,6 +190,7 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 	)
 	update := &fakePipelineUpdate{
 		pipelineID: pipelineID,
+		testOnly:   true,
 		states:     []pipelines.UpdateInfoState{pipelines.UpdateInfoStateWaitingForResources, pipelines.UpdateInfoStateRunning},
 	}
 
