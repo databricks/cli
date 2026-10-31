@@ -87,8 +87,12 @@ Error: --resume "5678' OR '1'='1" is not an update ID; pass the update ID that p
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 
 Error: --resume "" is not an update ID; pass the update ID that pipelines test printed
 
->>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --junit-xml report.xml
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --junit-xml out.no-wait.xml
 Error: --junit-xml cannot be used with --no-wait because no results are available when the command returns
+
+=== An invalid flag replaces an older report
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x --junit-xml out.flag-error.xml
+Error: unsupported pytest argument "-x": only -k and -m are supported
 
 === JSON output is not supported
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json

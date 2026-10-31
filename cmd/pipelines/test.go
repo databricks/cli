@@ -593,48 +593,54 @@ names the cause.`,
 		if enabled, _ := env.GetBool(cmd.Context(), pipelinesTestEnvVar); !enabled {
 			return fmt.Errorf("pipelines test is experimental. Set %s=true to enable it", pipelinesTestEnvVar)
 		}
-		if cmd.ArgsLenAtDash() >= 0 {
-			return errors.New("the -- separator is not supported: " + pytestArgHint)
-		}
-		if root.OutputType(cmd) != flags.OutputText {
-			return fmt.Errorf("--output %s is not supported by pipelines test", root.OutputType(cmd))
-		}
-		if err := validatePytestArgs(pytestArgs); err != nil {
-			return err
-		}
-		if timeout < 0 {
-			return errors.New("--timeout must not be negative")
-		}
-		if noWait && timeout > 0 {
-			return errors.New("--timeout cannot be used with --no-wait")
-		}
-		if noWait && junitPath != "" {
-			return errors.New("--junit-xml cannot be used with --no-wait because no results are available when the command returns")
-		}
 		// An empty --resume, such as from an unset shell variable, must not start a new run.
 		resume := cmd.Flags().Changed("resume")
-		if resume {
-			selectionCount := len(args)
-			if pipelineID == "" {
-				selectionCount = max(len(args)-1, 0)
+		checkFlags := func() error {
+			if cmd.ArgsLenAtDash() >= 0 {
+				return errors.New("the -- separator is not supported: " + pytestArgHint)
 			}
-			switch {
-			case noWait:
-				return errors.New("--resume cannot be used with --no-wait")
-			case len(pytestArgs) > 0:
-				return errors.New("--resume cannot be used with --pytest-arg")
-			case selectionCount > 0:
-				return errors.New("--resume cannot be used with test selections")
+			if root.OutputType(cmd) != flags.OutputText {
+				return fmt.Errorf("--output %s is not supported by pipelines test", root.OutputType(cmd))
 			}
-			if _, err := uuid.Parse(resumeUpdateID); err != nil {
-				return fmt.Errorf("--resume %q is not an update ID; pass the update ID that pipelines test printed", resumeUpdateID)
+			if err := validatePytestArgs(pytestArgs); err != nil {
+				return err
 			}
+			if timeout < 0 {
+				return errors.New("--timeout must not be negative")
+			}
+			if noWait && timeout > 0 {
+				return errors.New("--timeout cannot be used with --no-wait")
+			}
+			if noWait && junitPath != "" {
+				return errors.New("--junit-xml cannot be used with --no-wait because no results are available when the command returns")
+			}
+			if resume {
+				selectionCount := len(args)
+				if pipelineID == "" {
+					selectionCount = max(len(args)-1, 0)
+				}
+				switch {
+				case noWait:
+					return errors.New("--resume cannot be used with --no-wait")
+				case len(pytestArgs) > 0:
+					return errors.New("--resume cannot be used with --pytest-arg")
+				case selectionCount > 0:
+					return errors.New("--resume cannot be used with test selections")
+				}
+				if _, err := uuid.Parse(resumeUpdateID); err != nil {
+					return fmt.Errorf("--resume %q is not an update ID; pass the update ID that pipelines test printed", resumeUpdateID)
+				}
+			}
+			return nil
 		}
 
-		// From here on, every exit writes the report, so that an older report never survives.
+		// Every exit writes the report, so that an older report never survives.
 		report := &testReport{path: junitPath, out: cmd.OutOrStdout(), suiteName: pipelineID}
 		if report.suiteName == "" && len(args) > 0 {
 			report.suiteName = args[0]
+		}
+		if err := checkFlags(); err != nil {
+			return report.failed(cmd.Context(), err)
 		}
 
 		var target testTarget
