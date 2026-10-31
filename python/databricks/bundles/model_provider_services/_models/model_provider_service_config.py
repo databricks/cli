@@ -71,9 +71,10 @@ class ModelProviderServiceConfig:
 
     allow_all_targets: VariableOrOptional[bool] = None
     """
-    When true, accepts any model exposed by the upstream provider; `targets`
-    is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable. Defaults to false.
+    When true, allows models from the provider's built-in model catalog in
+    addition to explicit `targets`. When false, only models listed in `targets`
+    are routable. Defaults to false. CUSTOM providers have no built-in model
+    catalog and must leave this false and list their models in `targets`.
     """
 
     amazon_bedrock: VariableOrOptional[
@@ -191,8 +192,9 @@ class ModelProviderServiceConfig:
     entry must include at least one `native_api_types` value. When
     `allow_all_targets` is false, at least one entry is required and model
     service destinations can reference only listed models. When
-    `allow_all_targets` is true, any upstream model is routable; entries in
-    this list provide API-type metadata without restricting other models.
+    `allow_all_targets` is true, models from the provider's built-in model
+    catalog are also routable. CUSTOM providers must explicitly list their
+    models here and cannot enable `allow_all_targets`.
     """
 
     @classmethod
@@ -208,9 +210,10 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
 
     allow_all_targets: VariableOrOptional[bool]
     """
-    When true, accepts any model exposed by the upstream provider; `targets`
-    is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable. Defaults to false.
+    When true, allows models from the provider's built-in model catalog in
+    addition to explicit `targets`. When false, only models listed in `targets`
+    are routable. Defaults to false. CUSTOM providers have no built-in model
+    catalog and must leave this false and list their models in `targets`.
     """
 
     amazon_bedrock: VariableOrOptional[
@@ -326,8 +329,9 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
     entry must include at least one `native_api_types` value. When
     `allow_all_targets` is false, at least one entry is required and model
     service destinations can reference only listed models. When
-    `allow_all_targets` is true, any upstream model is routable; entries in
-    this list provide API-type metadata without restricting other models.
+    `allow_all_targets` is true, models from the provider's built-in model
+    catalog are also routable. CUSTOM providers must explicitly list their
+    models here and cannot enable `allow_all_targets`.
     """
 
 
