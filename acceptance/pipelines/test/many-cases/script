@@ -1,0 +1,9 @@
+trace $CLI pipelines deploy
+rm "$OUT_REQUESTS"
+
+title "Every case is counted once across pages, polls, and the final read"
+$CLI pipelines test my_pipeline &> LOG.many
+trace tail -n 1 LOG.many
+print_requests.py --get //events --oneline > LOG.events
+echo "Event pages read: $(wc -l < LOG.events | tr -d ' ')"
+echo "Pages read with page_token: $(grep -c page_token LOG.events)"

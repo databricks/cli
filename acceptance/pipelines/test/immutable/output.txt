@@ -15,7 +15,7 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 Error: cannot resolve test selection "tests/test_orders.py::test_backfill": local test paths are not supported with workspace.sync_mode immutable; pass an absolute workspace path
 
 === Absolute workspace paths and running all tests still work
->>> [CLI] pipelines test my_pipeline /Workspace/Users/someone@example.com/tests/test_orders.py::test_backfill
+>>> [CLI] pipelines test my_pipeline /Workspace/Users/someone@example.com/tests/test_orders.py::test_backfill --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -23,7 +23,7 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 
->>> [CLI] pipelines test my_pipeline
+>>> [CLI] pipelines test my_pipeline --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.

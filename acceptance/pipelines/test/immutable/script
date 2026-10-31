@@ -5,6 +5,8 @@ title "Local test paths are not supported with workspace.sync_mode immutable"
 trace musterr $CLI pipelines test my_pipeline tests/test_orders.py::test_backfill
 
 title "Absolute workspace paths and running all tests still work"
-trace $CLI pipelines test my_pipeline /Workspace/Users/someone@example.com/tests/test_orders.py::test_backfill
-trace $CLI pipelines test my_pipeline
+trace $CLI pipelines test my_pipeline /Workspace/Users/someone@example.com/tests/test_orders.py::test_backfill --no-wait
+# Like the service, the test server rejects a new update while one is active.
+$CLI pipelines stop my_pipeline &>> LOG.stop
+trace $CLI pipelines test my_pipeline --no-wait
 trace print_requests.py //updates

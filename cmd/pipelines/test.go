@@ -8,9 +8,12 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -264,7 +267,7 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 }
 
 // resolveTestTargetInBundle identifies the pipeline by its bundle KEY, which must precede any selections.
-func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, error) {
+func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (testTarget, error) {
 	var key string
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 		PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
@@ -287,7 +290,9 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 	if err != nil {
 		return testTarget{}, err
 	}
-	suggestPipelineDeploy(ctx, cmd)
+	if !resume {
+		suggestPipelineDeploy(ctx, cmd)
+	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -306,6 +311,117 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 	}
 	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx)}, nil
 }
+
+// resumeCommand returns the command that reads the result of the update later.
+func (t testTarget) resumeCommand(cmd *cobra.Command, updateID string) string {
+	parts := []string{cmd.CommandPath()}
+	if t.key != "" {
+		parts = append(parts, shellquote.BashArg(t.key))
+	} else {
+		parts = append(parts, "--pipeline-id", shellquote.BashArg(t.pipelineID))
+	}
+	// Quoted so that the command can be pasted into a shell as is.
+	if target := cmd.Flag("target").Value.String(); target != "" {
+		parts = append(parts, "--target", shellquote.BashArg(target))
+	}
+	if profile := cmd.Flag("profile").Value.String(); profile != "" {
+		parts = append(parts, "--profile", shellquote.BashArg(profile))
+	}
+	return strings.Join(append(parts, "--resume", updateID), " ")
+}
+
+const testPollInterval = time.Second
+
+// testWatcher follows a test update and prints its cases as they finish.
+type testWatcher struct {
+	w          *databricks.WorkspaceClient
+	pipelineID string
+	updateID   string
+	events     *testEventReader
+	printer    *testProgressPrinter
+	run        *testRun
+}
+
+func (tw *testWatcher) addEvents(events []testPipelineEvent) {
+	for _, e := range events {
+		if c := tw.run.add(e); c != nil {
+			tw.printer.caseFinished(c)
+		}
+	}
+}
+
+// watch polls the update until it ends and returns its final state.
+func (tw *testWatcher) watch(ctx context.Context) (pipelines.UpdateInfoState, error) {
+	lastTimestamp := ""
+	for {
+		response, err := tw.w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
+			PipelineId: tw.pipelineID,
+			UpdateId:   tw.updateID,
+		})
+		if err != nil {
+			return "", err
+		}
+		if response.Update == nil {
+			return "", fmt.Errorf("no update found with id %s for pipeline %s", tw.updateID, tw.pipelineID)
+		}
+		state := response.Update.State
+		tw.printer.updateState(state)
+
+		// Reading from the last timestamp returns its events again; the run ignores duplicates.
+		events, err := tw.events.read(ctx, lastTimestamp)
+		if err != nil {
+			return "", err
+		}
+		if len(events) > 0 {
+			lastTimestamp = events[len(events)-1].Timestamp
+		}
+		tw.addEvents(events)
+
+		switch state {
+		case pipelines.UpdateInfoStateCompleted, pipelines.UpdateInfoStateFailed, pipelines.UpdateInfoStateCanceled:
+			// Events can become readable after later ones, so read all of them once more.
+			events, err := tw.events.read(ctx, "")
+			if err != nil {
+				return "", err
+			}
+			tw.addEvents(events)
+			return state, nil
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(testPollInterval):
+		}
+	}
+}
+
+// testRunError returns the error the command exits with after the update ended, or nil
+// if every collected test passed or was skipped.
+func testRunError(updateID string, state pipelines.UpdateInfoState, run *testRun, incompleteReason string) error {
+	if incompleteReason == "" {
+		summary := run.summaries[0]
+		testsFailed := summary.Total == 0 || summary.Failed > 0 || summary.Errors > 0
+		if !testsFailed && state == pipelines.UpdateInfoStateCompleted {
+			return nil
+		}
+		// A test update fails when its tests fail; the printed result explains it, unless the
+		// update ended in another way or reports an error of its own. The service's own verdict,
+		// such as "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed", is not.
+		if testsFailed && state == pipelines.UpdateInfoStateFailed && run.fatalError == "" {
+			return root.ErrAlreadyPrinted
+		}
+	} else if state == pipelines.UpdateInfoStateCompleted {
+		return root.ErrAlreadyPrinted
+	}
+	if updateError := run.updateError(); updateError != "" {
+		return fmt.Errorf("update %s is %s: %s", updateID, state, updateError)
+	}
+	return fmt.Errorf("update %s is %s", updateID, state)
+}
+
+var errTestWaitTimeout = errors.New("test wait timed out")
 
 func testCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -330,15 +446,26 @@ Each --pytest-arg passes one argument to pytest, in the order given. Only -k
 and -m are supported, each followed by its value in the next --pytest-arg, for
 example:
 
-  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'`,
+  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
+
+The command waits for the results and succeeds only if at least one test ran
+and none failed or errored. --no-wait returns after the update starts.
+--timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
+to read the results later. To stop the update, run 'pipelines stop'.`,
 	}
 
 	var pipelineID string
 	var pytestArgs []string
+	var noWait bool
+	var timeout time.Duration
+	var resumeUpdateID string
 
 	testGroup := cmdgroup.NewFlagGroup("Pipeline Test")
 	testGroup.FlagSet().StringVar(&pipelineID, "pipeline-id", "", "ID of the pipeline to test, instead of a PIPELINE_KEY.")
 	testGroup.FlagSet().StringArrayVar(&pytestArgs, "pytest-arg", nil, "Argument to pass to pytest (repeatable). Only -k and -m are supported.")
+	testGroup.FlagSet().BoolVar(&noWait, "no-wait", false, "Return after the test update starts, without waiting for results.")
+	testGroup.FlagSet().DurationVar(&timeout, "timeout", 0, "Stop waiting for results after this duration, for example 30m. The update keeps running.")
+	testGroup.FlagSet().StringVar(&resumeUpdateID, "resume", "", "Read the results of an existing test update instead of starting one.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(testGroup)
@@ -355,6 +482,26 @@ example:
 		if err := validatePytestArgs(pytestArgs); err != nil {
 			return err
 		}
+		if timeout < 0 {
+			return errors.New("--timeout must not be negative")
+		}
+		if noWait && timeout > 0 {
+			return errors.New("--timeout cannot be used with --no-wait")
+		}
+		if resumeUpdateID != "" {
+			selectionCount := len(args)
+			if pipelineID == "" {
+				selectionCount = max(len(args)-1, 0)
+			}
+			switch {
+			case noWait:
+				return errors.New("--resume cannot be used with --no-wait")
+			case len(pytestArgs) > 0:
+				return errors.New("--resume cannot be used with --pytest-arg")
+			case selectionCount > 0:
+				return errors.New("--resume cannot be used with test selections")
+			}
+		}
 
 		var target testTarget
 		var err error
@@ -366,20 +513,63 @@ example:
 			if !bundle.HasRoot(ctx) {
 				return errors.New("outside a project, identify the pipeline with --pipeline-id")
 			}
-			target, err = resolveTestTargetInBundle(cmd, args)
+			target, err = resolveTestTargetInBundle(cmd, args, resumeUpdateID != "")
 		}
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
+		// The CLI root doesn't cancel the context on signals, so stop waiting here.
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		out := cmd.OutOrStdout()
 
-		req := newStartTestUpdateRequest(target.selections, pytestArgs)
-		updateID, err := startTestUpdate(ctx, target.w, target.pipelineID, req)
+		updateID := resumeUpdateID
+		if updateID == "" {
+			req := newStartTestUpdateRequest(target.selections, pytestArgs)
+			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
+			if err != nil {
+				return err
+			}
+		}
+		target.printHeader(out, updateID)
+		if noWait {
+			return nil
+		}
+
+		events, err := newTestEventReader(target.w, target.pipelineID, updateID)
 		if err != nil {
 			return err
 		}
-		target.printHeader(cmd.OutOrStdout(), updateID)
-		return nil
+		watcher := &testWatcher{
+			w:          target.w,
+			pipelineID: target.pipelineID,
+			updateID:   updateID,
+			events:     events,
+			printer:    &testProgressPrinter{out: out},
+			run:        newTestRun(),
+		}
+
+		waitCtx := ctx
+		if timeout > 0 {
+			var cancel context.CancelFunc
+			waitCtx, cancel = context.WithTimeoutCause(ctx, timeout, errTestWaitTimeout)
+			defer cancel()
+		}
+		state, err := watcher.watch(waitCtx)
+		if err != nil {
+			if waitCtx.Err() == nil {
+				return err
+			}
+			resume := target.resumeCommand(cmd, updateID)
+			if errors.Is(context.Cause(waitCtx), errTestWaitTimeout) {
+				return fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, timeout, resume)
+			}
+			return fmt.Errorf("stopped waiting for update %s; the update keeps running, to get its results run: %s", updateID, resume)
+		}
+
+		incompleteReason := watcher.run.incompleteReason(state)
+		renderTestResult(out, watcher.run, incompleteReason)
+		return testRunError(updateID, state, watcher.run, incompleteReason)
 	}
 
 	return cmd
