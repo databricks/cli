@@ -9,11 +9,11 @@ Outside a project, identify the pipeline with --pipeline-id; all positional
 arguments are then test selections.
 
 TEST_SELECTION is a test directory, file, or pytest test ID, for example
-tests/test_orders.py::test_backfill. A relative path that exists locally is
-converted to its deployed workspace path. Any other relative path is a test ID
-as the results show it: relative to the deepest folder that holds the
-pipeline's root_path and its test sources. Paths that start with / are
-workspace paths. Without a selection, all of the pipeline's tests run.
+tests/test_orders.py::test_backfill. In a project, a relative path is a local
+path, relative to the working directory, and is converted to its deployed
+workspace path. With --pipeline-id, a relative path is relative to the
+pipeline's root_path. Paths that start with / are workspace paths. Without a
+selection, all of the pipeline's tests run.
 
 Each --pytest-arg passes one argument to pytest, in the order given. Only -k
 and -m are supported, for example:
