@@ -181,6 +181,14 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string, body []byte) Resp
 			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "test_options requires test_only to be true."},
 		}
 	}
+	if test.TestOptions != nil {
+		if message := pipelineTestOptionsError(test.TestOptions.PytestArgs, test.TestOptions.TestSelection); message != "" {
+			return Response{
+				StatusCode: 400,
+				Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": message},
+			}
+		}
+	}
 
 	updateId := nextUUID()
 	update := &fakePipelineUpdate{

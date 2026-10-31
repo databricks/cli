@@ -105,6 +105,31 @@ type pipelineTestRequest struct {
 
 var pipelineTestFunctionRegexp = regexp.MustCompile(`(?m)^def (test_\w+)\(`)
 
+// pipelineTestOptionsError returns the service's message for test options that it rejects, or "". Like
+// PipelineTestSelection in the service, pytest_args holds -k and -m, each followed by a value that is not
+// empty and does not start with "-", and each test selection is an absolute workspace path.
+func pipelineTestOptionsError(pytestArgs, selection []string) string {
+	for i := 0; i < len(pytestArgs); i += 2 {
+		option := pytestArgs[i]
+		switch {
+		case option != "-k" && option != "-m":
+			return fmt.Sprintf("pytest_args accepts only -k and -m, each followed by its value. Got '%s'.", option)
+		case i+1 == len(pytestArgs):
+			return fmt.Sprintf("The pytest_args option '%s' must be followed by its value.", option)
+		case strings.TrimSpace(pytestArgs[i+1]) == "":
+			return fmt.Sprintf("The value of the pytest_args option '%s' must not be empty.", option)
+		case strings.HasPrefix(pytestArgs[i+1], "-"):
+			return fmt.Sprintf("The value of the pytest_args option '%s' must not start with '-'. Got '%s'.", option, pytestArgs[i+1])
+		}
+	}
+	for _, entry := range selection {
+		if p, _, _ := strings.Cut(strings.TrimSpace(entry), "::"); !strings.HasPrefix(p, "/") {
+			return fmt.Sprintf("The test selection '%s' must be an absolute workspace path, such as /Workspace/Users/someone@example.com/orders/tests/test_orders.py.", entry)
+		}
+	}
+	return ""
+}
+
 // collectPipelineTests stands in for pytest collection: it finds the top-level "def test_*"
 // functions in the workspace test_*.py files under each selection, or under rootPath without one.
 // Like origin.test_case_id, a test ID is the absolute workspace path of its file followed by the
