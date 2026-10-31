@@ -184,10 +184,10 @@ func bundleShortTestID(cwd, syncRoot, filesRoot, id string) string {
 	return filepath.ToSlash(local) + testID
 }
 
-// rootPathShortTestID shows a test ID whose path is under rootPath relative to it, which --pipeline-id
-// resolves against root_path to select the test again. Other test IDs are returned unchanged.
-func rootPathShortTestID(rootPath, id string) string {
-	rel, testID, ok := cutTestIDFolder(rootPath, id)
+// relativeTestID shows a test ID whose path is under folder relative to it. Other test IDs are returned
+// unchanged. Relative to root_path, it is what --pipeline-id resolves to select the test again.
+func relativeTestID(folder, id string) string {
+	rel, testID, ok := cutTestIDFolder(folder, id)
 	if !ok {
 		return id
 	}
@@ -295,6 +295,9 @@ type testTarget struct {
 	w          *databricks.WorkspaceClient
 	// shortID shows a test ID in the shortest form that selects the test again.
 	shortID func(id string) string
+	// projectFolder is the deployed folder that names test cases independently of the working
+	// directory: the bundle's synchronized files, or root_path. It is "" when unknown.
+	projectFolder string
 }
 
 func (t testTarget) printHeader(out io.Writer, updateID string) {
@@ -327,8 +330,8 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	if err != nil {
 		return testTarget{}, err
 	}
-	shortID := func(id string) string { return rootPathShortTestID(rootPath, id) }
-	return testTarget{pipelineID: pipelineID, selections: selections, w: w, shortID: shortID}, nil
+	shortID := func(id string) string { return relativeTestID(rootPath, id) }
+	return testTarget{pipelineID: pipelineID, selections: selections, w: w, shortID: shortID, projectFolder: rootPath}, nil
 }
 
 // resolveTestTargetInBundle identifies the pipeline by its bundle KEY, which must precede any selections.
@@ -375,7 +378,7 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 		return testTarget{}, err
 	}
 	shortID := func(id string) string { return bundleShortTestID(cwd, b.SyncRootPath, filesRoot, id) }
-	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx), shortID: shortID}, nil
+	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx), shortID: shortID, projectFolder: filesRoot}, nil
 }
 
 // resumeCommand returns the command that reads the result of the update later.
@@ -629,6 +632,7 @@ names the cause.`,
 		if report.suiteName == "" {
 			report.suiteName = target.pipelineID
 		}
+		report.projectFolder = target.projectFolder
 		// The CLI root doesn't cancel the context on signals, so stop waiting here.
 		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 		defer stop()

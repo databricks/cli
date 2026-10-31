@@ -73,11 +73,13 @@ const junitNoResult = "no result received"
 // because CI tools treat skipped entries as passing.
 // A non-empty problem, such as an incomplete run, adds a failing entry for the update so the
 // report never passes by omission.
-func newJUnitReport(suiteName, updateID string, run *testRun, problem string) junitTestSuites {
+// Cases are named relative to projectFolder, as pytest names them, so that the names do not depend on
+// the working directory.
+func newJUnitReport(suiteName, updateID, projectFolder string, run *testRun, problem string) junitTestSuites {
 	suite := junitTestSuite{Name: suiteName}
 	for _, c := range run.cases {
 		entry := junitTestCase{}
-		entry.ClassName, entry.Name = junitCaseName(c.id)
+		entry.ClassName, entry.Name = junitCaseName(relativeTestID(projectFolder, c.id))
 		if d, ok := c.duration(); ok {
 			entry.Time = fmt.Sprintf("%.3f", d.Seconds())
 		}
@@ -120,9 +122,10 @@ func newJUnitReport(suiteName, updateID string, run *testRun, problem string) ju
 
 // testReport writes the JUnit report of a test run to path, if --junit-xml is set.
 type testReport struct {
-	path      string
-	out       io.Writer
-	suiteName string
+	path          string
+	out           io.Writer
+	suiteName     string
+	projectFolder string
 }
 
 // finish writes the report of a run that ended with runErr. A write error is joined with runErr,
@@ -131,7 +134,7 @@ func (r *testReport) finish(updateID string, run *testRun, problem string, runEr
 	if r.path == "" {
 		return runErr
 	}
-	if err := writeJUnitReport(r.path, newJUnitReport(r.suiteName, updateID, run, problem)); err != nil {
+	if err := writeJUnitReport(r.path, newJUnitReport(r.suiteName, updateID, r.projectFolder, run, problem)); err != nil {
 		if runErr == nil || errors.Is(runErr, root.ErrAlreadyPrinted) {
 			return err
 		}

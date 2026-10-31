@@ -126,20 +126,20 @@ func TestBundleShortTestID(t *testing.T) {
 	assert.Equal(t, id, bundleShortTestID(syncRoot, syncRoot, "", id))
 }
 
-func TestRootPathShortTestID(t *testing.T) {
+func TestRelativeTestID(t *testing.T) {
 	rootPath := "/Workspace/Users/someone/orders"
-	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath, rootPath+"/tests/test_a.py::test_x"))
-	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath+"/", rootPath+"/tests/test_a.py::test_x"))
+	assert.Equal(t, "tests/test_a.py::test_x", relativeTestID(rootPath, rootPath+"/tests/test_a.py::test_x"))
+	assert.Equal(t, "tests/test_a.py::test_x", relativeTestID(rootPath+"/", rootPath+"/tests/test_a.py::test_x"))
 	// The service accepts workspace paths with or without the /Workspace prefix.
-	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID("/Users/someone/orders", rootPath+"/tests/test_a.py::test_x"))
+	assert.Equal(t, "tests/test_a.py::test_x", relativeTestID("/Users/someone/orders", rootPath+"/tests/test_a.py::test_x"))
 	for _, other := range []string{
 		"/Workspace/Users/someone/shared/test_s.py::test_s",
 		rootPath + "2/test_a.py::test_x",
 		"tests/test_a.py::test_x",
 	} {
-		assert.Equal(t, other, rootPathShortTestID(rootPath, other))
+		assert.Equal(t, other, relativeTestID(rootPath, other))
 	}
-	assert.Equal(t, rootPath+"/tests/test_a.py::test_x", rootPathShortTestID("", rootPath+"/tests/test_a.py::test_x"))
+	assert.Equal(t, rootPath+"/tests/test_a.py::test_x", relativeTestID("", rootPath+"/tests/test_a.py::test_x"))
 }
 
 func TestRootPathSelection(t *testing.T) {

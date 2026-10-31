@@ -34,24 +34,26 @@ func TestJUnitCaseName(t *testing.T) {
 }
 
 func TestWriteJUnitReport(t *testing.T) {
+	// Cases are named relative to the project folder, as pytest names them, wherever the command runs.
+	const project = "/Workspace/Users/someone/.bundle/orders/dev/files"
 	run := newTestRun()
 	for _, e := range []testPipelineEvent{
-		caseEvent(t, "tests/test_a.py::test_ok", "RUNNING", "2026-01-01T00:00:00.000Z"),
-		caseEvent(t, "tests/test_a.py::test_ok", "PASSED", "2026-01-01T00:00:01.840Z"),
-		caseEvent(t, "tests/test_a.py::test_bad", "FAILED", "",
+		caseEvent(t, project+"/tests/test_a.py::test_ok", "RUNNING", "2026-01-01T00:00:00.000Z"),
+		caseEvent(t, project+"/tests/test_a.py::test_ok", "PASSED", "2026-01-01T00:00:01.840Z"),
+		caseEvent(t, project+"/tests/test_a.py::test_bad", "FAILED", "",
 			`"error": {"exceptions": [{"class_name": "AssertionError", "message": "assert 1 == 2\nwhere 1 = f()"}]}`,
 			`"truncation": {"truncated_fields": [{"field_name": "error"}]}`),
-		caseEvent(t, "tests/test_a.py::test_setup", "ERROR", "",
+		caseEvent(t, project+"/tests/test_a.py::test_setup", "ERROR", "",
 			`"error": {"exceptions": [{"class_name": "RuntimeError", "message": "fixture <db> failed"}]}`),
-		caseEvent(t, "tests/test_a.py::test_old", "SKIPPED", ""),
-		caseEvent(t, "tests/test_a.py::test_unfinished", "RUNNING", ""),
+		caseEvent(t, project+"/tests/test_a.py::test_old", "SKIPPED", ""),
+		caseEvent(t, project+"/tests/test_a.py::test_unfinished", "RUNNING", ""),
 	} {
 		run.add(e)
 	}
 
 	path := filepath.Join(t.TempDir(), "report.xml")
 	require.NoError(t, os.WriteFile(path, []byte("previous report"), 0o644))
-	require.NoError(t, writeJUnitReport(path, newJUnitReport("orders", "u1", run, "RUN INCOMPLETE: received 4 of 5 test results.")))
+	require.NoError(t, writeJUnitReport(path, newJUnitReport("orders", "u1", project, run, "RUN INCOMPLETE: received 4 of 5 test results.")))
 
 	data, err := os.ReadFile(path)
 	require.NoError(t, err)
