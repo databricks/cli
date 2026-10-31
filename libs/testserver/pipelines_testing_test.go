@@ -166,6 +166,27 @@ func TestPipelineStartUpdateRejectsTestOptionsWithoutTestOnly(t *testing.T) {
 	assert.Equal(t, 400, response.StatusCode)
 }
 
+func TestPipelineStartUpdateRejectsInvalidTestOptions(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipelineWithTests(t, workspace)
+
+	// The messages are the service's, from PipelineTestSelection.
+	for options, message := range map[string]string{
+		`{"pytest_args": ["-korders"]}`:              "pytest_args accepts only -k and -m, each followed by its value. Got '-korders'.",
+		`{"pytest_args": ["-x"]}`:                    "pytest_args accepts only -k and -m, each followed by its value. Got '-x'.",
+		`{"pytest_args": ["-m"]}`:                    "The pytest_args option '-m' must be followed by its value.",
+		`{"pytest_args": ["-k", " "]}`:               "The value of the pytest_args option '-k' must not be empty.",
+		`{"pytest_args": ["-k", "-m"]}`:              "The value of the pytest_args option '-k' must not start with '-'. Got '-m'.",
+		`{"test_selection": ["tests/test_a.py::t"]}`: "The test selection 'tests/test_a.py::t' must be an absolute workspace path, such as /Workspace/Users/someone@example.com/orders/tests/test_orders.py.",
+	} {
+		response := workspace.PipelineStartUpdate(pipelineID, []byte(`{"test_only": true, "test_options": `+options+`}`))
+		assert.Equal(t, 400, response.StatusCode, options)
+		assert.Equal(t, map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": message}, response.Body, options)
+	}
+
+	startTestUpdate(t, workspace, pipelineID, `{"test_only": true, "test_options": {"pytest_args": ["-k", "orders", "-m", "smoke"], "test_selection": ["`+testRootPath+`/tests"]}}`)
+}
+
 func TestPipelineFiniteUpdateIsActiveUntilItEnds(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	pipelineID := createTestPipelineWithTests(t, workspace)
