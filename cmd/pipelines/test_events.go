@@ -53,8 +53,8 @@ type testRunSummary struct {
 
 // testPipelineEvent is an entry of List Pipeline Events. The Go SDK PipelineEvent has no
 // details or origin.test_case_id, so test events are decoded from the raw response.
-// Once the SDK has those fields, remove this type and testEventReader and switch to
-// w.Pipelines.ListPipelineEvents.
+// w.Pipelines.ListPipelineEvents can replace testEventReader only once the SDK has those
+// fields and its iterator stops repeating order_by with page_token, which the service rejects.
 type testPipelineEvent struct {
 	Id        string               `json:"id"`
 	EventType string               `json:"event_type"`
