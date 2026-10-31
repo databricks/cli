@@ -56,11 +56,9 @@ type testRunSummary struct {
 // w.Pipelines.ListPipelineEvents can replace testEventReader only once the SDK has those
 // fields and its iterator stops repeating order_by with page_token, which the service rejects.
 type testPipelineEvent struct {
-	Id        string               `json:"id"`
-	EventType string               `json:"event_type"`
-	Timestamp string               `json:"timestamp"`
-	Level     pipelines.EventLevel `json:"level"`
-	Message   string               `json:"message"`
+	Id        string `json:"id"`
+	EventType string `json:"event_type"`
+	Timestamp string `json:"timestamp"`
 	Origin    struct {
 		TestCaseId string `json:"test_case_id"`
 	} `json:"origin"`
