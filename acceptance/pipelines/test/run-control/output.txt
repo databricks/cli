@@ -74,8 +74,8 @@ Results received: none.
 JUnit report: out.resumed.xml
 Error: update [UUID] is CANCELED
 
-=== --resume rejects an update that is not a test update
->>> musterr [CLI] pipelines test my_pipeline --resume [UUID]
+=== --resume rejects an update that is not a test update, and an older report is replaced
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --junit-xml out.not-test-update.xml
 Error: update [UUID] is not a test update; pass the update ID that pipelines test printed
 
 === Outside a project, an older passing report is replaced

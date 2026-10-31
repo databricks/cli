@@ -29,10 +29,11 @@ title "Stopping the pipeline cancels the test update"
 trace $CLI pipelines stop my_pipeline
 trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --junit-xml out.resumed.xml
 
-title "--resume rejects an update that is not a test update"
+title "--resume rejects an update that is not a test update, and an older report is replaced"
 pipeline_id=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_pipeline.id')
 regular_update_id=$($CLI pipelines start-update $pipeline_id | jq -r .update_id)
-trace musterr $CLI pipelines test my_pipeline --resume $regular_update_id
+echo '<testsuites><testsuite name="my_pipeline" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.not-test-update.xml
+trace musterr $CLI pipelines test my_pipeline --resume $regular_update_id --junit-xml out.not-test-update.xml
 
 title "Outside a project, an older passing report is replaced\n"
 echo '<testsuites><testsuite name="my_pipeline" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.outside.xml
