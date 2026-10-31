@@ -3,6 +3,8 @@ package pipelines
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
+	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -263,6 +266,46 @@ func TestTestTargetResumeCommand(t *testing.T) {
 				require.NoError(t, cmd.Flag(name).Value.Set(value))
 			}
 			assert.Equal(t, tc.want, tc.target.resumeCommand(cmd, "u1"))
+		})
+	}
+}
+
+func TestCheckTestUpdate(t *testing.T) {
+	const updateID = "11111111-1111-1111-1111-111111111111"
+	tests := []struct {
+		name    string
+		update  string
+		wantErr string
+	}{
+		// Where the service cannot report test_only, as before pipeline testing is enabled, the
+		// update may be a test update, so the command reads its results.
+		{name: "test_only not reported", update: `{"state": "COMPLETED"}`},
+		{name: "test update", update: `{"state": "COMPLETED", "test_only": true}`},
+		{
+			name:    "regular update",
+			update:  `{"state": "COMPLETED", "test_only": false}`,
+			wantErr: "update " + updateID + " is not a test update; pass the update ID that pipelines test printed",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/api/2.0/pipelines/p1/updates/"+updateID {
+					_, _ = w.Write([]byte(`{"update": ` + tc.update + `}`))
+					return
+				}
+				_, _ = w.Write([]byte(`{}`))
+			}))
+			t.Cleanup(srv.Close)
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token"})
+			require.NoError(t, err)
+
+			err = checkTestUpdate(t.Context(), w, "p1", updateID)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tc.wantErr)
+			}
 		})
 	}
 }
