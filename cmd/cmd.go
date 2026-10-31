@@ -116,6 +116,12 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())
 	cli.AddCommand(configure.New())
+	cli.AddCommand(&cobra.Command{
+		Use:     "custom-agents",
+		Short:   "*Beta* Please use the standalone databricks-agentbricks CLI on PyPi to build and deploy custom agents on databricks",
+		GroupID: "agentbricks",
+		RunE:    root.ReportUnknownSubcommand,
+	})
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
 	cli.AddCommand(sandbox.New())
