@@ -5772,7 +5772,7 @@
                   "description": "Behavioral configuration for a ModelProviderService: provider authentication\nand provider-specific fields, the catalog of models this provider\nservice can route to, and the passthrough policy that governs how request\nheaders, query parameters, and unmanaged subpaths cross the trust boundary\nto the upstream provider.",
                   "properties": {
                     "allow_all_targets": {
-                      "description": "When true, accepts any model exposed by the upstream provider; `targets`\nis not required and does not restrict routability. When false, only\nmodels listed in `targets` are routable. Defaults to false.",
+                      "description": "When true, allows models from the provider's built-in model catalog in\naddition to explicit `targets`. When false, only models listed in `targets`\nare routable. Defaults to false. CUSTOM providers have no built-in model\ncatalog and must leave this false and list their models in `targets`.",
                       "$ref": "#/$defs/bool",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -5852,7 +5852,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "targets": {
-                      "description": "Models and provider-native API types exposed by this provider service. Each\nentry must include at least one `native_api_types` value. When\n`allow_all_targets` is false, at least one entry is required and model\nservice destinations can reference only listed models. When\n`allow_all_targets` is true, any upstream model is routable; entries in\nthis list provide API-type metadata without restricting other models.",
+                      "description": "Models and provider-native API types exposed by this provider service. Each\nentry must include at least one `native_api_types` value. When\n`allow_all_targets` is false, at least one entry is required and model\nservice destinations can reference only listed models. When\n`allow_all_targets` is true, models from the provider's built-in model\ncatalog are also routable. CUSTOM providers must explicitly list their\nmodels here and cannot enable `allow_all_targets`.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigModelTargetConfig",
                       "x-databricks-launch-stage": "GA"
                     }
