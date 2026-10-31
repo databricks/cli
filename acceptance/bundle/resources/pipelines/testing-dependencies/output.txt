@@ -1,0 +1,39 @@
+
+>>> musterr [CLI] bundle validate
+Error: testing.environment.dependencies must point at files, not "faker==33.0"
+  at resources.pipelines.orders.testing.environment.dependencies[3]
+  in databricks.yml:19:15
+
+A test dependency is a project folder, a wheel, or a requirements file after -r, in the bundle, under /Workspace/, or under /Volumes/. Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference its folder, for example -e ./project[test]. For a path in the bundle, use -e or -r followed by a space. URLs, other pip options, and .. are not supported.
+
+Error: testing.environment.dependencies must point at files, not "git+https://github.com/example/helpers"
+  at resources.pipelines.orders.testing.environment.dependencies[4]
+  in databricks.yml:20:15
+
+A test dependency is a project folder, a wheel, or a requirements file after -r, in the bundle, under /Workspace/, or under /Volumes/. Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference its folder, for example -e ./project[test]. For a path in the bundle, use -e or -r followed by a space. URLs, other pip options, and .. are not supported.
+
+Error: testing.environment.dependencies needs -r before the requirements file "/Workspace/Shared/orders/requirements.txt"
+  at resources.pipelines.orders.testing.environment.dependencies[5]
+  in databricks.yml:21:15
+
+Without -r, pip treats the file as a package to install. For example: -r ./tests/requirements.txt.
+
+Error: testing.environment.dependencies must point at files, not "--requirement ./orders/requirements.txt"
+  at resources.pipelines.orders.testing.environment.dependencies[6]
+  in databricks.yml:22:15
+
+A test dependency is a project folder, a wheel, or a requirements file after -r, in the bundle, under /Workspace/, or under /Volumes/. Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference its folder, for example -e ./project[test]. For a path in the bundle, use -e or -r followed by a space. URLs, other pip options, and .. are not supported.
+
+Error: testing.environment.dependencies must point at files, not "/Workspace/Shared/orders -i https://example.com/simple"
+  at resources.pipelines.orders.testing.environment.dependencies[7]
+  in databricks.yml:23:15
+
+A test dependency is a project folder, a wheel, or a requirements file after -r, in the bundle, under /Workspace/, or under /Volumes/. Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference its folder, for example -e ./project[test]. For a path in the bundle, use -e or -r followed by a space. URLs, other pip options, and .. are not supported.
+
+Name: pipeline-testing-dependencies
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline-testing-dependencies/default
+
+Found 5 errors
