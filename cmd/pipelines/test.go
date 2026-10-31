@@ -169,14 +169,54 @@ func bundleTestSelectionPath(cwd, syncRoot, filesRoot, localPath string) (string
 	return workspacePath, nil
 }
 
-// hasRelativeSelection reports whether a selection is a relative path.
-func hasRelativeSelection(selections []string) bool {
-	for _, selection := range selections {
-		if p, _, _ := strings.Cut(selection, "::"); !strings.HasPrefix(p, "/") {
-			return true
-		}
+// bundleShortTestID shows a test ID whose path is under filesRoot, the deployed path of the bundle's
+// synchronized files, as the local path relative to the working directory, which selects the test again.
+// Other test IDs are returned unchanged.
+func bundleShortTestID(cwd, syncRoot, filesRoot, id string) string {
+	rel, testID, ok := cutTestIDFolder(filesRoot, id)
+	if !ok {
+		return id
 	}
-	return false
+	local, err := filepath.Rel(cwd, filepath.Join(syncRoot, filepath.FromSlash(rel)))
+	if err != nil {
+		return id
+	}
+	return filepath.ToSlash(local) + testID
+}
+
+// rootPathShortTestID shows a test ID whose path is under rootPath relative to it, which --pipeline-id
+// resolves against root_path to select the test again. Other test IDs are returned unchanged.
+func rootPathShortTestID(rootPath, id string) string {
+	rel, testID, ok := cutTestIDFolder(rootPath, id)
+	if !ok {
+		return id
+	}
+	return rel + testID
+}
+
+// cutTestIDFolder splits a test ID whose path is under folder into the path relative to folder and the
+// "::" suffix that names the test, if any.
+func cutTestIDFolder(folder, id string) (rel, testID string, ok bool) {
+	if folder == "" {
+		return "", "", false
+	}
+	p, suffix, hasSuffix := strings.Cut(id, "::")
+	rel, ok = strings.CutPrefix(withWorkspacePrefix(p), strings.TrimSuffix(withWorkspacePrefix(folder), "/")+"/")
+	if !ok {
+		return "", "", false
+	}
+	if hasSuffix {
+		testID = "::" + suffix
+	}
+	return rel, testID, true
+}
+
+// withWorkspacePrefix adds /Workspace to an absolute workspace path without it, as the service does.
+func withWorkspacePrefix(p string) string {
+	if p == "/Workspace" || strings.HasPrefix(p, "/Workspace/") || !strings.HasPrefix(p, "/") {
+		return p
+	}
+	return "/Workspace" + p
 }
 
 // rootPathSelection resolves a relative path against the pipeline's root_path.
@@ -253,6 +293,8 @@ type testTarget struct {
 	pipelineID string
 	selections []string
 	w          *databricks.WorkspaceClient
+	// shortID shows a test ID in the shortest form that selects the test again.
+	shortID func(id string) string
 }
 
 func (t testTarget) printHeader(out io.Writer, updateID string) {
@@ -275,13 +317,9 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 
-	var rootPath string
-	if hasRelativeSelection(args) {
-		var err error
-		rootPath, err = getRootPath(ctx, w, pipelineID)
-		if err != nil {
-			return testTarget{}, err
-		}
+	rootPath, err := getRootPath(ctx, w, pipelineID)
+	if err != nil {
+		return testTarget{}, err
 	}
 	selections, err := resolveTestSelections(args, func(p string) (string, error) {
 		return rootPathSelection(rootPath, p)
@@ -289,7 +327,8 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{pipelineID: pipelineID, selections: selections, w: w}, nil
+	shortID := func(id string) string { return rootPathShortTestID(rootPath, id) }
+	return testTarget{pipelineID: pipelineID, selections: selections, w: w, shortID: shortID}, nil
 }
 
 // resolveTestTargetInBundle identifies the pipeline by its bundle KEY, which must precede any selections.
@@ -335,7 +374,8 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx)}, nil
+	shortID := func(id string) string { return bundleShortTestID(cwd, b.SyncRootPath, filesRoot, id) }
+	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx), shortID: shortID}, nil
 }
 
 // resumeCommand returns the command that reads the result of the update later.
@@ -576,7 +616,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 			pipelineID: target.pipelineID,
 			updateID:   updateID,
 			events:     events,
-			printer:    &testProgressPrinter{out: out},
+			printer:    &testProgressPrinter{out: out, shortID: target.shortID},
 			run:        newTestRun(),
 		}
 
@@ -599,7 +639,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		}
 
 		incompleteReason := watcher.run.incompleteReason(state)
-		renderTestResult(out, watcher.run, incompleteReason)
+		renderTestResult(out, watcher.run, incompleteReason, target.shortID)
 		return testRunError(updateID, state, watcher.run, incompleteReason)
 	}
 

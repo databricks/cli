@@ -2,15 +2,35 @@ package pipelines
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 )
 
+func sameTestID(id string) string { return id }
+
+func TestRenderShortTestIDs(t *testing.T) {
+	shortID := func(id string) string { return strings.TrimPrefix(id, "/Workspace/root/") }
+	var out bytes.Buffer
+	p := &testProgressPrinter{out: &out, shortID: shortID}
+	run := newTestRun()
+	p.caseFinished(run.add(caseEvent(t, "/Workspace/root/t.py::test_x", "FAILED", "2026-01-01T00:00:00.000Z")))
+	renderTestFailures(&out, run, shortID)
+
+	assert.Equal(t, `Running tests...
+t.py::test_x  FAILED
+
+FAILURES
+t.py::test_x
+  No details were reported.
+`, out.String())
+}
+
 func TestTestProgressPrinter(t *testing.T) {
 	var out bytes.Buffer
-	p := &testProgressPrinter{out: &out}
+	p := &testProgressPrinter{out: &out, shortID: sameTestID}
 	run := newTestRun()
 
 	p.updateState(pipelines.UpdateInfoStateQueued)
@@ -122,7 +142,7 @@ Results received: none.
 				run.add(e)
 			}
 			var out bytes.Buffer
-			renderTestResult(&out, run, run.incompleteReason(tc.state))
+			renderTestResult(&out, run, run.incompleteReason(tc.state), sameTestID)
 			assert.Equal(t, tc.want, out.String())
 		})
 	}

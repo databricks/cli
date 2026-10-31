@@ -11,6 +11,7 @@ import (
 // testProgressPrinter prints the phase of a test update and each case as it finishes.
 type testProgressPrinter struct {
 	out     io.Writer
+	shortID func(id string) string
 	waiting bool
 	running bool
 }
@@ -43,14 +44,14 @@ func (p *testProgressPrinter) startRunning() {
 func (p *testProgressPrinter) caseFinished(c *testCaseResult) {
 	p.startRunning()
 	if d, ok := c.duration(); ok {
-		fmt.Fprintf(p.out, "%s  %s (%.2fs)\n", c.id, c.status, d.Seconds())
+		fmt.Fprintf(p.out, "%s  %s (%.2fs)\n", p.shortID(c.id), c.status, d.Seconds())
 	} else {
-		fmt.Fprintf(p.out, "%s  %s\n", c.id, c.status)
+		fmt.Fprintf(p.out, "%s  %s\n", p.shortID(c.id), c.status)
 	}
 }
 
 // renderTestFailures prints the details of every failed or errored case.
-func renderTestFailures(out io.Writer, run *testRun) {
+func renderTestFailures(out io.Writer, run *testRun, shortID func(id string) string) {
 	var failed []*testCaseResult
 	for _, c := range run.cases {
 		if c.status == testCaseFailed || c.status == testCaseError {
@@ -64,7 +65,7 @@ func renderTestFailures(out io.Writer, run *testRun) {
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "FAILURES")
 	for _, c := range failed {
-		fmt.Fprintln(out, c.id)
+		fmt.Fprintln(out, shortID(c.id))
 		details := ""
 		if c.errorDetail != nil {
 			details = errorDetailText(c.errorDetail)
@@ -94,8 +95,8 @@ func formatTestCounts(s testRunSummary) string {
 
 // renderTestResult prints the end of a test run: failure details, then the summary or why
 // the result is incomplete.
-func renderTestResult(out io.Writer, run *testRun, incompleteReason string) {
-	renderTestFailures(out, run)
+func renderTestResult(out io.Writer, run *testRun, incompleteReason string, shortID func(id string) string) {
+	renderTestFailures(out, run, shortID)
 	fmt.Fprintln(out)
 
 	if incompleteReason != "" {

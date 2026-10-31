@@ -101,6 +101,44 @@ func TestBundleWorkspacePath(t *testing.T) {
 	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+syncRoot)
 }
 
+func TestBundleShortTestID(t *testing.T) {
+	syncRoot := t.TempDir()
+	filesRoot := "/Workspace/Users/someone/.bundle/orders/dev/files"
+	id := filesRoot + "/tests/test_a.py::TestA::test_x[a::b]"
+
+	// The local path, relative to where the user stands, selects the test again.
+	assert.Equal(t, "tests/test_a.py::TestA::test_x[a::b]", bundleShortTestID(syncRoot, syncRoot, filesRoot, id))
+	assert.Equal(t, "test_a.py::TestA::test_x[a::b]", bundleShortTestID(filepath.Join(syncRoot, "tests"), syncRoot, filesRoot, id))
+	assert.Equal(t, "../tests/test_a.py::TestA::test_x[a::b]", bundleShortTestID(filepath.Join(syncRoot, "src"), syncRoot, filesRoot, id))
+	assert.Equal(t, "tests", bundleShortTestID(syncRoot, syncRoot, filesRoot, filesRoot+"/tests"))
+
+	// Other IDs are shown as the service sends them.
+	for _, other := range []string{
+		"/Workspace/Users/someone/tests/test_s.py::test_s",
+		filesRoot + "2/tests/test_a.py::test_x",
+		"tests/test_a.py::test_x",
+	} {
+		assert.Equal(t, other, bundleShortTestID(syncRoot, syncRoot, filesRoot, other))
+	}
+	assert.Equal(t, id, bundleShortTestID(syncRoot, syncRoot, "", id))
+}
+
+func TestRootPathShortTestID(t *testing.T) {
+	rootPath := "/Workspace/Users/someone/orders"
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath, rootPath+"/tests/test_a.py::test_x"))
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath+"/", rootPath+"/tests/test_a.py::test_x"))
+	// The service accepts workspace paths with or without the /Workspace prefix.
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID("/Users/someone/orders", rootPath+"/tests/test_a.py::test_x"))
+	for _, other := range []string{
+		"/Workspace/Users/someone/shared/test_s.py::test_s",
+		rootPath + "2/test_a.py::test_x",
+		"tests/test_a.py::test_x",
+	} {
+		assert.Equal(t, other, rootPathShortTestID(rootPath, other))
+	}
+	assert.Equal(t, rootPath+"/tests/test_a.py::test_x", rootPathShortTestID("", rootPath+"/tests/test_a.py::test_x"))
+}
+
 func TestRootPathSelection(t *testing.T) {
 	got, err := rootPathSelection("/Workspace/Users/someone/orders", "tests/test_orders.py")
 	require.NoError(t, err)
@@ -156,12 +194,6 @@ func TestBundleTestSelectionPath(t *testing.T) {
 	// When the deployed path of local files is unknown, a local path is an error.
 	_, err = bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, "", "tests/test_a.py")
 	assert.EqualError(t, err, "local test paths are not supported with workspace.sync_mode immutable; pass an absolute workspace path")
-}
-
-func TestHasRelativeSelection(t *testing.T) {
-	assert.False(t, hasRelativeSelection(nil))
-	assert.False(t, hasRelativeSelection([]string{"/Workspace/tests", "/Workspace/a.py::test_x"}))
-	assert.True(t, hasRelativeSelection([]string{"/Workspace/tests", "tests/test_a.py::test_x"}))
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {

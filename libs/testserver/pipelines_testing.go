@@ -105,42 +105,11 @@ type pipelineTestRequest struct {
 
 var pipelineTestFunctionRegexp = regexp.MustCompile(`(?m)^def (test_\w+)\(`)
 
-// pipelineTestRootDir returns pytest's rootdir for a test run, as the service sets it: the deepest
-// folder that holds rootPath and every test source or, without rootPath, the folder of every test
-// source. It is "" when there is neither. The CLI applies the same rule (testIDBase in
-// cmd/pipelines), so acceptance tests cannot catch a wrong rule; only a run on a real workspace checks it.
-func pipelineTestRootDir(rootPath string, sources []string) string {
-	var folders [][]string
-	if rootPath != "" {
-		folders = append(folders, strings.Split(strings.Trim(rootPath, "/"), "/"))
-	}
-	for _, source := range sources {
-		segments := strings.Split(strings.Trim(strings.TrimSuffix(source, "/**"), "/"), "/")
-		if rootPath == "" {
-			segments = segments[:len(segments)-1]
-		}
-		folders = append(folders, segments)
-	}
-	if len(folders) == 0 {
-		return ""
-	}
-	common := folders[0]
-	for _, folder := range folders[1:] {
-		n := 0
-		for n < len(common) && n < len(folder) && common[n] == folder[n] {
-			n++
-		}
-		common = common[:n]
-	}
-	return "/" + strings.Join(common, "/")
-}
-
 // collectPipelineTests stands in for pytest collection: it finds the top-level "def test_*"
 // functions in the workspace test_*.py files under each selection, or under rootPath without one.
-// Like origin.test_case_id, test IDs are relative to pytest's rootdir, such as
-// tests/test_orders.py::test_backfill.
+// Like origin.test_case_id, a test ID is the absolute workspace path of its file followed by the
+// pytest test ID, such as /Workspace/Users/someone/orders/tests/test_orders.py::test_backfill.
 func (s *FakeWorkspace) collectPipelineTests(rootPath string, selection []string) []string {
-	rootDir := pipelineTestRootDir(rootPath, nil)
 	if len(selection) == 0 && rootPath != "" {
 		selection = []string{rootPath}
 	}
@@ -165,9 +134,6 @@ func (s *FakeWorkspace) collectPipelineTests(rootPath string, selection []string
 			for _, match := range pipelineTestFunctionRegexp.FindAllSubmatch(s.files[filePath].Data, -1) {
 				name := string(match[1])
 				id := filePath + "::" + name
-				if rootDir != "" {
-					id = strings.TrimPrefix(id, rootDir+"/")
-				}
 				if (testName == "" || testName == name) && !slices.Contains(ids, id) {
 					ids = append(ids, id)
 				}

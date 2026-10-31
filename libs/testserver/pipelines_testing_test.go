@@ -54,12 +54,13 @@ func TestCollectPipelineTests(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	createTestPipelineWithTests(t, workspace)
 
-	// Like the service, IDs are relative to pytest's rootdir, which is the root path here.
-	assert.Equal(t, []string{"tests/test_orders.py::test_ok", "tests/test_orders.py::test_fails", "tests/test_slow.py::test_hang"},
+	// Like origin.test_case_id, an ID is the absolute workspace path of its file and the pytest test ID.
+	tests := testRootPath + "/tests/"
+	assert.Equal(t, []string{tests + "test_orders.py::test_ok", tests + "test_orders.py::test_fails", tests + "test_slow.py::test_hang"},
 		workspace.collectPipelineTests(testRootPath, nil))
-	assert.Equal(t, []string{"tests/test_orders.py::test_fails"},
+	assert.Equal(t, []string{tests + "test_orders.py::test_fails"},
 		workspace.collectPipelineTests(testRootPath, []string{testRootPath + "/tests/test_orders.py::test_fails", testRootPath + "/tests/test_orders.py::test_fails"}))
-	assert.Equal(t, []string{"tests/helpers.py::test_helper"},
+	assert.Equal(t, []string{tests + "helpers.py::test_helper"},
 		workspace.collectPipelineTests(testRootPath, []string{testRootPath + "/tests/helpers.py"}))
 	assert.Equal(t, []string{testRootPath + "/tests/test_slow.py::test_hang"},
 		workspace.collectPipelineTests("", []string{testRootPath + "/tests/test_slow.py"}))
@@ -82,7 +83,7 @@ func TestPipelineTestUpdate(t *testing.T) {
 	for _, e := range events {
 		statuses = append(statuses, e.Origin.TestCaseId+" "+e.Details["test_case_progress"].(map[string]any)["status"].(string))
 	}
-	file := "tests/test_orders.py"
+	file := testRootPath + "/tests/test_orders.py"
 	assert.Equal(t, []string{
 		file + "::test_ok PENDING",
 		file + "::test_fails PENDING",
@@ -163,14 +164,6 @@ func TestPipelineStartUpdateRejectsTestOptionsWithoutTestOnly(t *testing.T) {
 
 	response := workspace.PipelineStartUpdate(pipelineID, []byte(`{"test_options": {"pytest_args": ["-k", "x"]}}`))
 	assert.Equal(t, 400, response.StatusCode)
-}
-
-func TestPipelineTestRootDir(t *testing.T) {
-	assert.Equal(t, "/Workspace/Users/u/files", pipelineTestRootDir("/Workspace/Users/u/files/src/orders", []string{"/Workspace/Users/u/files/tests/**"}))
-	assert.Equal(t, "/Workspace/Users/u/orders", pipelineTestRootDir("/Workspace/Users/u/orders", nil))
-	assert.Equal(t, "/Workspace/Users/u", pipelineTestRootDir("", []string{"/Workspace/Users/u/tests/**"}))
-	assert.Equal(t, "/Workspace/Users/u/tests", pipelineTestRootDir("", []string{"/Workspace/Users/u/tests/test_x.py"}))
-	assert.Empty(t, pipelineTestRootDir("", nil))
 }
 
 func TestPipelineFiniteUpdateIsActiveUntilItEnds(t *testing.T) {
