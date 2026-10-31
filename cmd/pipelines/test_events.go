@@ -48,7 +48,7 @@ type testRunSummary struct {
 	Passed  int `json:"passed"`
 	Failed  int `json:"failed"`
 	Skipped int `json:"skipped"`
-	Errors  int `json:"errors"`
+	Errors  int `json:"errored"`
 }
 
 // testPipelineEvent is an entry of List Pipeline Events. The Go SDK PipelineEvent has no
