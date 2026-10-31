@@ -68,6 +68,44 @@ func TestResolveTestSelections(t *testing.T) {
 	assert.EqualError(t, err, `cannot resolve test selection "missing::test_x": not found`)
 }
 
+func TestBundleShortTestID(t *testing.T) {
+	syncRoot := t.TempDir()
+	filesRoot := "/Workspace/Users/someone/.bundle/orders/dev/files"
+	id := filesRoot + "/tests/test_a.py::TestA::test_x[a::b]"
+
+	// The local path, relative to where the user stands, selects the test again.
+	assert.Equal(t, "tests/test_a.py::TestA::test_x[a::b]", bundleShortTestID(syncRoot, syncRoot, filesRoot, id))
+	assert.Equal(t, "test_a.py::TestA::test_x[a::b]", bundleShortTestID(filepath.Join(syncRoot, "tests"), syncRoot, filesRoot, id))
+	assert.Equal(t, "../tests/test_a.py::TestA::test_x[a::b]", bundleShortTestID(filepath.Join(syncRoot, "src"), syncRoot, filesRoot, id))
+	assert.Equal(t, "tests", bundleShortTestID(syncRoot, syncRoot, filesRoot, filesRoot+"/tests"))
+
+	// Other IDs are shown as the service sends them.
+	for _, other := range []string{
+		"/Workspace/Users/someone/tests/test_s.py::test_s",
+		filesRoot + "2/tests/test_a.py::test_x",
+		"tests/test_a.py::test_x",
+	} {
+		assert.Equal(t, other, bundleShortTestID(syncRoot, syncRoot, filesRoot, other))
+	}
+	assert.Equal(t, id, bundleShortTestID(syncRoot, syncRoot, "", id))
+}
+
+func TestRootPathShortTestID(t *testing.T) {
+	rootPath := "/Workspace/Users/someone/orders"
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath, rootPath+"/tests/test_a.py::test_x"))
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath+"/", rootPath+"/tests/test_a.py::test_x"))
+	// The service accepts workspace paths with or without the /Workspace prefix.
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID("/Users/someone/orders", rootPath+"/tests/test_a.py::test_x"))
+	for _, other := range []string{
+		"/Workspace/Users/someone/shared/test_s.py::test_s",
+		rootPath + "2/test_a.py::test_x",
+		"tests/test_a.py::test_x",
+	} {
+		assert.Equal(t, other, rootPathShortTestID(rootPath, other))
+	}
+	assert.Equal(t, rootPath+"/tests/test_a.py::test_x", rootPathShortTestID("", rootPath+"/tests/test_a.py::test_x"))
+}
+
 // Source-linked deployments run the source files, as TranslatePaths maps them.
 func TestBundleFilesRootSourceLinked(t *testing.T) {
 	b := &bundle.Bundle{SyncRootPath: "/Workspace/Users/someone/orders"}
