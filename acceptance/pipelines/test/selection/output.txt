@@ -105,10 +105,6 @@ Update: [UUID]
 
 === Test selections require the pipeline KEY first
 >>> musterr [CLI] pipelines test tests/test_orders.py
-Recommendation: This command runs the last deployed version of the code
-
-If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
-
 Error: resource with key "tests/test_orders.py" not found; the first argument must be a pipeline KEY when test selections are given
 
 === Test selections must be in the synchronized files

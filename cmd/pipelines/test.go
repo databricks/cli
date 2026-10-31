@@ -341,7 +341,6 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 		return testTarget{}, err
 	}
 	ctx := cmd.Context()
-	suggestPipelineDeploy(ctx, cmd)
 
 	if _, err := resources.Lookup(b, key, isPipeline); err != nil {
 		return testTarget{}, fmt.Errorf("%w; the first argument must be a pipeline KEY when test selections are given", err)
@@ -350,6 +349,7 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 	if err != nil {
 		return testTarget{}, err
 	}
+	suggestPipelineDeploy(ctx, cmd)
 
 	cwd, err := os.Getwd()
 	if err != nil {
