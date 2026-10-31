@@ -1,0 +1,72 @@
+
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-run-control/default/files...
+Created pipelines.my_pipeline
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+
+=== --no-wait returns after the update starts
+>>> [CLI] pipelines test my_pipeline tests/test_orders.py --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+=== --resume reads the results of an existing update
+>>> [CLI] pipelines test my_pipeline --resume [UUID]
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Running tests...
+tests/test_orders.py::test_valid_order  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
+=== --timeout stops waiting but not the update
+>>> [CLI] pipelines test my_pipeline tests/test_slow.py --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Running tests...
+Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]
+
+=== The command to read the results keeps the profile
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s -p run-control
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Running tests...
+Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --profile run-control --resume [UUID]
+
+=== Another update cannot start while the test update is active
+>>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: An active update '[UUID]' already exists for pipeline '[UUID]'.
+
+=== Stopping the pipeline cancels the test update
+>>> [CLI] pipelines stop my_pipeline
+Stopping my_pipeline...
+my_pipeline has been stopped.
+
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID]
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+RUN INCOMPLETE: the update was canceled before all test results were received.
+Results received: none.
+Error: update [UUID] is CANCELED
+
+=== --resume rejects an update that is not a test update
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID]
+Error: update [UUID] is not a test update; pass the update ID that pipelines test printed

@@ -1,0 +1,94 @@
+
+>>> [CLI] pipelines test --help
+Run the tests of a pipeline in a test-only update.
+
+PIPELINE_KEY is the unique name of the pipeline, as defined in its YAML file.
+It is required when test selections are given. If there is only one pipeline
+in the project and no arguments are given, it is selected automatically.
+Outside a project, identify the pipeline with --pipeline-id; all positional
+arguments are then test selections.
+
+TEST_SELECTION is a test directory, file, or pytest test ID, for example
+tests/test_orders.py::test_backfill. In a project, a relative path is a local
+path, relative to the working directory, and is converted to its deployed
+workspace path. With --pipeline-id, a relative path is relative to the
+pipeline's root_path. Paths that start with / are workspace paths. Without a
+selection, all of the pipeline's tests run.
+
+Each --pytest-arg passes one argument to pytest, in the order given. Only -k
+and -m are supported, each followed by its value in the next --pytest-arg, for
+example:
+
+  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
+
+The command waits for the results and succeeds only if at least one test ran
+and none failed or errored. --no-wait returns after the update starts.
+--timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
+to read the results later. To stop the update, run 'pipelines stop'.
+
+Usage:
+  databricks pipelines test [PIPELINE_KEY] [TEST_SELECTION...] [flags] [--pytest-arg=ARG ...]
+
+Pipeline Test Flags:
+      --no-wait                  Return after the test update starts, without waiting for results.
+      --pipeline-id string       ID of the pipeline to test, instead of a PIPELINE_KEY.
+      --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
+      --resume string            Read the results of an existing test update instead of starting one.
+      --timeout duration         Stop waiting for results after this duration, for example 30m. The update keeps running.
+
+Flags:
+  -h, --help   help for test
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in project config. Example: --var="foo=bar"
+
+=== pytest arguments must be passed with --pytest-arg
+>>> musterr [CLI] pipelines test --pipeline-id 1234 -k orders
+Error: -k is a pytest argument: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 -msmoke
+Error: -m is a pytest argument: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 -- -k orders
+Error: the -- separator is not supported: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
+
+=== Only -k and -m are supported
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x
+Error: unsupported pytest argument "-x": only -k and -m are supported
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-k
+Error: pytest argument -k requires a value: pass it in the next --pytest-arg
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=tests/test_orders.py
+Error: unsupported pytest argument "tests/test_orders.py": pass test paths and test IDs as TEST_SELECTION arguments
+
+=== -k and -m take their value in the next --pytest-arg
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-korders
+Error: pytest argument "-korders" must be split: pass --pytest-arg=-k --pytest-arg=orders
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-k --pytest-arg=-m
+Error: pytest argument -k requires a value, not "-m": pass it in the next --pytest-arg
+
+=== Incompatible run-control flags
+>>> musterr [CLI] pipelines test --pipeline-id 1234 tests --resume 5678
+Error: --resume cannot be used with test selections
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678 --pytest-arg=-m --pytest-arg=smoke
+Error: --resume cannot be used with --pytest-arg
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678 --no-wait
+Error: --resume cannot be used with --no-wait
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --timeout 10m
+Error: --timeout cannot be used with --no-wait
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678' OR '1'='1
+Error: --resume "5678' OR '1'='1" is not an update ID; pass the update ID that pipelines test printed
+
+=== JSON output is not supported
+>>> musterr [CLI] pipelines test --pipeline-id 1234 -o json
+Error: --output json is not supported by pipelines test

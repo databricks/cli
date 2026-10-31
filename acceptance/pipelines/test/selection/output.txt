@@ -1,0 +1,125 @@
+
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files...
+Created pipelines.my_pipeline
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+
+=== Run all tests of the only pipeline
+>>> [CLI] pipelines test --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true
+  }
+}
+
+=== Select tests by relative path and test ID, with pytest arguments
+>>> [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Shared/tests/test_shared.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg=-m --pytest-arg=smoke,fast --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {
+      "test_selection": [
+        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests",
+        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests/test_orders.py::test_backfill",
+        "/Workspace/Shared/tests/test_shared.py"
+      ],
+      "pytest_args": [
+        "-k",
+        "orders and not slow",
+        "-m",
+        "smoke,fast"
+      ]
+    }
+  }
+}
+
+=== --pytest-arg also takes its value as the next argument
+>>> [CLI] pipelines test my_pipeline --pytest-arg -k --pytest-arg orders, returns --pytest-arg -m --pytest-arg smoke --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {
+      "pytest_args": [
+        "-k",
+        "orders, returns",
+        "-m",
+        "smoke"
+      ]
+    }
+  }
+}
+
+=== Relative paths resolve from the working directory
+>>> [CLI] pipelines test my_pipeline test_orders.py::test_valid_order --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {
+      "test_selection": [
+        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests/test_orders.py::test_valid_order"
+      ]
+    }
+  }
+}
+
+=== Test selections require the pipeline KEY first
+>>> musterr [CLI] pipelines test tests/test_orders.py
+Error: resource with key "tests/test_orders.py" not found; the first argument must be a pipeline KEY when test selections are given
+
+=== Test selections must be in the synchronized files
+>>> musterr [CLI] pipelines test my_pipeline ../test_outside.py
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: cannot resolve test selection "../test_outside.py": [TEST_TMP_DIR]_PARENT/test_outside.py is outside the synchronized bundle files in [TEST_TMP_DIR]
+
+=== Relative test selections must exist locally
+>>> musterr [CLI] pipelines test my_pipeline tests/test_ordrs.py::test_backfill
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: cannot resolve test selection "tests/test_ordrs.py::test_backfill": [TEST_TMP_DIR]/tests/test_ordrs.py does not exist; pass a local path or an absolute workspace path

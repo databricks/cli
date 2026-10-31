@@ -1,0 +1,37 @@
+trace $CLI pipelines deploy
+
+title "--no-wait returns after the update starts"
+trace $CLI pipelines test my_pipeline tests/test_orders.py --no-wait | tee submit.txt
+update_id=$(sed -n 's/^Update: //p' submit.txt)
+
+title "--resume reads the results of an existing update"
+trace $CLI pipelines test my_pipeline --resume $update_id
+
+title "--timeout stops waiting but not the update"
+trace $CLI pipelines test my_pipeline tests/test_slow.py --no-wait | tee submit.txt
+hang_update_id=$(sed -n 's/^Update: //p' submit.txt)
+rm submit.txt
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout 3s
+
+title "The command to read the results keeps the profile"
+cat > .databrickscfg <<EOF
+[run-control]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+EOF
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout 3s -p run-control
+unset DATABRICKS_CONFIG_FILE
+rm .databrickscfg
+
+title "Another update cannot start while the test update is active"
+trace musterr $CLI pipelines test my_pipeline tests/test_orders.py
+
+title "Stopping the pipeline cancels the test update"
+trace $CLI pipelines stop my_pipeline
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id
+
+title "--resume rejects an update that is not a test update"
+pipeline_id=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_pipeline.id')
+regular_update_id=$($CLI pipelines start-update $pipeline_id | jq -r .update_id)
+trace musterr $CLI pipelines test my_pipeline --resume $regular_update_id
