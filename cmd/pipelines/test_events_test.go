@@ -26,12 +26,12 @@ func caseEvent(t *testing.T, id, status, timestamp string, extra ...string) test
 	}`, testEventSeq, timestamp, id, status, strings.Join(append([]string{""}, extra...), ",")))
 }
 
-func summaryEvent(t *testing.T, total, passed, failed, skipped, errors int) testPipelineEvent {
+func summaryEvent(t *testing.T, total, passed, failed, skipped, errored int) testPipelineEvent {
 	testEventSeq++
 	return decodeTestEvent(t, fmt.Sprintf(`{
 		"id": "e%d", "event_type": "test_run_summary",
-		"details": {"test_run_summary": {"total": %d, "passed": %d, "failed": %d, "skipped": %d, "errors": %d}}
-	}`, testEventSeq, total, passed, failed, skipped, errors))
+		"details": {"test_run_summary": {"total": %d, "passed": %d, "failed": %d, "skipped": %d, "errored": %d}}
+	}`, testEventSeq, total, passed, failed, skipped, errored))
 }
 
 func decodeTestEvent(t *testing.T, data string) testPipelineEvent {

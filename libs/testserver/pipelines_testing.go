@@ -263,7 +263,7 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 			"passed":  counts["passed"],
 			"failed":  counts["failed"],
 			"skipped": counts["skipped"],
-			"errors":  counts["errors"],
+			"errored": counts["errors"],
 		}},
 	})
 	// Like the service, a run whose tests failed or errored ends with the test verdict as the

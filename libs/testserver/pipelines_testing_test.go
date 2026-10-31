@@ -99,7 +99,7 @@ func TestPipelineTestUpdate(t *testing.T) {
 	events, _ = listEvents(t, workspace, pipelineID, query)
 	require.Len(t, events, 3)
 	assert.Equal(t, last.Id, events[0].Id)
-	assert.Equal(t, map[string]any{"total": 2, "passed": 1, "failed": 1, "skipped": 0, "errors": 0}, events[1].Details["test_run_summary"])
+	assert.Equal(t, map[string]any{"total": 2, "passed": 1, "failed": 1, "skipped": 0, "errored": 0}, events[1].Details["test_run_summary"])
 	// Like the service, the update's error is the test verdict.
 	require.NotNil(t, events[2].Error)
 	assert.True(t, events[2].Error.Fatal)
