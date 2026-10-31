@@ -29,6 +29,7 @@ import (
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -525,6 +526,9 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 				return errors.New("--resume cannot be used with --pytest-arg")
 			case selectionCount > 0:
 				return errors.New("--resume cannot be used with test selections")
+			}
+			if _, err := uuid.Parse(resumeUpdateID); err != nil {
+				return fmt.Errorf("--resume %q is not an update ID; pass the update ID that pipelines test printed", resumeUpdateID)
 			}
 		}
 

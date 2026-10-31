@@ -86,6 +86,9 @@ Error: --resume cannot be used with --no-wait
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --timeout 10m
 Error: --timeout cannot be used with --no-wait
 
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678' OR '1'='1
+Error: --resume "5678' OR '1'='1" is not an update ID; pass the update ID that pipelines test printed
+
 === JSON output is not supported
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json
 Error: --output json is not supported by pipelines test
