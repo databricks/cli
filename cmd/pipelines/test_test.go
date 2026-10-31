@@ -315,6 +315,22 @@ func TestTestRunError(t *testing.T) {
 			wantErr: "update u1 is FAILED: [PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed.",
 		},
 		{
+			name: "tests failed although the update completed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 0, 1, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateCompleted,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "no tests collected although the update completed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{summaryEvent(t, 0, 0, 0, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateCompleted,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
 			name: "canceled after tests failed",
 			events: func() []testPipelineEvent {
 				return []testPipelineEvent{caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 0, 1, 0, 0)}

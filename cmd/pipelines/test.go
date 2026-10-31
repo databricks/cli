@@ -475,7 +475,8 @@ func testRunError(updateID string, state pipelines.UpdateInfoState, run *testRun
 		// A test update fails when its tests fail; the printed result explains it, unless the
 		// update ended in another way or reports an error of its own. The service's own verdict,
 		// such as "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed", is not.
-		if testsFailed && state == pipelines.UpdateInfoStateFailed && run.fatalError == "" {
+		ended := state == pipelines.UpdateInfoStateFailed || state == pipelines.UpdateInfoStateCompleted
+		if testsFailed && ended && run.fatalError == "" {
 			return root.ErrAlreadyPrinted
 		}
 	} else if state == pipelines.UpdateInfoStateCompleted {
