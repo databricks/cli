@@ -515,8 +515,8 @@ example:
 
   databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
 
-The command waits for the results and succeeds only if at least one test ran
-and none failed or errored. --no-wait returns after the update starts.
+The command waits for the results and succeeds only if at least one test was
+collected and none failed or errored. --no-wait returns after the update starts.
 --timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
 to read the results later. To stop the update, run 'pipelines stop'.`,
 	}
