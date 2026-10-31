@@ -51,6 +51,7 @@ func newStartTestUpdateRequest(selection, pytestArgs []string) startTestUpdateRe
 const pytestArgHint = "pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'"
 
 // validatePytestArgs accepts only -k and -m, each with a value in the next argument or attached to it.
+// A value in the next argument cannot start with "-", because pytest reads it as an option.
 func validatePytestArgs(args []string) error {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -58,6 +59,9 @@ func validatePytestArgs(args []string) error {
 		case arg == "-k" || arg == "-m":
 			if i == len(args)-1 {
 				return fmt.Errorf("pytest argument %s requires a value: pass it in the next --pytest-arg", arg)
+			}
+			if next := args[i+1]; strings.HasPrefix(next, "-") {
+				return fmt.Errorf("pytest argument %s requires a value, not %q: pass it in the next --pytest-arg", arg, next)
 			}
 			i++
 		case strings.HasPrefix(arg, "-k") || strings.HasPrefix(arg, "-m"):
