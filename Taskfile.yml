@@ -835,7 +835,7 @@ tasks:
   generate-cligen:
     desc: Regenerate CLI command stubs from .codegen/cli.json
     sources:
-      - .codegen/cli.json
+      - .codegen/cli.json.gz
       - .gitattributes.manual
       - internal/cligen/**/*.go
       - internal/cligen/templates/*.tmpl
@@ -844,7 +844,7 @@ tasks:
       - cmd/account/**/*.go
       - .gitattributes
     cmds:
-      - go run ./internal/cligen --input .codegen/cli.json --output .
+      - go run ./internal/cligen --input .codegen/cli.json.gz --output .
 
   # Refreshes .codegen/cli.json from the Universe commit pinned in
   # .codegen/_openapi_sha.
@@ -913,6 +913,17 @@ tasks:
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
       - task: generate-clijson-post
 
+  # Writes a plain, gitignored .codegen/cli.json next to the committed .gz for
+  # inspection. Readers always use the .gz, so edits to the copy have no effect.
+  unzip-clijson:
+    desc: Decompress .codegen/cli.json.gz to .codegen/cli.json for inspection
+    sources:
+      - .codegen/cli.json.gz
+    generates:
+      - .codegen/cli.json
+    cmds:
+      - gzip -d -k -f .codegen/cli.json.gz
+
   # Post-processing for genkit's `update-sdk` output, factored out of
   # generate-clijson so the SDK bumper can run the same cleanup after its own
   # update-sdk invocation.
@@ -923,6 +934,9 @@ tasks:
       # generate-cligen (which derives it from .gitattributes.manual plus the
       # rendered file list), so discard genkit's copy.
       - git checkout -- .gitattributes
+      # genkit writes plain .codegen/cli.json; it is committed gzipped to stay
+      # under 1MB. -n omits name and mtime so the output is reproducible.
+      - gzip -9 -n -f .codegen/cli.json
       - rm .github/workflows/next-changelog.yml
       - mv tagging.py internal/genkit/tagging.py
       - mv tagging.py.lock internal/genkit/tagging.py.lock
@@ -999,7 +1013,7 @@ tasks:
     desc: Generate bundle JSON schema
     sources: &SCHEMA_SOURCES
       - "**/*.go"
-      - .codegen/cli.json
+      - .codegen/cli.json.gz
       - bundle/internal/schema/annotations.yml
       - exclude: "**/*_test.go"
       - go.mod
@@ -1009,7 +1023,7 @@ tasks:
       - bundle/schema/jsonschema.json
       - bundle/internal/schema/annotations.yml
     cmds:
-      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
+      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json.gz"
 
   generate-validation:
     desc: Generate enum and required field validation code
@@ -1037,26 +1051,26 @@ tasks:
     desc: Generate direct engine API types YAML
     sources:
       - bundle/direct/tools/generate_apitypes.py
-      - .codegen/cli.json
+      - .codegen/cli.json.gz
       - acceptance/bundle/refschema/output/*.txt
     generates:
       - bundle/direct/dresources/apitypes.generated.yml
     cmds:
-      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/output > bundle/direct/dresources/apitypes.generated.yml'"
+      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json.gz acceptance/bundle/refschema/output > bundle/direct/dresources/apitypes.generated.yml'"
 
   generate-direct-resources:
     desc: Generate direct engine resources YAML
     deps: ['generate-direct-apitypes']
     sources:
       - bundle/direct/tools/generate_resources.py
-      - .codegen/cli.json
+      - .codegen/cli.json.gz
       - bundle/direct/dresources/apitypes.generated.yml
       - bundle/direct/dresources/apitypes.yml
       - acceptance/bundle/refschema/output/*.txt
     generates:
       - bundle/direct/dresources/configs/*.generated.yml
     cmds:
-      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/output bundle/direct/dresources/configs"
+      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json.gz bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/output bundle/direct/dresources/configs"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 

@@ -74,6 +74,8 @@ go.work.sum
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .cursor/cli.json
+# Committed gzipped; the plain file is a local copy from 'task unzip-clijson'
+/.codegen/cli.json
 tools/gofumpt
 .claude/worktrees/
 .worktrees/
