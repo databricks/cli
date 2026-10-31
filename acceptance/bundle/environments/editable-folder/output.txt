@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "job": [
+    "-e /Workspace/Users/[USERNAME]/.bundle/editable-folder/default/files/project"
+  ],
+  "pipeline": [
+    "-e /Workspace/Users/[USERNAME]/.bundle/editable-folder/default/files/project"
+  ],
+  "testing": [
+    "-e /Workspace/Users/[USERNAME]/.bundle/editable-folder/default/files/project[test]"
+  ]
+}

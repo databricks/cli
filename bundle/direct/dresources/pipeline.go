@@ -2,13 +2,18 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -22,6 +27,9 @@ type PipelineState struct {
 	// STs, Views). Nil means the server default (cascade) applies. Read from persisted state at
 	// delete time; never sent on create/update.
 	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
+
+	// Testing is PipelineSpec.testing, which the Go SDK does not have yet.
+	Testing *resources.PipelineTesting `json:"testing,omitempty"`
 }
 
 func (s *PipelineState) UnmarshalJSON(b []byte) error {
@@ -52,6 +60,9 @@ type PipelineRemote struct {
 	PipelineId                   string                              `json:"pipeline_id,omitempty"`
 	RunAsUserName                string                              `json:"run_as_user_name,omitempty"`
 	State                        pipelines.PipelineState             `json:"state,omitempty"`
+
+	// Testing is spec.testing of the Get response, read by DoRead because the Go SDK does not have it yet.
+	Testing *resources.PipelineTesting `json:"testing,omitempty"`
 }
 
 // Custom marshaler needed because embedded CreatePipeline has its own MarshalJSON
@@ -66,18 +77,27 @@ func (s PipelineRemote) MarshalJSON() ([]byte, error) {
 
 type ResourcePipeline struct {
 	client *databricks.WorkspaceClient
+
+	// apiClient sends the requests that the Go SDK cannot express yet because it lacks the testing
+	// field. It is built once, so that those requests share one rate limiter.
+	apiClient    *client.DatabricksClient
+	apiClientErr error
 }
 
-func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeline {
-	return &ResourcePipeline{
-		client: client,
+func (*ResourcePipeline) New(w *databricks.WorkspaceClient) *ResourcePipeline {
+	r := &ResourcePipeline{client: w, apiClient: nil, apiClientErr: nil}
+	// The adapter also builds a resource without a client to read its configuration.
+	if w != nil {
+		r.apiClient, r.apiClientErr = client.New(w.Config)
 	}
+	return r
 }
 
 func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState {
 	return &PipelineState{
 		CreatePipeline:   input.CreatePipeline,
 		CascadeOnDestroy: input.CascadeOnDestroy,
+		Testing:          input.Testing,
 	}
 }
 
@@ -86,15 +106,35 @@ func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
 		CreatePipeline: remote.CreatePipeline,
 		// cascade_on_destroy is input-only and absent from PipelineRemote, so it stays nil here.
 		CascadeOnDestroy: nil,
+		Testing:          remote.Testing,
 	}
 }
 
+// pipelineTestingResponse holds spec.testing of a Get Pipeline response.
+type pipelineTestingResponse struct {
+	Spec struct {
+		Testing *resources.PipelineTesting `json:"testing"`
+	} `json:"spec"`
+}
+
+// DoRead sends the same request as GetByPipelineId, but raw, so that it can also read spec.testing,
+// which GetPipelineResponse does not have yet. Switch back to GetByPipelineId once it does.
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
-	resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
-	if err != nil {
+	var raw json.RawMessage
+	if err := r.doRaw(ctx, http.MethodGet, "/api/2.0/pipelines/"+id, nil, &raw); err != nil {
 		return nil, err
 	}
-	return makePipelineRemote(resp), nil
+	var resp pipelines.GetPipelineResponse
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		return nil, err
+	}
+	var testing pipelineTestingResponse
+	if err := json.Unmarshal(raw, &testing); err != nil {
+		return nil, err
+	}
+	remote := makePipelineRemote(&resp)
+	remote.Testing = testing.Spec.Testing
+	return remote, nil
 }
 
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
@@ -155,10 +195,20 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 		PipelineId:                   p.PipelineId,
 		RunAsUserName:                p.RunAsUserName,
 		State:                        p.State,
+		// GetPipelineResponse has no spec.testing; DoRead sets it from the raw response.
+		Testing: nil,
 	}
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) (string, *PipelineRemote, error) {
+	if config.Testing != nil {
+		var response pipelines.CreatePipelineResponse
+		err := r.doWithTesting(ctx, http.MethodPost, "/api/2.0/pipelines", config.CreatePipeline, config.Testing, &response)
+		if err != nil {
+			return "", nil, err
+		}
+		return response.PipelineId, nil, nil
+	}
 	response, err := r.client.Pipelines.Create(ctx, config.CreatePipeline)
 	if err != nil {
 		return "", nil, err
@@ -212,6 +262,9 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
+	if config.Testing != nil {
+		return nil, r.doWithTesting(ctx, http.MethodPut, "/api/2.0/pipelines/"+id, request, config.Testing, nil)
+	}
 	return nil, r.client.Pipelines.Update(ctx, request)
 }
 
@@ -240,6 +293,34 @@ func (*ResourcePipeline) OverrideChangeDesc(_ context.Context, path *structpath.
 		change.Action = deployplan.Update
 	}
 	return nil
+}
+
+// doWithTesting sends a Create or Edit request with the testing field, which the Go SDK does not
+// have yet. The body is the SDK's JSON for the request plus testing. Remove this once
+// CreatePipeline and EditPipeline have the field; pipelines without testing already use the SDK.
+func (r *ResourcePipeline) doWithTesting(ctx context.Context, method, path string, request any, testing *resources.PipelineTesting, response any) error {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+	// RawMessage values keep the SDK's encoding, including large integers, unchanged.
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	body["testing"], err = json.Marshal(testing)
+	if err != nil {
+		return err
+	}
+	return r.doRaw(ctx, method, path, body, response)
+}
+
+// doRaw sends a request that the Go SDK cannot express yet because it lacks the testing field.
+func (r *ResourcePipeline) doRaw(ctx context.Context, method, path string, request, response any) error {
+	if r.apiClientErr != nil {
+		return fmt.Errorf("failed to create API client: %w", r.apiClientErr)
+	}
+	return r.apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, request, response)
 }
 
 // Note, terraform provider either

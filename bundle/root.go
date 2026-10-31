@@ -70,6 +70,13 @@ func mustGetRoot(ctx context.Context) (string, diag.Diagnostics) {
 	return getRootWithTraversal()
 }
 
+// HasRoot reports whether a bundle root is configured or can be found without loading it.
+// An invalid bundle root environment variable counts as a root so that loading reports the error.
+func HasRoot(ctx context.Context) bool {
+	path, diags := tryGetRoot(ctx)
+	return path != "" || diags.HasError()
+}
+
 // tryGetRoot returns a bundle root or an empty string if one cannot be found.
 func tryGetRoot(ctx context.Context) (string, diag.Diagnostics) {
 	// Note: an invalid value in the environment variable is still an error.

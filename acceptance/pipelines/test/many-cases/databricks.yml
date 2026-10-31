@@ -1,0 +1,14 @@
+bundle:
+  name: test-pipeline-test-many-cases
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-test-many-cases
+      libraries:
+        - file:
+            path: pipeline_file.py
+      testing:
+        sources:
+          - glob:
+              include: ./tests/**

@@ -198,6 +198,15 @@ var pipelineEnvDepsPattern = dyn.NewPattern(
 	dyn.Key("dependencies"),
 )
 
+var pipelineTestingEnvDepsPattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("pipelines"),
+	dyn.AnyKey(),
+	dyn.Key("testing"),
+	dyn.Key("environment"),
+	dyn.Key("dependencies"),
+)
+
 var clusterLibrariesPattern = dyn.NewPattern(
 	dyn.Key("resources"),
 	dyn.Key("clusters"),
@@ -221,6 +230,10 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		},
 		{
 			pattern: pipelineEnvDepsPattern,
+			fn:      expandEnvironmentDeps,
+		},
+		{
+			pattern: pipelineTestingEnvDepsPattern,
 			fn:      expandEnvironmentDeps,
 		},
 		{

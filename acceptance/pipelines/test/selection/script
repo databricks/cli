@@ -1,0 +1,39 @@
+trace $CLI pipelines deploy
+rm "$OUT_REQUESTS"
+
+title "Run all tests of the only pipeline"
+trace $CLI pipelines test --no-wait
+trace print_requests.py //updates
+# Like the service, the test server rejects a new update while one is active.
+$CLI pipelines stop my_pipeline &>> LOG.stop
+rm "$OUT_REQUESTS"
+
+title "Select tests by relative path, test ID, and workspace path, with pytest arguments"
+file_path=$($CLI bundle validate -o json | jq -r .workspace.file_path)
+trace $CLI pipelines test my_pipeline tests tests/test_orders.py::test_backfill $file_path/tests/test_orders.py::test_valid_order --pytest-arg=-k --pytest-arg='orders and not slow' --pytest-arg=-msmoke,fast --no-wait
+trace print_requests.py //updates
+$CLI pipelines stop my_pipeline &>> LOG.stop
+rm "$OUT_REQUESTS"
+
+title "The API rejects selections outside testing.sources"
+trace musterr $CLI pipelines test my_pipeline pipeline_file.py
+trace musterr $CLI pipelines test my_pipeline /Workspace/Shared/tests/test_shared.py
+rm "$OUT_REQUESTS"
+
+title "--pytest-arg also takes its value as the next argument"
+trace $CLI pipelines test my_pipeline --pytest-arg -k --pytest-arg 'orders, returns' --pytest-arg -m --pytest-arg smoke --no-wait
+trace print_requests.py //updates
+$CLI pipelines stop my_pipeline &>> LOG.stop
+rm "$OUT_REQUESTS"
+
+title "Relative paths resolve from the working directory"
+cd tests
+trace $CLI pipelines test my_pipeline test_orders.py::test_valid_order --no-wait
+cd ..
+trace print_requests.py //updates
+
+title "Test selections require the pipeline KEY first"
+trace musterr $CLI pipelines test tests/test_orders.py
+
+title "Test selections must be in the synchronized files"
+trace musterr $CLI pipelines test my_pipeline ../test_outside.py

@@ -1,0 +1,215 @@
+
+=== Relative test paths resolve to the deployed workspace paths
+>>> [CLI] bundle validate -o json
+{
+  "environment": {
+    "dependencies": [
+      "--editable /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+      "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
+      "./dist/*.whl"
+    ]
+  },
+  "sources": [
+    {
+      "glob": {
+        "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/**"
+      }
+    }
+  ]
+}
+
+>>> [CLI] bundle deploy
+Uploading dist/test_helpers-0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files...
+Created pipelines.orders
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //api/2.0/pipelines --nostamp
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/transformations/**"
+        }
+      }
+    ],
+    "name": "orders",
+    "testing": {
+      "sources": [
+        {
+          "glob": {
+            "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/**"
+          }
+        }
+      ],
+      "environment": {
+        "dependencies": [
+          "--editable /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+          "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
+          "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/artifacts/.internal/test_helpers-0.1-py3-none-any.whl"
+        ]
+      }
+    }
+  }
+}
+
+=== No changes after the deploy
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== A remote edit that drops testing shows in the plan
+>>> [CLI] bundle plan -o json
+{
+  "action": "update",
+  "old": {
+    "sources": [
+      {
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/**"
+        }
+      }
+    ],
+    "environment": {
+      "dependencies": [
+        "--editable /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+        "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
+        "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/artifacts/.internal/test_helpers-0.1-py3-none-any.whl"
+      ]
+    }
+  },
+  "new": {
+    "sources": [
+      {
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/**"
+        }
+      }
+    ],
+    "environment": {
+      "dependencies": [
+        "--editable /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+        "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
+        "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/artifacts/.internal/test_helpers-0.1-py3-none-any.whl"
+      ]
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading dist/test_helpers-0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files...
+Updated pipelines.orders
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Changing testing updates the pipeline
+>>> update_file.py databricks.yml ./tests/** ./tests/unit/**
+
+>>> [CLI] bundle plan
+update pipelines.orders
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading dist/test_helpers-0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files...
+Updated pipelines.orders
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //api/2.0/pipelines --nostamp
+{
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[ORDERS_ID]",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/transformations/**"
+        }
+      }
+    ],
+    "name": "orders",
+    "testing": {
+      "sources": [
+        {
+          "glob": {
+            "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/unit/**"
+          }
+        }
+      ],
+      "environment": {
+        "dependencies": [
+          "--editable /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+          "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
+          "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/artifacts/.internal/test_helpers-0.1-py3-none-any.whl"
+        ]
+      }
+    }
+  }
+}
+
+=== Removing testing sends an update without it
+>>> [CLI] bundle plan
+update pipelines.orders
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files...
+Updated pipelines.orders
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //api/2.0/pipelines --nostamp
+{
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[ORDERS_ID]",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/transformations/**"
+        }
+      }
+    ],
+    "name": "orders"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.orders
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.orders
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default
+
+Destroy: 1 deleted

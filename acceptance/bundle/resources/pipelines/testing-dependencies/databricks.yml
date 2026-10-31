@@ -1,0 +1,23 @@
+bundle:
+  name: pipeline-testing-dependencies
+
+resources:
+  pipelines:
+    orders:
+      name: orders
+      testing:
+        sources:
+          - glob:
+              include: /Workspace/Shared/orders/tests/**
+        environment:
+          dependencies:
+            # Accepted, as by the API.
+            - --editable /Workspace/Shared/orders[test]
+            - --requirement=/Workspace/Shared/orders/requirements.txt
+            - -r ./orders/requirements.txt
+            # Rejected, as by the API.
+            - faker==33.0
+            - git+https://github.com/example/helpers
+            - /Workspace/Shared/orders/requirements.txt
+            - --requirement ./orders/requirements.txt
+            - /Workspace/Shared/orders -i https://example.com/simple

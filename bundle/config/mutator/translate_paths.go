@@ -180,9 +180,7 @@ func (t *translateContext) rewritePath(
 	case paths.TranslateModeLocalRelativeWithPrefix:
 		interp, err = t.translateLocalRelativeWithPrefixPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeEnvironmentPipFlag:
-		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
-		// Add the flag prefix to the path to indicate it's a local file used in pip flags for environment dependencies.
-		interp = flag + " " + interp
+		interp, err = t.translatePipFlagPath(ctx, flag, input, localPath, localRelPath)
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
 	}
@@ -249,6 +247,26 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 		return "", ErrIsNotebook{localFullPath}
 	}
 	return path.Join(t.remoteRoot, localRelPath), nil
+}
+
+// translatePipFlagPath translates the local path after a pip flag of an environment dependency,
+// and keeps the flag in front of it. After -e, the path can also be a project folder, with
+// optional extras such as ./project[test].
+func (t *translateContext) translatePipFlagPath(ctx context.Context, flag, literal, localFullPath, localRelPath string) (string, error) {
+	if flag == "-e" {
+		folder, extras := localRelPath, ""
+		if i := strings.LastIndex(localRelPath, "["); i > 0 && strings.HasSuffix(localRelPath, "]") {
+			folder, extras = localRelPath[:i], localRelPath[i:]
+		}
+		if info, err := t.b.SyncRoot.Stat(folder); err == nil && info.IsDir() {
+			return flag + " " + path.Join(t.remoteRoot, folder) + extras, nil
+		}
+	}
+	interp, err := t.translateFilePath(ctx, literal, localFullPath, localRelPath)
+	if err != nil {
+		return "", err
+	}
+	return flag + " " + interp, nil
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {

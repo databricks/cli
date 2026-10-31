@@ -222,6 +222,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		mutator.TranslatePaths(),
 
+		// Reject the pipelines' testing.environment.dependencies that the API rejects. Runs after
+		// TranslatePaths, so that it checks the paths that deploy sends.
+		validate.PipelineTestingDependencies(),
+
 		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Workspace.SyncMode (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment

@@ -40,6 +40,13 @@ func TestVisitPipelinePaths(t *testing.T) {
 							},
 						},
 					},
+					// The acceptance test bundle/resources/pipelines/testing covers the testing paths
+					// that are rewritten. A package name is not a path.
+					Testing: &resources.PipelineTesting{
+						Environment: &resources.PipelineTestEnvironment{
+							Dependencies: []string{"faker"},
+						},
+					},
 				},
 			},
 		},

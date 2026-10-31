@@ -1,0 +1,1 @@
+trace $CLI bundle validate -o json | jq '{job: .resources.jobs.my_job.environments[0].spec.dependencies, pipeline: .resources.pipelines.my_pipeline.environment.dependencies, testing: .resources.pipelines.my_pipeline.testing.environment.dependencies}'

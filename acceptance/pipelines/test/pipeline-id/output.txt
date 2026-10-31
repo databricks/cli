@@ -1,0 +1,58 @@
+
+=== Relative test selections resolve against the folder of test IDs
+>>> [CLI] pipelines test --pipeline-id [UUID] tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/orders/tests --no-wait
+Pipeline: [UUID]
+Update: [UUID]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {
+      "test_selection": [
+        "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_backfill",
+        "/Workspace/Users/someone@example.com/orders/tests"
+      ]
+    }
+  }
+}
+
+=== Test case IDs are shown relative to that folder
+>>> [CLI] pipelines test --pipeline-id [UUID] tests
+Pipeline: [UUID]
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_orders.py::test_valid_order  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
+=== Without a root_path, the folder holds the test source folders
+>>> [CLI] pipelines test --pipeline-id [UUID] tests/test_orders.py
+Pipeline: [UUID]
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_orders.py::test_valid_order  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
+=== With test sources in two folders, IDs are relative to the folder that holds both
+>>> [CLI] pipelines test --pipeline-id [UUID] Users/someone@example.com/orders/tests/test_orders.py
+Pipeline: [UUID]
+Update: [UUID]
+Waiting for compute...
+Running tests...
+Users/someone@example.com/orders/tests/test_orders.py::test_valid_order  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
+=== Without a root_path or test sources, test selections must be workspace paths
+>>> musterr [CLI] pipelines test --pipeline-id [UUID] tests
+Error: cannot resolve test selection "tests": the pipeline has no root_path or testing.sources; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests
+
+=== Outside a project, --pipeline-id is required
+>>> musterr [CLI] pipelines test tests
+Error: outside a project, identify the pipeline with --pipeline-id

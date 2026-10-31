@@ -1,0 +1,54 @@
+trace $CLI pipelines deploy
+
+title "--no-wait returns after the update starts"
+trace $CLI pipelines test my_pipeline tests/test_orders.py --no-wait | tee submit.txt
+update_id=$(sed -n 's/^Update: //p' submit.txt)
+
+title "--resume reads the results of an existing update"
+trace $CLI pipelines test my_pipeline --resume $update_id
+
+title "--timeout stops waiting but not the update"
+trace $CLI pipelines test my_pipeline tests/test_slow.py --no-wait | tee submit.txt
+hang_update_id=$(sed -n 's/^Update: //p' submit.txt)
+rm submit.txt
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout 3s --junit-xml out.resumed.xml
+trace cat out.resumed.xml
+
+title "The command to read the results keeps the profile"
+cat > .databrickscfg <<EOF
+[run-control]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+EOF
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout 3s -p run-control
+unset DATABRICKS_CONFIG_FILE
+rm .databrickscfg
+
+title "Another update cannot start while the test update is active, and an older report is replaced"
+echo '<testsuites><testsuite name="my_pipeline" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.start-failed.xml
+trace musterr $CLI pipelines test my_pipeline tests/test_orders.py --junit-xml out.start-failed.xml
+
+title "Stopping the pipeline cancels the test update"
+trace $CLI pipelines stop my_pipeline
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --junit-xml out.resumed.xml
+
+title "Outside a project, an older passing report is replaced\n"
+echo '<testsuites><testsuite name="my_pipeline" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.outside.xml
+here=$PWD
+outside=$(mktemp -d)
+cd $outside
+musterr $CLI pipelines test --junit-xml "$here/out.outside.xml"
+cd $here
+rm -r $outside
+
+title "A project with errors names the first error in the report"
+mkdir invalid
+printf 'bundle:\n  name: invalid\nresources:\n  pipelines:\n    my_pipeline:\n      name: ${var.missing}\n' > invalid/databricks.yml
+cd invalid
+trace musterr $CLI pipelines test my_pipeline --junit-xml ../out.invalid.xml
+
+title "When the report cannot be written either, the write error is shown"
+trace musterr $CLI pipelines test my_pipeline --junit-xml missing/report.xml
+cd ..
+rm -r invalid

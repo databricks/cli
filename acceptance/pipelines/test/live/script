@@ -1,0 +1,20 @@
+if [ -n "$CLOUD_ENV" ] && [ -z "${TEST_PIPELINES_TESTING_ENABLED:-}" ]; then
+    echo "SKIP_TEST set TEST_PIPELINES_TESTING_ENABLED for a workspace with pipeline testing enabled"
+    exit 0
+fi
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Run the tests and wait for the results\n"
+# Durations differ between runs, so only the summary line and the report are compared. The script
+# stops if the command fails.
+$CLI pipelines test --junit-xml junit.xml &> LOG.test
+grep -E '^[0-9]+ tests?:' LOG.test
+grep -o '<testcase [^>]*name="[^"]*"' junit.xml

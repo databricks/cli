@@ -1,0 +1,26 @@
+trace $CLI pipelines deploy
+rm "$OUT_REQUESTS"
+
+title "A test ID resolves against the folder that test IDs are relative to\n"
+trace $CLI pipelines test my_pipeline tests/test_a.py::test_one
+trace print_requests.py //updates | jq -c .body.test_options
+
+title "The same ID from the pipeline folder, where it is a local path\n"
+cd pipeline
+trace $CLI pipelines test my_pipeline tests/test_a.py::test_one
+cd ..
+trace print_requests.py //updates | jq -c .body.test_options
+
+title "A local path from the bundle root\n"
+trace $CLI pipelines test my_pipeline pipeline/tests/test_a.py
+trace print_requests.py //updates | jq -c .body.test_options
+
+title "With tests outside root_path, a failing test ID printed in a subfolder runs again from there\n"
+cd src/split
+musterr $CLI pipelines test split > out.txt 2>&1
+failed_id=$(grep -o '^[^ ]*::test_returned_fails' out.txt | head -1)
+rm out.txt "$OUT_REQUESTS"
+echo "Printed: $failed_id"
+trace musterr $CLI pipelines test split "$failed_id"
+cd ../..
+trace print_requests.py //updates | jq -c .body.test_options

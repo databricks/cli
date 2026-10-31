@@ -816,6 +816,50 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	assert.Equal(t, "https://foo@bar.test/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
 }
 
+func TestTranslatePathEditableProjectFolder(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "project", "pyproject.toml"))
+	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
+
+	translate := func(dependencies ...string) (*bundle.Bundle, diag.Diagnostics) {
+		b := &bundle.Bundle{
+			SyncRootPath:   dir,
+			BundleRootPath: dir,
+			SyncRoot:       vfs.MustNew(dir),
+			Config: config.Root{
+				Workspace: config.Workspace{
+					FilePath: "/bundle",
+				},
+				Resources: config.Resources{
+					Pipelines: map[string]*resources.Pipeline{
+						"pipeline": {
+							CreatePipeline: pipelines.CreatePipeline{
+								Environment: &pipelines.PipelinesEnvironment{Dependencies: dependencies},
+							},
+						},
+					},
+				},
+			},
+		}
+		bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(dir, "fake.yml")}})
+		return b, bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	}
+
+	b, diags := translate("-e ./project", "-e ./project[test]", "-e .", "-e .[test]", "-r ./requirements.txt")
+	require.NoError(t, diags.Error())
+	assert.Equal(t, []string{
+		"-e /bundle/project",
+		"-e /bundle/project[test]",
+		"-e /bundle",
+		"-e /bundle[test]",
+		"-r /bundle/requirements.txt",
+	}, b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies)
+
+	// -r takes a file, so a folder after it is still an error.
+	_, diags = translate("-r ./project")
+	assert.ErrorContains(t, diags.Error(), "project")
+}
+
 func TestTranslatePathWithComplexVariables(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
