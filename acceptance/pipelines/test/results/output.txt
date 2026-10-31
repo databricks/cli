@@ -7,7 +7,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 === All selected tests pass
->>> [CLI] pipelines test my_pipeline tests/test_orders.py::test_valid_order
+>>> [CLI] pipelines test my_pipeline tests/test_orders.py::test_valid_order --junit-xml out.passed.xml
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -19,6 +19,7 @@ Running tests...
 tests/test_orders.py::test_valid_order  PASSED (1.00s)
 
 1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+JUnit report: out.passed.xml
 
 >>> print_requests.py --get //events
 {
