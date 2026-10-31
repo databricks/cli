@@ -228,13 +228,26 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 
 	update.polls++
 	return Response{
-		Body: pipelines.GetUpdateResponse{
-			Update: &pipelines.UpdateInfo{
+		Body: fakeGetUpdateResponse{
+			Update: fakeUpdateInfo{
 				UpdateId: updateId,
 				State:    update.states[update.stateIndex()],
+				TestOnly: update.testOnly,
 			},
 		},
 	}
+}
+
+// fakeGetUpdateResponse is a Get Update response with UpdateInfo.test_only, which the Go SDK does not have
+// yet. Like the service where pipeline testing is enabled, it reports test_only for every update.
+type fakeGetUpdateResponse struct {
+	Update fakeUpdateInfo `json:"update"`
+}
+
+type fakeUpdateInfo struct {
+	UpdateId string                    `json:"update_id"`
+	State    pipelines.UpdateInfoState `json:"state"`
+	TestOnly bool                      `json:"test_only"`
 }
 
 func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {

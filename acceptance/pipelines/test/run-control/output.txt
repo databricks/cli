@@ -19,7 +19,6 @@ Update: [UUID]
 >>> [CLI] pipelines test my_pipeline --resume [UUID]
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
-Waiting for compute...
 Running tests...
 tests/test_orders.py::test_valid_order  PASSED (1.00s)
 
@@ -37,7 +36,6 @@ Update: [UUID]
 >>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
-Waiting for compute...
 Running tests...
 Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]
 
@@ -68,3 +66,7 @@ Update: [UUID]
 RUN INCOMPLETE: the update was canceled before all test results were received.
 Results received: none.
 Error: update [UUID] is CANCELED
+
+=== --resume rejects an update that is not a test update
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID]
+Error: update [UUID] is not a test update; pass the update ID that pipelines test printed
