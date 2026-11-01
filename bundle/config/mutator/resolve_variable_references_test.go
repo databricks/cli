@@ -105,6 +105,50 @@ func TestResolveVolumePathReferencesOnlyResources_MissingTarget(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "reference does not exist: ${resources.volumes.missing.volume_path}")
 }
 
+func TestFactory4001DD47A437(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Schemas: map[string]*resources.Schema{"test": {}},
+				Volumes: map[string]*resources.Volume{"foo": {}},
+			},
+		},
+	}
+	volume := b.Config.Resources.Volumes["foo"]
+	volume.SchemaName = "${schemas.test.name}"
+	volume.CatalogName = "${schemas.test.catalog_name}"
+
+	diags := bundle.Apply(t.Context(), b, ResolveVolumePathReferencesOnlyResources())
+	require.Len(t, diags, 2)
+	require.Error(t, diags.Error())
+	require.Equal(t, "reference does not exist: ${schemas.test.name}", diags[0].Summary)
+	require.Equal(t, "did you mean:\n  ${resources.schemas.test.name}", diags[0].Detail)
+	require.Equal(t, "reference does not exist: ${schemas.test.catalog_name}", diags[1].Summary)
+	require.Equal(t, "did you mean:\n  ${resources.schemas.test.catalog_name}", diags[1].Detail)
+
+	b = &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Schemas: map[string]*resources.Schema{"test": {}},
+				Volumes: map[string]*resources.Volume{"foo": {}},
+			},
+		},
+	}
+	schema := b.Config.Resources.Schemas["test"]
+	schema.Name = "myschema"
+	schema.CatalogName = "main"
+	volume = b.Config.Resources.Volumes["foo"]
+	volume.SchemaName = "${resources.schemas.test.name}"
+	volume.CatalogName = "${resources.schemas.test.catalog_name}"
+
+	diags = bundle.Apply(t.Context(), b, ResolveVolumePathReferencesOnlyResources())
+	require.NoError(t, diags.Error())
+	diags = bundle.Apply(t.Context(), b, ResolveVariableReferencesOnlyResources("resources"))
+	require.NoError(t, diags.Error())
+	require.Equal(t, "myschema", b.Config.Resources.Volumes["foo"].SchemaName)
+	require.Equal(t, "main", b.Config.Resources.Volumes["foo"].CatalogName)
+}
+
 func TestIsVolumePathReferencePath(t *testing.T) {
 	require.True(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.volume_path")))
 	require.False(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.name")))

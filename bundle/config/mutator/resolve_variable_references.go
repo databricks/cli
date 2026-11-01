@@ -59,7 +59,8 @@ type resolveVariableReferences struct {
 	// outside of 'resources'.
 	includeResources bool
 
-	artifactsReferenceUsed bool
+	artifactsReferenceUsed  bool
+	validateVolumeSchemaRefs bool
 
 	// excludePaths lists variable reference paths (e.g. "workspace.file_path") whose
 	// resolution should be skipped. References to these paths remain unresolved so a
@@ -103,11 +104,12 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 // ResolveVolumePathReferencesOnlyResources resolves only references to resources.volumes.*.volume_path.
 func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 	return &resolveVariableReferences{
-		prefixes:         []string{"resources"},
-		lookupFn:         lookup,
-		allowPathFn:      isVolumePathReferencePath,
-		extraRounds:      maxResolutionRounds - 1,
-		includeResources: true,
+		prefixes:                 []string{"resources"},
+		lookupFn:                 lookup,
+		allowPathFn:              isVolumePathReferencePath,
+		extraRounds:              maxResolutionRounds - 1,
+		includeResources:         true,
+		validateVolumeSchemaRefs: true,
 	}
 }
 
@@ -169,6 +171,12 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	var diags diag.Diagnostics
+	if m.validateVolumeSchemaRefs {
+		diags = diags.Extend(validateVolumeSchemaReferences(b))
+		if diags.HasError() {
+			return diags
+		}
+	}
 	maxRounds := 1 + m.extraRounds
 
 	for round := range maxRounds {
@@ -198,6 +206,28 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		b.Metrics.SetBoolValue("artifacts_reference_used", true)
 	}
 
+	return diags
+}
+
+func validateVolumeSchemaReferences(b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+	for _, volume := range b.Config.Resources.Volumes {
+		if volume == nil {
+			continue
+		}
+		for _, value := range []string{volume.SchemaName, volume.CatalogName} {
+			_, _ = dynvar.Resolve(dyn.V(value), func(path dyn.Path) (dyn.Value, error) {
+				if len(path) > 0 && path[0].Key() == "schemas" {
+					diags = diags.Append(diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  fmt.Sprintf("reference does not exist: ${%s}", path.String()),
+						Detail:   fmt.Sprintf("did you mean:\n  ${resources.%s}", path.String()),
+					})
+				}
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
+			})
+		}
+	}
 	return diags
 }
 
