@@ -166,15 +166,15 @@ func TestSetHost(t *testing.T) {
 	profile2 := loadTestProfile(t, ctx, "profile-2")
 
 	// Test error when both flag and argument are provided
-	authArguments.Host = "val from --host"
-	err := setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
+	authArguments.Host = "https://www.host-from-flag.test"
+	err := setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host-from-arg.test"})
 	assert.EqualError(t, err, "please only provide a host as an argument or a flag, not both")
 
 	// Test setting host from flag
-	authArguments.Host = "val from --host"
+	authArguments.Host = "https://www.host-from-flag.test"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "val from --host", authArguments.Host)
+	assert.Equal(t, "https://www.host-from-flag.test", authArguments.Host)
 
 	// Test setting host from flag with trailing slash is stripped
 	authArguments.Host = "https://www.host1.test/"
@@ -184,9 +184,9 @@ func TestSetHost(t *testing.T) {
 
 	// Test setting host from argument
 	authArguments.Host = ""
-	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host-from-arg.test"})
 	assert.NoError(t, err)
-	assert.Equal(t, "val from [HOST]", authArguments.Host)
+	assert.Equal(t, "https://www.host-from-arg.test", authArguments.Host)
 
 	// Test setting host from argument with trailing slash is stripped
 	authArguments.Host = ""
@@ -235,6 +235,11 @@ func TestSetHost(t *testing.T) {
 	authArguments.Host = "https://?o=123"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.EqualError(t, err, `invalid host "https://?o=123"`)
+
+	// Test host that is not a URL from flag
+	authArguments.Host = "my workspace.test"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "my workspace.test"`)
 
 	// Test host:port without a scheme from flag
 	authArguments = auth.AuthArguments{Host: "www.host1.test:8080"}

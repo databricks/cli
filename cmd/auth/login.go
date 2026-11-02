@@ -626,9 +626,9 @@ var errInvalidHost = errors.New("invalid host")
 // normalizeLoginHost strips the trailing slash and the query params from the
 // host and moves the workspace and account ID query params into WorkspaceID and
 // AccountID unless they are set.
-// It fails if the host has no hostname, e.g. for "/", "?o=123" or "https://",
-// because login would then use discovery or DATABRICKS_HOST, or connect to a
-// host named "https".
+// It fails if the host is not a URL with a hostname, e.g. for "/", "?o=123",
+// "https://" or "my workspace.test", because login would then use discovery
+// or DATABRICKS_HOST, connect to a host named "https", or fail later.
 func normalizeLoginHost(authArguments *auth.AuthArguments) error {
 	rawHost := authArguments.Host
 	authArguments.Host = strings.TrimSuffix(strings.TrimSpace(authArguments.Host), "/")
@@ -637,7 +637,7 @@ func normalizeLoginHost(authArguments *auth.AuthArguments) error {
 	// URL params from explicit --host override stale profile values.
 	params := auth.ExtractHostQueryParams(authArguments.Host)
 	authArguments.Host = params.Host
-	if lacksHostname(authArguments.Host) {
+	if !hasHostname(authArguments.Host) {
 		return fmt.Errorf("%w %q", errInvalidHost, rawHost)
 	}
 	if authArguments.WorkspaceID == "" {
@@ -654,10 +654,9 @@ func validateLoginHost(host string) error {
 	return normalizeLoginHost(&auth.AuthArguments{Host: host})
 }
 
-// lacksHostname reports whether host, with or without a scheme, is a URL
-// without a hostname. A host that is not a URL, e.g. with spaces, is not
-// rejected here and fails later as before.
-func lacksHostname(host string) bool {
+// hasHostname reports whether host, with or without a scheme, is a URL with a
+// hostname.
+func hasHostname(host string) bool {
 	u, err := url.Parse(host)
 	// Like the SDK, treat a host without an http(s) scheme as an https host.
 	// url.Parse reads "localhost:8080" with "localhost" as the scheme and
@@ -666,7 +665,7 @@ func lacksHostname(host string) bool {
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
 		u, err = url.Parse("https://" + host)
 	}
-	return err == nil && u.Hostname() == ""
+	return err == nil && u.Hostname() != ""
 }
 
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
