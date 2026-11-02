@@ -21,6 +21,13 @@ type fakeDbfs struct {
 	nextHandle int64
 }
 
+// The real API's per-call limits, enforced so that broken chunking in the CLI fails locally too.
+const (
+	dbfsMaxBlockSize   = 1 << 20
+	dbfsMaxReadSize    = 1 << 20
+	dbfsDefaultReadLen = 1 << 19
+)
+
 type dbfsFile struct {
 	data    []byte
 	modTime int64
@@ -66,6 +73,9 @@ func dbfsCleanPath(p string) string {
 func (d *fakeDbfs) mkdirs(p string) *Response {
 	var missing []string
 	for dir := p; ; dir = path.Dir(dir) {
+		if dir == "/" {
+			break
+		}
 		if _, isFile := d.files[dir]; isFile {
 			resp := dbfsError(400, "RESOURCE_ALREADY_EXISTS", fmt.Sprintf("A file or directory already exists at the input path %s.", dir))
 			return &resp
@@ -177,6 +187,9 @@ func (s *FakeWorkspace) DbfsAddBlock(req Request) Response {
 	if !ok {
 		return dbfsError(404, "RESOURCE_DOES_NOT_EXIST", fmt.Sprintf("No handle %d.", request.Handle))
 	}
+	if len(data) > dbfsMaxBlockSize {
+		return dbfsError(400, "MAX_BLOCK_SIZE_EXCEEDED", fmt.Sprintf("Block size %d exceeds the maximum of %d bytes.", len(data), dbfsMaxBlockSize))
+	}
 	h.data = append(h.data, data...)
 	return Response{Body: map[string]any{}}
 }
@@ -211,10 +224,22 @@ func (s *FakeWorkspace) DbfsRead(req Request) Response {
 		return dbfsNotFound(p)
 	}
 
-	offset, _ := strconv.ParseInt(q.Get("offset"), 10, 64)
-	length, err := strconv.ParseInt(q.Get("length"), 10, 64)
-	if err != nil || length <= 0 {
-		length = int64(len(f.data))
+	offset := int64(0)
+	if v := q.Get("offset"); v != "" {
+		var err error
+		if offset, err = strconv.ParseInt(v, 10, 64); err != nil || offset < 0 {
+			return dbfsError(400, "INVALID_PARAMETER_VALUE", "offset must be a non-negative integer")
+		}
+	}
+	length := int64(dbfsDefaultReadLen)
+	if v := q.Get("length"); v != "" {
+		var err error
+		if length, err = strconv.ParseInt(v, 10, 64); err != nil || length < 0 {
+			return dbfsError(400, "INVALID_PARAMETER_VALUE", "length must be a non-negative integer")
+		}
+	}
+	if length > dbfsMaxReadSize {
+		return dbfsError(400, "MAX_READ_SIZE_EXCEEDED", fmt.Sprintf("Read length %d exceeds the maximum of %d bytes.", length, dbfsMaxReadSize))
 	}
 	start := min(offset, int64(len(f.data)))
 	end := min(start+length, int64(len(f.data)))
@@ -251,7 +276,7 @@ func (s *FakeWorkspace) DbfsDelete(req Request) Response {
 		}
 	}
 	for dirPath := range d.dirs {
-		if strings.HasPrefix(dirPath, prefix) {
+		if dirPath != p && strings.HasPrefix(dirPath, prefix) {
 			children = append(children, dirPath)
 		}
 	}
