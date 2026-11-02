@@ -8,10 +8,12 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/internal/clijson"
 )
 
 // cliJSONPath is the checked-in contract instance, relative to this package.
-const cliJSONPath = "../../.codegen/cli.json"
+const cliJSONPath = "../../.codegen/cli.json.gz"
 
 // fullDoc decodes every block of cli.json that the CLI cares about. The schemas
 // block is consumed by the Python direct-engine generators; here we only need
@@ -35,7 +37,7 @@ var shaRE = regexp.MustCompile(`^[0-9a-f]{40}$`)
 // every service + batch file renders to syntactically valid Go. This is the
 // CLI-repo-side confirmation that the cli.json spec is consumable.
 func TestCliJSONIsInterpretable(t *testing.T) {
-	raw, err := os.ReadFile(cliJSONPath)
+	raw, err := clijson.ReadFile(cliJSONPath)
 	if err != nil {
 		t.Fatalf("read %s: %v", cliJSONPath, err)
 	}

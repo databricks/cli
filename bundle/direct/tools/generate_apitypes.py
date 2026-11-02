@@ -8,6 +8,7 @@ Note, we could search for exact type but that may not always work if we create a
 """
 
 import argparse
+import gzip
 import json
 import re
 import sys
@@ -66,12 +67,12 @@ def get_schema_fields(schemas):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate apitypes.yml from the cli.json schema block")
-    parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
+    parser.add_argument("apischema", type=Path, help="Path to cli.json.gz schema block")
     parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
     args = parser.parse_args()
 
     resource_fields = parse_out_fields(args.out_fields)
-    schemas = json.loads(args.apischema.read_text())["schemas"]
+    schemas = json.loads(gzip.decompress(args.apischema.read_bytes()))["schemas"]
     schema_fields = get_schema_fields(schemas)
 
     field_counts = Counter()

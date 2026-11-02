@@ -82,7 +82,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/docgen/bundle/schema"
           go run ./bundle/internal/schema ./bundle/internal/schema \
-            "$RUNNER_TEMP/docgen/bundle/schema/jsonschema_for_docs.json" .codegen/cli.json --docs
+            "$RUNNER_TEMP/docgen/bundle/schema/jsonschema_for_docs.json" .codegen/cli.json.gz --docs
 
       - name: Stage regenerated file on docgen
         working-directory: ${{ runner.temp }}/docgen

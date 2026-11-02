@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 
 The SDK version lives in `go.mod` (`github.com/databricks/databricks-sdk-go`) and the pinned spec SHA lives in `.codegen/_openapi_sha`.
 These two move as a pair; everything else in this skill is regenerated from them or is fallout you fix by hand.
-Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `python/databricks/bundles/**`); regenerate them.
+Do not hand-edit generated files (`.codegen/cli.json.gz`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `python/databricks/bundles/**`); regenerate them.
 
 The Python tasks (`pydabs-*`, and the `pydabs-codegen` step inside `generate-check`) all run through `uv`. If one fails because `uv` is missing or because the host's `python3` is too old (e.g. 3.9), install `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`) rather than touching the system Python: `uv run` provisions the interpreter each package pins (`>=3.10`, and `==3.13.*` under `python/codegen/`) and downloads it if needed. Do not chase the system Python version.
 The acceptance goldens are the exception: they need CI's `uv` index, see step 4.
@@ -17,7 +17,7 @@ The acceptance goldens are the exception: they need CI's `uv` index, see step 4.
 ## The SDK bumper
 
 The SDK bumper (eng-dev-ecosystem automation) does steps 1-4 for every new stable Go SDK release.
-It opens a PR from the `automation/go-sdk-vX.Y.Z` branch of `databricks/cli`, titled `Update Go SDK to vX.Y.Z`, containing the `go get` + `go mod tidy` result, `.codegen/_openapi_sha`, `.codegen/cli.json` (genkit, followed by `./task generate-clijson-post`), and a changelog fragment without a PR link.
+It opens a PR from the `automation/go-sdk-vX.Y.Z` branch of `databricks/cli`, titled `Update Go SDK to vX.Y.Z`, containing the `go get` + `go mod tidy` result, `.codegen/_openapi_sha`, `.codegen/cli.json.gz` (genkit, followed by `./task generate-clijson-post`), and a changelog fragment without a PR link.
 `generate-clijson-post` ends with `bump-sdk-post` (step 4), whose error it ignores so that the bumper, which aborts on any error there, still opens a PR. The PR therefore carries whatever got regenerated, and stays red while the bump needs hand fixes (step 5).
 Nothing logs the task's output in the bumper, so judge from the PR what got regenerated.
 The bumper's environment has `uv` and Python but no `ruff`, which the acceptance tests require, so `test-update` stops at `TestAccept/prerequisites` there and bumper PRs carry no golden updates.

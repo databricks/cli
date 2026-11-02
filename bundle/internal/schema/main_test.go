@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const cliJSONPath = "../../../.codegen/cli.json"
+const cliJSONPath = "../../../.codegen/cli.json.gz"
 
 func TestJobRunIdempotencyTokenIsNotInSchema(t *testing.T) {
 	s := jsonschema.Schema{

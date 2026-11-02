@@ -40,8 +40,8 @@ Every acceptance test runs locally. `Cloud = true` in a `test.toml` means the te
 ### Specialized Commands
 
 - `./task generate-schema` - Generate bundle JSON schema
-- `./task generate-cligen` - Regenerate CLI command stubs from the checked-in .codegen/cli.json
-- `./task generate-clijson` - Refresh .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo)
+- `./task generate-cligen` - Regenerate CLI command stubs from the checked-in .codegen/cli.json.gz
+- `./task generate-clijson` - Refresh .codegen/cli.json.gz from the OpenAPI spec via genkit (requires universe repo)
 - `./task generate` - Run all generators
 
 ### Git Commands

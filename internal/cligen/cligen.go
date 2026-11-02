@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	input := flag.String("input", ".codegen/cli.json", "path to the cli.json spec")
+	input := flag.String("input", ".codegen/cli.json.gz", "path to the gzipped cli.json spec")
 	output := flag.String("output", ".", "target directory (CLI repo root)")
 	flag.Parse()
 
