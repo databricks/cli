@@ -241,6 +241,11 @@ func TestSetHost(t *testing.T) {
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.EqualError(t, err, `invalid host "my workspace.test"`)
 
+	// Test host with a scheme that is not a URL from flag
+	authArguments.Host = "https://my workspace.test"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "https://my workspace.test"`)
+
 	// Test host:port without a scheme from flag
 	authArguments = auth.AuthArguments{Host: "www.host1.test:8080"}
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})

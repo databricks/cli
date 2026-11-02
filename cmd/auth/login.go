@@ -627,7 +627,7 @@ var errInvalidHost = errors.New("invalid host")
 // host and moves the workspace and account ID query params into WorkspaceID and
 // AccountID unless they are set.
 // It fails if the host is not a URL with a hostname, e.g. for "/", "?o=123",
-// "https://" or "my workspace.test", because login would then use discovery
+// "https://" or "https://my workspace.test", because login would then use discovery
 // or DATABRICKS_HOST, connect to a host named "https", or fail later.
 func normalizeLoginHost(authArguments *auth.AuthArguments) error {
 	rawHost := authArguments.Host
@@ -658,11 +658,12 @@ func validateLoginHost(host string) error {
 // hostname.
 func hasHostname(host string) bool {
 	u, err := url.Parse(host)
-	// Like the SDK, treat a host without an http(s) scheme as an https host.
-	// url.Parse reads "localhost:8080" with "localhost" as the scheme and
-	// fails on "127.0.0.1:8080". Unlike the SDK, keep an explicit "https:"
-	// as the scheme, so "https:" is not read as a host named "https".
-	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+	// Treat a host without an http(s) scheme as an https host. url.Parse
+	// reads "localhost:8080" with "localhost" as the scheme and fails on
+	// "127.0.0.1:8080". Keep an explicit "https:" as the scheme, and don't
+	// retry a host with "://" that fails to parse, so that neither "https:"
+	// nor "https://my workspace.test" is read as a host named "https".
+	if !strings.Contains(host, "://") && (err != nil || (u.Scheme != "https" && u.Scheme != "http")) {
 		u, err = url.Parse("https://" + host)
 	}
 	return err == nil && u.Hostname() != ""
