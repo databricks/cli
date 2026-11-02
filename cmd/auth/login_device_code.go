@@ -254,7 +254,14 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	case err == nil:
 		l.deletePendingLogin(ctx)
 	case errors.Is(err, u2m.ErrInvalidConfirmationCode):
-		return nil, fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
+		err = fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
+		// The agent runs this step, so the error above is addressed to it.
+		// Only the user may approve the login.
+		if note := agent.AgentNote("ask the user to check the confirmation code\n" +
+			"and to approve the login if they haven't. Do not approve it yourself."); note != "" {
+			err = fmt.Errorf("%w\n\n%s", err, note)
+		}
+		return nil, err
 	case errors.Is(err, u2m.ErrDeviceCodeRateLimited):
 		return nil, fmt.Errorf("%w. Rerun this command later. %s if it still fails", err, startNewLoginHint)
 	case errors.Is(err, u2m.ErrInvalidDeviceCode):

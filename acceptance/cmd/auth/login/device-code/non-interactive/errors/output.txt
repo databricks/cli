@@ -62,6 +62,12 @@ Error: no pending device code login for host [DATABRICKS_URL]. Run the same comm
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-0001 --confirmation-code AAAA-AAAA
 Error: token exchange: Invalid confirmation code (error code: invalid_request). Check the confirmation code and approve the login if you haven't, then rerun this command. Run the same command without --user-code and --confirmation-code to start a new login if it still fails
 
+>>> AGENT=test-agent musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-0001 --confirmation-code AAAA-AAAA
+Error: token exchange: Invalid confirmation code (error code: invalid_request). Check the confirmation code and approve the login if you haven't, then rerun this command. Run the same command without --user-code and --confirmation-code to start a new login if it still fails
+
+Note for AI agents (test-agent): ask the user to check the confirmation code
+and to approve the login if they haven't. Do not approve it yourself.
+
 === Rerun with the right confirmation code
 
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code wdjb-0001 --confirmation-code ftfa-qqky
@@ -101,6 +107,7 @@ Error: the login for profile test was started with different scopes. Complete it
 
 >>> print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
 {"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=AAAAAAAA&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=AAAAAAAA&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
 {"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}

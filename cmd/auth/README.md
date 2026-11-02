@@ -123,7 +123,10 @@ in two steps instead:
 Agent detection (`useragent.AgentProvider()`) does not pick the flow. It only
 adds a note after the user code, in both flows, that tells the agent to pass
 the login on to the user. In the flow that reads the confirmation code from
-stdin, the note also tells the agent to enter the code at the prompt.
+stdin, the note also tells the agent to enter the code at the prompt. When the
+server rejects the confirmation code of the second step, the error gets a note
+that tells the agent to ask the user to approve the login, not to approve it
+itself.
 
 The pending login is a token store entry with `PendingLogin` set instead of a
 token. Its key is the login's cache key (the profile name, or the host without
