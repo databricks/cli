@@ -1,0 +1,47 @@
+bundle:
+  name: variable_locations
+
+include:
+  - variables/*.yml
+  - targets.yml
+
+variables:
+  simple:
+    default: simple-default
+  from_cli:
+    description: Required, assigned with --var
+  from_env:
+    description: Required, assigned with BUNDLE_VAR_from_env
+  from_file:
+    description: Required, assigned in variable-overrides.json
+  complex_var:
+    type: complex
+    default:
+      key: value
+  var_in_var:
+    default: ${var.simple}-suffix
+  lookup_var:
+    lookup:
+      service_principal: deco-test-spn
+  override_short:
+    default: base
+  override_full:
+    default: base
+  split:
+    description: Declared here, default in an included file
+  dash-name:
+    default: dash-default
+  lookup_overridden:
+    lookup:
+      service_principal: deco-test-spn
+
+targets:
+  dev:
+    default: true
+    variables:
+      override_short: dev-short
+      override_full:
+        default: dev-full
+      complex_var:
+        key: dev-value
+      lookup_overridden: dev-instead-of-lookup
