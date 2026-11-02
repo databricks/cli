@@ -235,22 +235,30 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	if err != nil {
 		err = fmt.Errorf("token exchange: %w", err)
 	}
-	// The server no longer accepts an invalid device code, so its pending
-	// login is deleted. A wrong confirmation code leaves the device code
-	// valid, and a rate limit can be lifted, so the pending login is kept for
-	// a rerun. After a successful exchange, storeLoginToken deletes it.
+	// The server no longer accepts a device code that it exchanged for a
+	// token or considers invalid, so its pending login is deleted. A wrong
+	// confirmation code leaves the device code valid, and a rate limit can be
+	// lifted, so the pending login is kept for a rerun.
 	switch {
+	case err == nil:
+		l.deletePendingLogin(ctx)
 	case errors.Is(err, u2m.ErrInvalidConfirmationCode):
 		return nil, fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
 	case errors.Is(err, u2m.ErrDeviceCodeRateLimited):
 		return nil, fmt.Errorf("%w. Rerun this command later. %s if it still fails", err, startNewLoginHint)
 	case errors.Is(err, u2m.ErrInvalidDeviceCode):
-		if err := l.tokenStore.Delete(l.key); err != nil {
-			log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
-		}
+		l.deletePendingLogin(ctx)
 		return nil, fmt.Errorf("%w. %s", err, startNewLoginHint)
 	}
 	return token, err
+}
+
+// deletePendingLogin deletes the pending login. A pending login that is left
+// over only fails a rerun of the second step, so an error is only logged.
+func (l nonInteractiveDeviceCodeLogin) deletePendingLogin(ctx context.Context) {
+	if err := l.tokenStore.Delete(l.key); err != nil {
+		log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
+	}
 }
 
 // changedSetting describes the setting that differs from the one pending was
