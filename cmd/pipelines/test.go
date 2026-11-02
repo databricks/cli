@@ -223,6 +223,16 @@ func withWorkspacePrefix(p string) string {
 	return "/Workspace" + p
 }
 
+// hasRelativeSelection reports whether a selection is a relative path.
+func hasRelativeSelection(selections []string) bool {
+	for _, selection := range selections {
+		if p, _, _ := strings.Cut(selection, "::"); !strings.HasPrefix(p, "/") {
+			return true
+		}
+	}
+	return false
+}
+
 // rootPathSelection resolves a relative path against the pipeline's root_path.
 func rootPathSelection(rootPath, relPath string) (string, error) {
 	if rootPath == "" {
@@ -311,7 +321,7 @@ func (t testTarget) printHeader(out io.Writer, updateID string) {
 }
 
 // resolveTestTargetByID identifies the pipeline by --pipeline-id; all positional arguments are selections.
-func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string) (testTarget, error) {
+func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string, wait bool) (testTarget, error) {
 	if cmd.Flag("target").Value.String() == "" {
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 	}
@@ -321,9 +331,14 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 
-	rootPath, err := getRootPath(ctx, w, pipelineID)
-	if err != nil {
-		return testTarget{}, err
+	// root_path resolves relative selections and shortens the test IDs printed while waiting.
+	var rootPath string
+	if wait || hasRelativeSelection(args) {
+		var err error
+		rootPath, err = getRootPath(ctx, w, pipelineID)
+		if err != nil {
+			return testTarget{}, err
+		}
 	}
 	selections, err := resolveTestSelections(args, func(p string) (string, error) {
 		return rootPathSelection(rootPath, p)
@@ -587,7 +602,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		var target testTarget
 		var err error
 		if pipelineID != "" {
-			target, err = resolveTestTargetByID(cmd, args, pipelineID)
+			target, err = resolveTestTargetByID(cmd, args, pipelineID, !noWait)
 		} else {
 			ctx := logdiag.InitContext(cmd.Context())
 			cmd.SetContext(ctx)

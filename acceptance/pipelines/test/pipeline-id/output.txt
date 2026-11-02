@@ -33,11 +33,12 @@ tests/test_orders.py::test_valid_order  PASSED (1.00s)
 >>> musterr [CLI] pipelines test --pipeline-id [UUID] tests
 Error: cannot resolve test selection "tests": the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests
 
+=== With --no-wait and only workspace paths, the pipeline is not read
 >>> [CLI] pipelines test --pipeline-id [UUID] /Workspace/Users/someone@example.com/tests/test_other.py::test_x --no-wait
 Pipeline: [UUID]
 Update: [UUID]
 
->>> print_requests.py //updates
+>>> print_requests.py --get //pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",

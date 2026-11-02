@@ -16,8 +16,11 @@ rm "$OUT_REQUESTS"
 
 title "Without a root_path, test selections must be workspace paths"
 trace musterr $CLI pipelines test --pipeline-id $no_root_pipeline_id tests
+rm "$OUT_REQUESTS"
+
+title "With --no-wait and only workspace paths, the pipeline is not read"
 trace $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Users/someone@example.com/tests/test_other.py::test_x --no-wait
-trace print_requests.py //updates
+trace print_requests.py --get //pipelines
 $CLI api post /api/2.0/pipelines/$no_root_pipeline_id/stop &>> LOG.stop
 rm "$OUT_REQUESTS"
 
