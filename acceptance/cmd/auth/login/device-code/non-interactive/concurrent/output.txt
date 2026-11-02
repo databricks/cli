@@ -5,17 +5,15 @@
 
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
 
->>> update_file.py home/.databricks/token-cache.json WDJBMJHT NEWRCODE
-
 >>> cache_keys
 [
   "test#device-code"
 ]
 
->>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 Error: --user-code does not match the pending login for profile test. Check the user code. If you started a newer login, complete it with its user code. Run the same command without --user-code and --confirmation-code to start a new login
 
->>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code NEWR-CODE --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-0002 --confirmation-code FTFA-QQKY
 Profile test was successfully saved
 
 >>> print_requests.py --oneline //oidc/v1/token
@@ -38,12 +36,12 @@ Profile test was successfully saved
   "test"
 ]
 
->>> [CLI] auth login --host [DATABRICKS_URL] --profile b --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile b --use-device-code --user-code WDJB-0004 --confirmation-code FTFA-QQKY
 Profile b was successfully saved
 
->>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code --user-code WDJB-0005 --confirmation-code FTFA-QQKY
 
->>> [CLI] auth login --host [DATABRICKS_URL] --profile a --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile a --use-device-code --user-code WDJB-0003 --confirmation-code FTFA-QQKY
 Profile a was successfully saved
 
 >>> cache_keys

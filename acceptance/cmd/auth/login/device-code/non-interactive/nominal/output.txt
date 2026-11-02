@@ -6,10 +6,10 @@ Using a browser on another device, visit:
 [DATABRICKS_URL]/device/verification
 
 And enter the code:
-WDJB-MJHT
+WDJB-0001
 
 Once finished, complete the login by running the same command with
---user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+--user-code WDJB-0001 and --confirmation-code set to the confirmation code
 provided in your browser.
 
 === The first step stores the device code and saves no profile
@@ -24,7 +24,7 @@ home/.databricks/token-cache.json
 
 === Confirm the login
 
->>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 
 >>> [CLI] auth token --host [DATABRICKS_URL]
 json.access_token = "oauth-token";
@@ -41,15 +41,15 @@ Using a browser on another device, visit:
 [DATABRICKS_URL]/device/verification
 
 And enter the code:
-WDJB-MJHT
+WDJB-0002
 
 Once finished, complete the login by running the same command with
---user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+--user-code WDJB-0002 and --confirmation-code set to the confirmation code
 provided in your browser.
 
 === Confirm the login
 
->>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-0002 --confirmation-code FTFA-QQKY
 Profile test was successfully saved
 
 >>> [CLI] auth token --profile test
@@ -66,16 +66,16 @@ Using a browser on another device, visit:
 [DATABRICKS_URL]/device/verification
 
 And enter the code:
-WDJB-MJHT
+WDJB-0003
 
 Once finished, complete the login by running the same command with
---user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+--user-code WDJB-0003 and --confirmation-code set to the confirmation code
 provided in your browser.
 
 >>> [CLI] auth token --profile test
 json.access_token = "oauth-token";
 
->>> [CLI] auth login --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --profile test --use-device-code --user-code WDJB-0003 --confirmation-code FTFA-QQKY
 Profile test was successfully saved
 
 >>> cache_keys

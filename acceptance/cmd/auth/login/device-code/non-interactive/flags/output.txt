@@ -6,13 +6,13 @@ Using a browser on another device, visit:
 [DATABRICKS_URL]/device/verification
 
 And enter the code:
-WDJB-MJHT
+WDJB-0001
 
 Once finished, complete the login by running the same command with
---user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+--user-code WDJB-0001 and --confirmation-code set to the confirmation code
 provided in your browser.
 
->>> [CLI] auth login --profile scoped --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --profile scoped --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 Profile scoped was successfully saved
 
 >>> print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
@@ -26,11 +26,11 @@ Using a browser on another device, visit:
 [DATABRICKS_URL]/device/verification
 
 And enter the code:
-WDJB-MJHT
+WDJB-0002
 
 Once finished, complete the login by running the same command with
---user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+--user-code WDJB-0002 and --confirmation-code set to the confirmation code
 provided in your browser.
 
->>> [CLI] auth login --host [DATABRICKS_URL] --profile serverless --use-device-code --configure-serverless --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile serverless --use-device-code --configure-serverless --user-code WDJB-0002 --confirmation-code FTFA-QQKY
 Profile serverless was successfully saved

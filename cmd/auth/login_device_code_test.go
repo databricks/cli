@@ -487,7 +487,7 @@ func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL))
 
 	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		return struct{}{}, runDeviceCodeLogin(ctx, "--host", server.URL, "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
+		return struct{}{}, runDeviceCodeLogin(ctx, "--host", server.URL, "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY")
 	})
 	_, err := tm.Result()
 	require.NoError(t, err)
@@ -527,7 +527,7 @@ func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
 
 	// The pending login is kept, and the user code is compared the way the
 	// user enters it.
-	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "wdjbmjht", "--confirmation-code", "FTFA-QQKY"))
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "wdjb0001", "--confirmation-code", "FTFA-QQKY"))
 	assert.Equal(t, int32(1), tokenRequests.Load())
 }
 
@@ -581,7 +581,7 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 				other.RequestCallback = server.RequestCallback
 				host = other.URL
 			}
-			args := append([]string{"--host", host, "--profile", "test", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
+			args := append([]string{"--host", host, "--profile", "test", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
 			err := runDeviceCodeLogin(ctx, args...)
 			assert.EqualError(t, err, "the login for profile test was started with "+tt.wantChanged+". Complete it with the same command that started it. "+startNewLoginHint)
 			assert.Zero(t, tokenRequests.Load())
@@ -597,7 +597,7 @@ func TestLoginDeviceCodeCompletionWithSameHostInAnotherForm(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL))
 
-	err := runDeviceCodeLogin(ctx, "--host", server.URL+"/browse", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
+	err := runDeviceCodeLogin(ctx, "--host", server.URL+"/browse", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY")
 	assert.NoError(t, err)
 }
 
@@ -609,7 +609,7 @@ func TestLoginDeviceCodeCompletionWithSameScopesInAnotherOrder(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--scopes", "sql,all-apis"))
 
-	err := runDeviceCodeLogin(ctx, "--host", server.URL, "--scopes", "all-apis,sql", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
+	err := runDeviceCodeLogin(ctx, "--host", server.URL, "--scopes", "all-apis,sql", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY")
 	assert.NoError(t, err)
 }
 
@@ -634,7 +634,7 @@ func TestLoginDeviceCodeCompletionRateLimited(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
 
-	args := []string{"--host", server.URL, "--profile", "test", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY"}
+	args := []string{"--host", server.URL, "--profile", "test", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY"}
 	err := runDeviceCodeLogin(ctx, args...)
 	assert.EqualError(t, err, "token exchange: Device grant rate limit exceeded (error code: invalid_request). Rerun this command later. "+startNewLoginHint+" if it still fails")
 
