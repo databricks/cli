@@ -72,7 +72,7 @@ func TestApplyPresetsSchemaPrefixPreservesUnderscores(t *testing.T) {
 
 	b := &bundle.Bundle{
 		Config: config.Root{
-			Bundle: config.Bundle{Mode: config.Development},
+			Bundle:  config.Bundle{Mode: config.Development},
 			Presets: config.Presets{Tags: map[string]string{"dev": "my__user"}},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{ShortName: "my__user"},
