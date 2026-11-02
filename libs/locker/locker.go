@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type UnlockOption int
@@ -106,7 +107,9 @@ func (e lockNotHeldError) Unwrap() error { return e.err }
 // holder details if locker does not hold the lock
 func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	activeLockState, err := locker.GetActiveLockState(ctx)
-	if errors.Is(err, fs.ErrNotExist) {
+	// The workspace filer stats the lock file before downloading it, so a lock deleted in between
+	// surfaces as the SDK's not-found error from the download rather than as fs.ErrNotExist.
+	if errors.Is(err, fs.ErrNotExist) || errors.Is(err, apierr.ErrNotFound) {
 		return lockNotHeldError{fmt.Errorf("no active lock on target dir: %w", err)}
 	}
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -120,4 +121,16 @@ func TestUnlockReportsReadFailureAsCheckFailure(t *testing.T) {
 	assert.ErrorIs(t, err, readErr)
 	assert.ErrorContains(t, err, "failed to check the deploy lock before releasing it")
 	assert.NotContains(t, err.Error(), "not held")
+}
+
+func TestUnlockReportsLockDeletedBeforeDownloadAsNotHeld(t *testing.T) {
+	// The workspace filer's stat succeeded, then the export found nothing.
+	downloadErr := &apierr.APIError{StatusCode: 404, ErrorCode: "RESOURCE_DOES_NOT_EXIST", Message: "Path does not exist"}
+	l := &Locker{
+		filer:  failingReadFiler{Filer: filer.NewFakeFiler(map[string]fakefs.FileInfo{LockFileName: {}}), err: downloadErr},
+		Active: true,
+		State:  &LockState{ID: uuid.New()},
+	}
+	err := l.Unlock(t.Context())
+	assert.ErrorContains(t, err, "unlock called when lock is not held: no active lock on target dir")
 }
