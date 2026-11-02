@@ -11,6 +11,7 @@ Usage:
 Available Commands:
   cancel          Cancel one or more runs
   convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
+  feedback        Send feedback about AI Runtime to Databricks
   get             Show status, configuration, and timing details for a specified run
   images          Manage container images for AI Runtime
   list            List active runs for the current user
@@ -204,6 +205,42 @@ Flags:
       --all    Cancel all of your active runs
   -h, --help   help for cancel
   -y, --yes    Skip the confirmation prompt
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+=== feedback help
+>>> [CLI] air feedback --help
+Send feedback about AI Runtime using your workspace authentication.
+
+Include the command, observed problem, expected behavior, and any workaround
+in --message. Use --reporter agent for reports written by an agent.
+
+Sends your message, CLI version, reporter type, and optional run ID and agent
+name to Fast Feedback. The service associates it with your workspace and
+authenticated principal. No transcripts, source files, or logs are collected.
+Do not include credentials or sensitive data. Follow-up contact is opt-in.
+
+This is an explicit submission, independent of automatic usage telemetry.
+Success confirms receipt by the collector; processing into review tools is
+asynchronous.
+
+Usage:
+  databricks air feedback [flags]
+
+Examples:
+  databricks air feedback --message "air logs omitted the failure reason" --reporter agent --agent-name codex --run-id 123 -o json
+
+Flags:
+      --agent-name string   Agent name; requires --reporter agent
+      --can-be-contacted    Allow follow-up about this feedback
+  -h, --help                help for feedback
+      --message string      Feedback message (1–10,000 characters)
+      --reporter string     Who wrote the feedback: human or agent (default "human")
+      --run-id string       Related job run ID
 
 Global Flags:
       --debug            enable debug logging

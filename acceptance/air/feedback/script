@@ -1,0 +1,11 @@
+title "agent report with a receipt"
+trace $CLI air feedback --message "Logs omitted the failure reason" --reporter agent --agent-name codex --run-id 123 -o json
+
+title "human report"
+trace $CLI air feedback --message "The workaround succeeded"
+
+title "validation errors"
+trace musterr $CLI air feedback --message "   " -o json | jq -e '.error.code == "INVALID_ARGUMENT"'
+trace musterr $CLI air feedback --message "Logs omitted the failure reason" --reporter robot -o json | jq -e '.error.code == "INVALID_ARGUMENT"'
+trace musterr $CLI air feedback --message "Logs omitted the failure reason" --agent-name codex -o json | jq -e '.error.code == "INVALID_ARGUMENT"'
+trace musterr $CLI air feedback unexpected --message "Logs omitted the failure reason" -o json | jq -e '.error.code == "INVALID_ARGUMENT"'
