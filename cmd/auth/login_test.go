@@ -1512,7 +1512,7 @@ func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
 	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
 }
 
-func TestLoginSkipWorkspaceHostEmptyAfterNormalization(t *testing.T) {
+func TestLoginSkipWorkspaceRejectsInvalidHost(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
