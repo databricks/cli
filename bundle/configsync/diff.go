@@ -8,10 +8,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type OperationType string
@@ -39,13 +38,8 @@ type ResourceChanges map[string]*ConfigChangeDesc
 
 type Changes map[string]ResourceChanges
 
-func normalizeValue(v any) (any, error) {
-	dynValue, err := convert.FromTyped(v, dyn.NilValue)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert value of type %T: %w", v, err)
-	}
-
-	return dynValue.AsAny(), nil
+func normalizeValue(v any) any {
+	return structvar.NewView(v, nil, nil).AsAny()
 }
 
 func filterEntityDefaults(basePath string, value any) any {
@@ -92,10 +86,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	// cd.Old in this check would classify the change as Replace and fail later in
 	// resolveSelectors because the old key no longer exists in the YAML.
 	hasConfigValue := cd.New != nil
-	normalizedValue, err := normalizeValue(cd.Remote)
-	if err != nil {
-		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
-	}
+	normalizedValue := normalizeValue(cd.Remote)
 
 	if shouldSkipField(path, normalizedValue, hasConfigValue) {
 		return &ConfigChangeDesc{
@@ -129,11 +120,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 // which keys on the path component (index 3), so a resource literally named
 // "permissions" ("resources.jobs.permissions") is not misclassified.
 func isPermissionsOrGrantsSubResource(resourceKey string) bool {
-	path, err := dyn.NewPathFromString(resourceKey)
-	if err != nil {
-		return false
-	}
-	_, nodeType := config.GetNodeAndType(path)
+	nodeType := config.GetResourceTypeFromKey(resourceKey)
 	return strings.HasSuffix(nodeType, ".permissions") || strings.HasSuffix(nodeType, ".grants")
 }
 

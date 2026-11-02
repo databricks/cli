@@ -40,6 +40,7 @@ resources:
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
+	mutator.FinishLoading(ctx, b)
 
 	changes := Changes{
 		"resources.jobs.test_job": ResourceChanges{

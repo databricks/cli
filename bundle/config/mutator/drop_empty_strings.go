@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type dropEmptyStrings struct{}
@@ -17,10 +16,8 @@ type dropEmptyStrings struct{}
 // either literally (policy_id: "") or via a variable that resolved to "", so
 // this must run after variable resolution.
 //
-// The direct engine converts the resolved config through convert.ToTyped, which
-// force-sends explicitly-set zero values, defeating the omitempty tag. Dropping
-// here fixes it and makes the result visible in `bundle validate -o json`, which
-// serializes the dynamic value.
+// An explicitly-set zero value is force-sent, defeating the omitempty tag.
+// Dropping it here fixes it and makes the result visible in `bundle validate -o json`.
 func DropEmptyStrings() bundle.Mutator {
 	return &dropEmptyStrings{}
 }
@@ -30,31 +27,29 @@ func (m *dropEmptyStrings) Name() string {
 }
 
 func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		root, err := dyn.Map(root, "resources", func(_ dyn.Path, resources dyn.Value) (dyn.Value, error) {
-			// Normalize against the resources type so omitempty is known per field.
-			// Only DropEmptyStrings is set: existing values are kept as-is otherwise.
-			out, normDiags := convert.Normalize(config.Resources{}, resources, convert.DropEmptyStrings)
-			diags = diags.Extend(normDiags)
-			return out, nil
-		})
-		if err != nil {
-			return root, err
-		}
-
-		// Keep an empty apps description instead of dropping it: an app update without
-		// the field leaves the remote description unchanged, so removing description
-		// from config would never converge. Force-sending "" clears it.
-		return dyn.MapByPattern(root, dyn.NewPattern(dyn.Key("resources"), dyn.Key("apps"), dyn.AnyKey()), func(_ dyn.Path, app dyn.Value) (dyn.Value, error) {
-			if _, err := dyn.Get(app, "description"); err != nil {
-				return dyn.Set(app, "description", dyn.V(""))
-			}
-			return app, nil
-		})
+	// Drop the empty strings on all struct fields except the ones that must send their zero value.
+	var empty []*structpath.PathNode
+	walk.ResourceStrings(&b.Config, walk.EmptyFields, func(n *walk.Node, _ string) (string, bool) {
+		empty = append(empty, n.Path())
+		return "", false
 	})
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+	for _, p := range empty {
+		if err := b.Config.Delete(p); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	return diags
+
+	// Keep an empty apps description instead of dropping it: an app update without
+	// the field leaves the remote description unchanged, so removing description
+	// from config would never converge. Force-sending "" clears it.
+	for name, app := range b.Config.Resources.Apps {
+		if app != nil && (app.Description != "" || walk.Forced(app.ForceSendFields, "Description")) {
+			continue
+		}
+		err := b.Config.Set(structpath.NewPath(nil, "resources", "apps", name, "description"), "")
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	return nil
 }

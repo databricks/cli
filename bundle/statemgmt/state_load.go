@@ -3,7 +3,6 @@ package statemgmt
 import (
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 type (
@@ -93,78 +91,54 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 	return nil
 }
 
-func ensureMap(v dyn.Value, path dyn.Path) (dyn.Value, error) {
-	item, _ := dyn.GetByPath(v, path)
-	if !item.IsValid() {
-		var err error
-		v, err = dyn.SetByPath(v, path, dyn.V(dyn.NewMapping()))
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("internal error: failed to create %s: %w", path, err)
+func StateToBundle(ctx context.Context, state ExportedResourcesMap, cfg *config.Root) error {
+	for resourceKey, attrs := range state {
+		// Parse resource key like "resources.jobs.foo" or "resources.jobs.foo.permissions"
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) < 3 || parts[0] != "resources" {
+			continue // Skip invalid resource keys
 		}
+
+		groupName := parts[1]
+		resourceName := parts[2]
+
+		// Skip permissions for now as they are sub-resources
+		if len(parts) > 3 {
+			continue
+		}
+
+		if !hasID(groupName) {
+			continue
+		}
+
+		id, status, created, ok := cfg.Resources.GetOrCreateState(groupName, resourceName)
+		if !ok {
+			continue
+		}
+		if created {
+			*status = resources.ModifiedStatusDeleted
+		}
+		*id = attrs.ID
 	}
-	return v, nil
+
+	cfg.Resources.IterateAllResourceStates(func(typ, _ string, id *string, status *resources.ModifiedStatus) bool {
+		if hasID(typ) && *id == "" && *status == "" {
+			*status = resources.ModifiedStatusCreated
+		}
+		return true
+	})
+	return nil
 }
 
-func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *config.Root) error {
-	return config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		var err error
-		v, err = ensureMap(v, dyn.Path{dyn.Key("resources")})
-		if err != nil {
-			return v, err
-		}
-
-		for resourceKey, attrs := range state {
-			// Parse resource key like "resources.jobs.foo" or "resources.jobs.foo.permissions"
-			parts := strings.Split(resourceKey, ".")
-			if len(parts) < 3 || parts[0] != "resources" {
-				continue // Skip invalid resource keys
-			}
-
-			groupName := parts[1]
-			resourceName := parts[2]
-
-			// Skip permissions for now as they are sub-resources
-			if len(parts) > 3 {
-				continue
-			}
-
-			var err error
-			v, err = ensureMap(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName)})
-			if err != nil {
-				return v, err
-			}
-
-			path := dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName)}
-			resource, err := dyn.GetByPath(v, path)
-			if !resource.IsValid() {
-				m := dyn.NewMapping()
-				m.SetLoc("id", nil, dyn.V(attrs.ID))
-				m.SetLoc("modified_status", nil, dyn.V(resources.ModifiedStatusDeleted))
-				v, err = dyn.SetByPath(v, path, dyn.V(m))
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-			} else if err != nil {
-				return dyn.InvalidValue, err
-			} else {
-				v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("id")}, dyn.V(attrs.ID))
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-			}
-		}
-
-		return dyn.MapByPattern(v, dyn.Pattern{dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()}, func(p dyn.Path, inner dyn.Value) (dyn.Value, error) {
-			idPath := dyn.Path{dyn.Key("id")}
-			statusPath := dyn.Path{dyn.Key("modified_status")}
-			id, _ := dyn.GetByPath(inner, idPath)
-			status, _ := dyn.GetByPath(inner, statusPath)
-			if !id.IsValid() && !status.IsValid() {
-				return dyn.SetByPath(inner, statusPath, dyn.V(resources.ModifiedStatusCreated))
-			}
-			return inner, nil
-		})
-	})
+// hasID reports whether resources of group can hold the deployed id and status. Groups
+// that are not part of the configuration, and internal snapshots, cannot.
+func hasID(group string) bool {
+	typ, ok := config.ResourcesTypes[group]
+	if !ok {
+		return false
+	}
+	_, ok = typ.FieldByName("ID")
+	return ok
 }
 
 func validateLoadedState(state ExportedResourcesMap, modes []LoadMode) error {

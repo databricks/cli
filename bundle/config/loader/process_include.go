@@ -151,7 +151,7 @@ func (m *processInclude) Name() string {
 }
 
 func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	this, diags := config.Load(m.fullPath)
+	this, diags := config.LoadDyn(m.fullPath)
 	if diags.HasError() {
 		return diags
 	}
@@ -162,7 +162,7 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags
 	}
 
-	if len(this.Include) > 0 {
+	if include := this.Value().Get("include"); include.Kind() == dyn.KindSequence && len(include.MustSequence()) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Include section is defined outside root file",

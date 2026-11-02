@@ -1,100 +1,75 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-func jobTaskLibrariesRewritePatterns(base dyn.Pattern) []jobRewritePattern {
-	return []jobRewritePattern{
-		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
-			TranslateModeLocalRelative,
-			noSkipRewrite,
-		},
-		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
-			TranslateModeLocalRelative,
-			noSkipRewrite,
-		},
-	}
+func libraryRule(key string, field func(*jobs.Task, int) *string) taskRule {
+	return taskRule{TranslateModeLocalRelative, func(t *jobs.Task, c *taskCursor) error {
+		for i := range t.Libraries {
+			if err := c.yield(&t.Libraries[i], key, field(t, i), "libraries", i, key); err != nil {
+				return err
+			}
+		}
+		return nil
+	}}
 }
 
-func jobLibrariesRewritePatterns() []jobRewritePattern {
-	// Base pattern to match all tasks in all jobs.
-	base := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-		dyn.Key("tasks"),
-		dyn.AnyIndex(),
-	)
+var jobTaskLibrariesRules = []taskRule{
+	libraryRule("whl", func(t *jobs.Task, i int) *string { return &t.Libraries[i].Whl }),
+	libraryRule("jar", func(t *jobs.Task, i int) *string { return &t.Libraries[i].Jar }),
+}
 
-	// Compile list of patterns and their respective rewrite functions.
-	jobEnvironmentsPatterns := []jobRewritePattern{
-		{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("jobs"),
-				dyn.AnyKey(),
-				dyn.Key("environments"),
-				dyn.AnyIndex(),
-				dyn.Key("spec"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			TranslateModeLocalRelativeWithPrefix,
-			func(s string) bool {
-				return !libraries.IsLibraryLocal(s)
-			},
-		},
-	}
+func notLocalLibrary(s string) bool {
+	return !libraries.IsLibraryLocal(s)
+}
 
-	jobEnvironmentsWithRequirementsPatterns := []jobRewritePattern{
-		{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("jobs"),
-				dyn.AnyKey(),
-				dyn.Key("environments"),
-				dyn.AnyIndex(),
-				dyn.Key("spec"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			TranslateModeEnvironmentPipFlag,
-			func(s string) bool {
-				_, _, ok := libraries.IsLocalPathInPipFlag(s)
-				return !ok
-			},
-		},
-	}
-
-	taskPatterns := jobTaskLibrariesRewritePatterns(base)
-	forEachPatterns := jobTaskLibrariesRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
-	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
-	allPatterns = append(allPatterns, jobEnvironmentsWithRequirementsPatterns...)
-	allPatterns = append(allPatterns, forEachPatterns...)
-	return allPatterns
+func noLocalPathInPipFlag(s string) bool {
+	_, _, ok := libraries.IsLocalPathInPipFlag(s)
+	return !ok
 }
 
 // VisitJobLibrariesPaths visits all libraries related paths in job resources and applies a function to each path.
-func VisitJobLibrariesPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	var err error
-	newValue := value
-
-	for _, rewritePattern := range jobLibrariesRewritePatterns() {
-		newValue, err = dyn.MapByPattern(newValue, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if rewritePattern.skipRewrite(v.MustString()) {
-				return v, nil
+func VisitJobLibrariesPaths(root *config.Root, fn VisitFunc) error {
+	// Task libraries first, then environment dependencies (local libraries, then
+	// local paths in pip flags), then the libraries of tasks nested in for_each_task.
+	if err := visitTasksAt(root, false, jobTaskLibrariesRules, fn); err != nil {
+		return err
+	}
+	for _, rule := range []struct {
+		mode TranslateMode
+		skip func(string) bool
+	}{
+		{TranslateModeLocalRelativeWithPrefix, notLocalLibrary},
+		{TranslateModeEnvironmentPipFlag, noLocalPathInPipFlag},
+	} {
+		for _, name := range sortedKeys(root.Resources.Jobs) {
+			job := root.Resources.Jobs[name]
+			if job == nil {
+				continue
 			}
-
-			return fn(p, rewritePattern.mode, v)
-		})
-		if err != nil {
-			return dyn.InvalidValue, err
+			for i, env := range job.Environments {
+				if env.Spec == nil {
+					continue
+				}
+				for j := range env.Spec.Dependencies {
+					// Most dependencies are not local paths: check before building the path.
+					if rule.skip(env.Spec.Dependencies[j]) {
+						continue
+					}
+					if err := visit(fn, visitArgs{
+						value: &env.Spec.Dependencies[j],
+						mode:  rule.mode,
+						path:  structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "dependencies", j),
+					}); err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
-
-	return newValue, nil
+	return visitTasksAt(root, true, jobTaskLibrariesRules, fn)
 }

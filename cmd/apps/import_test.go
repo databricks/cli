@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,17 +16,15 @@ func TestInlineAppConfigFile(t *testing.T) {
 	tests := []struct {
 		name           string
 		setupFiles     map[string]string
-		inputValue     dyn.Value
+		inputValue     structyaml.Map
 		expectedFile   string
 		expectedConfig map[string]any
 		expectError    bool
 	}{
 		{
-			name:       "no app config file",
-			setupFiles: map[string]string{},
-			inputValue: dyn.V(map[string]dyn.Value{
-				"name": dyn.V("test-app"),
-			}),
+			name:           "no app config file",
+			setupFiles:     map[string]string{},
+			inputValue:     structyaml.M("name", "test-app"),
 			expectedFile:   "",
 			expectedConfig: map[string]any{"name": "test-app"},
 		},
@@ -38,9 +36,7 @@ env:
   - name: FOO
     value: bar`,
 			},
-			inputValue: dyn.V(map[string]dyn.Value{
-				"name": dyn.V("test-app"),
-			}),
+			inputValue:     structyaml.M("name", "test-app"),
 			expectedFile:   "app.yml",
 			expectedConfig: nil, // Will check manually
 		},
@@ -53,9 +49,7 @@ env:
   - name: TEST
     value: value`,
 			},
-			inputValue: dyn.V(map[string]dyn.Value{
-				"name": dyn.V("test-app"),
-			}),
+			inputValue:     structyaml.M("name", "test-app"),
 			expectedFile:   "app.yml",
 			expectedConfig: nil, // Will check manually
 		},
@@ -68,9 +62,7 @@ resources:
     serving_endpoint:
       name: my-endpoint`,
 			},
-			inputValue: dyn.V(map[string]dyn.Value{
-				"name": dyn.V("test-app"),
-			}),
+			inputValue:     structyaml.M("name", "test-app"),
 			expectedFile:   "app.yml",
 			expectedConfig: nil, // Will check manually
 		},
@@ -80,9 +72,7 @@ resources:
 				"app.yml": `resources:
   - name: SERVING_ENDPOINT`,
 			},
-			inputValue: dyn.V(map[string]dyn.Value{
-				"name": dyn.V("test-app"),
-			}),
+			inputValue:     structyaml.M("name", "test-app"),
 			expectedFile:   "app.yml",
 			expectedConfig: nil, // Will check manually
 		},
@@ -92,9 +82,7 @@ resources:
 				"app.yml": `command: ["python", "app.py"]
 env: []`,
 			},
-			inputValue: dyn.V(map[string]dyn.Value{
-				"name": dyn.V("test-app"),
-			}),
+			inputValue:     structyaml.M("name", "test-app"),
 			expectedFile:   "app.yml",
 			expectedConfig: nil, // Will check manually
 		},
@@ -125,20 +113,17 @@ env: []`,
 
 			// Verify the structure if expectedConfig is set
 			if tt.expectedConfig != nil {
-				appMap := appValue.MustMap()
 				result := make(map[string]any)
-				for _, pair := range appMap.Pairs() {
-					key := pair.Key.MustString()
-					result[key] = pair.Value.AsAny()
+				for _, pair := range appValue {
+					result[pair.Key] = pair.Value
 				}
 
 				assert.Equal(t, tt.expectedConfig, result)
 			} else if tt.expectedFile != "" {
 				// Just verify that config or resources were added
-				appMap := appValue.MustMap()
 				var hasConfigOrResources bool
-				for _, pair := range appMap.Pairs() {
-					key := pair.Key.MustString()
+				for _, pair := range appValue {
+					key := pair.Key
 					if key == "config" || key == "resources" {
 						hasConfigOrResources = true
 						break
@@ -158,22 +143,10 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 		err := os.WriteFile("app.yml", []byte("invalid: yaml: content:\n  - broken"), 0o644)
 		require.NoError(t, err)
 
-		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
+		appValue := structyaml.M("name", "test")
 		_, err = inlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse")
-	})
-
-	t.Run("app value not a map", func(t *testing.T) {
-		t.Chdir(t.TempDir())
-
-		err := os.WriteFile("app.yml", []byte("command: [\"test\"]"), 0o644)
-		require.NoError(t, err)
-
-		appValue := dyn.V("not a map")
-		_, err = inlineAppConfigFile(&appValue)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "app value is not a map")
 	})
 
 	t.Run("unreadable app.yml", func(t *testing.T) {
@@ -202,7 +175,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
+		appValue := structyaml.M("name", "test")
 		_, err = inlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to read")
@@ -223,21 +196,19 @@ resources:
       name: test`), 0o644)
 		require.NoError(t, err)
 
-		appValue := dyn.V(map[string]dyn.Value{
-			"name":        dyn.V("test-app"),
-			"description": dyn.V("existing description"),
-		})
+		appValue := structyaml.M(
+			"name", "test-app",
+			"description", "existing description",
+		)
 
 		filename, err := inlineAppConfigFile(&appValue)
 		require.NoError(t, err)
 		assert.Equal(t, "app.yml", filename)
 
 		// Verify structure
-		appMap := appValue.MustMap()
 		result := make(map[string]any)
-		for _, pair := range appMap.Pairs() {
-			key := pair.Key.MustString()
-			result[key] = pair.Value.AsAny()
+		for _, pair := range appValue {
+			result[pair.Key] = pair.Value
 		}
 
 		// Should have original fields plus config and resources

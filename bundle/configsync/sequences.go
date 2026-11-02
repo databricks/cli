@@ -12,9 +12,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // Write-back has to turn a position in the merged configuration into a position in a
@@ -56,13 +56,13 @@ func (b sourceBlock) scopeKey() string {
 }
 
 // blockResolver answers which physical block a merged value came from, by location:
-// merging accumulates them (libs/dyn/merge), so a value assembled from two blocks
+// merging accumulates them, so a value assembled from two blocks
 // reports a location in each. Selecting a target folds its overrides into resources and
 // drops the targets subtree, so the blocks are recovered by parsing the files again.
 type blockResolver struct {
 	// blocks holds one parsed file per contributing file, keyed by block, so a
 	// path relative to a block can be looked up inside it.
-	blocks     map[sourceBlock]dyn.Value
+	blocks     map[sourceBlock]structvar.View
 	target     string
 	byLocation map[diag.Location]sourceBlock
 }
@@ -74,13 +74,10 @@ type blockResolver struct {
 // The contributing files are parsed directly rather than reloaded through the mutator
 // pipeline, which would run the bundle's preinit script a second time.
 func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
-	root := b.Config.Value()
-	if !root.IsValid() {
-		return nil
-	}
+	root := b.Config.View()
 
 	r := &blockResolver{
-		blocks:     make(map[sourceBlock]dyn.Value),
+		blocks:     make(map[sourceBlock]structvar.View),
 		target:     b.Config.Bundle.Target,
 		byLocation: make(map[diag.Location]sourceBlock),
 	}
@@ -92,14 +89,15 @@ func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
 			log.Debugf(ctx, "config-remote-sync: cannot read %s, treating its sequences as unsplit: %v", file, err)
 			continue
 		}
-		parsed, diags := config.LoadFromBytes(file, contents)
+		loaded, diags := config.LoadFromBytes(file, contents)
 		if diags.HasError() {
 			log.Debugf(ctx, "config-remote-sync: cannot parse %s, treating its sequences as unsplit: %v", file, diags.Error())
 			continue
 		}
-		r.registerBlock(parsed.Value(), sourceBlock{file: file})
+		parsed := loaded.View()
+		r.registerBlock(parsed, sourceBlock{file: file})
 		if r.target != "" {
-			r.registerBlock(parsed.Value(), sourceBlock{override: true, file: file})
+			r.registerBlock(parsed, sourceBlock{override: true, file: file})
 		}
 	}
 
@@ -109,9 +107,9 @@ func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
 	return r
 }
 
-func referencedFiles(root dyn.Value) map[string]struct{} {
+func referencedFiles(root structvar.View) map[string]struct{} {
 	files := map[string]struct{}{}
-	_ = dyn.WalkReadOnly(root, func(_ dyn.Path, v dyn.Value) error {
+	_ = structvar.Walk(root, func(_ *structpath.PathNode, v structvar.View) error {
 		for _, location := range v.Locations() {
 			if location.File != "" {
 				files[location.File] = struct{}{}
@@ -126,16 +124,16 @@ func referencedFiles(root dyn.Value) map[string]struct{} {
 // resources subtree back to it, so a merged value can later be traced to the
 // region it was written in. Does nothing when the file has no such region, which
 // is why r.blocks doubles as the set of blocks that exist.
-func (r *blockResolver) registerBlock(parsed dyn.Value, block sourceBlock) {
-	subtree, err := dyn.GetByPath(parsed, r.regionPath(block, dyn.NewPath(dyn.Key("resources"))))
-	if err != nil {
+func (r *blockResolver) registerBlock(parsed structvar.View, block sourceBlock) {
+	subtree := parsed.Lookup(r.regionPath(block, structpath.NewStringKey(nil, "resources")))
+	if !subtree.IsValid() {
 		return
 	}
 
 	// Keep the parsed file: resolving a path inside this block needs the tree it
 	// came from, and the entry also marks the block as present for sortedBlocks.
 	r.blocks[block] = parsed
-	_ = dyn.WalkReadOnly(subtree, func(_ dyn.Path, v dyn.Value) error {
+	_ = structvar.Walk(subtree, func(_ *structpath.PathNode, v structvar.View) error {
 		for _, location := range v.Locations() {
 			// A file only carries locations of its own, so a location seen here
 			// belongs to this block. First writer wins: an outer node accumulates
@@ -153,11 +151,11 @@ func (r *blockResolver) registerBlock(parsed dyn.Value, block sourceBlock) {
 }
 
 // regionPath prefixes a resources-relative path with the region it belongs to.
-func (r *blockResolver) regionPath(block sourceBlock, path dyn.Path) dyn.Path {
+func (r *blockResolver) regionPath(block sourceBlock, path *structpath.PathNode) *structpath.PathNode {
 	if !block.override {
 		return path
 	}
-	return append(dyn.NewPath(dyn.Key("targets"), dyn.Key(r.target)), path...)
+	return structpath.Join(structpath.NewPath(nil, "targets", r.target), path.AsSlice()...)
 }
 
 // candidatePath renders a resolved path the way the patch layer addresses it,
@@ -211,7 +209,7 @@ func compareBlocks(a, b sourceBlock) int {
 // blocksOf returns the distinct blocks that contributed to value, sorted with the
 // top-level block first. More than one result means the value is assembled from
 // several regions and has no single source location.
-func (r *blockResolver) blocksOf(value dyn.Value) []sourceBlock {
+func (r *blockResolver) blocksOf(value structvar.View) []sourceBlock {
 	var blocks []sourceBlock
 	for _, location := range value.Locations() {
 		block, ok := r.byLocation[location]
@@ -233,7 +231,7 @@ func (r *blockResolver) blocksOf(value dyn.Value) []sourceBlock {
 // Locations accumulate in merge order, so the first one that maps to a block is the
 // winner and writing any other copy would leave the effective value unchanged. Load
 // order is the only thing that distinguishes two blocks in the same scope.
-func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
+func (r *blockResolver) winningBlock(value structvar.View) (sourceBlock, bool) {
 	for _, location := range value.Locations() {
 		if block, ok := r.byLocation[location]; ok {
 			return block, true
@@ -245,17 +243,13 @@ func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 // indexWithinBlock returns the position of element inside block, where sequencePath is
 // relative to the block. A block is one parsed file, so the sequence read here holds
 // only that file's entries and a plain index into it is block-local.
-func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath dyn.Path, element dyn.Value) (int, bool) {
+func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath *structpath.PathNode, element structvar.View) (int, bool) {
 	parsed, ok := r.blocks[block]
 	if !ok {
 		return 0, false
 	}
-	sequence, err := dyn.GetByPath(parsed, r.regionPath(block, sequencePath))
-	if err != nil {
-		return 0, false
-	}
-	entries, ok := sequence.AsSequence()
-	if !ok {
+	sequence := parsed.Lookup(r.regionPath(block, sequencePath))
+	if sequence.Kind() != structvar.KindSequence {
 		return 0, false
 	}
 
@@ -264,7 +258,7 @@ func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath dyn.Pat
 		locations[location] = struct{}{}
 	}
 
-	for local, entry := range entries {
+	for local, entry := range sequence.Sequence() {
 		for _, location := range entry.Locations() {
 			if _, ok := locations[location]; ok {
 				return local, true
@@ -323,7 +317,7 @@ func (d routeDestination) scopeKey() string {
 func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestination, error) {
 	// The value whose definitions have to be reached: the element itself when the
 	// change addresses one, otherwise the field being removed.
-	var target dyn.Value
+	var target structvar.View
 	if addressesWholeElement(change) {
 		target = change.steps[len(change.steps)-1].element
 	} else if change.operation == OperationRemove {
@@ -489,15 +483,15 @@ func (r *blockResolver) blockForNewElement(change resolvedChange) (sourceBlock, 
 // blocksDefiningSequence returns the blocks that write the sequence at sequencePath.
 // This is for a value that does not exist yet, where only the receiving sequence is
 // known; an existing value is traced through its own locations instead.
-func (r *blockResolver) blocksDefiningSequence(change resolvedChange, sequencePath dyn.Path) []sourceBlock {
+func (r *blockResolver) blocksDefiningSequence(change resolvedChange, sequencePath *structpath.PathNode) []sourceBlock {
 	var blocks []sourceBlock
 	for _, block := range r.sortedBlocks() {
 		blockPath, ok := r.sequencePathWithinBlock(block, change, sequencePath)
 		if !ok {
 			continue
 		}
-		sequence, err := dyn.GetByPath(r.blocks[block], r.regionPath(block, blockPath))
-		if err != nil {
+		sequence := r.blocks[block].Lookup(r.regionPath(block, blockPath))
+		if !sequence.IsValid() {
 			continue
 		}
 		if slices.ContainsFunc(sequence.Locations(), func(l diag.Location) bool { return l.File == block.file }) {
@@ -513,22 +507,22 @@ func (r *blockResolver) blocksDefiningSequence(change resolvedChange, sequencePa
 //
 // change.steps is ordered outermost first, so each translated index is already known
 // by the time a deeper step needs it.
-func (r *blockResolver) sequencePathWithinBlock(block sourceBlock, change resolvedChange, sequencePath dyn.Path) (dyn.Path, bool) {
-	result := slices.Clone(sequencePath)
+func (r *blockResolver) sequencePathWithinBlock(block sourceBlock, change resolvedChange, sequencePath *structpath.PathNode) (*structpath.PathNode, bool) {
+	result := sequencePath.AsSlice()
 	for _, step := range change.steps {
-		at := len(step.sequencePath)
-		if step.newElement || at >= len(sequencePath) {
+		at := step.sequencePath.Len()
+		if step.newElement || at >= len(result) {
 			continue
 		}
 		// The step's own path is a prefix of sequencePath, so the indices translated
 		// so far already apply to it.
-		index, ok := r.indexWithinBlock(block, result[:at], step.element)
+		index, ok := r.indexWithinBlock(block, structpath.Join(nil, result[:at]...), step.element)
 		if !ok {
 			return nil, false
 		}
-		result[at] = dyn.Index(index)
+		result[at] = structpath.NewIndex(nil, index)
 	}
-	return result, true
+	return structpath.Join(nil, result...), true
 }
 
 // pathWithinBlock rewrites a change's path so every sequence index addresses the
@@ -582,8 +576,8 @@ type sequenceStep struct {
 	// component is how many path components precede this sequence's index.
 	component int
 	// sequencePath is the sequence itself, e.g. resources.jobs.j.tasks.
-	sequencePath dyn.Path
-	element      dyn.Value
+	sequencePath *structpath.PathNode
+	element      structvar.View
 	// newElement marks an Add whose key is not in the merged sequence yet.
 	newElement bool
 }

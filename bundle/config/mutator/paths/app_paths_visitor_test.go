@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,9 +24,7 @@ func TestAppPathsVisitor(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitAppPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.apps.app0.source_code_path"),
-	}
+	expected := structpath.NewPathSlice("resources", "apps", "app0", "source_code_path")
 
 	assert.ElementsMatch(t, expected, actual)
 }

@@ -130,7 +130,7 @@ func TestRoundtripAllFieldsRemoteType(t *testing.T) {
 
 // TestRoundtripAllFieldsInputConfigType verifies InputConfigType, the typed
 // bundle config a resource is loaded into, survives a JSON round-trip with every
-// field populated. Bundle config is normally read and written through libs/dyn,
+// field populated. Bundle config is normally read and written through libs/structs/structvar,
 // which walks the struct itself and never calls these marshalers, so this is a
 // latent trap rather than live corruption. It is guarded anyway because it is the
 // same trap as StateType and RemoteType: a resource that embeds a member with its

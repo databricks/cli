@@ -18,7 +18,7 @@ Error: cannot resolve bundle auth configuration: resolve: strict profile matchin
 Name: strict-profile-match
 Target: classic_other_workspace
 Workspace:
-  Host: [DATABRICKS_URL]
+  Host: [DATABRICKS_URL]/?o=2222222222
 
 Found 1 error
 

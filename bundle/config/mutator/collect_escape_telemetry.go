@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 // Temporary: this mutator collects telemetry on escape patterns ($${}, $$, \${}, \$)
@@ -24,12 +24,7 @@ func (*collectEscapeTelemetry) Name() string {
 func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var hasDoubleDollarBrace, hasDoubleDollar, hasBackslashDollarBrace, hasBackslashDollar bool
 
-	_, err := dyn.Walk(b.Config.Value(), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		s, ok := v.AsString()
-		if !ok {
-			return v, nil
-		}
-
+	walk.Strings(&b.Config, walk.NonEmpty, func(_ *walk.Node, s string) (string, bool) {
 		if !hasDoubleDollarBrace && strings.Contains(s, "$${") {
 			hasDoubleDollarBrace = true
 		}
@@ -42,12 +37,8 @@ func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag
 		if !hasBackslashDollar && containsBackslashDollarWithoutBrace(s) {
 			hasBackslashDollar = true
 		}
-
-		return v, nil
+		return "", false
 	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	if hasDoubleDollarBrace {
 		b.Metrics.SetBoolValue("config_has_double_dollar_brace", true)

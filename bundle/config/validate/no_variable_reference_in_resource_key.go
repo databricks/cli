@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type noVariableReferenceInResourceKey struct{}
@@ -36,7 +36,7 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 			pattern,
 			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 				key := p[len(p)-1].Key()
-				if dynvar.ContainsVariableReference(key) {
+				if structvar.ContainsVariableReference(key) {
 					diags = append(diags, diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),

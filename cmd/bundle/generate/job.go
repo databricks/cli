@@ -12,9 +12,8 @@ import (
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
@@ -115,13 +114,7 @@ After generation, you can deploy this job to other targets using:
 			jobKey = textutil.NormalizeString(job.Settings.Name)
 		}
 
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"jobs": dyn.V(map[string]dyn.Value{
-					jobKey: v,
-				}),
-			}),
-		}
+		result := structyaml.M("resources", structyaml.M("jobs", structyaml.M(jobKey, v)))
 
 		err = downloader.FlushToDisk(ctx, force)
 		if err != nil {
@@ -141,13 +134,13 @@ After generation, you can deploy this job to other targets using:
 			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
 		}
 
-		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
+		styles := map[string]yaml.Style{
 			// Including all JobSettings and nested fields which are map[string]string type
 			"spark_conf":  yaml.DoubleQuotedStyle,
 			"custom_tags": yaml.DoubleQuotedStyle,
 			"tags":        yaml.DoubleQuotedStyle,
-		})
-		err = saver.SaveAsYAML(result, filename, force)
+		}
+		err = structyaml.Save(filename, result, force, styles)
 		if err != nil {
 			return err
 		}

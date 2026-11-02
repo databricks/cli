@@ -1,0 +1,1 @@
+* `bundle validate` no longer treats a written zero value in a field that cannot record it (no `ForceSendFields`, e.g. `job_id: 0` in `run_job_task`) or an empty mapping (e.g. `presets: {}`) as set, and does not show the pipeline `development` deprecation warning for `development: true` under `mode: development`. ([#7098](https://github.com/databricks/cli/pull/7098))

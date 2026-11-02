@@ -6,9 +6,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,9 +30,7 @@ func makeBundle(t *testing.T) *bundle.Bundle {
 
 func TestTFOnlyReferences_Error(t *testing.T) {
 	b := makeBundle(t)
-	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, "resources.jobs.dst.name", dyn.V("${resources.jobs.src.always_running}"))
-	})
+	require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.dst.name"), "${resources.jobs.src.always_running}"))
 
 	diags := TFOnlyReferences().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
@@ -44,10 +41,8 @@ func TestTFOnlyReferences_Error(t *testing.T) {
 
 func TestTFOnlyReferences_NormalReference(t *testing.T) {
 	b := makeBundle(t)
-	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-		// "name" is not a TF-only field; no diagnostic expected.
-		return dyn.Set(v, "resources.jobs.dst.name", dyn.V("${resources.jobs.src.name}"))
-	})
+	// "name" is not a TF-only field; no diagnostic expected.
+	require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.dst.name"), "${resources.jobs.src.name}"))
 
 	diags := TFOnlyReferences().Apply(t.Context(), b)
 	assert.Empty(t, diags)
@@ -55,10 +50,8 @@ func TestTFOnlyReferences_NormalReference(t *testing.T) {
 
 func TestTFOnlyReferences_RenamedField(t *testing.T) {
 	b := makeBundle(t)
-	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-		// "git_source[0].branch" is a TF rename (not TF-only), should not error.
-		return dyn.Set(v, "resources.jobs.dst.name", dyn.V("${resources.jobs.src.git_source[0].branch}"))
-	})
+	// "git_source[0].branch" is a TF rename (not TF-only), should not error.
+	require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.dst.name"), "${resources.jobs.src.git_source[0].branch}"))
 
 	diags := TFOnlyReferences().Apply(t.Context(), b)
 	assert.Empty(t, diags)

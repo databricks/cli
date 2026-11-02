@@ -1,2 +1,4 @@
 # A scalar among the maps merged with '<<: [...]' is an error.
 errcode trace $CLI bundle validate -t dev
+# What was merged into the variable:
+errcode trace $CLI bundle validate -t dev -o json | jq .variables.x

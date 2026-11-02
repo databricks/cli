@@ -24,7 +24,7 @@ func (m *entryPoint) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	this, diags := config.Load(path)
+	this, diags := config.LoadDyn(path)
 	if diags.HasError() {
 		return diags
 	}

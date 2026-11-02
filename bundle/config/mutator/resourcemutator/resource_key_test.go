@@ -3,112 +3,36 @@ package resourcemutator
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/databricks/cli/libs/dyn"
 )
 
-type getResourceKeyTestCase struct {
-	path string
-	key  ResourceKey
-	err  bool
-}
-
-func TestGetResourceKey(t *testing.T) {
-	testCases := []getResourceKeyTestCase{
-		{
-			path: "resources.jobs.job_1",
-			key: ResourceKey{
-				Type: "jobs",
-				Name: "job_1",
-			},
-		},
-		{
-			path: "resources.jobs.job_1.name",
-			key: ResourceKey{
-				Type: "jobs",
-				Name: "job_1",
-			},
-		},
-		{
-			path: "resources.jobs",
-			err:  true,
-		},
+func TestResourceKeySet_AddResources(t *testing.T) {
+	var r config.Resources
+	r.Jobs = map[string]*resources.Job{
+		"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+		"job_2": nil,
+	}
+	r.Pipelines = map[string]*resources.Pipeline{
+		"pipeline_1": {},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.path, func(t *testing.T) {
-			key, err := getResourceKey(dyn.MustPathFromString(tc.path))
-			if tc.err {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.key, key)
-			}
-		})
-	}
-}
+	all := NewResourceKeySet()
+	all.AddResources(&r)
+	assert.ElementsMatch(t, []ResourceKey{
+		{Type: "jobs", Name: "job_1"},
+		{Type: "jobs", Name: "job_2"},
+		{Type: "pipelines", Name: "pipeline_1"},
+	}, all.ToArray())
 
-type resourceKeySetAddTestCase struct {
-	name     string
-	pattern  dyn.Pattern
-	root     dyn.Value
-	expected []ResourceKey
-}
-
-func TestResourceKeySet_AddPattern(t *testing.T) {
-	root := dyn.V(map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"jobs": dyn.V(map[string]dyn.Value{
-				"job_1": dyn.V(map[string]dyn.Value{
-					"name": dyn.V("job_1"),
-				}),
-				"job_2": dyn.V(map[string]dyn.Value{
-					"name": dyn.V("job_2"),
-				}),
-			}),
-		}),
-	})
-
-	testCases := []resourceKeySetAddTestCase{
-		{
-			name:    "one job pattern",
-			pattern: dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key("job_1")),
-			root:    root,
-			expected: []ResourceKey{
-				{
-					Type: "jobs",
-					Name: "job_1",
-				},
-			},
-		},
-		{
-			name:    "all resources pattern",
-			pattern: dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-			root:    root,
-			expected: []ResourceKey{
-				{
-					Type: "jobs",
-					Name: "job_1",
-				},
-				{
-					Type: "jobs",
-					Name: "job_2",
-				},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			set := NewResourceKeySet()
-
-			err := set.AddPattern(tc.pattern, tc.root)
-
-			assert.NoError(t, err)
-			assert.ElementsMatch(t, tc.expected, set.ToArray())
-		})
-	}
+	jobKeys := NewResourceKeySet()
+	jobKeys.AddResourcesOfType(&r, "jobs")
+	assert.ElementsMatch(t, []ResourceKey{
+		{Type: "jobs", Name: "job_1"},
+		{Type: "jobs", Name: "job_2"},
+	}, jobKeys.ToArray())
 }
 
 func TestResourceKeySet_AddResourceKey(t *testing.T) {

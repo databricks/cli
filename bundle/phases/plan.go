@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // PreDeployChecks is common set of mutators between "bundle plan" and "bundle deploy".
@@ -52,30 +52,30 @@ func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool,
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
 // If it does, it returns an error.
 func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error {
-	root := b.Config.Value()
 	var errs []error
 	for _, action := range actions {
 		if action.ActionType != deployplan.Recreate && action.ActionType != deployplan.Delete {
 			continue
 		}
 
-		path, err := dyn.NewPathFromString(action.ResourceKey)
+		path, err := structpath.ParsePath(action.ResourceKey)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q", action.ResourceKey)
 		}
 
-		path = append(path, dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
-
-		preventDestroyV, err := dyn.GetByPath(root, path)
-		if err != nil {
+		// Only resources have a lifecycle (not e.g. resources.jobs.foo.permissions).
+		if path.Len() != 3 {
+			continue
+		}
+		res, ok := b.Config.Resources.GetResource(path.KeyAt(1), path.KeyAt(2))
+		if !ok {
 			continue
 		}
 
-		preventDestroy, ok := preventDestroyV.AsBool()
-		if !ok {
+		if b.Config.IsReferenceAt(structpath.NewPath(path, "lifecycle", "prevent_destroy")) {
 			return fmt.Errorf("internal error: prevent_destroy is not a boolean for %s", action.ResourceKey)
 		}
-		if preventDestroy {
+		if res.GetLifecycle().HasPreventDestroy() {
 			errs = append(errs, fmt.Errorf("%s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s", action.ResourceKey, action.ResourceKey))
 		}
 	}

@@ -2,11 +2,13 @@ package validate
 
 import (
 	"context"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 const (
@@ -32,35 +34,45 @@ func (v *pipelineDevelopmentDeprecated) Apply(_ context.Context, b *bundle.Bundl
 
 	presetEnabled := config.IsExplicitlyEnabled(b.Config.Presets.PipelinesDevelopment)
 
-	pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("pipelines"), dyn.AnyKey(), dyn.Key("development"))
-	_, err := dyn.MapByPattern(b.Config.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		// Only user-written values have a location; the value set by "mode: development" does not.
-		if len(v.Locations()) == 0 {
-			return v, nil
+	pipelines := b.Config.Resources.Pipelines
+	for _, key := range slices.Sorted(maps.Keys(pipelines)) {
+		pipeline := pipelines[key]
+		if pipeline == nil {
+			continue
 		}
+
+		p := structpath.NewPath(nil, "resources", "pipelines", key, "development")
+
+		// The property is set if it is forced (an explicit value: decoding records a
+		// written false, and the preset keeps the record when it sets true), a
+		// reference, or true without the preset. A true from the preset
+		// ("mode: development") is not reported; a "development: true" written in the
+		// configuration is then indistinguishable from it.
+		development := pipeline.Development //nolint:staticcheck // SA1019: see apply_presets.go
+		forced := slices.Contains(pipeline.ForceSendFields, "Development")
+		if !forced && !b.Config.IsReferenceAt(p) && (!development || presetEnabled) {
+			continue
+		}
+		locs := b.Config.GetLocationsOfExact(p)
 
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Warning,
 			Summary:   pipelineDevelopmentDeprecatedSummary,
-			Locations: v.Locations(),
-			Paths:     dyn.ToStructPaths(p),
+			Locations: locs,
+			Paths:     []*structpath.PathNode{p},
 		})
 
 		// The preset overwrites YAML values with true, so a false here was set by a Python
 		// mutator after the preset ran. "bundle run" still sends development: true.
-		if development, ok := v.AsBool(); ok && presetEnabled && !development {
+		if presetEnabled && !pipeline.Development { //nolint:staticcheck // SA1019: see above
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   pipelineDevelopmentIgnoredSummary,
 				Detail:    pipelineDevelopmentIgnoredDetail,
-				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(p),
+				Locations: locs,
+				Paths:     []*structpath.PathNode{p},
 			})
 		}
-		return v, nil
-	})
-	if err != nil {
-		return diag.FromErr(err)
 	}
 
 	return diags

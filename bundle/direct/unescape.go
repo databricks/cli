@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
@@ -24,7 +24,7 @@ func unescapeRefs(state any) error {
 			return
 		}
 		paths = append(paths, path)
-		values = append(values, dynvar.Unescape(s))
+		values = append(values, structvar.Unescape(s))
 	})
 	if err != nil {
 		return err

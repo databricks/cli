@@ -203,8 +203,11 @@ func (w *Workspace) NormalizeHostURL() {
 func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, error) {
 	// Extract query parameters (?o=, ?a=) from the host URL before building
 	// the SDK config. This ensures workspace_id and account_id are available
-	// for profile resolution during EnsureResolved().
-	w.NormalizeHostURL()
+	// for profile resolution during EnsureResolved(). A copy is normalized: the
+	// configuration keeps the host as it is written.
+	normalized := *w
+	normalized.NormalizeHostURL()
+	w = &normalized
 
 	cfg := w.Config(ctx)
 

@@ -12,12 +12,11 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/retry"
@@ -886,7 +885,7 @@ func isEmpty(rv reflect.Value) bool {
 
 	// Empty slices and maps cannot be represented in proto and because of that they cannot be represented
 	// by SDK's JSON encoder. However, they can be provided by users in the config and can be represented in
-	// Bundle struct (currently libs/structs and libs/dyn use ForceSendFields for maps and slices, unlike SDK).
+	// Bundle struct (currently libs/structs uses ForceSendFields for maps and slices, unlike SDK).
 	// Thus we get permanent drift because we see that new config is [] but in the state it is omitted.
 
 	if rv.Kind() == reflect.Slice {
@@ -1087,7 +1086,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 
 	var resolved bool
 	for fieldPathStr, refString := range sv.Refs {
-		refs, ok := dynvar.NewRef(dyn.V(refString))
+		refs, ok := structvar.NewRef(refString)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
 			return false
@@ -1161,36 +1160,17 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	existingKeys := maps.Clone(db.State)
 
-	patterns := []dyn.Pattern{
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
-	}
-
-	// Walk?
 	if configRoot != nil {
-		for _, pat := range patterns {
-			_, err := dyn.MapByPattern(
-				configRoot.Value(),
-				pat,
-				func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-					s := p.String()
-					resourceType := config.GetResourceTypeFromKey(s)
-					if resourceType == "" {
-						return v, fmt.Errorf("cannot parse resource key: %q", s)
-					}
-					_, ok := dresources.SupportedResources[resourceType]
-					if !ok {
-						return v, fmt.Errorf("unsupported resource type: %s", resourceType)
-					}
-
-					nodes = append(nodes, s)
-					return dyn.InvalidValue, nil
-				},
-			)
-			if err != nil {
-				return nil, err
+		for _, s := range configRoot.ResourceNodes() {
+			resourceType := config.GetResourceTypeFromKey(s)
+			if resourceType == "" {
+				return nil, fmt.Errorf("cannot parse resource key: %q", s)
 			}
+			_, ok := dresources.SupportedResources[resourceType]
+			if !ok {
+				return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
+			}
+			nodes = append(nodes, s)
 		}
 	}
 
@@ -1245,7 +1225,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		// This means input and state must be compatible: input can have more fields, but existing fields should not be moved
 		// This means one cannot refer to fields not present in state (e.g. ${resources.jobs.foo.permissions})
 
-		refs, err := extractReferences(configRoot.Value(), node, adapter.StateType())
+		refs, err := extractReferences(configRoot, node, adapter.StateType())
 		if err != nil {
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
@@ -1254,13 +1234,13 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
-			ref, ok := dynvar.NewRef(dyn.V(reference))
+			ref, ok := structvar.NewRef(reference)
 			if !ok {
 				continue
 			}
 
 			for _, targetPath := range ref.References() {
-				targetPathParsed, err := dyn.NewPathFromString(targetPath)
+				targetPathParsed, err := structpath.ParsePath(targetPath)
 				if err != nil {
 					return nil, fmt.Errorf("parsing %q: %w", targetPath, err)
 				}
@@ -1367,72 +1347,67 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 // keeping only those whose field path exists in stateType (references in input-only or
 // bundle:"readonly" fields, such as volumes' computed volume_path, are skipped).
 // Returns a map from structpath string (field path within the resource) to template string.
-func ExtractReferences(root dyn.Value, node string, stateType reflect.Type) (map[string]string, error) {
+func ExtractReferences(root *config.Root, node string, stateType reflect.Type) (map[string]string, error) {
 	return extractReferences(root, node, stateType)
 }
 
-func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map[string]string, error) {
+func extractReferences(root *config.Root, node string, stateType reflect.Type) (map[string]string, error) {
 	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
 
-	path, err := dyn.NewPathFromString(node)
+	path, err := structpath.ParsePath(node)
 	if err != nil {
 		return nil, fmt.Errorf("internal error: bad node key: %q: %w", node, err)
 	}
 
-	val, err := dyn.GetByPath(root, path)
-	if err != nil {
-		return nil, err
+	if _, ok := root.Resources.GetResource(path.KeyAt(1), path.KeyAt(2)); !ok {
+		return nil, fmt.Errorf("no value at %s", node)
 	}
 
-	err = dyn.WalkReadOnly(val, func(p dyn.Path, v dyn.Value) error {
-		fullPath := append(path, p...)
-		targetType := config.GetResourceTypeFromKey(fullPath.String())
-		if targetType != nodeType {
-			// Make sure these are associated with different nodes:
-			// resources.jobs.foo...
-			// resources.jobs.foo.permissions...
-			// resources.jobs.foo.grants...
-			return nil
-		}
-		ref, ok := dynvar.NewRef(v)
-		if !ok {
-			return nil
-		}
-		// ValidatePath and the refs keys both operate on structpath (keys are
-		// re-parsed and applied to the typed state in structvar.ResolveRef).
-		// structpath's bracket notation (['key.with.dots']) also round-trips
-		// keys with dots, which dyn.Path.String()'s dot notation cannot.
-		fieldPath := dynPathToStructPath(p)
-
-		// References resolve against the state type, not the input config (see PlanResources
-		// and dresources.TestInputSubset). A field in input but not in state — e.g. a
-		// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
-		// reference it carries cannot resolve into state and is not a dependency here. Such
-		// references are still resolved earlier during initialize.
-		if structaccess.ValidatePath(stateType, fieldPath) == nil {
-			// Store the original string that contains references, not individual references.
-			refs[fieldPath.String()] = ref.Str
-		}
-		return nil
+	// The walk covers the whole resource: keep the strings under node.
+	walk.ResourceStringsOf(root, path.KeyAt(1), path.KeyAt(2), walk.WithReferences, func(n *walk.Node, s string) (string, bool) {
+		addReference(refs, path, nodeType, n.Path(), s, stateType)
+		return "", false
 	})
-	if err != nil {
-		return nil, fmt.Errorf("parsing refs: %w", err)
+	for p, ref := range root.ReferencesUnder(path) {
+		addReference(refs, path, nodeType, p, ref, stateType)
 	}
 	return refs, nil
 }
 
-// dynPathToStructPath converts a dyn.Path to a structpath.PathNode.
-func dynPathToStructPath(p dyn.Path) *structpath.PathNode {
-	var node *structpath.PathNode
-	for _, c := range p {
-		if key := c.Key(); key != "" {
-			node = structpath.NewStringKey(node, key)
-		} else {
-			node = structpath.NewIndex(node, c.Index())
-		}
+// addReference records in refs the string s with references at fullPath, keyed by its
+// path relative to the node at path, if it belongs to that node.
+func addReference(refs map[string]string, path *structpath.PathNode, nodeType string, fullPath *structpath.PathNode, s string, stateType reflect.Type) {
+	if !fullPath.HasPrefix(path) {
+		return
 	}
-	return node
+	targetType := config.GetResourceTypeFromKey(fullPath.String())
+	if targetType != nodeType {
+		// Make sure these are associated with different nodes:
+		// resources.jobs.foo...
+		// resources.jobs.foo.permissions...
+		// resources.jobs.foo.grants...
+		return
+	}
+	ref, ok := structvar.NewRef(s)
+	if !ok {
+		return
+	}
+	// ValidatePath and the refs keys both operate on structpath (keys are
+	// re-parsed and applied to the typed state in structvar.ResolveRef).
+	// structpath's bracket notation (['key.with.dots']) also round-trips
+	// keys with dots.
+	fieldPath := fullPath.SkipPrefix(path.Len())
+
+	// References resolve against the state type, not the input config (see PlanResources
+	// and dresources.TestInputSubset). A field in input but not in state — e.g. a
+	// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
+	// reference it carries cannot resolve into state and is not a dependency here. Such
+	// references are still resolved earlier during initialize.
+	if structaccess.ValidatePath(stateType, fieldPath) == nil {
+		// Store the original string that contains references, not individual references.
+		refs[fieldPath.String()] = ref.Str
+	}
 }
 
 func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Adapter, error) {

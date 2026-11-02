@@ -1,1 +1,0 @@
-Badness = 'An empty (null) resources section is an error without a location, while empty targets, variables or sync sections are accepted.'

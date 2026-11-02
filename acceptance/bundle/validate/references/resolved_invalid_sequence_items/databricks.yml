@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+variables:
+  bad:
+    type: complex
+    default:
+      x: 1
+
+resources:
+  jobs:
+    j:
+      name: test
+      email_notifications:
+        on_failure: ["a@example.test", "${var.bad}", "b@example.test", "${var.bad}", "${var.bad}", "c@example.test"]

@@ -1,18 +1,23 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-func VisitDashboardPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	pattern := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("dashboards"),
-		dyn.AnyKey(),
-		dyn.Key("file_path"),
-	)
-
-	return dyn.MapByPattern(value, pattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		return fn(path, TranslateModeLocalRelative, value)
-	})
+func VisitDashboardPaths(root *config.Root, fn VisitFunc) error {
+	for _, name := range sortedKeys(root.Resources.Dashboards) {
+		if d := root.Resources.Dashboards[name]; d != nil {
+			if err := visit(fn, visitArgs{
+				owner: d,
+				field: "file_path",
+				value: &d.FilePath,
+				mode:  TranslateModeLocalRelative,
+				path:  structpath.NewPath(resourcePath("dashboards", name), "file_path"),
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

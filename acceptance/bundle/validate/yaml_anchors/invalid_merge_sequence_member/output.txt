@@ -6,3 +6,10 @@ Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml ([TEST_TMP_DIR]/databr
 Found 1 error
 
 Exit code: 1
+
+>>> [CLI] bundle validate -t dev -o json
+Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml ([TEST_TMP_DIR]/databricks.yml:15:11): map merge requires map or sequence of maps as the value
+
+
+Exit code: 1
+null

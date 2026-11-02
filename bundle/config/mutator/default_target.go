@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type defineDefaultTarget struct {
@@ -14,7 +14,8 @@ type defineDefaultTarget struct {
 }
 
 // DefineDefaultTarget adds a target named "default"
-// to the configuration if none have been defined.
+// to the configuration if none have been defined. It runs while the configuration
+// is loading.
 func DefineDefaultTarget() bundle.Mutator {
 	return &defineDefaultTarget{
 		name: "default",
@@ -26,13 +27,14 @@ func (m *defineDefaultTarget) Name() string {
 }
 
 func (m *defineDefaultTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Nothing to do if the configuration has at least 1 target.
-	if len(b.Config.Targets) > 0 {
-		return nil
-	}
-
-	// Define default target.
-	b.Config.Targets = make(map[string]*config.Target)
-	b.Config.Targets[m.name] = &config.Target{}
-	return nil
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		targets := v.Get("targets")
+		if m, ok := targets.AsMap(); ok && m.Len() > 0 {
+			return v, nil
+		}
+		return dyn.Set(v, "targets", dyn.NewValue(map[string]dyn.Value{
+			m.name: dyn.V(map[string]dyn.Value{}),
+		}, targets.Locations()))
+	})
+	return diag.FromErr(err)
 }

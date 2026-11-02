@@ -9,7 +9,7 @@ import (
 )
 
 // baseVarDef matches a path segment of a ${...} reference. It is the grammar of
-// dynvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesDynvar
+// structvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesStructvar
 // keeps them in agreement.
 const baseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
 
@@ -191,6 +191,15 @@ func NewPathSlice(parts ...any) []*PathNode {
 	return []*PathNode{NewPath(nil, parts...)}
 }
 
+// Join appends the components of nodes (each node's own key, index or key-value, not
+// its parents) to prefix.
+func Join(prefix *PathNode, nodes ...*PathNode) *PathNode {
+	for _, n := range nodes {
+		prefix = &PathNode{prev: prefix, key: n.key, index: n.index, value: n.value}
+	}
+	return prefix
+}
+
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {
 	return &PathNode{
 		prev:  prev,
@@ -358,6 +367,37 @@ func NewPatternBracketStar(prev *PatternNode) *PatternNode {
 		prev:  (*PathNode)(prev),
 		index: tagBracketStar,
 	})
+}
+
+// wildcard is a NewPattern part that matches any key or element.
+type wildcard int
+
+// Wildcards for [NewPattern]: AnyKey matches any map key or field (rendered ".*") and
+// AnyIndex matches any sequence element (rendered "[*]").
+const (
+	AnyKey   wildcard = tagDotStar
+	AnyIndex wildcard = tagBracketStar
+)
+
+// NewPattern appends parts to prev like [NewPath]; AnyKey and AnyIndex append wildcards.
+func NewPattern(prev *PatternNode, parts ...any) *PatternNode {
+	for _, part := range parts {
+		switch v := part.(type) {
+		case string:
+			prev = NewPatternStringKey(prev, v)
+		case int:
+			prev = NewPatternIndex(prev, v)
+		case wildcard:
+			if v == AnyKey {
+				prev = NewPatternDotStar(prev)
+			} else {
+				prev = NewPatternBracketStar(prev)
+			}
+		default:
+			panic(fmt.Sprintf("structpath.NewPattern: unsupported part %#v", part))
+		}
+	}
+	return prev
 }
 
 func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
@@ -712,7 +752,6 @@ func isValidField(s string) bool {
 }
 
 // PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
-// This function is similar to dynvar.PureReferenceToPath but returns a *PathNode instead of dyn.Path.
 func PureReferenceToPath(s string) (*PathNode, bool) {
 	m := pureReference.FindStringSubmatch(s)
 	if m == nil {
@@ -985,4 +1024,14 @@ func (p *PatternNode) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 	*p = *parsed
 	return nil
+}
+
+// KeyAt returns the string key of the i-th component of the path, or "" if it is not a key.
+func (p *PathNode) KeyAt(i int) string {
+	nodes := p.AsSlice()
+	if i < 0 || i >= len(nodes) {
+		return ""
+	}
+	k, _ := nodes[i].StringKey()
+	return k
 }

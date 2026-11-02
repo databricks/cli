@@ -75,6 +75,7 @@ func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]catalog.PrivilegeAssi
 		Refs: map[string]string{
 			"full_name": "${" + baseNode + ".id}",
 		},
+		Locations: nil,
 	}, nil
 }
 

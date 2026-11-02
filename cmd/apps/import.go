@@ -25,12 +25,9 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -456,22 +453,13 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 		}
 	}
 
-	// Create the bundle configuration with explicit line numbers to control ordering
 	// Use the app name for the bundle name
 	bundleName := textutil.NormalizeString(app.Name)
-	bundleConfig := map[string]dyn.Value{
-		"bundle": dyn.NewValue(map[string]dyn.Value{
-			"name": dyn.NewValue(bundleName, []diag.Location{{Line: 1}}),
-		}, []diag.Location{{Line: 1}}),
-		"workspace": dyn.NewValue(map[string]dyn.Value{
-			"host": dyn.NewValue(w.Config.Host, []diag.Location{{Line: 2}}),
-		}, []diag.Location{{Line: 10}}),
-		"resources": dyn.NewValue(map[string]dyn.Value{
-			"apps": dyn.V(map[string]dyn.Value{
-				appKey: v,
-			}),
-		}, []diag.Location{{Line: 20}}),
-	}
+	bundleConfig := structyaml.M(
+		"bundle", structyaml.M("name", bundleName),
+		"workspace", structyaml.M("host", w.Config.Host),
+		"resources", structyaml.M("apps", structyaml.M(appKey, v)),
+	)
 
 	// Download the app source files
 	err = downloader.FlushToDisk(ctx, false)
@@ -481,8 +469,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 
 	// Save databricks.yml
 	databricksYml := filepath.Join(".", "databricks.yml")
-	saver := yamlsaver.NewSaver()
-	err = saver.SaveAsYAML(bundleConfig, databricksYml, false)
+	err = structyaml.Save(databricksYml, bundleConfig, false, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to save databricks.yml: %w", err)
 	}
@@ -545,7 +532,7 @@ func addBlankLinesBetweenTopLevelKeys(filename string) error {
 }
 
 // inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename
-func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
+func inlineAppConfigFile(appValue *structyaml.Map) (string, error) {
 	// Check for app.yml first, then app.yaml
 	var appConfigFile string
 	var appConfigData []byte
@@ -574,62 +561,33 @@ func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
 	}
 
-	// Get the current app value as a map
-	appMap, ok := appValue.AsMap()
-	if !ok {
-		return "", errors.New("app value is not a map")
-	}
-
-	// Build the new app map with the config section
-	newPairs := make([]dyn.Pair, 0, len(appMap.Pairs())+2)
-
-	// Copy existing pairs
-	newPairs = append(newPairs, appMap.Pairs()...)
-
 	// Create config section
-	configMap := make(map[string]dyn.Value)
+	var config structyaml.Map
 
 	// Add command if present
 	if cmd, ok := appConfig["command"]; ok {
-		cmdValue, err := convert.FromTyped(cmd, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert command: %w", err)
-		}
-		configMap["command"] = cmdValue
+		config.Add("command", structyaml.Value(cmd))
 	}
 
 	// Add env if present
 	if env, ok := appConfig["env"]; ok {
-		envValue, err := convert.FromTyped(env, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert env: %w", err)
-		}
-		configMap["env"] = envValue
+		config.Add("env", structyaml.Value(env))
 	}
 
+	// The config section and the top-level resources go before the existing fields.
+	var added structyaml.Map
+
 	// Add the config section if we have any items
-	if len(configMap) > 0 {
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("config"),
-			Value: dyn.V(configMap),
-		})
+	if len(config) > 0 {
+		added.Add("config", config)
 	}
 
 	// Add resources at top level if present
 	if resources, ok := appConfig["resources"]; ok {
-		resourcesValue, err := convert.FromTyped(resources, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert resources: %w", err)
-		}
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("resources"),
-			Value: resourcesValue,
-		})
+		added.Add("resources", structyaml.Value(resources))
 	}
 
-	// Create the new app value with the config section
-	newMapping := dyn.NewMappingFromPairs(newPairs)
-	*appValue = dyn.NewValue(newMapping, appValue.Locations())
+	*appValue = append(added, *appValue...)
 
 	return appConfigFile, nil
 }

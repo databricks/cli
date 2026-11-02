@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -262,8 +261,5 @@ func TestApplyBundlePermissionsEmpty(t *testing.T) {
 	// An empty list of permissions is dropped, an unset one stays unset.
 	for _, name := range []string{"empty", "unset"} {
 		require.Nil(t, b.Config.Resources.Jobs[name].Permissions)
-		v, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.jobs."+name))
-		require.NoError(t, err)
-		assert.False(t, v.Get("permissions").IsValid(), name)
 	}
 }

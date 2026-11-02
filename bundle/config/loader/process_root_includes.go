@@ -10,6 +10,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type processRootIncludes struct{}
@@ -39,10 +42,14 @@ func hasGlobCharacters(path string) (string, bool) {
 func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var out []bundle.Mutator
 
+	var include []string
+	if err := b.Config.DecodeLoading(&include, "include"); err != nil {
+		return diag.FromErr(err)
+	}
+
 	// Preserve the raw include patterns before they are replaced below with the
 	// expanded list of loaded files, so IsFileIncluded can re-match against them.
-	patterns := b.Config.Include
-	b.SetIncludePatterns(patterns)
+	b.SetIncludePatterns(include)
 
 	// Map with files we've already seen to avoid loading them twice.
 	seen := map[string]bool{}
@@ -77,7 +84,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.
 	// For matches that appear in multiple globs, only the first is kept.
-	for entryIndex, entry := range b.Config.Include {
+	for entryIndex, entry := range include {
 		// Include paths must be relative.
 		if filepath.IsAbs(entry) {
 			return diag.Errorf("%s: includes must be relative paths", entry)
@@ -131,21 +138,38 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		}
 	}
 
+	// Swap out the original includes list with the expanded globs.
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		// Include is omitempty in the typed configuration, so an empty list must stay
+		// absent from the dynamic tree rather than be written as [].
+		if len(files) == 0 {
+			return dyn.DropKeys(root, []string{"include"})
+		}
+
+		includeValues := make([]dyn.Value, 0, len(files))
+		for _, file := range files {
+			includeValues = append(includeValues, dyn.V(file))
+		}
+		return dyn.Set(root, "include", dyn.NewValue(includeValues, root.Get("include").Locations()))
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	// Track number of bundle YAML (or JSON) files in the configuration. The +1 is there
 	// to account for the root databricks.yaml file.
 	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
 
-	// ProcessInclude merges into the configuration via [config.Root.Merge], so it does
-	// not need its own mutator scope. Giving each included file one would re-convert the
-	// whole accumulated configuration per file, making load quadratic in the number of
-	// included files (~20 minutes for 6000 files).
-	bundle.ApplySeqInScopeContext(ctx, b, out...)
-
-	// Swap out the original include patterns with the expanded globs. This is done after
-	// the includes are merged: [config.Root.Merge] reloads the typed configuration from
-	// the dynamic tree, which still holds the patterns, followed by the include sections
-	// of included files (merging concatenates sequences). Those are kept as they are.
-	// Include is omitempty, so an empty list is absent from the configuration.
-	b.Config.Include = append(files, b.Config.Include[len(patterns):]...)
+	// Like main, the includes are applied without being recorded as mutators.
+	for _, m := range out {
+		mctx := log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
+		log.Debugf(mctx, "Apply")
+		for _, d := range m.Apply(mctx, b) {
+			logdiag.LogDiag(mctx, d)
+		}
+		if logdiag.HasError(ctx) {
+			break
+		}
+	}
 	return nil
 }

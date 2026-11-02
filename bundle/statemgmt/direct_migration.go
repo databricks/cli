@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -269,17 +268,9 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 
 	// The config may use terraform-style references (${databricks_pipeline.x.id}).
 	// BuildStateFromTF expects ${resources.*} references, so rewrite them first.
-	uninterpolatedRoot, err := reverseInterpolate(b.Config.Value())
+	uninterpolatedConfig, err := reverseInterpolateConfig(&b.Config)
 	if err != nil {
 		return tempStatePath, false, nil, fmt.Errorf("failed to reverse interpolation: %w", err)
-	}
-
-	var uninterpolatedConfig config.Root
-	err = uninterpolatedConfig.Mutate(func(_ dyn.Value) (dyn.Value, error) {
-		return uninterpolatedRoot, nil
-	})
-	if err != nil {
-		return tempStatePath, false, nil, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
 	adapters, err := dresources.InitAll(nil)
@@ -296,7 +287,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
-	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
+	hasWarnings, err := migrate.BuildStateFromTF(ctx, uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
 	if err != nil {
 		return tempStatePath, hasWarnings, nil, err
 	}
@@ -310,5 +301,5 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, hasWarnings, nil, errors.New("state conversion failed")
 	}
 
-	return tempStatePath, hasWarnings, &uninterpolatedConfig, nil
+	return tempStatePath, hasWarnings, uninterpolatedConfig, nil
 }

@@ -22,7 +22,7 @@ func (m *environmentsToTargets) Name() string {
 func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Short circuit if the "environments" key is not set.
 	// This is the common case.
-	if b.Config.Environments == nil {
+	if k := b.Config.Value().Get("environments").Kind(); k == dyn.KindInvalid || k == dyn.KindNil {
 		return nil
 	}
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/build"
 	"github.com/stretchr/testify/require"
 )
@@ -131,7 +132,7 @@ func TestVerifyCliVersion(t *testing.T) {
 					},
 				},
 			}
-			diags := bundle.Apply(t.Context(), b, VerifyCliVersion())
+			diags := bundletest.ApplyLoading(t, b, VerifyCliVersion())
 			if tc.expectedError != "" {
 				require.NotEmpty(t, diags)
 				require.Contains(t, diags[0].Summary, tc.expectedError)

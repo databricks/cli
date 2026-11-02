@@ -14,8 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -58,25 +56,7 @@ func BuildStateFromTF(
 ) (bool, error) {
 	warningsSeen := false
 	// Collect all resource nodes (same patterns as makePlan).
-	var nodes []string
-	patterns := []dyn.Pattern{
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
-	}
-	for _, pat := range patterns {
-		_, err := dyn.MapByPattern(
-			configRoot.Value(),
-			pat,
-			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				nodes = append(nodes, p.String())
-				return dyn.InvalidValue, nil
-			},
-		)
-		if err != nil {
-			return warningsSeen, err
-		}
-	}
+	nodes := configRoot.ResourceNodes()
 
 	for _, node := range nodes {
 		id, ok := tfIDs[node]
@@ -113,7 +93,7 @@ func BuildStateFromTF(
 			return warningsSeen, fmt.Errorf("%s: PrepareState: %w", node, err)
 		}
 
-		refs, err := direct.ExtractReferences(configRoot.Value(), node, adapter.StateType())
+		refs, err := direct.ExtractReferences(configRoot, node, adapter.StateType())
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: extracting references: %w", node, err)
 		}
@@ -126,12 +106,12 @@ func BuildStateFromTF(
 		// Same logic as makePlan in bundle/direct/bundle_plan.go.
 		var dependsOn []deployplan.DependsOnEntry //nolint:prealloc
 		for _, refTemplate := range refs {
-			ref, ok := dynvar.NewRef(dyn.V(refTemplate))
+			ref, ok := structvar.NewRef(refTemplate)
 			if !ok {
 				continue
 			}
 			for _, targetPath := range ref.References() {
-				targetPathParsed, err := dyn.NewPathFromString(targetPath)
+				targetPathParsed, err := structpath.ParsePath(targetPath)
 				if err != nil {
 					continue
 				}
@@ -281,18 +261,18 @@ func BuildStateFromTF(
 
 // referencesUndeployed reports whether refTemplate references a resource that is not in the terraform state.
 func referencesUndeployed(refTemplate string, tfIDs map[string]string) bool {
-	ref, ok := dynvar.NewRef(dyn.V(refTemplate))
+	ref, ok := structvar.NewRef(refTemplate)
 	if !ok {
 		return false
 	}
 	for _, targetPath := range ref.References() {
-		path, err := dyn.NewPathFromString(targetPath)
+		path, err := structpath.ParsePath(targetPath)
 		if err != nil {
 			continue
 		}
 		targetNode, _ := config.GetNodeAndType(path)
 		// Not a resource reference (e.g. ${var.x}).
-		if len(targetNode) == 0 {
+		if targetNode == nil {
 			continue
 		}
 		if _, ok := tfIDs[targetNode.String()]; !ok {

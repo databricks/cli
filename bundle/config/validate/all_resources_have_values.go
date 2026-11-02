@@ -6,8 +6,9 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func AllResourcesHaveValues() bundle.Mutator {
@@ -23,34 +24,25 @@ func (m *allResourcesHaveValues) Name() string {
 func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	_, err := dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if v.Kind() != dyn.KindNil {
-				return v, nil
-			}
+	b.Config.Resources.IterateAllResources(func(typ, rName string, res config.ConfigResource) bool {
+		// A resource declared without a body is visited with a nil res.
+		if res != nil {
+			return true
+		}
 
-			// Type of the resource, stripped of the trailing 's' to make it
-			// singular.
-			rType := strings.TrimSuffix(p[1].Key(), "s")
+		// Type of the resource, stripped of the trailing 's' to make it
+		// singular.
+		rType := strings.TrimSuffix(typ, "s")
 
-			// Name of the resource. Eg: "foo" in "jobs.foo".
-			rName := p[2].Key()
-
-			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
-				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(p),
-			})
-
-			return v, nil
-		},
-	)
-	if err != nil {
-		diags = append(diags, diag.FromErr(err)...)
-	}
+		p := structpath.NewPath(nil, "resources", typ, rName)
+		diags = append(diags, diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
+			Locations: b.Config.GetLocationsOfExact(p),
+			Paths:     []*structpath.PathNode{p},
+		})
+		return true
+	})
 
 	return diags
 }

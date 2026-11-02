@@ -2,8 +2,11 @@ package structvar_test
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -289,4 +292,127 @@ func TestToStructVarRequiresPointerType(t *testing.T) {
 	sv, err := svJSON.ToStructVar(reflect.TypeFor[*TestObj]())
 	require.NoError(t, err)
 	assert.Equal(t, "test", sv.Value.(*TestObj).Name)
+}
+
+func TestMoveMetadata(t *testing.T) {
+	type obj struct {
+		Old map[string]TestObj `json:"old"`
+		New map[string]TestObj `json:"new"`
+	}
+	sv := structvar.NewStructVar(&obj{}, map[string]string{
+		"old['a'].age": "${var.age}",
+		"older.age":    "${var.other}",
+		"new['b'].age": "${var.replaced}",
+	})
+	loc := diag.Location{File: "a.yml", Line: 1, Column: 1}
+	sv.Locations = sv.Locations.With(structpath.NewStringKey(nil, "old"), (*structvar.Locations)(nil).WithLocations([]diag.Location{loc}))
+
+	sv.MoveMetadata(structpath.NewStringKey(nil, "old"), structpath.NewStringKey(nil, "new"))
+
+	assert.Equal(t, map[string]string{
+		"new['a'].age": "${var.age}",
+		"older.age":    "${var.other}",
+	}, sv.Refs)
+	assert.Equal(t, []diag.Location{loc}, sv.Locations.Exact(structpath.NewStringKey(nil, "new")))
+	assert.Nil(t, sv.Locations.Sub(structpath.NewStringKey(nil, "old")))
+}
+
+func TestCopyMetadata(t *testing.T) {
+	type obj struct {
+		Items map[string]TestObj `json:"items"`
+	}
+	dst := structvar.NewStructVar(&obj{}, map[string]string{
+		"items.a.age": "${var.old}",
+		"items.b.age": "${var.kept}",
+	})
+	src := structvar.NewStructVar(&obj{}, map[string]string{
+		"items.a.name": "${var.new}",
+		"items.b.age":  "${var.ignored}",
+	})
+	loc := diag.Location{File: "a.yml", Line: 2, Column: 3}
+	a := structpath.NewPath(nil, "items", "a")
+	src.Locations = src.Locations.With(a, (*structvar.Locations)(nil).WithLocations([]diag.Location{loc}))
+
+	dst.CopyMetadata(src, a)
+
+	assert.Equal(t, map[string]string{
+		"items.a.name": "${var.new}",
+		"items.b.age":  "${var.kept}",
+	}, dst.Refs)
+	assert.Equal(t, []diag.Location{loc}, dst.Locations.Exact(a))
+}
+
+func TestDeleteSliceElement(t *testing.T) {
+	type obj struct {
+		Items []string `json:"items"`
+	}
+	sv := &structvar.StructVar{Value: &obj{Items: []string{"a", "b", "c"}}}
+	items := structpath.NewStringKey(nil, "items")
+	for i, name := range []string{"a", "b", "c"} {
+		loc := diag.Location{File: name, Line: i + 1}
+		sv.Locations = sv.Locations.With(structpath.NewIndex(items, i), (*structvar.Locations)(nil).WithLocations([]diag.Location{loc}))
+	}
+	sv.Refs = map[string]string{"items[2]": "${var.c}"}
+
+	require.NoError(t, sv.Delete(structpath.NewIndex(items, 0)))
+
+	assert.Equal(t, []string{"b", "c"}, sv.Value.(*obj).Items)
+	assert.Equal(t, []diag.Location{{File: "b", Line: 2}}, sv.Locations.Exact(structpath.NewIndex(items, 0)))
+	assert.Equal(t, []diag.Location{{File: "c", Line: 3}}, sv.Locations.Exact(structpath.NewIndex(items, 1)))
+	assert.Nil(t, sv.Locations.Exact(structpath.NewIndex(items, 2)))
+	assert.Equal(t, map[string]string{"items[1]": "${var.c}"}, sv.Refs)
+
+	require.NoError(t, sv.Delete(structpath.NewIndex(items, 1)))
+	assert.Equal(t, []string{"b"}, sv.Value.(*obj).Items)
+	assert.Nil(t, sv.Locations.Exact(structpath.NewIndex(items, 1)))
+	assert.Empty(t, sv.Refs)
+}
+
+func TestMergeNullKeepsFieldSet(t *testing.T) {
+	type inner struct {
+		Enabled bool `json:"enabled"`
+	}
+	type obj struct {
+		Name            string   `json:"name,omitempty"`
+		Queue           *inner   `json:"queue,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	var dst obj
+	dstVar, _, err := structvar.DecodeYAML("dst.yml", strings.NewReader("name: x\n"), &dst)
+	require.NoError(t, err)
+
+	var src obj
+	srcVar, _, err := structvar.DecodeYAML("src.yml", strings.NewReader("queue: null\n"), &src)
+	require.NoError(t, err)
+
+	require.NoError(t, dstVar.Merge(nil, srcVar.View()))
+
+	// An explicit null added by the merge stays set, as it does when it is decoded.
+	assert.Nil(t, dst.Queue)
+	assert.Equal(t, []string{"Queue"}, dst.ForceSendFields)
+}
+
+func TestMergeNullIntoValueKeepsIt(t *testing.T) {
+	type inner struct {
+		Enabled bool `json:"enabled"`
+	}
+	type obj struct {
+		Queue           *inner   `json:"queue,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	var dst obj
+	dstVar, _, err := structvar.DecodeYAML("dst.yml", strings.NewReader("queue:\n  enabled: true\n"), &dst)
+	require.NoError(t, err)
+
+	var src obj
+	srcVar, _, err := structvar.DecodeYAML("src.yml", strings.NewReader("queue: null\n"), &src)
+	require.NoError(t, err)
+
+	require.NoError(t, dstVar.Merge(nil, srcVar.View()))
+
+	// A null does not clear an existing value.
+	require.NotNil(t, dst.Queue)
+	assert.True(t, dst.Queue.Enabled)
 }

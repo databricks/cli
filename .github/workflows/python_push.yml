@@ -39,7 +39,7 @@ jobs:
             acceptance/bundle/python/ \
             go.mod \
             go.sum \
-            libs/dyn/dynvar/testdata/reference_vectors.json \
+            libs/structs/structvar/testdata/reference_vectors.json \
             python/ \
             tools/task/ \
           )

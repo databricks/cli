@@ -1,29 +1,28 @@
 package generate
 
 import (
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
-func ConvertGenieSpaceToValue(genieSpace *dashboards.GenieSpace, filePath string) (dyn.Value, error) {
+func ConvertGenieSpaceToValue(genieSpace *dashboards.GenieSpace, filePath string) (structyaml.Map, error) {
 	// Emit only the fields a user authors in a bundle. serialized_space is
 	// written to a separate file and referenced via file_path, and output-only
 	// fields (e.g. space_id, etag) must not appear in the generated config, so
 	// we build the value field by field rather than marshaling the struct.
-	dv := map[string]dyn.Value{
-		"title":        dyn.NewValue(genieSpace.Title, []diag.Location{{Line: 1}}),
-		"warehouse_id": dyn.NewValue(genieSpace.WarehouseId, []diag.Location{{Line: 2}}),
-		"file_path":    dyn.NewValue(filePath, []diag.Location{{Line: 3}}),
-	}
+	dv := structyaml.M(
+		"title", genieSpace.Title,
+		"warehouse_id", genieSpace.WarehouseId,
+		"file_path", filePath,
+	)
 
 	if genieSpace.Description != "" {
-		dv["description"] = dyn.NewValue(genieSpace.Description, []diag.Location{{Line: 4}})
+		dv.Add("description", genieSpace.Description)
 	}
 
 	if genieSpace.ParentPath != "" {
-		dv["parent_path"] = dyn.NewValue(ensureWorkspacePrefix(genieSpace.ParentPath), []diag.Location{{Line: 5}})
+		dv.Add("parent_path", ensureWorkspacePrefix(genieSpace.ParentPath))
 	}
 
-	return dyn.V(dv), nil
+	return dv, nil
 }

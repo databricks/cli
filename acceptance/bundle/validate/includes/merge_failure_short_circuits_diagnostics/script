@@ -1,2 +1,2 @@
-# Includes after one that fails to merge do not report their diagnostics.
+# Includes after one that fails to merge still report their diagnostics.
 errcode trace $CLI bundle validate

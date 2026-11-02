@@ -1,2 +1,2 @@
-# A scalar targets section is an error.
+# A scalar targets section is reported with a warning at its location.
 errcode trace $CLI bundle validate

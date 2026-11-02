@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,9 +27,7 @@ func TestVisitJobRunPaths(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobRunPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.job_runs.run0.lifecycle.triggers[0].on_file_change"),
-	}
+	expected := structpath.MustParsePaths("resources.job_runs.run0.lifecycle.triggers[0].on_file_change")
 
 	assert.ElementsMatch(t, expected, actual)
 }

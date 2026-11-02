@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -202,7 +201,7 @@ func TestJsonUnmarshalRequestMismatch(t *testing.T) {
 				Column: 6,
 			},
 		},
-		Paths: dyn.ToStructPaths(dyn.EmptyPath),
+		Paths: []*structpath.PathNode{nil},
 	})
 }
 
