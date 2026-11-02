@@ -1,67 +1,12 @@
-/Workspace should be prepended on all paths, but it is not the case:
-Warning: required field "entry_point" is not set
-  at resources.jobs.my_job.tasks[0].python_wheel_task
-  in databricks.yml:26:13
-
-Warning: required field "package_name" is not set
-  at resources.jobs.my_job.tasks[0].python_wheel_task
-  in databricks.yml:26:13
-
 {
-  "bundle": {
-    "environment": "dev",
-    "git": {
-      "bundle_root_path": "."
-    },
-    "name": "test-bundle",
-    "target": "dev"
-  },
-  "resources": {
-    "jobs": {
-      "my_job": {
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Users/[USERNAME]/path/to/root/state/metadata.json"
-        },
-        "edit_mode": "UI_LOCKED",
-        "format": "MULTI_TASK",
-        "max_concurrent_runs": 1,
-        "name": "Untitled",
-        "queue": {
-          "enabled": true
-        },
-        "tasks": [
-          {
-            "existing_cluster_id": "500",
-            "python_wheel_task": {
-              "named_parameters": {
-                "conf-file": "/Users/[USERNAME]/path/to/root/files/path/to/config.yaml"
-              }
-            },
-            "task_key": ""
-          }
-        ]
-      }
-    }
-  },
-  "sync": {
-    "paths": [
-      "."
-    ]
-  },
-  "variables": {
-    "workspace_root": {
-      "default": "/Users/[USERNAME]",
-      "description": "root directory in the Databricks workspace to store the Declarative Automation Bundle and associated artifacts",
-      "value": "/Users/[USERNAME]"
-    }
-  },
-  "workspace": {
-    "artifact_path": "/Users/[USERNAME]/path/to/root/artifacts",
-    "file_path": "/Users/[USERNAME]/path/to/root/files",
-    "profile": "profile_name",
-    "resource_path": "/Users/[USERNAME]/path/to/root/resources",
-    "root_path": "/Users/[USERNAME]/path/to/root",
-    "state_path": "/Users/[USERNAME]/path/to/root/state"
-  }
+  "target": "dev",
+  "root_path": "/Workspace/Users/[USERNAME]/path/to/root",
+  "file_path": "/Workspace/Users/[USERNAME]/path/to/root/files",
+  "conf_file": "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml"
+}
+{
+  "target": "prod",
+  "root_path": "/Workspace/Shared/path/to/root",
+  "file_path": "/Workspace/Shared/path/to/root/files",
+  "conf_file": "/Workspace/Shared/path/to/root/files/path/to/config.yaml"
 }
