@@ -613,7 +613,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
 	// TODO: map via StringToStringVar: tags
@@ -2191,7 +2191,7 @@ func newUpdateMaterializationSet() *cobra.Command {
 
   Arguments:
     MATERIALIZATION_SET_ID: Server-assigned unique identifier for the materialization set.
-    UPDATE_MASK: The fields to update. Only 'materialized_features' is supported.`
+    UPDATE_MASK: The fields to update. Only 'materialized_features' or '*' is supported.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -2303,7 +2303,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
 	// TODO: map via StringToStringVar: tags
@@ -2312,12 +2312,11 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Short = `Update a materialized feature.`
 	cmd.Long = `Update a materialized feature.
 
-  Update a materialized feature (pause/resume).
+  Updates a materialized feature.
 
   Arguments:
     MATERIALIZED_FEATURE_ID: Server-assigned unique identifier for the materialized feature.
-    UPDATE_MASK: Provide the materialization feature fields which should be updated.
-      Currently, only the pipeline_state field can be updated.
+    UPDATE_MASK: The fields to update. Only pipeline_schedule_state is supported.
     FEATURE_NAME: The full name of the feature in Unity Catalog.`
 
 	cmd.Annotations = make(map[string]string)
