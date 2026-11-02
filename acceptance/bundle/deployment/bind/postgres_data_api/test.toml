@@ -1,5 +1,9 @@
 Cloud = false
 
+# Deployment history has no "postgres_data_apis." resource-key prefix yet. See dmsResourceTypes in
+# libs/testserver/bundledeployments.go, which mirrors Universe.
+EnvMatrixExclude.no_data_api_dms = ["DMS=true"]
+
 Ignore = [
     ".databricks"
 ]
