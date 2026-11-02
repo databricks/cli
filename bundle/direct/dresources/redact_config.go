@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -11,10 +12,11 @@ import (
 
 // RedactSensitiveConfigValues walks the bundle config and replaces the
 // value of every field declared as sensitive_fields for its resource type with
-// "[redacted]". It also redacts the entire variables section when any sensitive
-// resource fields are present, since variables are the standard mechanism for
-// supplying secret values and their resolved values must not appear in the
-// output of `bundle validate -o json`.
+// "[redacted]". It also redacts every variable marked sensitive. When no variable
+// is marked but sensitive resource fields are present, it redacts every string
+// variable instead, since variables are the standard mechanism for supplying
+// secret values and their resolved values must not appear in the output of
+// `bundle validate -o json`.
 func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 	fields := getSensitiveFields()
 
@@ -39,24 +41,46 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 		}
 	}
 
-	// Redact all variable values when any sensitive resource fields are present.
-	// Variables are the standard mechanism for supplying secret values and their
-	// resolved values must not appear in plaintext in the validate output.
-	if hasSensitiveFields {
-		for _, variable := range root.Variables {
-			if variable == nil {
-				continue
-			}
-			if _, ok := variable.Value.(string); ok {
-				variable.Value = sensitiveRedactedMarker
-			}
-		}
+	if variable.AnySensitive(root.Variables) {
+		redactSensitiveVariables(root)
+	} else if hasSensitiveFields {
+		redactAllVariables(root)
 	}
 
 	return root, nil
 }
 
 const sensitiveRedactedMarker = "[redacted]"
+
+// redactSensitiveVariables redacts the variables marked sensitive. The default is
+// redacted too: it may reference another sensitive variable and has been resolved
+// to the secret by the time the config is rendered.
+func redactSensitiveVariables(root *config.Root) {
+	for _, variable := range root.Variables {
+		if variable == nil || !variable.Sensitive {
+			continue
+		}
+		if variable.Default != nil {
+			variable.Default = sensitiveRedactedMarker
+		}
+		if variable.Value != nil {
+			variable.Value = sensitiveRedactedMarker
+		}
+	}
+}
+
+// redactAllVariables redacts the value of every string variable: without sensitive
+// markers there is no way to tell which variable carries the secret.
+func redactAllVariables(root *config.Root) {
+	for _, variable := range root.Variables {
+		if variable == nil {
+			continue
+		}
+		if _, ok := variable.Value.(string); ok {
+			variable.Value = sensitiveRedactedMarker
+		}
+	}
+}
 
 // getSensitiveFields returns the map of resource type to list of sensitive fields.
 func getSensitiveFields() map[string][]FieldRule {
