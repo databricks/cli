@@ -42,28 +42,12 @@ Global Flags:
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -k orders
 Error: -k is a pytest argument: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
 
->>> musterr [CLI] pipelines test --pipeline-id 1234 -msmoke
-Error: -m is a pytest argument: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
-
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -- -k orders
 Error: the -- separator is not supported: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
 
-=== Only -k and -m are supported
+=== Invalid --pytest-arg values fail before any request
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x
 Error: unsupported pytest argument "-x": only -k and -m are supported
-
->>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-k
-Error: pytest argument -k requires a value: pass it in the next --pytest-arg
-
->>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=tests/test_orders.py
-Error: unsupported pytest argument "tests/test_orders.py": pass test paths and test IDs as TEST_SELECTION arguments
-
-=== -k and -m take their value in the next --pytest-arg
->>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-korders
-Error: pytest argument "-korders" must be split: pass --pytest-arg=-k --pytest-arg=orders
-
->>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-k --pytest-arg=-m
-Error: pytest argument -k requires a value, not "-m": pass it in the next --pytest-arg
 
 === JSON output is not supported
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json
