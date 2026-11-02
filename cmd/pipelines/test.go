@@ -125,7 +125,7 @@ func bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath string) (string, er
 		localPath = filepath.Join(cwd, localPath)
 	}
 	rel, err := filepath.Rel(syncRoot, localPath)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+	if err != nil || !filepath.IsLocal(rel) {
 		return "", fmt.Errorf("%s is outside the synchronized bundle files in %s", filepath.ToSlash(localPath), filepath.ToSlash(syncRoot))
 	}
 	return path.Join(filesRoot, filepath.ToSlash(rel)), nil
