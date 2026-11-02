@@ -1,0 +1,644 @@
+{
+  "id": "catalog.ExternalLocations",
+  "name": "ExternalLocations",
+  "description": "An external location is an object that combines a cloud storage path with a storage\ncredential that authorizes access to the cloud storage path. Each external location is\nsubject to Unity Catalog access-control policies that control which users and groups can\naccess the credential. If a user does not have access to an external location in Unity\nCatalog, the request fails and Unity Catalog does not attempt to authenticate to your cloud\ntenant on the user’s behalf.\n\nDatabricks recommends using external locations rather than using storage credentials\ndirectly.\n\nTo create external locations, you must be a metastore admin or a user with the\n**CREATE_EXTERNAL_LOCATION** privilege.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListExternalLocationsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new external location entry in the metastore.\nThe caller must be a metastore admin or have the **CREATE_EXTERNAL_LOCATION** privilege on both the metastore and the associated storage credential.",
+      "summary": "Create an external location.",
+      "path": "/api/2.1/unity-catalog/external-locations",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateExternalLocation",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "url",
+            "description": "Path URL of the external location.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "credential_name",
+            "description": "Name of the storage credential used with this location.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "url",
+            "description": "Path URL of the external location.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "credential_name",
+            "description": "Name of the storage credential used with this location.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExternalLocationInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "credential_name",
+          "description": "Name of the storage credential used with this location.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_enable_file_events",
+          "description": "The effective value of `enable_file_events` after applying server-side defaults.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_file_event_queue",
+          "description": "The effective file event queue configuration after applying server-side defaults.\nAlways populated when a queue is provisioned, regardless of whether the user explicitly\nset `enable_file_events`. Use this field instead of `file_event_queue` for reading\nthe actual queue state.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FileEventQueue",
+            "is_object": true
+          }
+        },
+        {
+          "name": "enable_file_events",
+          "description": "Whether to enable file events on this external location. Default to `true`. Set to `false` to disable file events.\nThe actual applied value may differ due to server-side defaults; check `effective_enable_file_events` for the effective state.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "encryption_details",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EncryptionDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "fallback",
+          "description": "Indicates whether fallback mode is enabled for this external location. When fallback mode is enabled, the access to the location falls back to cluster credentials if UC credentials are not sufficient.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "file_event_queue",
+          "description": "File event queue settings. If `enable_file_events` is not `false`, must be defined and have exactly one of the documented properties.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FileEventQueue",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_only",
+          "description": "Indicates whether the external location is read-only.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "skip_validation",
+          "description": "Skips validation of the storage credential associated with the external location.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "url",
+          "description": "Path URL of the external location.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "url",
+          "description": "Path URL of the external location.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "credential_name",
+          "description": "Name of the storage credential used with this location.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes the specified external location from the metastore. The caller must be the owner of the external location.",
+      "summary": "Delete an external location.",
+      "path": "/api/2.1/unity-catalog/external-locations/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteExternalLocationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "Force deletion even if there are dependent external tables or mounts.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets an external location from the metastore.\nThe caller must be either a metastore admin, the owner of the external location, or a user that has some privilege on the external location.",
+      "summary": "Get an external location.",
+      "path": "/api/2.1/unity-catalog/external-locations/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetExternalLocationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExternalLocationInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_browse",
+          "description": "Whether to include external locations in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of external locations (__ExternalLocationInfo__ objects) from the metastore.\nThe caller must be a metastore admin, the owner of the external location, or a user that has some privilege on the external location.\nThere is no guarantee of a specific ordering of the elements in the array.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List external locations.",
+      "path": "/api/2.1/unity-catalog/external-locations",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListExternalLocationsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListExternalLocationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_browse",
+          "description": "Whether to include external locations in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_unbound",
+          "description": "Whether to include external locations not bound to the workspace.\nEffective only if the user has permission to update the location–workspace binding.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of external locations to return.\nIf not set, all the external locations are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of external locations to return.\nIf not set, all the external locations are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates an external location in the metastore. The caller must be the owner of the external location, or be a metastore admin.\nIn the second case, the admin can only update the name of the external location.",
+      "summary": "Update an external location.",
+      "path": "/api/2.1/unity-catalog/external-locations/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateExternalLocation",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external location.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExternalLocationInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "credential_name",
+          "description": "Name of the storage credential used with this location.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_enable_file_events",
+          "description": "The effective value of `enable_file_events` after applying server-side defaults.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_file_event_queue",
+          "description": "The effective file event queue configuration after applying server-side defaults.\nAlways populated when a queue is provisioned, regardless of whether the user explicitly\nset `enable_file_events`. Use this field instead of `file_event_queue` for reading\nthe actual queue state.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FileEventQueue",
+            "is_object": true
+          }
+        },
+        {
+          "name": "enable_file_events",
+          "description": "Whether to enable file events on this external location. Default to `true`. Set to `false` to disable file events.\nThe actual applied value may differ due to server-side defaults; check `effective_enable_file_events` for the effective state.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "encryption_details",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EncryptionDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "fallback",
+          "description": "Indicates whether fallback mode is enabled for this external location. When fallback mode is enabled, the access to the location falls back to cluster credentials if UC credentials are not sufficient.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "file_event_queue",
+          "description": "File event queue settings. If `enable_file_events` is not `false`, must be defined and have exactly one of the documented properties.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FileEventQueue",
+            "is_object": true
+          }
+        },
+        {
+          "name": "force",
+          "description": "Force update even if changing url invalidates dependent external tables or mounts.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "isolation_mode",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IsolationMode",
+            "enum": [
+              {
+                "content": "ISOLATION_MODE_ISOLATED"
+              },
+              {
+                "content": "ISOLATION_MODE_OPEN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the external location.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "The owner of the external location.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_only",
+          "description": "Indicates whether the external location is read-only.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "skip_validation",
+          "description": "Skips validation of the storage credential associated with the external location.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "url",
+          "description": "Path URL of the external location.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the external location.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

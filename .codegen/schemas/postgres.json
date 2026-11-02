@@ -1,0 +1,3271 @@
+{
+  "postgres.Branch": {
+    "fields": {
+      "branch_id": {
+        "description": "The part of the name, chosen by the user when the resource was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "create_time": {
+        "description": "A timestamp indicating when the branch was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Output only. The full resource path of the branch.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA"
+      },
+      "parent": {
+        "description": "The project containing this branch (API resource hierarchy).\nFormat: projects/{project_id}\n\nNote: This field indicates where the branch exists in the resource hierarchy.\nFor point-in-time branching from another branch, see `status.source_branch`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "spec": {
+        "description": "The spec contains the branch configuration.",
+        "ref": "postgres.BranchSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "The current status of a Branch.",
+        "ref": "postgres.BranchStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "uid": {
+        "description": "System-generated unique ID for the branch.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the branch was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.BranchOperationMetadata": {},
+  "postgres.BranchSpec": {
+    "fields": {
+      "expire_time": {
+        "description": "Absolute expiration timestamp. When set, the branch will expire at this time.\nMutually exclusive with `ttl` and `no_expiry`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "is_protected": {
+        "description": "When set to true, protects the branch from deletion and reset. Associated compute endpoints and the project cannot be deleted while the branch is protected.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "no_expiry": {
+        "description": "Explicitly disable expiration. When set to true, the branch will not expire.\nIf set to false, the request is invalid; provide either ttl or expire_time instead.\nMutually exclusive with `expire_time` and `ttl`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "source_branch": {
+        "description": "The name of the source branch from which this branch was created (data lineage for point-in-time recovery).\nIf not specified, defaults to the project's default branch.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "source_branch_lsn": {
+        "description": "The Log Sequence Number (LSN) on the source branch from which this branch was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "source_branch_time": {
+        "description": "The point in time on the source branch from which this branch was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "source_snapshot": {
+        "description": "The snapshot this branch was created from. When set, the branch's data\ncomes from the snapshot rather than a source branch, so source_branch,\nsource_branch_lsn, and source_branch_time must be empty. The snapshot must\nbe AVAILABLE and belong to this branch's project.\nFormat: projects/{project_id}/snapshots/{snapshot_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "ttl": {
+        "description": "Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.\nMutually exclusive with `expire_time` and `no_expiry`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.BranchStatus": {
+    "fields": {
+      "branch_id": {
+        "description": "Part of the resource name.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "current_state": {
+        "description": "The branch's state, indicating if it is initializing, ready for use, or archived.",
+        "ref": "postgres.BranchStatusState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "default": {
+        "description": "Whether the branch is the project's default branch.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "delete_time": {
+        "description": "A timestamp indicating when the branch was deleted.\nEmpty if the branch is not deleted.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "expire_time": {
+        "description": "Absolute expiration time for the branch. Empty if expiration is disabled.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "is_protected": {
+        "description": "Whether the branch is protected.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "logical_size_bytes": {
+        "description": "The logical size of the branch.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "pending_state": {
+        "description": "The pending state of the branch, if a state transition is in progress.",
+        "ref": "postgres.BranchStatusState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "purge_time": {
+        "description": "A timestamp indicating when the branch is scheduled to be purged.\nEmpty if the branch is not deleted, otherwise set to a timestamp in the future.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "source_branch": {
+        "description": "The name of the source branch from which this branch was created.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "source_branch_lsn": {
+        "description": "The Log Sequence Number (LSN) on the source branch from which this branch was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "source_branch_time": {
+        "description": "The point in time on the source branch from which this branch was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "source_snapshot": {
+        "description": "The snapshot this branch was restored from. Set only for branches created by\nrestoring a snapshot; unset for all other branches.\nFormat: projects/{project_id}/snapshots/{snapshot_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state_change_time": {
+        "description": "A timestamp indicating when the `current_state` began.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.BranchStatusState": {
+    "description": "The state of the branch.",
+    "enum": [
+      "INIT",
+      "IMPORTING",
+      "RESETTING",
+      "READY",
+      "ARCHIVED",
+      "DELETED"
+    ],
+    "enum_launch_stages": {
+      "ARCHIVED": "GA",
+      "DELETED": "PRIVATE_PREVIEW",
+      "IMPORTING": "GA",
+      "INIT": "GA",
+      "READY": "GA",
+      "RESETTING": "GA"
+    }
+  },
+  "postgres.Catalog": {
+    "fields": {
+      "catalog_id": {
+        "description": "The part of the name, chosen by the user when the resource was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "create_time": {
+        "description": "A timestamp indicating when the catalog was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Output only. The full resource path of the catalog.\n\nFormat: \"catalogs/{catalog_id}\".",
+        "launch_stage": "GA"
+      },
+      "spec": {
+        "description": "The desired state of the Catalog.",
+        "ref": "postgres.CatalogCatalogSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "The observed state of the Catalog.",
+        "ref": "postgres.CatalogCatalogStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "uid": {
+        "description": "System-generated unique identifier for the catalog.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the catalog was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.CatalogCatalogSpec": {
+    "description": "The desired state of the Catalog.",
+    "fields": {
+      "branch": {
+        "description": "The resource path of the branch associated with the catalog.\n\nFormat: projects/{project_id}/branches/{branch_id}.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "create_database_if_missing": {
+        "description": "If set to true, the specified postgres_database is created on behalf of the calling user\nif it does not already exist. In this case, the calling user has a role created for\nthem in Postgres if they do not already have one.\n\nDefaults to false, meaning that the request fails if the specified postgres_database does not already exist.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "postgres_database": {
+        "description": "The name of the Postgres database inside the specified Lakebase project and branch to be associated with the UC catalog.\nThis database must already exist, unless create_database_if_missing is set to true on creation.\n\nA database can only be registered with one UC catalog at a time.\nTo re-register a database with a different catalog, the existing catalog must be deleted first.\n\nA child branch inherits the fact of parent's registration. This means the same-named database\nin a child branch cannot be registered with a second catalog\nwhile the parent's registration exists. To allow registering the database of a child branch,\ndrop and recreate the database on the child branch.\nThis removes the fact of parent's registration from this branch only.\n\nDoing Point In Time Restore (PITR) prior to the moment before the Postgres DB was registered\nin the Catalog drops the fact of registration of the database. So the user should avoid doing so.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "postgres.CatalogCatalogStatus": {
+    "description": "The observed state of the Catalog.",
+    "fields": {
+      "branch": {
+        "description": "The resource path of the branch associated with the catalog.\n\nFormat: projects/{project_id}/branches/{branch_id}.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "postgres_database": {
+        "description": "The name of the Postgres database associated with the catalog.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "project": {
+        "description": "The resource path of the project associated with the catalog.\n\nFormat: projects/{project_id}.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.CatalogOperationMetadata": {},
+  "postgres.CdfConfig": {
+    "description": "A Lakebase CDF configuration (CdfConfig): one per Postgres schema per\ndatabase, replicating that schema's tables into a Unity Catalog schema.\nImmutable once created.",
+    "fields": {
+      "catalog": {
+        "description": "The Unity Catalog catalog that replicated tables are written into.\nSet at creation; the CdfConfig is immutable.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "cdf_config_id": {
+        "description": "The user-specified id; equals the final segment of `name`. Defaults to the\nPostgres schema name for configs without an explicit id.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "create_time": {
+        "description": "When the CdfConfig was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Output only. The full resource name of the CdfConfig.\nFormat: projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "postgres_schema": {
+        "description": "The Postgres schema this CdfConfig replicates from. Unique within the\nparent database. Set at creation; the CdfConfig is immutable.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "schema": {
+        "description": "The Unity Catalog schema that replicated tables are written into.\nSet at creation; the CdfConfig is immutable.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "postgres.CdfConfigOperationMetadata": {
+    "description": "Metadata for CdfConfig long-running operations. Intentionally empty today;\nfields (e.g. progress) may be added as the operation contract grows."
+  },
+  "postgres.CdfState": {
+    "description": "The replication state of a single replicated table (CdfStatus).",
+    "enum": [
+      "CDF_STATE_SNAPSHOTTING",
+      "CDF_STATE_STREAMING",
+      "CDF_STATE_TERMINATED",
+      "CDF_STATE_SKIPPED"
+    ],
+    "enum_launch_stages": {
+      "CDF_STATE_SKIPPED": "PUBLIC_BETA",
+      "CDF_STATE_SNAPSHOTTING": "PUBLIC_BETA",
+      "CDF_STATE_STREAMING": "PUBLIC_BETA",
+      "CDF_STATE_TERMINATED": "PUBLIC_BETA"
+    }
+  },
+  "postgres.CdfStatus": {
+    "description": "The read-only replication status of a single Postgres table replicated\nunder a CdfConfig. One status exists per replicated table.\nIt is created automatically and cannot be modified.",
+    "fields": {
+      "committed_lsn": {
+        "description": "The high-watermark Log Sequence Number (LSN) committed to Delta Lake.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "create_time": {
+        "description": "When replication for this table was first established.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_sync_time": {
+        "description": "The last time changes for this table were written to Delta Lake.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Output only. The full resource name of the CdfStatus.\nFormat: projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}/cdf-statuses/{cdf_status}\nThe {cdf_status} segment is the Postgres table name.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "postgres_table": {
+        "description": "The Postgres table being replicated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "The current replication state of this table.",
+        "ref": "postgres.CdfState",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status_detail": {
+        "description": "Human-readable detail for the current state (e.g. the skip/error reason).\nEmpty for healthy states.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "uc_table": {
+        "description": "The Unity Catalog table receiving replicated data.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.CreateBranchRequest": {
+    "fields": {
+      "branch": {
+        "description": "The Branch to create.",
+        "ref": "postgres.Branch",
+        "launch_stage": "GA"
+      },
+      "branch_id": {
+        "description": "The ID to use for the Branch. This becomes the final component of the branch's resource name.\nThe ID is required and must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens.\nFor example, `development` becomes `projects/my-app/branches/development`.",
+        "launch_stage": "GA"
+      },
+      "replace_existing": {
+        "description": "If true, update the branch if it already exists instead of returning an error.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.CreateCatalogRequest": {
+    "fields": {
+      "catalog": {
+        "ref": "postgres.Catalog",
+        "launch_stage": "GA"
+      },
+      "catalog_id": {
+        "description": "The ID in the Unity Catalog.\nIt becomes the full resource name, for example \"my_catalog\" becomes \"catalogs/my_catalog\".",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.CreateCdfConfigRequest": {
+    "fields": {
+      "cdf_config": {
+        "description": "The CdfConfig to create. The catalog, schema, and postgres_schema fields are\nrequired; service_principal is optional. All other fields are output only\nand ignored on input.",
+        "ref": "postgres.CdfConfig",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "cdf_config_id": {
+        "description": "The user-specified id for the CdfConfig, forming the final segment of its\nresource name. Must match the pattern `[a-z][a-z0-9_]{0,62}`. Defaults to\nthe Postgres schema name when omitted.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.CreateDataApiRequest": {
+    "fields": {
+      "data_api": {
+        "description": "The Data API configuration to create.",
+        "ref": "postgres.DataApi",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "postgres.CreateDatabaseRequest": {
+    "fields": {
+      "database": {
+        "description": "The desired specification of a Database.",
+        "ref": "postgres.Database",
+        "launch_stage": "GA"
+      },
+      "database_id": {
+        "description": "The ID to use for the Database, which will become the final component of\nthe database's resource name.\nThis ID becomes the database name in postgres.\n\nThis value should be 4-63 characters, and only use characters available in DNS names,\nas defined by RFC-1123\n\nIf database_id is not specified in the request, it is generated automatically.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "replace_existing": {
+        "description": "If true, update the database if it already exists instead of returning an\nerror.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.CreateEndpointRequest": {
+    "fields": {
+      "endpoint": {
+        "description": "The Endpoint to create.",
+        "ref": "postgres.Endpoint",
+        "launch_stage": "GA"
+      },
+      "endpoint_id": {
+        "description": "The ID to use for the Endpoint. This becomes the final component of the endpoint's resource name.\nThe ID is required and must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens.\nFor example, `primary` becomes `projects/my-app/branches/development/endpoints/primary`.",
+        "launch_stage": "GA"
+      },
+      "replace_existing": {
+        "description": "If true, update the endpoint if it already exists instead of returning an error.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.CreateProjectRequest": {
+    "fields": {
+      "project": {
+        "description": "The Project to create.",
+        "ref": "postgres.Project",
+        "launch_stage": "GA"
+      },
+      "project_id": {
+        "description": "The ID to use for the Project. This becomes the final component of the project's resource name.\nThe ID is required and must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens.\nFor example, `my-app` becomes `projects/my-app`.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.CreateRoleRequest": {
+    "fields": {
+      "replace_existing": {
+        "description": "If true, update the role if it already exists instead of returning an\nerror.\n\nWhen the role already exists, the provided `role` spec fully replaces the\nexisting one: `membership_roles` is overwritten, not merged. Leaving\n`membership_roles` empty clears all of the role's existing memberships,\nincluding `DATABRICKS_SUPERUSER`. Always send the complete desired list of\nmemberships when using this field.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "role": {
+        "description": "The desired specification of a Role.",
+        "ref": "postgres.Role",
+        "launch_stage": "GA"
+      },
+      "role_id": {
+        "description": "The ID to use for the Role, which will become the final component of\nthe role's resource name.\nThis ID becomes the role in Postgres.\n\nThis value should be 4-63 characters, and valid characters\nare lowercase letters, numbers, and hyphens, as defined by RFC 1123.\n\nIf role_id is not specified in the request, it is generated automatically.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.CreateSnapshotRequest": {
+    "fields": {
+      "snapshot": {
+        "description": "The snapshot to create.",
+        "ref": "postgres.Snapshot",
+        "launch_stage": "GA"
+      },
+      "snapshot_id": {
+        "description": "Client-chosen ID for the snapshot. It becomes the final segment of the\nsnapshot resource name and cannot be changed after creation.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.CreateSyncedTableRequest": {
+    "fields": {
+      "synced_table": {
+        "ref": "postgres.SyncedTable",
+        "launch_stage": "GA"
+      },
+      "synced_table_id": {
+        "description": "The ID to use for the Synced Table. This becomes the final component of the SyncedTable's resource name.\nID is required and is the synced table name, containing (catalog, schema, table) tuple.\nElements of the tuple are the UC entity names.\n\nExample: \"{catalog}.{schema}.{table}\"\n\nsynced_table_id represents both of the following:\n\n1. An online VIEW virtual table in the Unity Catalog accessible via the Lakehouse Federation.\n2. Postgres table named \"{table}\" in schema \"{schema}\" in the connected Postgres database",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.DailySchedule": {
+    "description": "Take a snapshot once per day, at the configured hour.",
+    "fields": {
+      "hour": {
+        "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.DataApi": {
+    "description": "DataApi represents the Data API (PostgREST) configuration for a Database.\nAt most one DataApi per database. Create enables Data API, Delete disables it.",
+    "fields": {
+      "create_time": {
+        "description": "A timestamp indicating when the Data API was first enabled.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "parent": {
+        "description": "The database containing this Data API configuration.\nFormat: projects/{project_id}/branches/{branch_id}/databases/{database_id}",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "spec": {
+        "description": "The desired Data API configuration.",
+        "ref": "postgres.DataApiDataApiSpec",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "The observed Data API state (read-only).",
+        "ref": "postgres.DataApiDataApiStatus",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the Data API configuration was last updated.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.DataApiDataApiSpec": {
+    "description": "Desired PostgREST configuration (input).",
+    "fields": {
+      "db_aggregates_enabled": {
+        "description": "Enable aggregate functions (count, sum, avg, etc.) in Data API responses.\nDefault: true.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "db_extra_search_path": {
+        "description": "Additional schemas to include in the PostgreSQL search path.\nEach entry must be a valid PostgreSQL schema name.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "db_max_rows": {
+        "description": "Maximum number of rows returned in a single Data API response.\nMust be a positive integer.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "db_schemas": {
+        "description": "Database schemas exposed through the Data API.\nEach entry must be a valid PostgreSQL schema name (1-63 chars, [a-zA-Z_][a-zA-Z0-9_$]*).\nMaximum 100 entries. Default: [\"public\"].",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "jwt_cache_max_lifetime": {
+        "description": "Maximum lifetime for cached JWT tokens. Zero duration disables caching.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "jwt_role_claim_key": {
+        "description": "JSON path to the role claim in JWT tokens (e.g., \".sub\").\nDefault: \".sub\".",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "openapi_mode": {
+        "description": "OpenAPI documentation mode for the Data API endpoint.",
+        "ref": "postgres.OpenApiMode",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "server_cors_allowed_origins": {
+        "description": "Allowed origins for CORS requests.\nEach entry should be a valid origin URL, or use \"*\" to allow all origins.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "server_timing_enabled": {
+        "description": "Enable the Server-Timing header in Data API responses.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.DataApiDataApiStatus": {
+    "description": "Observed state (output-only).",
+    "fields": {
+      "available_schemas": {
+        "description": "Schemas available in the database (for reference when configuring db_schemas).",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "db_aggregates_enabled": {
+        "description": "Actual aggregate function setting read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "db_extra_search_path": {
+        "description": "Actual extra search path schemas read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "db_max_rows": {
+        "description": "Actual max rows setting read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "db_schemas": {
+        "description": "Actual exposed schemas read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "jwt_cache_max_lifetime": {
+        "description": "Actual JWT cache max lifetime read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "jwt_role_claim_key": {
+        "description": "Actual JWT role claim key read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "openapi_mode": {
+        "description": "Actual OpenAPI mode read from the database.",
+        "ref": "postgres.OpenApiMode",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "server_cors_allowed_origins": {
+        "description": "Actual CORS allowed origins read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "server_timing_enabled": {
+        "description": "Actual Server-Timing header setting read from the database.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "url": {
+        "description": "Data API endpoint URL.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.DataApiOperationMetadata": {},
+  "postgres.Database": {
+    "description": "Database represents a Postgres database within a Branch.",
+    "fields": {
+      "create_time": {
+        "description": "A timestamp indicating when the database was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "database_id": {
+        "description": "The part of the name, chosen by the user when the resource was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the database.\nFormat: projects/{project_id}/branches/{branch_id}/databases/{database_id}",
+        "launch_stage": "GA"
+      },
+      "parent": {
+        "description": "The branch containing this database.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "spec": {
+        "description": "The desired state of the Database.",
+        "ref": "postgres.DatabaseDatabaseSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "The observed state of the Database.",
+        "ref": "postgres.DatabaseDatabaseStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the database was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.DatabaseCredential": {
+    "fields": {
+      "expire_time": {
+        "description": "Timestamp in UTC of when this credential expires.",
+        "launch_stage": "GA"
+      },
+      "token": {
+        "description": "The OAuth token that can be used as a password when connecting to a database.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.DatabaseDatabaseSpec": {
+    "fields": {
+      "postgres_database": {
+        "description": "The name of the Postgres database.\n\nThis expects a valid Postgres identifier as specified in the link below.\nhttps://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\nRequired when creating the Database.\n\nTo rename, pass a valid postgres identifier when updating the Database.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "role": {
+        "description": "The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nA database always has an owner.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.DatabaseDatabaseStatus": {
+    "fields": {
+      "database_id": {
+        "description": "Part of the resource name.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "postgres_database": {
+        "description": "The name of the Postgres database.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "role": {
+        "description": "The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.DatabaseOperationMetadata": {},
+  "postgres.DatabricksServiceExceptionWithDetailsProto": {
+    "description": "Databricks Error that is returned by all Databricks APIs.",
+    "fields": {
+      "details": {
+        "launch_stage": "GA"
+      },
+      "error_code": {
+        "ref": "postgres.ErrorCode",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "launch_stage": "GA"
+      },
+      "stack_trace": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.DayOfWeek": {
+    "description": "The day of the week on which a weekly snapshot is taken.",
+    "enum": [
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY",
+      "SUNDAY"
+    ],
+    "enum_launch_stages": {
+      "FRIDAY": "GA",
+      "MONDAY": "GA",
+      "SATURDAY": "GA",
+      "SUNDAY": "GA",
+      "THURSDAY": "GA",
+      "TUESDAY": "GA",
+      "WEDNESDAY": "GA"
+    }
+  },
+  "postgres.DeleteBranchRequest": {
+    "fields": {
+      "purge": {
+        "description": "If true, permanently delete the branch; if false, soft delete.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.DeleteCatalogRequest": {},
+  "postgres.DeleteCdfConfigRequest": {
+    "fields": {
+      "force": {
+        "description": "When true, also drops the replicated Delta tables in Unity Catalog. When\nfalse (the default), the replicated tables are preserved at their last\nsynced state.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.DeleteDataApiRequest": {},
+  "postgres.DeleteDatabaseRequest": {},
+  "postgres.DeleteEndpointRequest": {},
+  "postgres.DeleteProjectRequest": {
+    "fields": {
+      "purge": {
+        "description": "If true, permanently deletes the project (hard delete).\nIf false or unset, performs a soft delete.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.DeleteRoleRequest": {
+    "fields": {
+      "reassign_owned_to": {
+        "description": "Reassign objects. If this is set, all objects owned by the role are\nreassigned to the role specified in this parameter.\n\nNOTE: setting this requires spinning up a compute to succeed, since it involves running\nSQL queries.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.DeleteSnapshotRequest": {},
+  "postgres.DeleteSyncedTableRequest": {},
+  "postgres.DeltaTableSyncInfo": {
+    "fields": {
+      "delta_commit_time": {
+        "description": "The timestamp when the above Delta version was committed in the source Delta table.\nNote: This is the Delta commit time, not the time the data was written to the synced table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "delta_commit_version": {
+        "description": "The Delta Lake commit version that was last successfully synced.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.Endpoint": {
+    "fields": {
+      "create_time": {
+        "description": "A timestamp indicating when the compute endpoint was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "endpoint_id": {
+        "description": "The part of the name, chosen by the user when the resource was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Output only. The full resource path of the endpoint.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
+        "launch_stage": "GA"
+      },
+      "parent": {
+        "description": "The branch containing this endpoint (API resource hierarchy).\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "spec": {
+        "description": "The spec contains the compute endpoint configuration, including autoscaling limits, suspend timeout, and disabled state.",
+        "ref": "postgres.EndpointSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "Current operational status of the compute endpoint.",
+        "ref": "postgres.EndpointStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "uid": {
+        "description": "System-generated unique ID for the endpoint.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the compute endpoint was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.EndpointGroupSpec": {
+    "fields": {
+      "enable_readable_secondaries": {
+        "description": "Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where\nsize.max \u003e 1.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "max": {
+        "description": "The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
+        "launch_stage": "GA"
+      },
+      "min": {
+        "description": "The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.EndpointGroupStatus": {
+    "fields": {
+      "enable_readable_secondaries": {
+        "description": "Whether read-only connections to read-write endpoints are allowed. Only relevant if read replicas are configured\nby specifying size.max \u003e 1.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "max": {
+        "description": "The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
+        "launch_stage": "GA"
+      },
+      "min": {
+        "description": "The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.EndpointHosts": {
+    "description": "Encapsulates various hostnames (r/w or r/o, pooled or not) for an endpoint.",
+    "fields": {
+      "host": {
+        "description": "The hostname to connect to this endpoint. For read-write endpoints, this is a read-write hostname which connects\nto the primary compute. For read-only endpoints, this is a read-only hostname which allows read-only operations.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "read_only_host": {
+        "description": "An optionally defined read-only host for the endpoint, without pooling. For read-only endpoints,\nthis attribute is always defined and is equivalent to host. For read-write endpoints, this attribute is defined\nif the enclosing endpoint is a group with greater than 1 computes configured, and has readable secondaries enabled.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "read_only_pooled_host": {
+        "description": "The read-only hostname of the compute endpoint, with pooling. This attribute is always defined for read-only endpoints,\nand may be defined for read-write endpoints if configured with read replicas and allow read-only connections.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "read_write_pooled_host": {
+        "description": "The read-write hostname of the compute endpoint, with pooling. This attribute is only defined for read-write endpoints.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.EndpointOperationMetadata": {},
+  "postgres.EndpointSettings": {
+    "description": "A collection of settings for a compute endpoint.",
+    "fields": {
+      "pg_settings": {
+        "description": "A raw representation of Postgres settings.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.EndpointSpec": {
+    "fields": {
+      "autoscaling_limit_max_cu": {
+        "description": "The maximum number of Compute Units. The maximum value is 64.\nThe difference between the minimum and maximum Compute Units (max - min) must not exceed 16.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "autoscaling_limit_min_cu": {
+        "description": "The minimum number of Compute Units. Minimum value is 0.5.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "disabled": {
+        "description": "Whether to restrict connections to the compute endpoint.\nEnabling this option schedules a suspend compute operation.\nA disabled compute endpoint cannot be enabled by a connection or\nconsole action.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "endpoint_type": {
+        "description": "The endpoint type. A branch can only have one READ_WRITE endpoint.",
+        "ref": "postgres.EndpointType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "group": {
+        "description": "Settings for optional HA configuration of the endpoint. If unspecified, the endpoint defaults\nto non HA settings, with a single compute backing the endpoint (and no readable secondaries\nfor Read/Write endpoints).",
+        "ref": "postgres.EndpointGroupSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "no_suspension": {
+        "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "settings": {
+        "ref": "postgres.EndpointSettings",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "suspend_timeout_duration": {
+        "description": "Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.EndpointStatus": {
+    "fields": {
+      "autoscaling_limit_max_cu": {
+        "description": "The maximum number of Compute Units. The maximum value is 64.\nThe difference between the minimum and maximum Compute Units (max - min) must not exceed 16.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "autoscaling_limit_min_cu": {
+        "description": "The minimum number of Compute Units.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "current_state": {
+        "ref": "postgres.EndpointStatusState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "disabled": {
+        "description": "Whether to restrict connections to the compute endpoint.\nEnabling this option schedules a suspend compute operation.\nA disabled compute endpoint cannot be enabled by a connection or\nconsole action.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "endpoint_id": {
+        "description": "Part of the resource name.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "endpoint_type": {
+        "description": "The endpoint type. A branch can only have one READ_WRITE endpoint.",
+        "ref": "postgres.EndpointType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "group": {
+        "description": "Details on the HA configuration of the endpoint.",
+        "ref": "postgres.EndpointGroupStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "hosts": {
+        "description": "Contains host information for connecting to the endpoint.",
+        "ref": "postgres.EndpointHosts",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_active_time": {
+        "description": "A timestamp indicating when the compute endpoint was last active.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "pending_state": {
+        "ref": "postgres.EndpointStatusState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "settings": {
+        "ref": "postgres.EndpointSettings",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "suspend_timeout_duration": {
+        "description": "Duration of inactivity after which the compute endpoint is automatically suspended.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.EndpointStatusState": {
+    "description": "The state of the compute endpoint.",
+    "enum": [
+      "INIT",
+      "ACTIVE",
+      "IDLE",
+      "DEGRADED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "DEGRADED": "GA",
+      "IDLE": "GA",
+      "INIT": "GA"
+    }
+  },
+  "postgres.EndpointType": {
+    "description": "The compute endpoint type. Either `read_write` or `read_only`.",
+    "enum": [
+      "ENDPOINT_TYPE_READ_WRITE",
+      "ENDPOINT_TYPE_READ_ONLY"
+    ],
+    "enum_launch_stages": {
+      "ENDPOINT_TYPE_READ_ONLY": "GA",
+      "ENDPOINT_TYPE_READ_WRITE": "GA"
+    }
+  },
+  "postgres.ErrorCode": {
+    "description": "Error codes returned by Databricks APIs to indicate specific failure conditions.",
+    "enum": [
+      "UNKNOWN",
+      "INTERNAL_ERROR",
+      "TEMPORARILY_UNAVAILABLE",
+      "IO_ERROR",
+      "BAD_REQUEST",
+      "SERVICE_UNDER_MAINTENANCE",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE",
+      "DEADLINE_EXCEEDED",
+      "CANCELLED",
+      "RESOURCE_EXHAUSTED",
+      "ABORTED",
+      "NOT_FOUND",
+      "ALREADY_EXISTS",
+      "UNAUTHENTICATED",
+      "UNAVAILABLE",
+      "INVALID_PARAMETER_VALUE",
+      "ENDPOINT_NOT_FOUND",
+      "MALFORMED_REQUEST",
+      "INVALID_STATE",
+      "PERMISSION_DENIED",
+      "FEATURE_DISABLED",
+      "CUSTOMER_UNAUTHORIZED",
+      "REQUEST_LIMIT_EXCEEDED",
+      "RESOURCE_CONFLICT",
+      "UNPARSEABLE_HTTP_ERROR",
+      "NOT_IMPLEMENTED",
+      "DATA_LOSS",
+      "INVALID_STATE_TRANSITION",
+      "COULD_NOT_ACQUIRE_LOCK",
+      "RESOURCE_ALREADY_EXISTS",
+      "RESOURCE_DOES_NOT_EXIST",
+      "QUOTA_EXCEEDED",
+      "MAX_BLOCK_SIZE_EXCEEDED",
+      "MAX_READ_SIZE_EXCEEDED",
+      "PARTIAL_DELETE",
+      "MAX_LIST_SIZE_EXCEEDED",
+      "DRY_RUN_FAILED",
+      "RESOURCE_LIMIT_EXCEEDED",
+      "DIRECTORY_NOT_EMPTY",
+      "DIRECTORY_PROTECTED",
+      "MAX_NOTEBOOK_SIZE_EXCEEDED",
+      "MAX_CHILD_NODE_SIZE_EXCEEDED",
+      "SEARCH_QUERY_TOO_LONG",
+      "SEARCH_QUERY_TOO_SHORT",
+      "MANAGED_RESOURCE_GROUP_DOES_NOT_EXIST",
+      "PERMISSION_NOT_PROPAGATED",
+      "DEPLOYMENT_TIMEOUT",
+      "GIT_CONFLICT",
+      "GIT_UNKNOWN_REF",
+      "GIT_SENSITIVE_TOKEN_DETECTED",
+      "GIT_URL_NOT_ON_ALLOW_LIST",
+      "GIT_REMOTE_ERROR",
+      "PROJECTS_OPERATION_TIMEOUT",
+      "IPYNB_FILE_IN_REPO",
+      "INSECURE_PARTNER_RESPONSE",
+      "MALFORMED_PARTNER_RESPONSE",
+      "METASTORE_DOES_NOT_EXIST",
+      "DAC_DOES_NOT_EXIST",
+      "CATALOG_DOES_NOT_EXIST",
+      "SCHEMA_DOES_NOT_EXIST",
+      "TABLE_DOES_NOT_EXIST",
+      "SHARE_DOES_NOT_EXIST",
+      "RECIPIENT_DOES_NOT_EXIST",
+      "STORAGE_CREDENTIAL_DOES_NOT_EXIST",
+      "EXTERNAL_LOCATION_DOES_NOT_EXIST",
+      "PRINCIPAL_DOES_NOT_EXIST",
+      "PROVIDER_DOES_NOT_EXIST",
+      "METASTORE_ALREADY_EXISTS",
+      "DAC_ALREADY_EXISTS",
+      "CATALOG_ALREADY_EXISTS",
+      "SCHEMA_ALREADY_EXISTS",
+      "TABLE_ALREADY_EXISTS",
+      "SHARE_ALREADY_EXISTS",
+      "RECIPIENT_ALREADY_EXISTS",
+      "STORAGE_CREDENTIAL_ALREADY_EXISTS",
+      "EXTERNAL_LOCATION_ALREADY_EXISTS",
+      "PROVIDER_ALREADY_EXISTS",
+      "CATALOG_NOT_EMPTY",
+      "SCHEMA_NOT_EMPTY",
+      "METASTORE_NOT_EMPTY",
+      "PROVIDER_SHARE_NOT_ACCESSIBLE"
+    ],
+    "enum_launch_stages": {
+      "ABORTED": "GA",
+      "ALREADY_EXISTS": "GA",
+      "BAD_REQUEST": "GA",
+      "CANCELLED": "GA",
+      "CATALOG_ALREADY_EXISTS": "GA",
+      "CATALOG_DOES_NOT_EXIST": "GA",
+      "CATALOG_NOT_EMPTY": "GA",
+      "COULD_NOT_ACQUIRE_LOCK": "GA",
+      "CUSTOMER_UNAUTHORIZED": "GA",
+      "DAC_ALREADY_EXISTS": "GA",
+      "DAC_DOES_NOT_EXIST": "GA",
+      "DATA_LOSS": "GA",
+      "DEADLINE_EXCEEDED": "GA",
+      "DEPLOYMENT_TIMEOUT": "GA",
+      "DIRECTORY_NOT_EMPTY": "GA",
+      "DIRECTORY_PROTECTED": "GA",
+      "DRY_RUN_FAILED": "GA",
+      "ENDPOINT_NOT_FOUND": "GA",
+      "EXTERNAL_LOCATION_ALREADY_EXISTS": "GA",
+      "EXTERNAL_LOCATION_DOES_NOT_EXIST": "GA",
+      "FEATURE_DISABLED": "GA",
+      "GIT_CONFLICT": "GA",
+      "GIT_REMOTE_ERROR": "GA",
+      "GIT_SENSITIVE_TOKEN_DETECTED": "GA",
+      "GIT_UNKNOWN_REF": "GA",
+      "GIT_URL_NOT_ON_ALLOW_LIST": "GA",
+      "INSECURE_PARTNER_RESPONSE": "GA",
+      "INTERNAL_ERROR": "GA",
+      "INVALID_PARAMETER_VALUE": "GA",
+      "INVALID_STATE": "GA",
+      "INVALID_STATE_TRANSITION": "GA",
+      "IO_ERROR": "GA",
+      "IPYNB_FILE_IN_REPO": "GA",
+      "MALFORMED_PARTNER_RESPONSE": "GA",
+      "MALFORMED_REQUEST": "GA",
+      "MANAGED_RESOURCE_GROUP_DOES_NOT_EXIST": "GA",
+      "MAX_BLOCK_SIZE_EXCEEDED": "GA",
+      "MAX_CHILD_NODE_SIZE_EXCEEDED": "GA",
+      "MAX_LIST_SIZE_EXCEEDED": "GA",
+      "MAX_NOTEBOOK_SIZE_EXCEEDED": "GA",
+      "MAX_READ_SIZE_EXCEEDED": "GA",
+      "METASTORE_ALREADY_EXISTS": "GA",
+      "METASTORE_DOES_NOT_EXIST": "GA",
+      "METASTORE_NOT_EMPTY": "GA",
+      "NOT_FOUND": "GA",
+      "NOT_IMPLEMENTED": "GA",
+      "PARTIAL_DELETE": "GA",
+      "PERMISSION_DENIED": "GA",
+      "PERMISSION_NOT_PROPAGATED": "GA",
+      "PRINCIPAL_DOES_NOT_EXIST": "GA",
+      "PROJECTS_OPERATION_TIMEOUT": "GA",
+      "PROVIDER_ALREADY_EXISTS": "GA",
+      "PROVIDER_DOES_NOT_EXIST": "GA",
+      "PROVIDER_SHARE_NOT_ACCESSIBLE": "GA",
+      "QUOTA_EXCEEDED": "GA",
+      "RECIPIENT_ALREADY_EXISTS": "GA",
+      "RECIPIENT_DOES_NOT_EXIST": "GA",
+      "REQUEST_LIMIT_EXCEEDED": "GA",
+      "RESOURCE_ALREADY_EXISTS": "GA",
+      "RESOURCE_CONFLICT": "GA",
+      "RESOURCE_DOES_NOT_EXIST": "GA",
+      "RESOURCE_EXHAUSTED": "GA",
+      "RESOURCE_LIMIT_EXCEEDED": "GA",
+      "SCHEMA_ALREADY_EXISTS": "GA",
+      "SCHEMA_DOES_NOT_EXIST": "GA",
+      "SCHEMA_NOT_EMPTY": "GA",
+      "SEARCH_QUERY_TOO_LONG": "GA",
+      "SEARCH_QUERY_TOO_SHORT": "GA",
+      "SERVICE_UNDER_MAINTENANCE": "GA",
+      "SHARE_ALREADY_EXISTS": "GA",
+      "SHARE_DOES_NOT_EXIST": "GA",
+      "STORAGE_CREDENTIAL_ALREADY_EXISTS": "GA",
+      "STORAGE_CREDENTIAL_DOES_NOT_EXIST": "GA",
+      "TABLE_ALREADY_EXISTS": "GA",
+      "TABLE_DOES_NOT_EXIST": "GA",
+      "TEMPORARILY_UNAVAILABLE": "GA",
+      "UNAUTHENTICATED": "GA",
+      "UNAVAILABLE": "GA",
+      "UNKNOWN": "GA",
+      "UNPARSEABLE_HTTP_ERROR": "GA",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE": "GA"
+    }
+  },
+  "postgres.GenerateDatabaseCredentialRequest": {
+    "fields": {
+      "claims": {
+        "description": "The returned token will be scoped to UC tables with the specified permissions.",
+        "launch_stage": "GA"
+      },
+      "endpoint": {
+        "description": "The endpoint resource name for which this credential will be generated.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
+        "launch_stage": "GA"
+      },
+      "expire_time": {
+        "description": "Timestamp in UTC of when this credential should expire.\nMust be at least 300 seconds (5 minutes) and at most 1 hour from the current time.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "ttl": {
+        "description": "The requested time-to-live for the generated credential token.\nMust be at least 300 seconds (5 minutes) and at most 3600 seconds (1 hour).",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.GetBranchRequest": {},
+  "postgres.GetCatalogRequest": {},
+  "postgres.GetCdfConfigRequest": {},
+  "postgres.GetCdfStatusRequest": {},
+  "postgres.GetDataApiRequest": {},
+  "postgres.GetDatabaseRequest": {},
+  "postgres.GetEndpointRequest": {},
+  "postgres.GetOperationRequest": {},
+  "postgres.GetProjectRequest": {},
+  "postgres.GetRoleRequest": {},
+  "postgres.GetSnapshotRequest": {},
+  "postgres.GetSnapshotScheduleRequest": {},
+  "postgres.GetSyncedTableRequest": {},
+  "postgres.InitialBranchSpec": {
+    "description": "Configuration for the initial default branch created during project creation.",
+    "fields": {
+      "is_protected": {
+        "description": "Whether the initial default branch should be protected from deletion.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.InitialEndpointSpec": {
+    "description": "Configuration for the initial Read/Write endpoint created during project creation.",
+    "fields": {
+      "autoscaling_limit_max_cu": {
+        "description": "The maximum number of Compute Units for the initial endpoint.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "autoscaling_limit_min_cu": {
+        "description": "The minimum number of Compute Units for the initial endpoint.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "group": {
+        "description": "Settings for HA configuration of the endpoint.",
+        "ref": "postgres.EndpointGroupSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "no_suspension": {
+        "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "suspend_timeout_duration": {
+        "description": "Duration of inactivity after which the initial endpoint is automatically suspended.\nIf specified, should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListBranchesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned. Cannot be negative.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response. If not provided, returns the first page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "show_deleted": {
+        "description": "Whether to include soft-deleted branches in the response.\nWhen true, deleted branches are included alongside active branches.\nPurged branches are never returned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListBranchesResponse": {
+    "fields": {
+      "branches": {
+        "description": "List of branches in the project.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Token to request the next page of branches.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.ListCdfConfigsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of CdfConfigs to return.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token returned by a previous ListCdfConfigs call. Empty on the\nfirst page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListCdfConfigsResponse": {
+    "description": "Response to a ListCdfConfigs request, containing a page of CdfConfigs and a\ntoken for fetching the next page.",
+    "fields": {
+      "cdf_configs": {
+        "description": "The CdfConfigs under the parent database.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "Token to retrieve the next page of results; empty when there are no more.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "postgres.ListCdfStatusesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of CdfStatuses to return.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token returned by a previous ListCdfStatuses call. Empty on the\nfirst page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListCdfStatusesResponse": {
+    "description": "Response to a ListCdfStatuses request, containing a page of replicated table\nstatuses and a token for fetching the next page.",
+    "fields": {
+      "cdf_statuses": {
+        "description": "The replicated tables under the parent CdfConfig.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "Token to retrieve the next page of results; empty when there are no more.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "postgres.ListDatabasesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of Databases. Requests first page if absent.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListDatabasesResponse": {
+    "fields": {
+      "databases": {
+        "description": "List of databases.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Pagination token to request the next page of databases.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.ListEndpointsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned. Cannot be negative.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response. If not provided, returns the first page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListEndpointsResponse": {
+    "fields": {
+      "endpoints": {
+        "description": "List of compute endpoints in the branch.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "Token to request the next page of compute endpoints.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.ListProjectsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned. Cannot be negative. The maximum value is 100.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response. If not provided, returns the first page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "show_deleted": {
+        "description": "Whether to include soft-deleted projects in the response.\nWhen true, soft-deleted projects are included alongside active projects.\nHard-deleted and already-purged projects are never returned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListProjectsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Token to request the next page of projects.",
+        "launch_stage": "GA"
+      },
+      "projects": {
+        "description": "List of all projects in the workspace that the user has permission to access.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.ListRolesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned. Cannot be negative.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response. If not provided, returns the first page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListRolesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Token to request the next page of Postgres roles.",
+        "launch_stage": "GA"
+      },
+      "roles": {
+        "description": "List of Postgres roles in the branch.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.ListSnapshotsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of snapshots to return per page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response; omit for the first page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ListSnapshotsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Token to retrieve the next page; empty if there are no more pages.",
+        "launch_stage": "GA"
+      },
+      "snapshots": {
+        "description": "The snapshots in the project.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.MonthlySchedule": {
+    "description": "Take a snapshot once per month, on the configured day at the configured hour.",
+    "fields": {
+      "day": {
+        "description": "The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
+        "launch_stage": "GA"
+      },
+      "hour": {
+        "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.NewPipelineSpec": {
+    "fields": {
+      "budget_policy_id": {
+        "description": "Budget policy to set on the newly created pipeline.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "pipeline_channel": {
+        "description": "Release channel of the underlying pipeline's runtime.\nSome source table configurations (e.g., read-time CDF) require PREVIEW.\nDefaults to CURRENT if not specified.",
+        "ref": "postgres.NewPipelineSpecPipelineChannel",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "storage_catalog": {
+        "description": "UC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be a standard catalog where the user has permissions to create Delta tables.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "storage_schema": {
+        "description": "UC schema for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be in the standard catalog where the user has permissions to create Delta tables.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.NewPipelineSpecPipelineChannel": {
+    "description": "Release channel of the underlying pipeline's runtime.\nPREVIEW provides early access to the latest features but may be less stable.\nSome source table configurations (e.g., read-time CDF) require PREVIEW.\nDefaults to CURRENT if not specified.",
+    "enum": [
+      "CURRENT",
+      "PREVIEW"
+    ],
+    "enum_launch_stages": {
+      "CURRENT": "PRIVATE_PREVIEW",
+      "PREVIEW": "PRIVATE_PREVIEW"
+    }
+  },
+  "postgres.OpenApiMode": {
+    "description": "Controls how the Data API exposes the OpenAPI documentation endpoint.\nOnly IGNORE_PRIVILEGES and DISABLED are supported today; \"follow-privileges\"\nis not implemented yet (it may be added later as value 3 — adding new enum\nvalues is backward-compatible).",
+    "enum": [
+      "OPEN_API_MODE_IGNORE_PRIVILEGES",
+      "OPEN_API_MODE_DISABLED"
+    ],
+    "enum_launch_stages": {
+      "OPEN_API_MODE_DISABLED": "PRIVATE_PREVIEW",
+      "OPEN_API_MODE_IGNORE_PRIVILEGES": "PRIVATE_PREVIEW"
+    }
+  },
+  "postgres.Operation": {
+    "description": "This resource represents a long-running operation that is the result of a\nnetwork API call.",
+    "fields": {
+      "done": {
+        "description": "If the value is `false`, it means the operation is still in progress.\nIf `true`, the operation is completed, and either `error` or `response` is\navailable.",
+        "launch_stage": "GA"
+      },
+      "error": {
+        "description": "The error result of the operation in case of failure or cancellation.",
+        "ref": "postgres.DatabricksServiceExceptionWithDetailsProto",
+        "launch_stage": "GA"
+      },
+      "metadata": {
+        "description": "Service-specific metadata associated with the operation.  It typically\ncontains progress information and common metadata such as create time.\nSome services might not provide such metadata.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The server-assigned name, which is only unique within the same service that\noriginally returns it. If you use the default HTTP mapping, the\n`name` should be a resource name ending with `operations/{unique_id}`.",
+        "launch_stage": "GA"
+      },
+      "response": {
+        "description": "The normal, successful response of the operation.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.Project": {
+    "fields": {
+      "create_time": {
+        "description": "A timestamp indicating when the project was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "delete_time": {
+        "description": "A timestamp indicating when the project was soft-deleted.\nEmpty if the project is not deleted, otherwise set to a timestamp in the past.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "initial_branch_spec": {
+        "description": "Configuration for the initial default branch created as part of project creation.\nAllows overriding branch protection. These settings only apply at creation time\nand do not affect resources created after project creation.",
+        "ref": "postgres.InitialBranchSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "initial_endpoint_spec": {
+        "description": "Configuration settings for the initial Read/Write endpoint created inside the initial branch for a newly\ncreated project. If omitted, the initial endpoint created will have default settings, without high availability\nconfigured. This field does not apply to any endpoints created after project creation. Use\nspec.default_endpoint_settings to configure default settings for endpoints created after project creation.",
+        "ref": "postgres.InitialEndpointSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Output only. The full resource path of the project.\nFormat: projects/{project_id}",
+        "launch_stage": "GA"
+      },
+      "project_id": {
+        "description": "The part of the name, chosen by the user when the resource was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "purge_time": {
+        "description": "A timestamp indicating when the project is scheduled for permanent deletion.\nEmpty if the project is not deleted, otherwise set to a timestamp in the future.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "spec": {
+        "description": "The spec contains the project configuration, including display_name, pg_version (Postgres version), history_retention_duration, and default_endpoint_settings.",
+        "ref": "postgres.ProjectSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "The current status of a Project.",
+        "ref": "postgres.ProjectStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "uid": {
+        "description": "System-generated unique ID for the project.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the project was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.ProjectCustomTag": {
+    "fields": {
+      "key": {
+        "description": "The key of the custom tag.",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "The value of the custom tag.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.ProjectDefaultEndpointSettings": {
+    "description": "A collection of settings for a compute endpoint.",
+    "fields": {
+      "autoscaling_limit_max_cu": {
+        "description": "The maximum number of Compute Units. Minimum value is 0.5.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "autoscaling_limit_min_cu": {
+        "description": "The minimum number of Compute Units. Minimum value is 0.5.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "no_suspension": {
+        "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "pg_settings": {
+        "description": "A raw representation of Postgres settings.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "suspend_timeout_duration": {
+        "description": "Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ProjectOperationMetadata": {},
+  "postgres.ProjectSpec": {
+    "fields": {
+      "budget_policy_id": {
+        "description": "The desired budget policy to associate with the project.\nSee status.budget_policy_id for the policy that is actually applied to the project.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "custom_tags": {
+        "description": "Custom tags to associate with the project. Forwarded to LBM for billing and cost tracking.\nTo update tags, provide the new tag list and include \"spec.custom_tags\" in the update_mask.\nTo clear all tags, provide an empty list and include \"spec.custom_tags\" in the update_mask.\nTo preserve existing tags, omit this field from the update_mask (or use wildcard \"*\" which auto-excludes empty tags).",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "default_branch": {
+        "description": "The full resource path for the default branch of the project\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "default_endpoint_settings": {
+        "ref": "postgres.ProjectDefaultEndpointSettings",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "display_name": {
+        "description": "Human-readable project name. Length should be between 1 and 256 characters.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "enable_pg_native_login": {
+        "description": "Whether to enable PG native password login on all endpoints in this project. Defaults to false.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "history_retention_duration": {
+        "description": "The number of seconds to retain the shared history for point in time recovery for all branches in this project. Value should be between 172800s (2 days) and 3024000s (35 days).",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "pg_version": {
+        "description": "The major Postgres version number. The set of supported versions may vary; consult the API documentation for currently accepted values.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.ProjectStatus": {
+    "fields": {
+      "branch_logical_size_limit_bytes": {
+        "description": "The logical size limit for a branch.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "budget_policy_id": {
+        "description": "The budget policy that is applied to the project.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "compute_last_active_time": {
+        "description": "The most recent time when any endpoint of this project was active.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "custom_tags": {
+        "description": "The effective custom tags associated with the project.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "default_branch": {
+        "description": "The full resource path of the default branch of the project",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "default_endpoint_settings": {
+        "description": "The effective default endpoint settings.",
+        "ref": "postgres.ProjectDefaultEndpointSettings",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "The effective human-readable project name.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "enable_pg_native_login": {
+        "description": "Whether to enable PG native password login on all endpoints in this project.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "history_retention_duration": {
+        "description": "The effective number of seconds to retain the shared history for point in time recovery.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "owner": {
+        "description": "The email of the project owner.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "pg_version": {
+        "description": "The effective major Postgres version number.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "project_id": {
+        "description": "Part of the resource name.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "synthetic_storage_size_bytes": {
+        "description": "The current space occupied by the project in storage.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.ProvisioningInfoState": {
+    "enum": [
+      "PROVISIONING",
+      "ACTIVE",
+      "FAILED",
+      "DELETING",
+      "UPDATING",
+      "DEGRADED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "DEGRADED": "GA",
+      "DELETING": "GA",
+      "FAILED": "GA",
+      "PROVISIONING": "GA",
+      "UPDATING": "GA"
+    }
+  },
+  "postgres.ProvisioningPhase": {
+    "description": "The current phase of the data synchronization pipeline.",
+    "enum": [
+      "PROVISIONING_PHASE_MAIN",
+      "PROVISIONING_PHASE_INDEX_SCAN",
+      "PROVISIONING_PHASE_INDEX_SORT"
+    ],
+    "enum_launch_stages": {
+      "PROVISIONING_PHASE_INDEX_SCAN": "GA",
+      "PROVISIONING_PHASE_INDEX_SORT": "GA",
+      "PROVISIONING_PHASE_MAIN": "GA"
+    }
+  },
+  "postgres.RequestedClaims": {
+    "fields": {
+      "permission_set": {
+        "ref": "postgres.RequestedClaimsPermissionSet",
+        "launch_stage": "GA"
+      },
+      "resources": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.RequestedClaimsPermissionSet": {
+    "enum": [
+      "READ_ONLY"
+    ],
+    "enum_launch_stages": {
+      "READ_ONLY": "GA"
+    }
+  },
+  "postgres.RequestedResource": {
+    "fields": {
+      "table_name": {
+        "description": "The full Unity Catalog table name.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.RevealRolePasswordRequest": {
+    "description": "Request to reveal the current password for a password-authenticated Postgres role."
+  },
+  "postgres.RevealRolePasswordResponse": {
+    "description": "Response containing the password for a password-authenticated Postgres role.",
+    "fields": {
+      "password": {
+        "description": "The current password for the Postgres role.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.Role": {
+    "description": "Role represents a Postgres role within a Branch.",
+    "fields": {
+      "create_time": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Output only. The full resource path of the role.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}",
+        "launch_stage": "GA"
+      },
+      "parent": {
+        "description": "The Branch where this Role exists.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "role_id": {
+        "description": "The part of the name, chosen by the user when the resource was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "spec": {
+        "description": "The spec contains the role configuration, including identity type, authentication method, and role attributes.",
+        "ref": "postgres.RoleRoleSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "Current status of the role, including its identity type, authentication method, and role attributes.",
+        "ref": "postgres.RoleRoleStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.RoleAttributes": {
+    "description": "Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:\nhttps://www.postgresql.org/docs/16/sql-createrole.html\nThe values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical\nunderscores between words.",
+    "fields": {
+      "bypassrls": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "createdb": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "createrole": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.RoleAuthMethod": {
+    "description": "How the role is authenticated when connecting to Postgres.",
+    "enum": [
+      "NO_LOGIN",
+      "PG_PASSWORD_SCRAM_SHA_256",
+      "LAKEBASE_OAUTH_V1"
+    ],
+    "enum_launch_stages": {
+      "LAKEBASE_OAUTH_V1": "GA",
+      "NO_LOGIN": "GA",
+      "PG_PASSWORD_SCRAM_SHA_256": "GA"
+    }
+  },
+  "postgres.RoleIdentityType": {
+    "description": "The type of the Databricks managed identity that this Role represents.\nLeave empty if you wish to create a regular Postgres role not associated with a Databricks identity.",
+    "enum": [
+      "USER",
+      "SERVICE_PRINCIPAL",
+      "GROUP"
+    ],
+    "enum_launch_stages": {
+      "GROUP": "GA",
+      "SERVICE_PRINCIPAL": "GA",
+      "USER": "GA"
+    }
+  },
+  "postgres.RoleMembershipRole": {
+    "description": "Roles that the DatabaseInstanceRole can be a member of.",
+    "enum": [
+      "DATABRICKS_SUPERUSER"
+    ],
+    "enum_launch_stages": {
+      "DATABRICKS_SUPERUSER": "GA"
+    }
+  },
+  "postgres.RoleOperationMetadata": {},
+  "postgres.RoleRoleSpec": {
+    "fields": {
+      "attributes": {
+        "description": "The desired API-exposed Postgres role attribute to associate with the role. Optional.",
+        "ref": "postgres.RoleAttributes",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "auth_method": {
+        "description": "Controls how the Postgres role authenticates when a client opens a database\nconnection. Supported values:\n\n* LAKEBASE_OAUTH_V1: the role authenticates by presenting a Databricks\nOAuth access token derived from the backing managed identity (the\nDatabricks user, service principal, or group named by the role's\n`postgres_role`). No static password exists for roles using this method.\n* PG_PASSWORD_SCRAM_SHA_256: the role authenticates with a Postgres\npassword verified server-side using the SCRAM-SHA-256 mechanism.\nLakebase generates a password for the role.\n* NO_LOGIN: the role cannot open a Postgres session at all. Useful for\nroles that exist only to own objects or to aggregate privileges that\nare then granted to other, loginable roles.\n\nIf auth_method is left unspecified, a meaningful authentication method is derived from the identity_type:\n* For the managed identities, OAUTH is used.\n* For the regular postgres roles, authentication based on postgres passwords is used.\n\nNOTE: for the Databricks identity type GROUP, LAKEBASE_OAUTH_V1\nis the default auth method (group can login as well).",
+        "ref": "postgres.RoleAuthMethod",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "identity_type": {
+        "description": "The type of role.\nWhen specifying a managed-identity, the chosen role_id must be a valid:\n\n* application ID for SERVICE_PRINCIPAL\n* user email for USER\n* group name for GROUP",
+        "ref": "postgres.RoleIdentityType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "membership_roles": {
+        "description": "An enum value for a standard role that this role is a member of.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "postgres_role": {
+        "description": "The name of the Postgres role.\n\nThis expects a valid Postgres identifier as specified in the link below.\nhttps://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\n\nRequired when creating the Role.\n\nIf you wish to create a Postgres Role backed by a managed Databricks identity, then postgres_role\nmust be one of the following:\n\n1. user email for IdentityType.USER\n2. app ID for IdentityType.SERVICE_PRINCIPAL\n2. group name for IdentityType.GROUP",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.RoleRoleStatus": {
+    "fields": {
+      "attributes": {
+        "description": "The PG role attributes associated with the role.",
+        "ref": "postgres.RoleAttributes",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "auth_method": {
+        "ref": "postgres.RoleAuthMethod",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "identity_type": {
+        "description": "The type of the role.",
+        "ref": "postgres.RoleIdentityType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "membership_roles": {
+        "description": "An enum value for a standard role that this role is a member of.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "postgres_role": {
+        "description": "The name of the Postgres role.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "role_id": {
+        "description": "Part of the resource name.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.ScheduleCadence": {
+    "description": "One cadence at which automatic snapshots are taken.",
+    "fields": {
+      "daily_schedule": {
+        "description": "Take a snapshot once per day.",
+        "ref": "postgres.DailySchedule",
+        "launch_stage": "GA"
+      },
+      "monthly_schedule": {
+        "description": "Take a snapshot once per month.",
+        "ref": "postgres.MonthlySchedule",
+        "launch_stage": "GA"
+      },
+      "retention": {
+        "description": "How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
+        "launch_stage": "GA"
+      },
+      "weekly_schedule": {
+        "description": "Take a snapshot once per week.",
+        "ref": "postgres.WeeklySchedule",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.Snapshot": {
+    "description": "An immutable, point-in-time copy of a branch's data within a project. It\nremains available after the source branch is deleted.",
+    "fields": {
+      "create_time": {
+        "description": "When the snapshot was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the snapshot.\nFormat: projects/{project_id}/snapshots/{snapshot_id}",
+        "launch_stage": "GA"
+      },
+      "snapshot_id": {
+        "description": "The user-chosen ID; the final segment of `name`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "spec": {
+        "description": "Client-provided configuration of the snapshot.",
+        "ref": "postgres.SnapshotSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "Server-observed state of the snapshot.",
+        "ref": "postgres.SnapshotStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "uid": {
+        "description": "Unique system-generated ID for the snapshot.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.SnapshotOperationMetadata": {
+    "description": "Metadata for the long-running snapshot Create and Delete operations."
+  },
+  "postgres.SnapshotSchedule": {
+    "description": "The automatic snapshot cadences for a branch. There is exactly one schedule\nper branch (singleton); it is configured in place, not created or deleted.\n\nName: projects/{project_id}/branches/{branch_id}/snapshot-schedule",
+    "fields": {
+      "name": {
+        "description": "The resource name of the branch's snapshot schedule.\nFormat: projects/{project_id}/branches/{branch_id}/snapshot-schedule",
+        "launch_stage": "GA"
+      },
+      "schedule": {
+        "description": "The cadences at which automatic snapshots are taken. Update replaces the\nwhole set; an empty set disables automatic snapshots. Order is not\nsignificant. When several cadences fire together, one snapshot is taken,\nretained for the longest of their retentions.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL",
+          "UNORDERED_LIST"
+        ]
+      }
+    }
+  },
+  "postgres.SnapshotScheduleOperationMetadata": {
+    "description": "Metadata for the long-running snapshot schedule Update operation."
+  },
+  "postgres.SnapshotSpec": {
+    "description": "Client-provided configuration of the snapshot.",
+    "fields": {
+      "expire_time": {
+        "description": "Absolute time at which the snapshot is deleted.\nMutually exclusive with `ttl` and `no_expiry`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "no_expiry": {
+        "description": "If true, the snapshot never expires.\nMutually exclusive with `ttl` and `expire_time`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "source_branch": {
+        "description": "The source branch to snapshot.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "source_branch_lsn": {
+        "description": "LSN to snapshot from, e.g. `16/B374D848`.\nMutually exclusive with `source_branch_time`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "source_branch_time": {
+        "description": "Timestamp to snapshot from.\nMutually exclusive with `source_branch_lsn`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "ttl": {
+        "description": "Time-to-live. The snapshot expires this long after it is created.\nMutually exclusive with `expire_time` and `no_expiry`. Reads report the\nresolved absolute `expire_time` instead.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.SnapshotStatus": {
+    "description": "Server-observed state of a snapshot.",
+    "fields": {
+      "diff_size_bytes": {
+        "description": "Incremental storage size in bytes since the previous snapshot. Unset when\nthe snapshot is not billed on incremental usage.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "expire_time": {
+        "description": "Absolute time at which the snapshot is deleted.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "full_size_bytes": {
+        "description": "Full logical size of the snapshot, in bytes.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "no_expiry": {
+        "description": "True if the snapshot never expires.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "source_branch": {
+        "description": "The source branch the snapshot was taken from.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.SyncedTable": {
+    "fields": {
+      "create_time": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Output only. The Full resource name of the synced table in Postgres\nwhere (catalog, schema, table) are the UC entity names.\n\nFormat \"synced_tables/{catalog}.{schema}.{table}\"\n\nFor the corresponding source table in the Unity catalog look for the \"source_table_full_name\" attribute.",
+        "launch_stage": "GA"
+      },
+      "spec": {
+        "description": "Configuration details of the synced table, such as the source table, scheduling policy, etc.",
+        "ref": "postgres.SyncedTableSyncedTableSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "Synced Table data synchronization status.",
+        "ref": "postgres.SyncedTableSyncedTableStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "synced_table_id": {
+        "description": "The part of the name, chosen by the user when the resource was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "uid": {
+        "description": "The Unity Catalog table ID for this synced table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.SyncedTableOperationMetadata": {
+    "description": "Metadata for SyncedTable long-running operations."
+  },
+  "postgres.SyncedTablePipelineProgress": {
+    "description": "Progress information of the Synced Table data synchronization pipeline.",
+    "fields": {
+      "estimated_completion_time_seconds": {
+        "description": "The estimated time remaining to complete this update in seconds.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "latest_version_currently_processing": {
+        "description": "The source table Delta version that was last processed by the pipeline. The pipeline may not\nhave completely processed this version yet.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sync_progress_completion": {
+        "description": "The completion ratio of this update. This is a number between 0 and 1.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "synced_row_count": {
+        "description": "The number of rows that have been synced in this update.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "total_row_count": {
+        "description": "The total number of rows that need to be synced in this update. This number may be an estimate.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.SyncedTablePosition": {
+    "fields": {
+      "delta_table_sync_info": {
+        "ref": "postgres.DeltaTableSyncInfo",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sync_end_time": {
+        "description": "The end timestamp of the most recent successful synchronization.\nThis is the time when the data is available in the synced table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sync_start_time": {
+        "description": "The starting timestamp of the most recent successful synchronization from the source table\nto the destination (synced) table.\nNote this is the starting timestamp of the sync operation, not the end time.\nE.g., for a batch, this is the time when the sync operation started.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.SyncedTableState": {
+    "description": "The state of a synced table.",
+    "enum": [
+      "SYNCED_TABLE_PROVISIONING",
+      "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES",
+      "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT",
+      "SYNCED_TABLE_ONLINE",
+      "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE",
+      "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE",
+      "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE",
+      "SYNCED_TABLE_OFFLINE",
+      "SYNCED_TABLE_OFFLINE_FAILED",
+      "SYNCED_TABLE_ONLINE_PIPELINE_FAILED",
+      "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES"
+    ],
+    "enum_launch_stages": {
+      "SYNCED_TABLE_OFFLINE": "GA",
+      "SYNCED_TABLE_OFFLINE_FAILED": "GA",
+      "SYNCED_TABLE_ONLINE": "GA",
+      "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE": "GA",
+      "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE": "GA",
+      "SYNCED_TABLE_ONLINE_PIPELINE_FAILED": "GA",
+      "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE": "GA",
+      "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES": "GA",
+      "SYNCED_TABLE_PROVISIONING": "GA",
+      "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT": "GA",
+      "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES": "GA"
+    }
+  },
+  "postgres.SyncedTableSyncedTableSpec": {
+    "fields": {
+      "accelerated_sync": {
+        "description": "When true, enables accelerated sync mode for the initial data load.\nThis significantly improves performance for large tables.\nRequires workspace-level enablement through Lakebase Accelerated Sync preview.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "branch": {
+        "description": "The full resource name the branch associated with the table.\n\nFormat: \"projects/{project_id}/branches/{branch_id}\".",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "create_database_objects_if_missing": {
+        "description": "If true, the synced table's logical database and schema resources in PG\nwill be created if they do not already exist.\nThe request will fail if this is false and the database/schema do not exist.\n\nDefaults to true if omitted.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "existing_pipeline_id": {
+        "description": "ID of an existing pipeline to bin-pack this synced table into.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "extra_columns": {
+        "description": "Extra PostgreSQL-only columns to add to the synced table.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "new_pipeline_spec": {
+        "description": "Specification for creating a new pipeline.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
+        "ref": "postgres.NewPipelineSpec",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "postgres_database": {
+        "description": "The Postgres database name where the synced table will be created in.\n\nIf this synced table is created inside a Lakebase Catalog, this attribute can be omitted on creation and is inferred\nfrom the postgres_database associated with the Lakebase Catalog. If specified when inside a Lakebase Catalog, the value must match.\n\nA value must be specified when creating a synced table inside a Standard Catalog.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "primary_key_columns": {
+        "description": "Primary Key columns to be used for data insert/update in the destination.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "scheduling_policy": {
+        "description": "Scheduling policy of the underlying pipeline.",
+        "ref": "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "source_table_full_name": {
+        "description": "Three-part (catalog, schema, table) name of the source Delta table.\n\nFor the corresponding destination table, use any of the two:\n\n* synced_table_id used at the creation of the SyncedTable\n* \"name\" consisting of \"synced_tables/\" prefix and the full name of the destination table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "timeseries_key": {
+        "description": "Time series key to deduplicate (tie-break) rows with the same primary key.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "type_overrides": {
+        "description": "Override the default Delta-\u003ePG type mapping for specific columns.\nA TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type must be set.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.SyncedTableSyncedTableSpecExtraColumn": {
+    "description": "An extra PostgreSQL column to add to the synced table.",
+    "fields": {
+      "column_name": {
+        "description": "Name of the column.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "column_type": {
+        "description": "PostgreSQL type of the column, for example \"tsvector\" or \"vector(1024)\".",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "compute": {
+        "description": "SQL expression used to compute the column's value, for example\n\"to_tsvector('english', content)\".",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "maintenance": {
+        "ref": "postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance": {
+    "description": "How the column's value is populated and kept up to date.",
+    "enum": [
+      "STORED_GENERATED"
+    ],
+    "enum_launch_stages": {
+      "STORED_GENERATED": "PRIVATE_PREVIEW"
+    }
+  },
+  "postgres.SyncedTableSyncedTableSpecPgSpecificType": {
+    "description": "PostgreSQL-specific target types that can override the default Delta-to-PG mapping.",
+    "enum": [
+      "PG_SPECIFIC_TYPE_VECTOR",
+      "PG_SPECIFIC_TYPE_HALFVEC",
+      "PG_SPECIFIC_TYPE_VARCHAR"
+    ],
+    "enum_launch_stages": {
+      "PG_SPECIFIC_TYPE_HALFVEC": "GA",
+      "PG_SPECIFIC_TYPE_VARCHAR": "GA",
+      "PG_SPECIFIC_TYPE_VECTOR": "GA"
+    }
+  },
+  "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy": {
+    "description": "Scheduling policy of the synced table's underlying pipeline.",
+    "enum": [
+      "CONTINUOUS",
+      "TRIGGERED",
+      "SNAPSHOT"
+    ],
+    "enum_launch_stages": {
+      "CONTINUOUS": "GA",
+      "SNAPSHOT": "GA",
+      "TRIGGERED": "GA"
+    }
+  },
+  "postgres.SyncedTableSyncedTableSpecTypeOverride": {
+    "description": "Overrides the default Delta-to-PostgreSQL type mapping for a single column.",
+    "fields": {
+      "column_name": {
+        "description": "Name of the source column whose target PostgreSQL type should be overridden.",
+        "launch_stage": "GA"
+      },
+      "pg_type": {
+        "description": "PostgreSQL-specific target type to use for the column.",
+        "ref": "postgres.SyncedTableSyncedTableSpecPgSpecificType",
+        "launch_stage": "GA"
+      },
+      "size": {
+        "description": "Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "postgres.SyncedTableSyncedTableStatus": {
+    "fields": {
+      "detailed_state": {
+        "description": "The state of the synced table.",
+        "ref": "postgres.SyncedTableState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_processed_commit_version": {
+        "description": "The last source table Delta version that was successfully synced to the synced table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_sync": {
+        "description": "Summary of the last successful synchronization from source to destination.",
+        "ref": "postgres.SyncedTablePosition",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_sync_time": {
+        "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. This is when the data is available in the synced table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message": {
+        "description": "A text description of the current state of the synced table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "ongoing_sync_progress": {
+        "ref": "postgres.SyncedTablePipelineProgress",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "pipeline_id": {
+        "description": "ID of the associated pipeline.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "project": {
+        "description": "The full resource name of the project associated with the table.\n\nFormat: \"projects/{project_id}\".",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "provisioning_phase": {
+        "description": "The current phase of the data synchronization pipeline.",
+        "ref": "postgres.ProvisioningPhase",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "unity_catalog_provisioning_state": {
+        "description": "The provisioning state of the synced table entity in Unity Catalog.",
+        "ref": "postgres.ProvisioningInfoState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "postgres.UndeleteBranchRequest": {},
+  "postgres.UndeleteProjectRequest": {
+    "description": "Request to restore a soft-deleted project within its retention period."
+  },
+  "postgres.UpdateBranchRequest": {
+    "fields": {
+      "branch": {
+        "description": "The Branch to update.\n\nThe branch's `name` field is used to identify the branch to update.\nFormat: projects/{project_id}/branches/{branch_id}",
+        "ref": "postgres.Branch",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The list of fields to update.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.UpdateDataApiRequest": {
+    "fields": {
+      "data_api": {
+        "description": "The Data API configuration to update.\nThe data_api's `name` field identifies the resource.",
+        "ref": "postgres.DataApi",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The list of fields to update.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "postgres.UpdateDatabaseRequest": {
+    "fields": {
+      "database": {
+        "description": "The Database to update.\n\nThe database's `name` field is used to identify the database to update.\nFormat: projects/{project_id}/branches/{branch_id}/databases/{database_id}",
+        "ref": "postgres.Database",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The list of fields to update.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.UpdateEndpointRequest": {
+    "fields": {
+      "endpoint": {
+        "description": "The Endpoint to update.\n\nThe endpoint's `name` field is used to identify the endpoint to update.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
+        "ref": "postgres.Endpoint",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The list of fields to update.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.UpdateProjectRequest": {
+    "fields": {
+      "project": {
+        "description": "The Project to update.\n\nThe project's `name` field is used to identify the project to update.\nFormat: projects/{project_id}",
+        "ref": "postgres.Project",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The list of fields to update.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.UpdateRoleRequest": {
+    "fields": {
+      "role": {
+        "description": "The Postgres Role to update.\n\nThe role's `name` field is used to identify the role to update.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}",
+        "ref": "postgres.Role",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The list of fields to update.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.UpdateSnapshotScheduleRequest": {
+    "fields": {
+      "snapshot_schedule": {
+        "description": "The snapshot schedule to set. Its `name` identifies the branch.\nFormat: projects/{project_id}/branches/{branch_id}/snapshot-schedule",
+        "ref": "postgres.SnapshotSchedule",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "Fields to update. The only updatable path is `schedule`, which replaces the\nentire set of cadences.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "postgres.WeeklySchedule": {
+    "description": "Take a snapshot once per week, on the configured day at the configured hour.",
+    "fields": {
+      "day_of_week": {
+        "description": "The day of the week on which to take the snapshot.",
+        "ref": "postgres.DayOfWeek",
+        "launch_stage": "GA"
+      },
+      "hour": {
+        "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  }
+}

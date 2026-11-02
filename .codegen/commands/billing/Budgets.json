@@ -1,0 +1,477 @@
+{
+  "id": "billing.Budgets",
+  "name": "Budgets",
+  "description": "These APIs manage budget configurations for this account. Budgets enable you to monitor usage across your account. You can set up budgets to either track account-wide spending, or apply filters to track the spending of specific teams, projects, or workspaces.",
+  "package": {
+    "name": "billing"
+  },
+  "is_accounts": true,
+  "docs_group": "billing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a new budget configuration for an account. For full details, see https://docs.databricks.com/en/admin/account-settings/budgets.html.",
+      "summary": "Create new budget.",
+      "path": "/api/2.1/accounts/{account_id}/budgets",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateBudgetConfigurationRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "budget",
+            "description": "Properties of the new budget configuration.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateBudgetConfigurationBudget",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "budget",
+            "description": "Properties of the new budget configuration.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateBudgetConfigurationBudget",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateBudgetConfigurationResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "budget",
+          "description": "Properties of the new budget configuration.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreateBudgetConfigurationBudget",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a budget configuration for an account. Both account and budget configuration are specified by ID. This cannot be undone.",
+      "summary": "Delete budget.",
+      "path": "/api/2.1/accounts/{account_id}/budgets/{budget_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteBudgetConfigurationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "budget_id",
+            "description": "The Databricks budget configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "budget_id",
+            "description": "The Databricks budget configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteBudgetConfigurationResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "budget_id",
+          "description": "The Databricks budget configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "budget_id",
+          "description": "The Databricks budget configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a budget configuration for an account. Both account and budget configuration are specified by ID.",
+      "summary": "Get budget.",
+      "path": "/api/2.1/accounts/{account_id}/budgets/{budget_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetBudgetConfigurationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "budget_id",
+            "description": "The budget configuration ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "budget_id",
+            "description": "The budget configuration ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetBudgetConfigurationResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "budget_id",
+          "description": "The budget configuration ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "budget_id",
+          "description": "The budget configuration ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetBudgetSpendStatus",
+      "description": "Get the calling user's live spend against the blocking thresholds of a single Unity Gateway\nbudget. Any account user can call this for their own spend. Spend is reported in USD at list\nprice and is near-real-time, so it may differ slightly from billing data. Returns NOT_FOUND if\nthe budget doesn't exist or has no blocking thresholds.",
+      "summary": "Get the calling user's spend status for a budget.",
+      "path": "/api/2.1/{name=accounts/*/budget-spend-statuses/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetBudgetSpendStatusRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the budget spend status to read, of the form\n`accounts/{account_id}/budget-spend-statuses/{budget_id}`. A `budget_id` that isn't a valid\nUUID fails with INVALID_PARAMETER_VALUE.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the budget spend status to read, of the form\n`accounts/{account_id}/budget-spend-statuses/{budget_id}`. A `budget_id` that isn't a valid\nUUID fails with INVALID_PARAMETER_VALUE.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "BudgetSpendStatus",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the budget spend status to read, of the form\n`accounts/{account_id}/budget-spend-statuses/{budget_id}`. A `budget_id` that isn't a valid\nUUID fails with INVALID_PARAMETER_VALUE.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the budget spend status to read, of the form\n`accounts/{account_id}/budget-spend-statuses/{budget_id}`. A `budget_id` that isn't a valid\nUUID fails with INVALID_PARAMETER_VALUE.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets all budgets associated with this account.",
+      "summary": "Get all budgets.",
+      "path": "/api/2.1/accounts/{account_id}/budgets",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListBudgetConfigurationsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListBudgetConfigurationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_token",
+          "description": "A page token received from a previous get all budget configurations call. This token can be used to retrieve the subsequent page.\nRequests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token received from a previous get all budget configurations call. This token can be used to retrieve the subsequent page.\nRequests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListBudgetSpendStatuses",
+      "description": "List the calling user's live spend against the blocking thresholds across the account's Unity\nGateway budgets. Any account user can call this for their own spend. Spend is reported in USD\nat list price and is near-real-time, so it may differ slightly from billing data. By default,\nreturns every budget in the account that has a blocking threshold. Use `filter` to narrow\nresults by workspace.",
+      "summary": "List the calling user's budget spend statuses.",
+      "path": "/api/2.1/{parent=accounts/*}/budget-spend-statuses",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListBudgetSpendStatusesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The parent account whose budget spend statuses to list, of the form `accounts/{account_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The parent account whose budget spend statuses to list, of the form `accounts/{account_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListBudgetSpendStatusesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "A filter expression that narrows the returned budgets by workspace. Only `workspace_id` is\nsupported, in lower case with numeric workspace IDs, for example `workspace_id = 123` or\n`workspace_id IN (123, 456)`. Matches budgets that apply to any of the listed workspaces,\nincluding budgets that apply to all workspaces. Any other expression, such as an empty `IN ()`\nlist, fails with INVALID_PARAMETER_VALUE. If empty, returns every budget in the account that has\na blocking threshold.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of spend statuses to return per page. If unspecified or 0, at most 100 are\nreturned. The maximum value is 100; values above 100 are coerced to 100. Negative values fail\nwith INVALID_PARAMETER_VALUE. The server may return fewer results than requested, including\nzero, even when more pages remain; page until `next_page_token` is absent.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token from a previous `ListBudgetSpendStatuses` response, used to fetch the next page.\nRequests the first page if absent. All other request parameters except `page_size` must match\nthe request that returned the token; otherwise the request fails with INVALID_PARAMETER_VALUE.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The parent account whose budget spend statuses to list, of the form `accounts/{account_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The parent account whose budget spend statuses to list, of the form `accounts/{account_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates a budget configuration for an account. Both account and budget configuration are specified by ID.",
+      "summary": "Modify budget.",
+      "path": "/api/2.1/accounts/{account_id}/budgets/{budget_id}",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateBudgetConfigurationRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "budget_id",
+            "description": "The Databricks budget configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "budget",
+            "description": "The updated budget. This will overwrite the budget specified by the budget ID.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UpdateBudgetConfigurationBudget",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "budget_id",
+            "description": "The Databricks budget configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "budget",
+            "description": "The updated budget. This will overwrite the budget specified by the budget ID.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UpdateBudgetConfigurationBudget",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateBudgetConfigurationResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "budget",
+          "description": "The updated budget. This will overwrite the budget specified by the budget ID.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UpdateBudgetConfigurationBudget",
+            "is_object": true
+          }
+        },
+        {
+          "name": "budget_id",
+          "description": "The Databricks budget configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "budget_id",
+          "description": "The Databricks budget configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

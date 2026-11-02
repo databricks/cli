@@ -1,0 +1,4704 @@
+{
+  "id": "ml.Experiments",
+  "name": "Experiments",
+  "description": "Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment. Each experiment lets you visualize, search, and compare runs, as well as download run artifacts or metadata for analysis in other tools. Experiments are maintained in a Databricks hosted MLflow tracking server.\n\nExperiments are located in the workspace file tree. You manage experiments using the same tools you use to manage other workspace objects such as folders, notebooks, and libraries.",
+  "package": {
+    "name": "ml"
+  },
+  "docs_group": "ml",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "GetHistoryRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateExperiment",
+      "description": "Creates an experiment with a name. Returns the ID of the newly created experiment.\nValidates that another experiment with the same name does not already exist and fails\nif another experiment with the same name already exists.\n\nThrows `RESOURCE_ALREADY_EXISTS` if an experiment with the given name exists.\nNote: In some contexts, this error may be remapped to `ALREADY_EXISTS`.\nTo be safe, clients should check for both error codes.",
+      "summary": "Create experiment.",
+      "path": "/api/2.0/mlflow/experiments/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateExperiment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Experiment name.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Experiment name.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateExperimentResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "artifact_location",
+          "description": "Location where all artifacts for the experiment are stored.\nIf not provided, the remote server will select an appropriate default.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Experiment name.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExperimentTagList",
+            "array_value": {
+              "pascal_name": "ExperimentTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "trace_location",
+          "description": "The location where the experiment's traces are stored. When set, the\nunderlying storage is provisioned and the experiment's traces are routed\nto it. When unset, traces are stored in the default MLflow backend. This\nfield cannot be updated after the experiment is created.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ExperimentTraceLocation",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Experiment name.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateIssue",
+      "description": "Creates an issue in an experiment.",
+      "summary": "Create an issue.",
+      "path": "/api/2.0/mlflow/{parent=experiments/*}/issues",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateIssueRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "experiments/{experiment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "issue",
+            "description": "Output-only fields are ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Issue",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "experiments/{experiment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "issue",
+            "description": "Output-only fields are ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Issue",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "issue",
+        "description": "Output-only fields are ignored.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Issue",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "title",
+              "description": "Non-empty, at most 250 UTF-8 bytes.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "severity",
+              "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "IssueSeverity",
+                "enum": [
+                  {
+                    "content": "HIGH"
+                  },
+                  {
+                    "content": "LOW"
+                  },
+                  {
+                    "content": "MEDIUM"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "title",
+              "description": "Non-empty, at most 250 UTF-8 bytes.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "severity",
+              "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "IssueSeverity",
+                "enum": [
+                  {
+                    "content": "HIGH"
+                  },
+                  {
+                    "content": "LOW"
+                  },
+                  {
+                    "content": "MEDIUM"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Issue",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "title",
+            "description": "Non-empty, at most 250 UTF-8 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "severity",
+            "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IssueSeverity",
+              "enum": [
+                {
+                  "content": "HIGH"
+                },
+                {
+                  "content": "LOW"
+                },
+                {
+                  "content": "MEDIUM"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "title",
+            "description": "Non-empty, at most 250 UTF-8 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "severity",
+            "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IssueSeverity",
+              "enum": [
+                {
+                  "content": "HIGH"
+                },
+                {
+                  "content": "LOW"
+                },
+                {
+                  "content": "MEDIUM"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "issue",
+          "description": "Output-only fields are ignored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Issue",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "title",
+                "description": "Non-empty, at most 250 UTF-8 bytes.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "severity",
+                "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "IssueSeverity",
+                  "enum": [
+                    {
+                      "content": "HIGH"
+                    },
+                    {
+                      "content": "LOW"
+                    },
+                    {
+                      "content": "MEDIUM"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "title",
+                "description": "Non-empty, at most 250 UTF-8 bytes.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "severity",
+                "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "IssueSeverity",
+                  "enum": [
+                    {
+                      "content": "HIGH"
+                    },
+                    {
+                      "content": "LOW"
+                    },
+                    {
+                      "content": "MEDIUM"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "issue_id",
+          "description": "Optional client-chosen ID: iss- followed by 32 lowercase hex digits. A retry\nwith the same ID fails with ALREADY_EXISTS rather than making a duplicate.\nThe server generates one if unset.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "experiments/{experiment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "categories",
+          "description": "At most 10 values of at most 64 UTF-8 bytes each, unique case-insensitively.\nLeading and trailing whitespace is trimmed.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "When the Issue was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "The email of the user whose request created the Issue. source_type tells\nwhether issue detection created it.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Markdown, at most 32 KiB.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "issue_id",
+          "description": "The last segment of `name`. Issue assessments on traces reference the Issue\nby this ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "last_seen_time",
+          "description": "The request time of the latest trace the Issue affects. Required, and can't\nbe cleared, unless source_type is MANUAL. A MANUAL Issue without one returns\nits create_time.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "last_updated_by",
+          "description": "The email of the user whose request last updated the Issue.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Additional details about the Issue, such as how issue detection observed it.\nNot a stable contract: keys and values can change without notice, so clients\nmust tolerate unknown and missing keys. At most 20 entries, with keys of at\nmost 64 UTF-8 bytes.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "experiments/{experiment}/issues/{issue}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "severity",
+          "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSeverity",
+            "enum": [
+              {
+                "content": "HIGH"
+              },
+              {
+                "content": "LOW"
+              },
+              {
+                "content": "MEDIUM"
+              }
+            ]
+          }
+        },
+        {
+          "name": "source_id",
+          "description": "Set once at create. For ADHOC_RUN and SCHEDULED_RUN, the ID of the issue\ndetection run in the same experiment that created the Issue. Absent for\nMANUAL.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "Set once at create. Defaults to MANUAL.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSourceType",
+            "enum": [
+              {
+                "content": "ADHOC_RUN"
+              },
+              {
+                "content": "MANUAL"
+              },
+              {
+                "content": "SCHEDULED_RUN"
+              },
+              {
+                "content": "SINGLE_TRACE_ANALYSIS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "status",
+          "description": "Defaults to PENDING on create, and can't be cleared.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueStatus",
+            "enum": [
+              {
+                "content": "PENDING"
+              },
+              {
+                "content": "REJECTED"
+              },
+              {
+                "content": "RESOLVED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Caller-owned; the server never writes system values here. At most 10\nentries. Keys match ^[A-Za-z0-9_.:/-]+$ and are at most 128 UTF-8 bytes;\nvalues are at most 256 UTF-8 bytes.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "title",
+          "description": "Non-empty, at most 250 UTF-8 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "When the Issue was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "experiments/{experiment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "title",
+          "description": "Non-empty, at most 250 UTF-8 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "severity",
+          "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSeverity",
+            "enum": [
+              {
+                "content": "HIGH"
+              },
+              {
+                "content": "LOW"
+              },
+              {
+                "content": "MEDIUM"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateLoggedModel",
+      "description": "Create a logged model.",
+      "summary": "Create a logged model.",
+      "path": "/api/2.0/mlflow/logged-models",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateLoggedModelRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The ID of the experiment that owns the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The ID of the experiment that owns the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateLoggedModelResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "The ID of the experiment that owns the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_type",
+          "description": "The type of the model, such as ``\"Agent\"``, ``\"Classifier\"``, ``\"LLM\"``.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the model (optional). If not specified one will be generated.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "params",
+          "description": "Parameters attached to the model.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LoggedModelParameterList",
+            "array_value": {
+              "pascal_name": "LoggedModelParameter",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "source_run_id",
+          "description": "The ID of the run that created the model.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Tags attached to the model.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LoggedModelTagList",
+            "array_value": {
+              "pascal_name": "LoggedModelTag",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The ID of the experiment that owns the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateRun",
+      "description": "Creates a new run within an experiment. A run is usually a single execution of a\nmachine learning or data ETL pipeline. MLflow uses runs to track the `mlflowParam`,\n`mlflowMetric`, and `mlflowRunTag` associated with a single execution.",
+      "summary": "Create a run.",
+      "path": "/api/2.0/mlflow/runs/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateRun",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CreateRunResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_name",
+          "description": "The name of the run.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "start_time",
+          "description": "Unix timestamp in milliseconds of when the run started.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Additional metadata for run.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RunTagList",
+            "array_value": {
+              "pascal_name": "RunTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "ID of the user executing the run.\nThis field is deprecated as of MLflow 1.0, and will be removed in a future\nMLflow release. Use 'mlflow.user' tag instead.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteExperiment",
+      "description": "Marks an experiment and associated metadata, runs, metrics, params, and tags for deletion.\nIf the experiment uses FileStore, artifacts associated with the experiment are also deleted.",
+      "summary": "Delete an experiment.",
+      "path": "/api/2.0/mlflow/experiments/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteExperiment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteExperimentResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteLoggedModel",
+      "description": "Delete a logged model.",
+      "summary": "Delete a logged model.",
+      "path": "/api/2.0/mlflow/logged-models/{model_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteLoggedModelRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteLoggedModelResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteLoggedModelTag",
+      "description": "Delete a tag on a logged model.",
+      "summary": "Delete a tag on a logged model.",
+      "path": "/api/2.0/mlflow/logged-models/{model_id}/tags/{tag_key}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteLoggedModelTagRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to delete the tag from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The tag key.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to delete the tag from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The tag key.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteLoggedModelTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to delete the tag from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The tag key.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to delete the tag from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The tag key.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteRun",
+      "description": "Marks a run for deletion.",
+      "summary": "Delete a run.",
+      "path": "/api/2.0/mlflow/runs/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteRun",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteRunResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteRuns",
+      "description": "Bulk delete runs in an experiment that were created prior to or at the specified timestamp. Deletes at most\nmax_runs per request. See the cloud-specific MLflow runs documentation for a Python client example.",
+      "summary": "Delete runs by creation time.",
+      "path": "/api/2.0/mlflow/databricks/runs/delete-runs",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteRuns",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The ID of the experiment containing the runs to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "max_timestamp_millis",
+            "description": "The maximum creation timestamp in milliseconds since the UNIX epoch for deleting runs. Only runs created prior to\nor at this timestamp are deleted.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The ID of the experiment containing the runs to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "max_timestamp_millis",
+            "description": "The maximum creation timestamp in milliseconds since the UNIX epoch for deleting runs. Only runs created prior to\nor at this timestamp are deleted.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteRunsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "The ID of the experiment containing the runs to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_runs",
+          "description": "An optional positive integer indicating the maximum number of runs to delete. The maximum allowed value for\nmax_runs is 10000.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "max_timestamp_millis",
+          "description": "The maximum creation timestamp in milliseconds since the UNIX epoch for deleting runs. Only runs created prior to\nor at this timestamp are deleted.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The ID of the experiment containing the runs to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_timestamp_millis",
+          "description": "The maximum creation timestamp in milliseconds since the UNIX epoch for deleting runs. Only runs created prior to\nor at this timestamp are deleted.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteTag",
+      "description": "Deletes a tag on a run. Tags are run metadata that can be updated during a run and after\na run completes.",
+      "summary": "Delete a tag on a run.",
+      "path": "/api/2.0/mlflow/runs/delete-tag",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteTag",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run that the tag was logged under. Must be provided.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Maximum size is 255 bytes. Must be provided.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run that the tag was logged under. Must be provided.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Maximum size is 255 bytes. Must be provided.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "key",
+          "description": "Name of the tag. Maximum size is 255 bytes. Must be provided.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run that the tag was logged under. Must be provided.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "ID of the run that the tag was logged under. Must be provided.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the tag. Maximum size is 255 bytes. Must be provided.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "FinalizeLoggedModel",
+      "description": "Finalize a logged model.",
+      "summary": "Finalize a logged model.",
+      "path": "/api/2.0/mlflow/logged-models/{model_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "FinalizeLoggedModelRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to finalize.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "Whether or not the model is ready for use. ``\"LOGGED_MODEL_UPLOAD_FAILED\"`` indicates that something went wrong\nwhen logging the model weights / agent code.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LoggedModelStatus",
+              "enum": [
+                {
+                  "content": "LOGGED_MODEL_PENDING"
+                },
+                {
+                  "content": "LOGGED_MODEL_READY"
+                },
+                {
+                  "content": "LOGGED_MODEL_UPLOAD_FAILED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to finalize.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "status",
+            "description": "Whether or not the model is ready for use. ``\"LOGGED_MODEL_UPLOAD_FAILED\"`` indicates that something went wrong\nwhen logging the model weights / agent code.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LoggedModelStatus",
+              "enum": [
+                {
+                  "content": "LOGGED_MODEL_PENDING"
+                },
+                {
+                  "content": "LOGGED_MODEL_READY"
+                },
+                {
+                  "content": "LOGGED_MODEL_UPLOAD_FAILED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FinalizeLoggedModelResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to finalize.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Whether or not the model is ready for use. ``\"LOGGED_MODEL_UPLOAD_FAILED\"`` indicates that something went wrong\nwhen logging the model weights / agent code.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LoggedModelStatus",
+            "enum": [
+              {
+                "content": "LOGGED_MODEL_PENDING"
+              },
+              {
+                "content": "LOGGED_MODEL_READY"
+              },
+              {
+                "content": "LOGGED_MODEL_UPLOAD_FAILED"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to finalize.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Whether or not the model is ready for use. ``\"LOGGED_MODEL_UPLOAD_FAILED\"`` indicates that something went wrong\nwhen logging the model weights / agent code.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LoggedModelStatus",
+            "enum": [
+              {
+                "content": "LOGGED_MODEL_PENDING"
+              },
+              {
+                "content": "LOGGED_MODEL_READY"
+              },
+              {
+                "content": "LOGGED_MODEL_UPLOAD_FAILED"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetByName",
+      "description": "Gets metadata for an experiment.\n\nThis endpoint will return deleted experiments, but prefers the active experiment\nif an active and deleted experiment share the same name. If multiple deleted\nexperiments share the same name, the API will return one of them.\n\nThrows `RESOURCE_DOES_NOT_EXIST` if no experiment with the specified name exists.",
+      "summary": "Get an experiment by name.",
+      "path": "/api/2.0/mlflow/experiments/get-by-name",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetByNameRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "experiment_name",
+            "description": "Name of the associated experiment.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "experiment_name",
+            "description": "Name of the associated experiment.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetExperimentByNameResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_name",
+          "description": "Name of the associated experiment.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_name",
+          "description": "Name of the associated experiment.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetExperiment",
+      "description": "Gets metadata for an experiment. This method works on deleted experiments.",
+      "summary": "Get an experiment.",
+      "path": "/api/2.0/mlflow/experiments/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetExperimentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetExperimentResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetHistory",
+      "description": "Gets a list of all values for the specified metric for a given run.",
+      "summary": "Get metric history for a run.",
+      "path": "/api/2.0/mlflow/metrics/get-history",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetHistoryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "metric_key",
+            "description": "Name of the metric.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "metric_key",
+            "description": "Name of the metric.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetMetricHistoryResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of Metric records to return per paginated request. Default is set to 25,000. If set higher than\n25,000, a request Exception will be raised.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "metric_key",
+          "description": "Name of the metric.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token indicating the page of metric histories to fetch.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run from which to fetch metric values. Must be provided.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_uuid",
+          "description": "[Deprecated, use `run_id` instead] ID of the run from which to fetch metric values. This field\nwill be removed in a future MLflow version.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "metric_key",
+          "description": "Name of the metric.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token indicating the page of metric histories to fetch.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "GetIssue",
+      "description": "Gets an issue.",
+      "summary": "Get an issue.",
+      "path": "/api/2.0/mlflow/{name=experiments/*/issues/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetIssueRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "experiments/{experiment}/issues/{issue}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "experiments/{experiment}/issues/{issue}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Issue",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "title",
+            "description": "Non-empty, at most 250 UTF-8 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "severity",
+            "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IssueSeverity",
+              "enum": [
+                {
+                  "content": "HIGH"
+                },
+                {
+                  "content": "LOW"
+                },
+                {
+                  "content": "MEDIUM"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "title",
+            "description": "Non-empty, at most 250 UTF-8 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "severity",
+            "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IssueSeverity",
+              "enum": [
+                {
+                  "content": "HIGH"
+                },
+                {
+                  "content": "LOW"
+                },
+                {
+                  "content": "MEDIUM"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "experiments/{experiment}/issues/{issue}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "experiments/{experiment}/issues/{issue}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetLoggedModel",
+      "description": "Get a logged model.",
+      "summary": "Get a logged model.",
+      "path": "/api/2.0/mlflow/logged-models/{model_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetLoggedModelRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to retrieve.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to retrieve.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetLoggedModelResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to retrieve.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to retrieve.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get experiment permission levels.",
+      "path": "/api/2.0/permissions/experiments/{experiment_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetExperimentPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetExperimentPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of an experiment. Experiments can inherit permissions from their root object.",
+      "summary": "Get experiment permissions.",
+      "path": "/api/2.0/permissions/experiments/{experiment_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetExperimentPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExperimentPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetRun",
+      "description": "Gets the metadata, metrics, params, and tags for a run. In the case where multiple metrics with the same key are\nlogged for a run, return only the value with the latest timestamp.\n\nIf there are multiple values with the latest timestamp, return the maximum of these values.",
+      "summary": "Get a run.",
+      "path": "/api/2.0/mlflow/runs/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRunRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to fetch. Must be provided.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to fetch. Must be provided.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetRunResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to fetch. Must be provided.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_uuid",
+          "description": "[Deprecated, use `run_id` instead] ID of the run to fetch. This field will\nbe removed in a future MLflow version.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to fetch. Must be provided.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListArtifacts",
+      "description": "List artifacts for a run. Takes an optional `artifact_path` prefix which if specified,\nthe response contains only artifacts with the specified prefix.\nA maximum of 1000 artifacts will be retrieved for UC Volumes. Please call\n`/api/2.0/fs/directories{directory_path}` for listing artifacts in UC Volumes, which supports pagination. See [List\ndirectory contents | Files API](/api/workspace/files/listdirectorycontents).",
+      "summary": "List artifacts.",
+      "path": "/api/2.0/mlflow/artifacts/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListArtifactsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListArtifactsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_token",
+          "description": "The token indicating the page of artifact results to fetch. `page_token` is not supported when listing artifacts in UC\nVolumes. A maximum of 1000 artifacts will be retrieved for UC Volumes. Please call\n`/api/2.0/fs/directories{directory_path}` for listing artifacts in UC Volumes, which supports pagination. See [List\ndirectory contents | Files API](/api/workspace/files/listdirectorycontents).",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Filter artifacts matching this path (a relative path from the root artifact directory).",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run whose artifacts to list. Must be provided.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_uuid",
+          "description": "[Deprecated, use `run_id` instead] ID of the run whose artifacts to list. This field will\nbe removed in a future MLflow version.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "The token indicating the page of artifact results to fetch. `page_token` is not supported when listing artifacts in UC\nVolumes. A maximum of 1000 artifacts will be retrieved for UC Volumes. Please call\n`/api/2.0/fs/directories{directory_path}` for listing artifacts in UC Volumes, which supports pagination. See [List\ndirectory contents | Files API](/api/workspace/files/listdirectorycontents).",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListExperiments",
+      "description": "Gets a list of all experiments.",
+      "summary": "List experiments.",
+      "path": "/api/2.0/mlflow/experiments/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListExperimentsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListExperimentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of experiments desired.\nIf `max_results` is unspecified, return all experiments.\nIf `max_results` is too large, it'll be automatically capped at 1000.\nCallers of this endpoint are encouraged to pass max_results explicitly and leverage\npage_token to iterate through experiments.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token indicating the page of experiments to fetch",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view_type",
+          "description": "Qualifier for type of experiments to be returned.\nIf unspecified, return only active experiments.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ViewType",
+            "enum": [
+              {
+                "content": "ACTIVE_ONLY"
+              },
+              {
+                "content": "ALL"
+              },
+              {
+                "content": "DELETED_ONLY"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token indicating the page of experiments to fetch",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "LogBatch",
+      "description": "Logs a batch of metrics, params, and tags for a run. If any data failed to be persisted, the server will respond\nwith an error (non-200 status code).\n\nIn case of error (due to internal server error or an invalid request), partial data may be written.\n\nYou can write metrics, params, and tags in interleaving fashion, but within a given entity type are guaranteed to\nfollow the order specified in the request body.\n\nThe overwrite behavior for metrics,  params, and tags is as follows:\n\n* Metrics: metric values are never overwritten. Logging a metric (key, value, timestamp) appends to the set of values\nfor the metric with the provided key.\n\n* Tags: tag values can be overwritten by successive writes to the same tag key. That is, if multiple tag values\nwith the same key are provided in the same API request, the last-provided tag value is written. Logging the same\ntag (key, value) is permitted. Specifically, logging a tag is idempotent.\n\n* Parameters: once written, param values cannot be changed (attempting to overwrite a param value will result in an\nerror). However, logging the same param (key, value) is permitted. Specifically, logging a param is idempotent.\n\nRequest Limits\n-------------------------------\nA single JSON-serialized API request may be up to 1 MB in size and contain:\n\n* No more than 1000 metrics,  params, and tags in total\n\n* Up to 1000 metrics\n\n* Up to 100  params\n\n* Up to 100 tags\n\nFor example, a valid request might contain 900 metrics, 50 params, and 50 tags, but logging 900 metrics, 50 params,\nand 51 tags is invalid.\n\nThe following limits also apply to metric, param, and tag keys and values:\n\n* Metric keys, param keys, and tag keys can be up to 250 characters in length\n\n* Parameter and tag values can be up to 250 characters in length",
+      "summary": "Log a batch of metrics/params/tags for a run.",
+      "path": "/api/2.0/mlflow/runs/log-batch",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogBatch",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "LogBatchResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "metrics",
+          "description": "Metrics to log. A single request can contain up to 1000 metrics, and up to 1000\nmetrics, params, and tags in total.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "MetricList",
+            "array_value": {
+              "pascal_name": "Metric",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "params",
+          "description": "Params to log. A single request can contain up to 100 params, and up to 1000\nmetrics, params, and tags in total.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ParamList",
+            "array_value": {
+              "pascal_name": "Param",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run to log under",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Tags to log. A single request can contain up to 100 tags, and up to 1000\nmetrics, params, and tags in total.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RunTagList",
+            "array_value": {
+              "pascal_name": "RunTag",
+              "is_object": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "LogInputs",
+      "description": "Logs inputs, such as datasets and models, to an MLflow Run.",
+      "summary": "Log inputs to a run.",
+      "path": "/api/2.0/mlflow/runs/log-inputs",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogInputs",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to log under",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to log under",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LogInputsResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "datasets",
+          "description": "Dataset inputs",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatasetInputList",
+            "array_value": {
+              "pascal_name": "DatasetInput",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "models",
+          "description": "Model inputs",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelInputList",
+            "array_value": {
+              "pascal_name": "ModelInput",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run to log under",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to log under",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "LogLoggedModelParams",
+      "description": "Logs params for a logged model. A param is a key-value pair (string key, string value). Examples include\nhyperparameters used for ML model training. A param can be logged only once for a logged model, and\nattempting to overwrite an existing param with a different value will result in an error",
+      "summary": "Log params for a logged model.",
+      "path": "/api/2.0/mlflow/logged-models/{model_id}/params",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogLoggedModelParamsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to log params for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to log params for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LogLoggedModelParamsRequestResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to log params for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "params",
+          "description": "Parameters to attach to the model.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LoggedModelParameterList",
+            "array_value": {
+              "pascal_name": "LoggedModelParameter",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to log params for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "LogMetric",
+      "description": "Log a metric for a run. A metric is a key-value pair (string key, float value) with an\nassociated timestamp. Examples include the various metrics that represent ML model accuracy.\nA metric can be logged multiple times.",
+      "summary": "Log a metric for a run.",
+      "path": "/api/2.0/mlflow/runs/log-metric",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogMetric",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "key",
+            "description": "Name of the metric.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "Double value of the metric being logged.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_float64": true
+            }
+          },
+          {
+            "name": "timestamp",
+            "description": "Unix timestamp in milliseconds at the time metric was logged.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "key",
+            "description": "Name of the metric.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "Double value of the metric being logged.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_float64": true
+            }
+          },
+          {
+            "name": "timestamp",
+            "description": "Unix timestamp in milliseconds at the time metric was logged.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LogMetricResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "dataset_digest",
+          "description": "Dataset digest of the dataset associated with the metric,\ne.g. an md5 hash of the dataset that uniquely identifies it\nwithin datasets of the same name.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dataset_name",
+          "description": "The name of the dataset associated with the metric.\nE.g. “my.uc.table@2” “nyc-taxi-dataset”, “fantastic-elk-3”",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the metric.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_id",
+          "description": "ID of the logged model associated with the metric, if applicable",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run under which to log the metric. Must be provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_uuid",
+          "description": "[Deprecated, use `run_id` instead] ID of the run under which to log the metric. This field will\nbe removed in a future MLflow version.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "step",
+          "description": "Step at which to log the metric",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "timestamp",
+          "description": "Unix timestamp in milliseconds at the time metric was logged.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "Double value of the metric being logged.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_float64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "key",
+          "description": "Name of the metric.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "Double value of the metric being logged.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_float64": true
+          }
+        },
+        {
+          "name": "timestamp",
+          "description": "Unix timestamp in milliseconds at the time metric was logged.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "LogModel",
+      "description": "**Note:** the [Create a logged model](/api/workspace/experiments/createloggedmodel) API replaces this endpoint.\n\nLog a model to an MLflow Run.",
+      "summary": "Log a model.",
+      "path": "/api/2.0/mlflow/runs/log-model",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogModel",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "LogModelResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "model_json",
+          "description": "MLmodel file in json format.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run to log under",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "LogOutputs",
+      "description": "Logs outputs, such as models, from an MLflow Run.",
+      "summary": "Log outputs from a run.",
+      "path": "/api/2.0/mlflow/runs/outputs",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogOutputsRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "The ID of the Run from which to log outputs.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "The ID of the Run from which to log outputs.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LogOutputsResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "models",
+          "description": "The model outputs from the Run.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelOutputList",
+            "array_value": {
+              "pascal_name": "ModelOutput",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "The ID of the Run from which to log outputs.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "The ID of the Run from which to log outputs.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "LogParam",
+      "description": "Logs a param used for a run. A param is a key-value pair (string key,\nstring value). Examples include hyperparameters used for ML model training and\nconstant dates and values used in an ETL pipeline. A param can be logged only once for a run.",
+      "summary": "Log a param for a run.",
+      "path": "/api/2.0/mlflow/runs/log-parameter",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogParam",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "key",
+            "description": "Name of the param. Maximum size is 255 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the param being logged. Maximum size is 500 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "key",
+            "description": "Name of the param. Maximum size is 255 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the param being logged. Maximum size is 500 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LogParamResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "key",
+          "description": "Name of the param. Maximum size is 255 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run under which to log the param. Must be provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_uuid",
+          "description": "[Deprecated, use `run_id` instead] ID of the run under which to log the param. This field will\nbe removed in a future MLflow version.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the param being logged. Maximum size is 500 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "key",
+          "description": "Name of the param. Maximum size is 255 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the param being logged. Maximum size is 500 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RestoreExperiment",
+      "description": "Restore an experiment marked for deletion. This also restores\nassociated metadata, runs, metrics, params, and tags. If experiment uses FileStore, underlying\nartifacts associated with experiment are also restored.\n\nThrows `RESOURCE_DOES_NOT_EXIST` if experiment was never created or was permanently deleted.",
+      "summary": "Restore an experiment.",
+      "path": "/api/2.0/mlflow/experiments/restore",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RestoreExperiment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RestoreExperimentResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RestoreRun",
+      "description": "Restores a deleted run. This also restores associated metadata, runs, metrics, params, and tags.\n\nThrows `RESOURCE_DOES_NOT_EXIST` if the run was never created or was permanently deleted.",
+      "summary": "Restore a run.",
+      "path": "/api/2.0/mlflow/runs/restore",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RestoreRun",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to restore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to restore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RestoreRunResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to restore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to restore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RestoreRuns",
+      "description": "Bulk restore runs in an experiment that were deleted no earlier than the specified timestamp. Restores at most\nmax_runs per request. See the cloud-specific MLflow runs documentation for a Python client example.",
+      "summary": "Restore runs by deletion time.",
+      "path": "/api/2.0/mlflow/databricks/runs/restore-runs",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RestoreRuns",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The ID of the experiment containing the runs to restore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "min_timestamp_millis",
+            "description": "The minimum deletion timestamp in milliseconds since the UNIX epoch for restoring runs. Only runs deleted no\nearlier than this timestamp are restored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The ID of the experiment containing the runs to restore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "min_timestamp_millis",
+            "description": "The minimum deletion timestamp in milliseconds since the UNIX epoch for restoring runs. Only runs deleted no\nearlier than this timestamp are restored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RestoreRunsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "The ID of the experiment containing the runs to restore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_runs",
+          "description": "An optional positive integer indicating the maximum number of runs to restore. The maximum allowed value for\nmax_runs is 10000.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "min_timestamp_millis",
+          "description": "The minimum deletion timestamp in milliseconds since the UNIX epoch for restoring runs. Only runs deleted no\nearlier than this timestamp are restored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The ID of the experiment containing the runs to restore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "min_timestamp_millis",
+          "description": "The minimum deletion timestamp in milliseconds since the UNIX epoch for restoring runs. Only runs deleted no\nearlier than this timestamp are restored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SearchExperiments",
+      "description": "Searches for experiments that satisfy specified search criteria.",
+      "summary": "Search experiments.",
+      "path": "/api/2.0/mlflow/experiments/search",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SearchExperiments",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "SearchExperimentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "String representing a SQL filter condition (e.g. \"name ILIKE 'my-experiment%'\")",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of experiments desired. Max threshold is 3000.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "List of columns for ordering search results, which can include experiment name and last updated\ntimestamp with an optional \"DESC\" or \"ASC\" annotation, where \"ASC\" is the default.\nTiebreaks are done by experiment id DESC.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token indicating the page of experiments to fetch",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view_type",
+          "description": "Qualifier for type of experiments to be returned.\nIf unspecified, return only active experiments.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ViewType",
+            "enum": [
+              {
+                "content": "ACTIVE_ONLY"
+              },
+              {
+                "content": "ALL"
+              },
+              {
+                "content": "DELETED_ONLY"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token indicating the page of experiments to fetch",
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SearchIssues",
+      "description": "Searches the issues in an experiment, filtered and sorted.",
+      "summary": "Search issues in an experiment.",
+      "path": "/api/2.0/mlflow/{parent=experiments/*}/issues:search",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "SearchIssuesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "experiments/{experiment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "experiments/{experiment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SearchIssuesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "categories",
+          "description": "Matches Issues with any of these categories, case-insensitively.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Defaults to 20; values above 100 are clamped.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Expires after 15 minutes. Every other argument except `view` must match the\nrequest that returned the token.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "experiments/{experiment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query",
+          "description": "Case-insensitive substring match on title.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "severities",
+          "description": "Matches Issues with any of these severities.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSeverityList",
+            "array_value": {
+              "pascal_name": "IssueSeverity",
+              "enum": [
+                {
+                  "content": "HIGH"
+                },
+                {
+                  "content": "LOW"
+                },
+                {
+                  "content": "MEDIUM"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "sort_key",
+          "description": "Defaults to SEVERITY.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSortKey",
+            "enum": [
+              {
+                "content": "CREATE_TIME"
+              },
+              {
+                "content": "LAST_SEEN_TIME"
+              },
+              {
+                "content": "SEVERITY"
+              },
+              {
+                "content": "UPDATE_TIME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sort_order",
+          "description": "Defaults to DESCENDING.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SortOrder",
+            "enum": [
+              {
+                "content": "ASCENDING"
+              },
+              {
+                "content": "DESCENDING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "statuses",
+          "description": "Matches Issues with any of these statuses. Different filters AND together,\nand an empty filter matches every Issue.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueStatusList",
+            "array_value": {
+              "pascal_name": "IssueStatus",
+              "enum": [
+                {
+                  "content": "PENDING"
+                },
+                {
+                  "content": "REJECTED"
+                },
+                {
+                  "content": "RESOLVED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "tag_filters",
+          "description": "Matches Issues that satisfy every filter. At most 10 filters of 20 values\neach.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueTagFilterList",
+            "array_value": {
+              "pascal_name": "IssueTagFilter",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "view",
+          "description": "Defaults to BASIC.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueView",
+            "enum": [
+              {
+                "content": "BASIC"
+              },
+              {
+                "content": "FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "experiments/{experiment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Expires after 15 minutes. Every other argument except `view` must match the\nrequest that returned the token.",
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SearchLoggedModels",
+      "description": "Search for Logged Models that satisfy specified search criteria.",
+      "summary": "Search logged models.",
+      "path": "/api/2.0/mlflow/logged-models/search",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SearchLoggedModelsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "SearchLoggedModelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "datasets",
+          "description": "List of datasets on which to apply the metrics filter clauses.\nFor example, a filter with `metrics.accuracy \u003e 0.9` and dataset info with name \"test_dataset\"\nmeans we will return all logged models with accuracy \u003e 0.9 on the test_dataset.\nMetric values from ANY dataset matching the criteria are considered.\nIf no datasets are specified, then metrics across all datasets are considered in the filter.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SearchLoggedModelsDatasetList",
+            "array_value": {
+              "pascal_name": "SearchLoggedModelsDataset",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "experiment_ids",
+          "description": "The IDs of the experiments in which to search for logged models.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "A filter expression over logged model info and data that allows returning a subset of\nlogged models. The syntax is a subset of SQL that supports AND'ing together binary operations.\n\nExample: ``params.alpha \u003c 0.3 AND metrics.accuracy \u003e 0.9``.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "The maximum number of Logged Models to return. The maximum limit is 50.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "The list of columns for ordering the results, with additional fields for sorting criteria.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SearchLoggedModelsOrderByList",
+            "array_value": {
+              "pascal_name": "SearchLoggedModelsOrderBy",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "The token indicating the page of logged models to fetch.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SearchRuns",
+      "description": "Searches for runs that satisfy expressions.\n\nSearch expressions can use `mlflowMetric` and `mlflowParam` keys.",
+      "summary": "Search for runs.",
+      "path": "/api/2.0/mlflow/runs/search",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SearchRuns",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "SearchRunsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_ids",
+          "description": "List of experiment IDs to search over.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "A filter expression over params, metrics, and tags, that allows returning a subset of\nruns. The syntax is a subset of SQL that supports ANDing together binary operations\nbetween a param, metric, or tag and a constant.\n\nExample: `metrics.rmse \u003c 1 and params.model_class = 'LogisticRegression'`\n\nYou can select columns with special characters (hyphen, space, period, etc.) by using double quotes:\n`metrics.\"model class\" = 'LinearRegression' and tags.\"user-name\" = 'Tomas'`\n\nSupported operators are `=`, `!=`, `\u003e`, `\u003e=`, `\u003c`, and `\u003c=`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of runs desired. Max threshold is 50000",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "List of columns to be ordered by, including attributes, params, metrics, and tags with an\noptional `\"DESC\"` or `\"ASC\"` annotation, where `\"ASC\"` is the default.\nExample: `[\"params.input DESC\", \"metrics.alpha ASC\", \"metrics.rmse\"]`.\nTiebreaks are done by start_time `DESC` followed by `run_id` for runs with the same start time\n(and this is the default ordering criterion if order_by is not provided).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token for the current page of runs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_view_type",
+          "description": "Whether to display only active, only deleted, or all runs.\nDefaults to only active runs.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ViewType",
+            "enum": [
+              {
+                "content": "ACTIVE_ONLY"
+              },
+              {
+                "content": "ALL"
+              },
+              {
+                "content": "DELETED_ONLY"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token for the current page of runs.",
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SetExperimentTag",
+      "description": "Sets a tag on an experiment. Experiment tags are metadata that can be updated.",
+      "summary": "Set a tag for an experiment.",
+      "path": "/api/2.0/mlflow/experiments/set-experiment-tag",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetExperimentTag",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the experiment under which to log the tag. Must be provided.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the experiment under which to log the tag. Must be provided.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SetExperimentTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the experiment under which to log the tag. Must be provided.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the experiment under which to log the tag. Must be provided.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetLoggedModelTags",
+      "description": "Set tags for a logged model.",
+      "summary": "Set tags for a logged model.",
+      "path": "/api/2.0/mlflow/logged-models/{model_id}/tags",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetLoggedModelTagsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to set the tags on.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "model_id",
+            "description": "The ID of the logged model to set the tags on.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SetLoggedModelTagsResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to set the tags on.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "The tags to set on the logged model.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LoggedModelTagList",
+            "array_value": {
+              "pascal_name": "LoggedModelTag",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "model_id",
+          "description": "The ID of the logged model to set the tags on.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set experiment permissions.",
+      "path": "/api/2.0/permissions/experiments/{experiment_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ExperimentPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExperimentPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExperimentAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ExperimentAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetTag",
+      "description": "Sets a tag on a run. Tags are run metadata that can be updated during a run and after\na run completes.",
+      "summary": "Set a tag for a run.",
+      "path": "/api/2.0/mlflow/runs/set-tag",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetTag",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "key",
+            "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "key",
+            "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SetTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "key",
+          "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run under which to log the tag. Must be provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_uuid",
+          "description": "[Deprecated, use `run_id` instead] ID of the run under which to log the tag. This field will\nbe removed in a future MLflow version.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "key",
+          "description": "Name of the tag. Keys up to 250 bytes in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Values up to 64KB in size are supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateExperiment",
+      "description": "Updates experiment metadata.",
+      "summary": "Update an experiment.",
+      "path": "/api/2.0/mlflow/experiments/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateExperiment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "experiment_id",
+            "description": "ID of the associated experiment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateExperimentResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "If provided, the experiment's name is changed to the new name. The new name must be unique.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "ID of the associated experiment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateIssue",
+      "description": "Updates the fields of an issue named in `update_mask`.",
+      "summary": "Update an issue.",
+      "path": "/api/2.0/mlflow/{name=experiments/*/issues/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateIssueRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "experiments/{experiment}/issues/{issue}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "issue",
+            "description": "`issue.name` identifies the target.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Issue",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Accepts title, description, status, severity, categories, tags,\nlast_seen_time, and metadata.\u003ckey\u003e. A path with an empty value clears the\nfield, except that title, status, and severity can't be cleared, and\nlast_seen_time can be cleared only when source_type is MANUAL. categories\nand tags are replaced whole. metadata is updated per key: a metadata.\u003ckey\u003e\npath sets that key from issue.metadata, or removes it when issue.metadata\nlacks it, and leaves the other keys alone. A bare metadata path is rejected.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "experiments/{experiment}/issues/{issue}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Accepts title, description, status, severity, categories, tags,\nlast_seen_time, and metadata.\u003ckey\u003e. A path with an empty value clears the\nfield, except that title, status, and severity can't be cleared, and\nlast_seen_time can be cleared only when source_type is MANUAL. categories\nand tags are replaced whole. metadata is updated per key: a metadata.\u003ckey\u003e\npath sets that key from issue.metadata, or removes it when issue.metadata\nlacks it, and leaves the other keys alone. A bare metadata path is rejected.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "issue",
+            "description": "`issue.name` identifies the target.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Issue",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "issue",
+        "description": "`issue.name` identifies the target.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Issue",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "title",
+              "description": "Non-empty, at most 250 UTF-8 bytes.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "severity",
+              "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "IssueSeverity",
+                "enum": [
+                  {
+                    "content": "HIGH"
+                  },
+                  {
+                    "content": "LOW"
+                  },
+                  {
+                    "content": "MEDIUM"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "title",
+              "description": "Non-empty, at most 250 UTF-8 bytes.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "severity",
+              "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "IssueSeverity",
+                "enum": [
+                  {
+                    "content": "HIGH"
+                  },
+                  {
+                    "content": "LOW"
+                  },
+                  {
+                    "content": "MEDIUM"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Issue",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "title",
+            "description": "Non-empty, at most 250 UTF-8 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "severity",
+            "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IssueSeverity",
+              "enum": [
+                {
+                  "content": "HIGH"
+                },
+                {
+                  "content": "LOW"
+                },
+                {
+                  "content": "MEDIUM"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "title",
+            "description": "Non-empty, at most 250 UTF-8 bytes.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "severity",
+            "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IssueSeverity",
+              "enum": [
+                {
+                  "content": "HIGH"
+                },
+                {
+                  "content": "LOW"
+                },
+                {
+                  "content": "MEDIUM"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "issue",
+          "description": "`issue.name` identifies the target.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Issue",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "title",
+                "description": "Non-empty, at most 250 UTF-8 bytes.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "severity",
+                "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "IssueSeverity",
+                  "enum": [
+                    {
+                      "content": "HIGH"
+                    },
+                    {
+                      "content": "LOW"
+                    },
+                    {
+                      "content": "MEDIUM"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "title",
+                "description": "Non-empty, at most 250 UTF-8 bytes.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "severity",
+                "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "IssueSeverity",
+                  "enum": [
+                    {
+                      "content": "HIGH"
+                    },
+                    {
+                      "content": "LOW"
+                    },
+                    {
+                      "content": "MEDIUM"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "experiments/{experiment}/issues/{issue}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Accepts title, description, status, severity, categories, tags,\nlast_seen_time, and metadata.\u003ckey\u003e. A path with an empty value clears the\nfield, except that title, status, and severity can't be cleared, and\nlast_seen_time can be cleared only when source_type is MANUAL. categories\nand tags are replaced whole. metadata is updated per key: a metadata.\u003ckey\u003e\npath sets that key from issue.metadata, or removes it when issue.metadata\nlacks it, and leaves the other keys alone. A bare metadata path is rejected.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "categories",
+          "description": "At most 10 values of at most 64 UTF-8 bytes each, unique case-insensitively.\nLeading and trailing whitespace is trimmed.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "When the Issue was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "The email of the user whose request created the Issue. source_type tells\nwhether issue detection created it.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Markdown, at most 32 KiB.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "issue_id",
+          "description": "The last segment of `name`. Issue assessments on traces reference the Issue\nby this ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "last_seen_time",
+          "description": "The request time of the latest trace the Issue affects. Required, and can't\nbe cleared, unless source_type is MANUAL. A MANUAL Issue without one returns\nits create_time.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "last_updated_by",
+          "description": "The email of the user whose request last updated the Issue.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Additional details about the Issue, such as how issue detection observed it.\nNot a stable contract: keys and values can change without notice, so clients\nmust tolerate unknown and missing keys. At most 20 entries, with keys of at\nmost 64 UTF-8 bytes.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "experiments/{experiment}/issues/{issue}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "severity",
+          "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSeverity",
+            "enum": [
+              {
+                "content": "HIGH"
+              },
+              {
+                "content": "LOW"
+              },
+              {
+                "content": "MEDIUM"
+              }
+            ]
+          }
+        },
+        {
+          "name": "source_id",
+          "description": "Set once at create. For ADHOC_RUN and SCHEDULED_RUN, the ID of the issue\ndetection run in the same experiment that created the Issue. Absent for\nMANUAL.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "Set once at create. Defaults to MANUAL.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSourceType",
+            "enum": [
+              {
+                "content": "ADHOC_RUN"
+              },
+              {
+                "content": "MANUAL"
+              },
+              {
+                "content": "SCHEDULED_RUN"
+              },
+              {
+                "content": "SINGLE_TRACE_ANALYSIS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "status",
+          "description": "Defaults to PENDING on create, and can't be cleared.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueStatus",
+            "enum": [
+              {
+                "content": "PENDING"
+              },
+              {
+                "content": "REJECTED"
+              },
+              {
+                "content": "RESOLVED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Caller-owned; the server never writes system values here. At most 10\nentries. Keys match ^[A-Za-z0-9_.:/-]+$ and are at most 128 UTF-8 bytes;\nvalues are at most 256 UTF-8 bytes.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "title",
+          "description": "Non-empty, at most 250 UTF-8 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "When the Issue was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "experiments/{experiment}/issues/{issue}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Accepts title, description, status, severity, categories, tags,\nlast_seen_time, and metadata.\u003ckey\u003e. A path with an empty value clears the\nfield, except that title, status, and severity can't be cleared, and\nlast_seen_time can be cleared only when source_type is MANUAL. categories\nand tags are replaced whole. metadata is updated per key: a metadata.\u003ckey\u003e\npath sets that key from issue.metadata, or removes it when issue.metadata\nlacks it, and leaves the other keys alone. A bare metadata path is rejected.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "title",
+          "description": "Non-empty, at most 250 UTF-8 bytes.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "severity",
+          "description": "Cannot be cleared: an Issue without a severity would match no severity filter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IssueSeverity",
+            "enum": [
+              {
+                "content": "HIGH"
+              },
+              {
+                "content": "LOW"
+              },
+              {
+                "content": "MEDIUM"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on an experiment. Experiments can inherit permissions from their root object.",
+      "summary": "Update experiment permissions.",
+      "path": "/api/2.0/permissions/experiments/{experiment_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ExperimentPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The experiment for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExperimentPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExperimentAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ExperimentAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The experiment for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateRun",
+      "description": "Updates run metadata.",
+      "summary": "Update a run.",
+      "path": "/api/2.0/mlflow/runs/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateRun",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "UpdateRunResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "end_time",
+          "description": "Unix timestamp in milliseconds of when the run ended.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "ID of the run to update. Must be provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_name",
+          "description": "Updated name of the run.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_uuid",
+          "description": "[Deprecated, use `run_id` instead] ID of the run to update. This field will\nbe removed in a future MLflow version.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Updated status of the run.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UpdateRunStatus",
+            "enum": [
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "FINISHED"
+              },
+              {
+                "content": "KILLED"
+              },
+              {
+                "content": "RUNNING"
+              },
+              {
+                "content": "SCHEDULED"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

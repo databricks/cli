@@ -1,0 +1,549 @@
+{
+  "id": "sharing.Shares",
+  "name": "Shares",
+  "description": "A share is a container instantiated with :method:shares/create. Once created you can\niteratively register a collection of existing data assets defined within the metastore\nusing :method:shares/update. You can register data assets under their original name,\nqualified by their original schema, or provide alternate exposed names.",
+  "package": {
+    "name": "sharing"
+  },
+  "docs_group": "sharing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "SharesListRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new share for data objects. Data objects can be added after creation with **update**.\nThe caller must be a metastore admin or have the **CREATE_SHARE** privilege on the metastore.",
+      "summary": "Create a share.",
+      "path": "/api/2.1/unity-catalog/shares",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateShare",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the share.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the share.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ShareInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the share.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_root",
+          "description": "Storage root URL for the share.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the share.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a data object share from the metastore. The caller must be an owner of the share.",
+      "summary": "Delete a share.",
+      "path": "/api/2.1/unity-catalog/shares/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteShareRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a data object share from the metastore. The caller must have the USE_SHARE privilege on the metastore or be the owner of the share.",
+      "summary": "Get a share.",
+      "path": "/api/2.1/unity-catalog/shares/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetShareRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ShareInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_shared_data",
+          "description": "Query for data to include in the share.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListShares",
+      "description": "Gets an array of data object shares from the metastore. If the caller has the USE_SHARE privilege on the metastore, all shares are returned. Otherwise, only shares owned by the caller are returned.\nThere is no guarantee of a specific ordering of the elements in the array.",
+      "summary": "List shares.",
+      "path": "/api/2.1/unity-catalog/shares",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SharesListRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListSharesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of shares to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid shares are returned (not recommended).\n- Note: The number of returned shares might be less than the specified max_results size, even zero.\nThe only definitive indication that no further shares can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of shares to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid shares are returned (not recommended).\n- Note: The number of returned shares might be less than the specified max_results size, even zero.\nThe only definitive indication that no further shares can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "SharePermissions",
+      "description": "Gets the permissions for a data share from the metastore.\nThe caller must have the USE_SHARE privilege on the metastore or be the owner of the share.",
+      "summary": "Get permissions.",
+      "path": "/api/2.1/unity-catalog/shares/{name}/permissions",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SharePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetSharePermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of permissions to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid permissions are returned (not recommended).\n- Note: The number of returned permissions might be less than the specified max_results size, even zero.\nThe only definitive indication that no further permissions can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the Recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the Recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the share with the changes and data objects in the request.\nThe caller must be the owner of the share or a metastore admin.\n\nWhen the caller is a metastore admin, only the __owner__ field can be updated.\n\nIn the case the share name is changed, **updateShare** requires that the caller is the owner of the share\nand has the CREATE_SHARE privilege.\n\nIf there are notebook files in the share, the __storage_root__ field cannot be updated.\n\nFor each table that is added through this method, the share owner must also have **SELECT** privilege on the table.\nThis privilege must be maintained indefinitely for recipients to be able to access the table.\nTypically, you should use a group as the share owner.\n\nTable removals through **update** do not require additional privileges.",
+      "summary": "Update a share.",
+      "path": "/api/2.1/unity-catalog/shares/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateShare",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ShareInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the share.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of current owner of share.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_root",
+          "description": "Storage root URL for the share.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "updates",
+          "description": "Array of shared data object updates.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SharedDataObjectUpdateList",
+            "array_value": {
+              "pascal_name": "SharedDataObjectUpdate",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions for a data share in the metastore.\nThe caller must have both the USE_SHARE and SET_SHARE_PERMISSION privileges on the metastore,\nor be the owner of the share.\n\nFor new recipient grants, the user must also be the owner of the recipients.\nrecipient revocations do not require additional privileges.",
+      "summary": "Update permissions.",
+      "path": "/api/2.1/unity-catalog/shares/{name}/permissions",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateSharePermissions",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateSharePermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "changes",
+          "description": "Array of permissions change objects.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PermissionsChangeList",
+            "array_value": {
+              "pascal_name": "PermissionsChange",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "omit_permissions_list",
+          "description": "Optional. Whether to return the latest permissions list of the share in the response.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

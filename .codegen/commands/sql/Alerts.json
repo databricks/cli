@@ -1,0 +1,333 @@
+{
+  "id": "sql.Alerts",
+  "name": "Alerts",
+  "description": "The alerts API can be used to perform CRUD operations on alerts. An alert is a Databricks SQL\nobject that periodically runs a query, evaluates a condition of its result, and notifies one\nor more users and/or notification destinations if the condition was met.\nAlerts can be scheduled using the `sql_task` type of the Jobs API, e.g. :method:jobs/create.",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "ListAlertsResponseAlertDisplayNameToIdMap"
+    },
+    "request": {
+      "pascal_name": "ListAlertsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates an alert.",
+      "summary": "Create an alert.",
+      "path": "/api/2.0/sql/alerts",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateAlertRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "Alert",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "alert",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CreateAlertRequestAlert",
+            "is_object": true
+          }
+        },
+        {
+          "name": "auto_resolve_display_name",
+          "description": "If true, automatically resolve alert display name conflicts. Otherwise, fail the request if the alert's display name conflicts with an existing alert's display name.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Moves an alert to the trash. Trashed alerts immediately disappear from searches and list views, and can no longer trigger. You can restore a trashed alert through the UI. A trashed alert is permanently deleted after 30 days.",
+      "summary": "Delete an alert.",
+      "path": "/api/2.0/sql/alerts/{id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TrashAlertRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Empty",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets an alert.",
+      "summary": "Get an alert.",
+      "path": "/api/2.0/sql/alerts/{id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetAlertRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Alert",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets a list of alerts accessible to the user, ordered by creation time. **Warning:** Calling this API concurrently 10 or more times could result in throttling, service degradation, or a temporary ban.",
+      "summary": "List alerts.",
+      "path": "/api/2.0/sql/alerts",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAlertsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAlertsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates an alert.",
+      "summary": "Update an alert.",
+      "path": "/api/2.0/sql/alerts/{id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateAlertRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Alert",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "alert",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UpdateAlertRequestAlert",
+            "is_object": true
+          }
+        },
+        {
+          "name": "auto_resolve_display_name",
+          "description": "If true, automatically resolve alert display name conflicts. Otherwise, fail the request if the alert's display name conflicts with an existing alert's display name.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

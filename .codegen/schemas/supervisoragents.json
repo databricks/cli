@@ -1,0 +1,493 @@
+{
+  "supervisoragents.App": {
+    "description": "Databricks app. Supported app: custom mcp, custom agent.",
+    "fields": {
+      "name": {
+        "description": "App name",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.CreateExampleRequest": {
+    "fields": {
+      "example": {
+        "description": "The example to create under the parent Supervisor Agent.",
+        "ref": "supervisoragents.Example",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.CreateSupervisorAgentRequest": {
+    "fields": {
+      "supervisor_agent": {
+        "description": "The Supervisor Agent to create.",
+        "ref": "supervisoragents.SupervisorAgent",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.CreateToolRequest": {
+    "fields": {
+      "tool": {
+        "ref": "supervisoragents.Tool",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tool_id": {
+        "description": "The ID to use for the tool, which will become the final component of\nthe tool's resource name.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.DeleteExampleRequest": {},
+  "supervisoragents.DeleteSupervisorAgentRequest": {},
+  "supervisoragents.DeleteToolRequest": {},
+  "supervisoragents.Example": {
+    "description": "An example associated with a Supervisor Agent.\nContains a question and guidelines for how the agent should respond.",
+    "fields": {
+      "example_id": {
+        "description": "The universally unique identifier (UUID) of the example.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "guidelines": {
+        "description": "Guidelines for answering the question.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "name": {
+        "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "question": {
+        "description": "The example question.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.GenieSpace": {
+    "fields": {
+      "id": {
+        "description": "Deprecated: use space_id instead. Still REQUIRED for backward compatibility\nuntil a future API version removes it.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.GetExampleRequest": {},
+  "supervisoragents.GetSupervisorAgentPermissionLevelsRequest": {},
+  "supervisoragents.GetSupervisorAgentPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.GetSupervisorAgentPermissionsRequest": {},
+  "supervisoragents.GetSupervisorAgentRequest": {},
+  "supervisoragents.GetToolRequest": {},
+  "supervisoragents.KnowledgeAssistant": {
+    "fields": {
+      "knowledge_assistant_id": {
+        "description": "The ID of the knowledge assistant.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "serving_endpoint_name": {
+        "description": "Deprecated: use knowledge_assistant_id instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "supervisoragents.ListExamplesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of examples to return.\nIf unspecified, at most 100 examples will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListExamples` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "supervisoragents.ListExamplesResponse": {
+    "description": "A list of Supervisor Agent examples.",
+    "fields": {
+      "examples": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.ListSupervisorAgentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of supervisor agents to return.\nIf unspecified, at most 100 supervisor agents will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListSupervisorAgents` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "supervisoragents.ListSupervisorAgentsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "supervisor_agents": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.ListToolsRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "supervisoragents.ListToolsResponse": {
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tools": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.SupervisorAgent": {
+    "fields": {
+      "create_time": {
+        "description": "Creation timestamp.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "The creator of the Supervisor Agent.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Description of what this agent can do (user-facing).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "display_name": {
+        "description": "The display name of the Supervisor Agent, unique at workspace level.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "endpoint_name": {
+        "description": "The name of the supervisor agent's serving endpoint.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "experiment_id": {
+        "description": "The MLflow experiment ID.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "Deprecated: Use supervisor_agent_id instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "instructions": {
+        "description": "Optional natural-language instructions for the supervisor agent.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the SupervisorAgent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "supervisor_agent_id": {
+        "description": "The universally unique identifier (UUID) of the Supervisor Agent.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "supervisoragents.SupervisorAgentAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "permission_level": {
+        "ref": "supervisoragents.SupervisorAgentPermissionLevel",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.SupervisorAgentAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.SupervisorAgentPermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "permission_level": {
+        "ref": "supervisoragents.SupervisorAgentPermissionLevel",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.SupervisorAgentPermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_QUERY"
+    ]
+  },
+  "supervisoragents.SupervisorAgentPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "object_id": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "object_type": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.SupervisorAgentPermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "permission_level": {
+        "ref": "supervisoragents.SupervisorAgentPermissionLevel",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.SupervisorAgentPermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.Tool": {
+    "fields": {
+      "app": {
+        "ref": "supervisoragents.App",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "description": {
+        "description": "Description of what this tool does (user-facing).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "genie_space": {
+        "ref": "supervisoragents.GenieSpace",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "id": {
+        "description": "Deprecated: Use tool_id instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "knowledge_assistant": {
+        "ref": "supervisoragents.KnowledgeAssistant",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tool_id": {
+        "description": "User specified id of the Tool.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "tool_type": {
+        "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "uc_connection": {
+        "ref": "supervisoragents.UcConnection",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "uc_function": {
+        "ref": "supervisoragents.UcFunction",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "volume": {
+        "ref": "supervisoragents.Volume",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "supervisoragents.UcConnection": {
+    "description": "Databricks UC connection. Supported connection: external mcp server.",
+    "fields": {
+      "name": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.UcFunction": {
+    "fields": {
+      "name": {
+        "description": "Full uc function name",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.UpdateExampleRequest": {
+    "fields": {
+      "example": {
+        "ref": "supervisoragents.Example",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.UpdateSupervisorAgentRequest": {
+    "fields": {
+      "supervisor_agent": {
+        "description": "The SupervisorAgent to update.",
+        "ref": "supervisoragents.SupervisorAgent",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Field mask for fields to be updated.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.UpdateToolRequest": {
+    "fields": {
+      "tool": {
+        "description": "The Tool to update.",
+        "ref": "supervisoragents.Tool",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Field mask for fields to be updated.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "supervisoragents.Volume": {
+    "fields": {
+      "name": {
+        "description": "Full uc volume name",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  }
+}

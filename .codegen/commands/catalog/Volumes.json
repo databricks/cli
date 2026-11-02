@@ -1,0 +1,590 @@
+{
+  "id": "catalog.Volumes",
+  "name": "Volumes",
+  "description": "Volumes are a Unity Catalog (UC) capability for accessing, storing, governing,\norganizing, and processing files. Use cases include running machine learning\non unstructured data such as image, audio, video, or PDF files, organizing data sets\nduring the data exploration stages in data science, working with libraries\nthat require access to the local file system on cluster machines, storing library\nand config files of arbitrary formats such as .whl or .txt centrally\nand providing secure access to those files across workspaces,\nor transforming and querying non-tabular data files in ETL.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "VolumeInfoNameToVolumeIdMap"
+    },
+    "request": {
+      "pascal_name": "ListVolumesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new volume.\n\nThe user could create either an external volume or a managed volume. An external volume\nwill be created in the specified external location, while a managed volume\nwill be located in the default location which is specified by the parent schema,\nor the parent catalog, or the Metastore.\n\nFor the volume creation to succeed, the user must satisfy following conditions:\n- The caller must be a metastore admin, or be the owner of the parent catalog and schema,\nor have the **USE_CATALOG** privilege on the parent catalog\nand the **USE_SCHEMA** privilege on the parent schema.\n- The caller must have **CREATE VOLUME** privilege on the parent schema.\n\nFor an external volume, following conditions also need to satisfy\n- The caller must have **CREATE EXTERNAL VOLUME** privilege on the external location.\n- There are no other tables, nor volumes existing in the specified storage location.\n- The specified storage location is not under the location of other tables, nor volumes,\nor catalogs or schemas.",
+      "summary": "Create a Volume.",
+      "path": "/api/2.1/unity-catalog/volumes",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateVolumeRequestContent",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "catalog_name",
+            "description": "The name of the catalog where the schema and the volume are",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "The name of the schema where the volume is",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "The name of the volume",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "volume_type",
+            "description": "The type of the volume. An external volume is located in the specified external location.\nA managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.\n[Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "VolumeType",
+              "enum": [
+                {
+                  "content": "EXTERNAL"
+                },
+                {
+                  "content": "MANAGED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "catalog_name",
+            "description": "The name of the catalog where the schema and the volume are",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "The name of the schema where the volume is",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "The name of the volume",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "volume_type",
+            "description": "The type of the volume. An external volume is located in the specified external location.\nA managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.\n[Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "VolumeType",
+              "enum": [
+                {
+                  "content": "EXTERNAL"
+                },
+                {
+                  "content": "MANAGED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VolumeInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "The name of the catalog where the schema and the volume are",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "The comment attached to the volume",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the volume",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The name of the schema where the volume is",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_location",
+          "description": "The storage location on the cloud",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "volume_type",
+          "description": "The type of the volume. An external volume is located in the specified external location.\nA managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.\n[Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "VolumeType",
+            "enum": [
+              {
+                "content": "EXTERNAL"
+              },
+              {
+                "content": "MANAGED"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "catalog_name",
+          "description": "The name of the catalog where the schema and the volume are",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The name of the schema where the volume is",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the volume",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "volume_type",
+          "description": "The type of the volume. An external volume is located in the specified external location.\nA managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.\n[Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "VolumeType",
+            "enum": [
+              {
+                "content": "EXTERNAL"
+              },
+              {
+                "content": "MANAGED"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a volume from the specified parent catalog and schema.\n\nThe caller must be a metastore admin or an owner of the volume.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Delete a Volume.",
+      "path": "/api/2.1/unity-catalog/volumes/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteVolumeRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The three-level (fully qualified) name of the volume",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The three-level (fully qualified) name of the volume",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The three-level (fully qualified) name of the volume",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The three-level (fully qualified) name of the volume",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of volumes for the current metastore\nunder the parent catalog and schema.\n\nThe returned volumes are filtered based on the privileges of the calling user.\nFor example, the metastore admin is able to list all the volumes.\nA regular user needs to be the owner or have the **READ VOLUME** privilege\non the volume to receive the volumes in the response.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.\n\nThere is no guarantee of a specific ordering of the elements in the array.\n\nPAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List Volumes.",
+      "path": "/api/2.1/unity-catalog/volumes",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListVolumesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "catalog_name",
+            "description": "The identifier of the catalog",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "The identifier of the schema",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "catalog_name",
+            "description": "The identifier of the catalog",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "The identifier of the schema",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListVolumesResponseContent",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "The identifier of the catalog",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include volumes in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of volumes to return (page length).\n\nIf not set, the page length is set to a server configured value (10000, as of 1/29/2024).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value (10000, as of 1/29/2024);\n- when set to 0, the page length is set to a server configured value (10000, as of 1/29/2024) (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;\n\nNote: this parameter controls only the maximum number of volumes to return. The actual number of volumes returned in a page\nmay be smaller than this value, including 0, even if there are more pages.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque token returned by a previous request. It must be included in the request to retrieve the next page of results (pagination).",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The identifier of the schema",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "catalog_name",
+          "description": "The identifier of the catalog",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The identifier of the schema",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque token returned by a previous request. It must be included in the request to retrieve the next page of results (pagination).",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read",
+      "description": "Gets a volume from the metastore for a specific catalog and schema.\n\nThe caller must be a metastore admin or an owner of (or have the **READ VOLUME**\nprivilege on) the volume.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Get a Volume.",
+      "path": "/api/2.1/unity-catalog/volumes/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ReadVolumeRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The three-level (fully qualified) name of the volume",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The three-level (fully qualified) name of the volume",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VolumeInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_browse",
+          "description": "Whether to include volumes in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The three-level (fully qualified) name of the volume",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The three-level (fully qualified) name of the volume",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the specified volume under the specified parent catalog and schema.\n\nThe caller must be a metastore admin or an owner of the volume.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.\n\nCurrently only the name, the owner or the comment of the volume could be updated.",
+      "summary": "Update a Volume.",
+      "path": "/api/2.1/unity-catalog/volumes/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateVolumeRequestContent",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The three-level (fully qualified) name of the volume",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The three-level (fully qualified) name of the volume",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VolumeInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "The comment attached to the volume",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The three-level (fully qualified) name of the volume",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the volume.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "The identifier of the user who owns the volume",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The three-level (fully qualified) name of the volume",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

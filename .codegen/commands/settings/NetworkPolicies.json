@@ -1,0 +1,438 @@
+{
+  "id": "settings.NetworkPolicies",
+  "name": "NetworkPolicies",
+  "description": "These APIs manage network policies for this account. Network policies control which network destinations can be accessed from the Databricks environment. Each Databricks account includes a default policy named 'default-policy'. 'default-policy' is associated with any workspace lacking an explicit network policy assignment, and is automatically associated with each newly created workspace. 'default-policy' is reserved and cannot be deleted, but it can be updated to customize the default network access rules for your account.",
+  "package": {
+    "name": "settings"
+  },
+  "is_accounts": true,
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CreateNetworkPolicyRpc",
+      "description": "Creates a new network policy to manage which network destinations can be accessed from the Databricks\nenvironment.",
+      "summary": "Create a network policy.",
+      "path": "/api/2.0/accounts/{account_id}/network-policies",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateNetworkPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "network_policy",
+            "description": "Network policy configuration details.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AccountNetworkPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "network_policy",
+            "description": "Network policy configuration details.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AccountNetworkPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "network_policy",
+        "description": "Network policy configuration details.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "AccountNetworkPolicy",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "AccountNetworkPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_policy",
+          "description": "Network policy configuration details.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AccountNetworkPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The associated account ID for this Network Policy object.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "egress",
+          "description": "The network policies applying for egress traffic.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NetworkPolicyEgress",
+            "is_object": true
+          }
+        },
+        {
+          "name": "ingress",
+          "description": "The network policies applying for ingress traffic.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CustomerFacingIngressNetworkPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "ingress_dry_run",
+          "description": "The ingress policy for dry run mode. Dry run will always run even if the request\nis allowed by the ingress policy. When this field is set, the policy will be evaluated\nand emit logs only without blocking requests.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CustomerFacingIngressNetworkPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier for the network policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteNetworkPolicyRpc",
+      "description": "Deletes a network policy. Cannot be called on 'default-policy'.",
+      "summary": "Delete a network policy.",
+      "path": "/api/2.0/accounts/{account_id}/network-policies/{network_policy_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteNetworkPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_policy_id",
+            "description": "The unique identifier of the network policy to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_policy_id",
+            "description": "The unique identifier of the network policy to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier of the network policy to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier of the network policy to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetNetworkPolicyRpc",
+      "description": "Gets a network policy.",
+      "summary": "Get a network policy.",
+      "path": "/api/2.0/accounts/{account_id}/network-policies/{network_policy_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetNetworkPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_policy_id",
+            "description": "The unique identifier of the network policy to retrieve.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_policy_id",
+            "description": "The unique identifier of the network policy to retrieve.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AccountNetworkPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier of the network policy to retrieve.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier of the network policy to retrieve.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListNetworkPoliciesRpc",
+      "description": "Gets an array of network policies.",
+      "summary": "List network policies.",
+      "path": "/api/2.0/accounts/{account_id}/network-policies",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListNetworkPoliciesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListNetworkPoliciesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateNetworkPolicyRpc",
+      "description": "Updates a network policy. This allows you to modify the configuration of a network policy.",
+      "summary": "Update a network policy.",
+      "path": "/api/2.0/accounts/{account_id}/network-policies/{network_policy_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateNetworkPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "network_policy_id",
+            "description": "The unique identifier for the network policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "network_policy",
+            "description": "Updated network policy configuration details.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AccountNetworkPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_policy_id",
+            "description": "The unique identifier for the network policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "network_policy",
+            "description": "Updated network policy configuration details.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AccountNetworkPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "network_policy",
+        "description": "Updated network policy configuration details.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "AccountNetworkPolicy",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "AccountNetworkPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_policy",
+          "description": "Updated network policy configuration details.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AccountNetworkPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier for the network policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The associated account ID for this Network Policy object.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "egress",
+          "description": "The network policies applying for egress traffic.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NetworkPolicyEgress",
+            "is_object": true
+          }
+        },
+        {
+          "name": "ingress",
+          "description": "The network policies applying for ingress traffic.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CustomerFacingIngressNetworkPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "ingress_dry_run",
+          "description": "The ingress policy for dry run mode. Dry run will always run even if the request\nis allowed by the ingress policy. When this field is set, the policy will be evaluated\nand emit logs only without blocking requests.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CustomerFacingIngressNetworkPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier for the network policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_policy_id",
+          "description": "The unique identifier for the network policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

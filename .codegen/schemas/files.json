@@ -1,0 +1,241 @@
+{
+  "files.AddBlock": {
+    "fields": {
+      "data": {
+        "description": "The base64-encoded data to append to the stream. This has a limit of 1 MB.",
+        "launch_stage": "GA"
+      },
+      "handle": {
+        "description": "The handle on an open stream.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.AddBlockResponse": {},
+  "files.Close": {
+    "fields": {
+      "handle": {
+        "description": "The handle on an open stream.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.CloseResponse": {},
+  "files.Create": {
+    "fields": {
+      "overwrite": {
+        "description": "The flag that specifies whether to overwrite existing file/files.",
+        "launch_stage": "GA"
+      },
+      "path": {
+        "description": "The path of the new file. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.CreateDirectoryRequest": {},
+  "files.CreateResponse": {
+    "fields": {
+      "handle": {
+        "description": "Handle which should subsequently be passed into the AddBlock and Close calls when writing to a file through a stream.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.Delete": {
+    "fields": {
+      "path": {
+        "description": "The path of the file or directory to delete. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      },
+      "recursive": {
+        "description": "Whether or not to recursively delete the directory's contents. Deleting empty directories can be done without providing the recursive flag.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.DeleteDirectoryRequest": {},
+  "files.DeleteFileRequest": {},
+  "files.DeleteResponse": {},
+  "files.DirectoryEntry": {
+    "fields": {
+      "file_size": {
+        "description": "The length of the file in bytes. This field is omitted for directories.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "is_directory": {
+        "description": "True if the path is a directory.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "last_modified": {
+        "description": "Last modification time of given file in milliseconds since unix epoch.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "The name of the file or directory. This is the last component of the path.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "path": {
+        "description": "The absolute path of the file or directory.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "files.DownloadRequest": {},
+  "files.DownloadResponse": {
+    "fields": {
+      "contents": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "files.FileInfo": {
+    "fields": {
+      "file_size": {
+        "description": "The length of the file in bytes. Set to 0 for directories.",
+        "launch_stage": "GA"
+      },
+      "is_dir": {
+        "description": "True if the path is a directory.",
+        "launch_stage": "GA"
+      },
+      "modification_time": {
+        "description": "Last modification time of given file in milliseconds since epoch.",
+        "launch_stage": "GA"
+      },
+      "path": {
+        "description": "The absolute path of the file or directory.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.GetDirectoryMetadataRequest": {},
+  "files.GetMetadataRequest": {},
+  "files.GetMetadataResponse": {},
+  "files.GetStatusRequest": {
+    "fields": {
+      "path": {
+        "description": "The path of the file or directory. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.ListDbfsRequest": {
+    "fields": {
+      "path": {
+        "description": "The path of the file or directory. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.ListDirectoryContentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of directory entries to return. The response may contain fewer\nentries. If the response contains a `next_page_token`, there may be more entries,\neven if fewer than `page_size` entries are in the response.\n\nWe recommend not to set this value unless you are intentionally listing less than\nthe complete directory contents.\n\nIf unspecified, at most 1000 directory entries will be returned.\nThe maximum value is 1000. Values above 1000 will be coerced to 1000.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "page_token": {
+        "description": "An opaque page token which was the `next_page_token` in the response of the previous\nrequest to list the contents of this directory. Provide this token to retrieve the\nnext page of directory entries.\nWhen providing a `page_token`, all other parameters provided to the request must match\nthe previous request.\nTo list all of the entries in a directory, it is necessary to continue requesting\npages of entries until the response contains no `next_page_token`. Note that the\nnumber of entries returned must not be used to determine when the listing is complete.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "files.ListDirectoryResponse": {
+    "fields": {
+      "contents": {
+        "description": "Array of DirectoryEntry.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "next_page_token": {
+        "description": "A token, which can be sent as `page_token` to retrieve the next page.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "files.ListStatusResponse": {
+    "fields": {
+      "files": {
+        "description": "A list of FileInfo's that describe contents of directory or file. See example above.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.MkDirs": {
+    "fields": {
+      "path": {
+        "description": "The path of the new directory. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.MkDirsResponse": {},
+  "files.Move": {
+    "fields": {
+      "destination_path": {
+        "description": "The destination path of the file or directory. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      },
+      "source_path": {
+        "description": "The source path of the file or directory. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.MoveResponse": {},
+  "files.Put": {
+    "fields": {
+      "contents": {
+        "description": "This parameter might be absent, and instead a posted file will be used.",
+        "launch_stage": "GA"
+      },
+      "overwrite": {
+        "description": "The flag that specifies whether to overwrite existing file/files.",
+        "launch_stage": "GA"
+      },
+      "path": {
+        "description": "The path of the new file. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.PutResponse": {},
+  "files.ReadDbfsRequest": {
+    "fields": {
+      "length": {
+        "description": "The number of bytes to read starting from the offset. This has a limit of 1 MB, and a default\nvalue of 0.5 MB.",
+        "launch_stage": "GA"
+      },
+      "offset": {
+        "description": "The offset to read from in bytes.",
+        "launch_stage": "GA"
+      },
+      "path": {
+        "description": "The path of the file to read. The path should be the absolute DBFS path.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.ReadResponse": {
+    "fields": {
+      "bytes_read": {
+        "description": "The number of bytes read (could be less than ``length`` if we hit end of file). This refers to\nnumber of bytes read in unencoded version (response data is base64-encoded).",
+        "launch_stage": "GA"
+      },
+      "data": {
+        "description": "The base64-encoded contents of the file read.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "files.UploadRequest": {
+    "fields": {
+      "contents": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "overwrite": {
+        "description": "If true or unspecified, an existing file will be overwritten. If false, an error will be returned if the path points to an existing file.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  }
+}

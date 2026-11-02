@@ -1,0 +1,178 @@
+{
+  "qualitymonitorv2.AnomalyDetectionConfig": {
+    "fields": {
+      "excluded_table_full_names": {
+        "description": "List of fully qualified table names to exclude from anomaly detection.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "last_run_id": {
+        "description": "Run id of the last run of the workflow",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "latest_run_status": {
+        "description": "The status of the last run of the workflow.",
+        "ref": "qualitymonitorv2.AnomalyDetectionRunStatus",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "qualitymonitorv2.AnomalyDetectionRunStatus": {
+    "description": "Status of Anomaly Detection Job Run",
+    "enum": [
+      "ANOMALY_DETECTION_RUN_STATUS_UNKNOWN",
+      "ANOMALY_DETECTION_RUN_STATUS_RUNNING",
+      "ANOMALY_DETECTION_RUN_STATUS_CANCELED",
+      "ANOMALY_DETECTION_RUN_STATUS_PENDING",
+      "ANOMALY_DETECTION_RUN_STATUS_SUCCESS",
+      "ANOMALY_DETECTION_RUN_STATUS_FAILED",
+      "ANOMALY_DETECTION_RUN_STATUS_JOB_DELETED",
+      "ANOMALY_DETECTION_RUN_STATUS_WORKSPACE_MISMATCH_ERROR"
+    ],
+    "enum_launch_stages": {
+      "ANOMALY_DETECTION_RUN_STATUS_CANCELED": "PUBLIC_BETA",
+      "ANOMALY_DETECTION_RUN_STATUS_FAILED": "PUBLIC_BETA",
+      "ANOMALY_DETECTION_RUN_STATUS_JOB_DELETED": "PUBLIC_BETA",
+      "ANOMALY_DETECTION_RUN_STATUS_PENDING": "PUBLIC_BETA",
+      "ANOMALY_DETECTION_RUN_STATUS_RUNNING": "PUBLIC_BETA",
+      "ANOMALY_DETECTION_RUN_STATUS_SUCCESS": "PUBLIC_BETA",
+      "ANOMALY_DETECTION_RUN_STATUS_UNKNOWN": "PUBLIC_BETA",
+      "ANOMALY_DETECTION_RUN_STATUS_WORKSPACE_MISMATCH_ERROR": "PUBLIC_BETA"
+    }
+  },
+  "qualitymonitorv2.CreateQualityMonitorRequest": {
+    "fields": {
+      "quality_monitor": {
+        "ref": "qualitymonitorv2.QualityMonitor",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "qualitymonitorv2.DeleteQualityMonitorRequest": {},
+  "qualitymonitorv2.GetQualityMonitorRequest": {},
+  "qualitymonitorv2.ListQualityMonitorRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "qualitymonitorv2.ListQualityMonitorResponse": {
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "quality_monitors": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "qualitymonitorv2.PercentNullValidityCheck": {
+    "fields": {
+      "column_names": {
+        "description": "List of column names to check for null percentage",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "upper_bound": {
+        "description": "Optional upper bound; we should use auto determined bounds for now",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "qualitymonitorv2.QualityMonitor": {
+    "fields": {
+      "anomaly_detection_config": {
+        "ref": "qualitymonitorv2.AnomalyDetectionConfig",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "object_id": {
+        "description": "The uuid of the request object. For example, schema id.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "object_type": {
+        "description": "The type of the monitored object. Can be one of the following: schema.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "validity_check_configurations": {
+        "description": "Validity check configurations for anomaly detection.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "qualitymonitorv2.RangeValidityCheck": {
+    "fields": {
+      "column_names": {
+        "description": "List of column names to check for range validity",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "lower_bound": {
+        "description": "Lower bound for the range",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "upper_bound": {
+        "description": "Upper bound for the range",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "qualitymonitorv2.UniquenessValidityCheck": {
+    "fields": {
+      "column_names": {
+        "description": "List of column names to check for uniqueness",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "qualitymonitorv2.UpdateQualityMonitorRequest": {
+    "fields": {
+      "quality_monitor": {
+        "ref": "qualitymonitorv2.QualityMonitor",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "qualitymonitorv2.ValidityCheckConfiguration": {
+    "fields": {
+      "name": {
+        "description": "Can be set by system. Does not need to be user facing.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "percent_null_validity_check": {
+        "ref": "qualitymonitorv2.PercentNullValidityCheck",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "range_validity_check": {
+        "ref": "qualitymonitorv2.RangeValidityCheck",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "uniqueness_validity_check": {
+        "ref": "qualitymonitorv2.UniquenessValidityCheck",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  }
+}

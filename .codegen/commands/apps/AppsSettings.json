@@ -1,0 +1,1344 @@
+{
+  "id": "apps.AppsSettings",
+  "name": "AppsSettings",
+  "description": "Apps Settings manage the settings for the Apps service on a customer's Databricks instance.",
+  "package": {
+    "name": "apps"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "apps",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListCustomTemplatesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateCustomTemplate",
+      "description": "Creates a custom template.",
+      "summary": "Create a template.",
+      "path": "/api/2.0/apps-settings/templates",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateCustomTemplateRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "template",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomTemplate",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "template",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomTemplate",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "template",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CustomTemplate",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "git_repo",
+              "description": "The Git repository URL that the template resides in.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "The path to the template within the Git repository.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "manifest",
+              "description": "The manifest of the template. It defines fields and default values when installing the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AppManifest",
+                "is_object": true
+              }
+            },
+            {
+              "name": "git_provider",
+              "description": "The Git provider of the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "git_repo",
+              "description": "The Git repository URL that the template resides in.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "The path to the template within the Git repository.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "manifest",
+              "description": "The manifest of the template. It defines fields and default values when installing the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AppManifest",
+                "is_object": true
+              }
+            },
+            {
+              "name": "git_provider",
+              "description": "The Git provider of the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "CustomTemplate",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "template",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTemplate",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "git_repo",
+                "description": "The Git repository URL that the template resides in.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "The path to the template within the Git repository.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "manifest",
+                "description": "The manifest of the template. It defines fields and default values when installing the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AppManifest",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "git_provider",
+                "description": "The Git provider of the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "git_repo",
+                "description": "The Git repository URL that the template resides in.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "The path to the template within the Git repository.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "manifest",
+                "description": "The manifest of the template. It defines fields and default values when installing the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AppManifest",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "git_provider",
+                "description": "The Git provider of the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "The description of the template.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "git_provider",
+          "description": "The Git provider of the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "git_repo",
+          "description": "The Git repository URL that the template resides in.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "manifest",
+          "description": "The manifest of the template. It defines fields and default values when installing the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AppManifest",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The path to the template within the Git repository.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "git_repo",
+          "description": "The Git repository URL that the template resides in.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The path to the template within the Git repository.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "manifest",
+          "description": "The manifest of the template. It defines fields and default values when installing the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AppManifest",
+            "is_object": true
+          }
+        },
+        {
+          "name": "git_provider",
+          "description": "The Git provider of the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteCustomTemplate",
+      "description": "Deletes the custom template with the specified name.",
+      "summary": "Delete a template.",
+      "path": "/api/2.0/apps-settings/templates/{name}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteCustomTemplateRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the custom template.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the custom template.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomTemplate",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the custom template.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the custom template.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetCustomTemplate",
+      "description": "Gets the custom template with the specified name.",
+      "summary": "Get a template.",
+      "path": "/api/2.0/apps-settings/templates/{name}",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetCustomTemplateRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the custom template.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the custom template.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomTemplate",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the custom template.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the custom template.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListCustomTemplates",
+      "description": "Lists all custom templates in the workspace.",
+      "summary": "List templates.",
+      "path": "/api/2.0/apps-settings/templates",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListCustomTemplatesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListCustomTemplatesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Upper bound for items returned.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page of custom templates. Requests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page of custom templates. Requests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateCustomTemplate",
+      "description": "Updates the custom template with the specified name. Note that the template name cannot be updated.",
+      "summary": "Update a template.",
+      "path": "/api/2.0/apps-settings/templates/{name}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateCustomTemplateRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "template",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomTemplate",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "template",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomTemplate",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "template",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CustomTemplate",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "git_repo",
+              "description": "The Git repository URL that the template resides in.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "The path to the template within the Git repository.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "manifest",
+              "description": "The manifest of the template. It defines fields and default values when installing the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AppManifest",
+                "is_object": true
+              }
+            },
+            {
+              "name": "git_provider",
+              "description": "The Git provider of the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "git_repo",
+              "description": "The Git repository URL that the template resides in.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "The path to the template within the Git repository.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "manifest",
+              "description": "The manifest of the template. It defines fields and default values when installing the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AppManifest",
+                "is_object": true
+              }
+            },
+            {
+              "name": "git_provider",
+              "description": "The Git provider of the template.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "CustomTemplate",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "git_repo",
+            "description": "The Git repository URL that the template resides in.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "The path to the template within the Git repository.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "manifest",
+            "description": "The manifest of the template. It defines fields and default values when installing the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AppManifest",
+              "is_object": true
+            }
+          },
+          {
+            "name": "git_provider",
+            "description": "The Git provider of the template.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "template",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTemplate",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "git_repo",
+                "description": "The Git repository URL that the template resides in.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "The path to the template within the Git repository.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "manifest",
+                "description": "The manifest of the template. It defines fields and default values when installing the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AppManifest",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "git_provider",
+                "description": "The Git provider of the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "git_repo",
+                "description": "The Git repository URL that the template resides in.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "The path to the template within the Git repository.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "manifest",
+                "description": "The manifest of the template. It defines fields and default values when installing the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AppManifest",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "git_provider",
+                "description": "The Git provider of the template.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "The description of the template.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "git_provider",
+          "description": "The Git provider of the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "git_repo",
+          "description": "The Git repository URL that the template resides in.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "manifest",
+          "description": "The manifest of the template. It defines fields and default values when installing the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AppManifest",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The path to the template within the Git repository.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "git_repo",
+          "description": "The Git repository URL that the template resides in.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The path to the template within the Git repository.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "manifest",
+          "description": "The manifest of the template. It defines fields and default values when installing the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AppManifest",
+            "is_object": true
+          }
+        },
+        {
+          "name": "git_provider",
+          "description": "The Git provider of the template.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

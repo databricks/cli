@@ -1,0 +1,512 @@
+{
+  "knowledgeassistants.CreateExampleRequest": {
+    "fields": {
+      "example": {
+        "description": "The example to create under the parent Knowledge Assistant.",
+        "ref": "knowledgeassistants.Example",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.CreateKnowledgeAssistantRequest": {
+    "fields": {
+      "knowledge_assistant": {
+        "description": "The Knowledge Assistant to create.",
+        "ref": "knowledgeassistants.KnowledgeAssistant",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.CreateKnowledgeSourceRequest": {
+    "fields": {
+      "knowledge_source": {
+        "ref": "knowledgeassistants.KnowledgeSource",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.DeleteExampleRequest": {},
+  "knowledgeassistants.DeleteKnowledgeAssistantRequest": {},
+  "knowledgeassistants.DeleteKnowledgeSourceRequest": {},
+  "knowledgeassistants.Example": {
+    "description": "An example associated with a Knowledge Assistant.\nContains a question and guidelines for how the assistant should respond.",
+    "fields": {
+      "create_time": {
+        "description": "Timestamp when this example was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "example_id": {
+        "description": "The universally unique identifier (UUID) of the example.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "guidelines": {
+        "description": "Guidelines for answering the question. Optional — examples may be created\nwith just a question; the front-end form does not require guidelines.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Full resource name:\nknowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "question": {
+        "description": "The example question.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_time": {
+        "description": "Timestamp when this example was last updated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "knowledgeassistants.FileTableSpec": {
+    "description": "FileTableSpec specifies a file table source configuration.",
+    "fields": {
+      "file_col": {
+        "description": "The name of the column containing BINARY file content to be indexed.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "table_name": {
+        "description": "Full UC name of the table, in the format of {CATALOG}.{SCHEMA}.{TABLE_NAME}.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.FilesSpec": {
+    "description": "FilesSpec specifies a files source configuration.",
+    "fields": {
+      "path": {
+        "description": "A UC volume path that includes a list of files.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.GetExampleRequest": {},
+  "knowledgeassistants.GetKnowledgeAssistantPermissionLevelsRequest": {},
+  "knowledgeassistants.GetKnowledgeAssistantPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.GetKnowledgeAssistantPermissionsRequest": {},
+  "knowledgeassistants.GetKnowledgeAssistantRequest": {},
+  "knowledgeassistants.GetKnowledgeSourceRequest": {},
+  "knowledgeassistants.IndexSpec": {
+    "description": "IndexSpec specifies a vector search index source configuration.",
+    "fields": {
+      "doc_uri_col": {
+        "description": "The column that specifies a link or reference to where the information came from.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "index_name": {
+        "description": "Full UC name of the vector search index, in the format of {CATALOG}.{SCHEMA}.{INDEX_NAME}.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "text_col": {
+        "description": "The column that includes the document text for retrieval.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistant": {
+    "description": "Entity message that represents a knowledge assistant.\nNote: REQUIRED annotations below represent create-time requirements.\nFor updates, required fields are determined by the update mask.",
+    "fields": {
+      "create_time": {
+        "description": "Creation timestamp.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "The creator of the Knowledge Assistant.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "display_name": {
+        "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "endpoint_name": {
+        "description": "The name of the knowledge assistant agent endpoint.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "error_info": {
+        "description": "Error details when the Knowledge Assistant is in FAILED state.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "experiment_id": {
+        "description": "The MLflow experiment ID.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "Deprecated: use knowledge_assistant_id instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "instructions": {
+        "description": "Additional global instructions on how the agent should generate answers.\nOptional on create and update.\nWhen updating a Knowledge Assistant, include this field in update_mask to\nmodify it.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "state": {
+        "description": "State of the Knowledge Assistant. Not returned in List responses.",
+        "ref": "knowledgeassistants.KnowledgeAssistantState",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistantAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "permission_level": {
+        "ref": "knowledgeassistants.KnowledgeAssistantPermissionLevel",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistantAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistantPermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "permission_level": {
+        "ref": "knowledgeassistants.KnowledgeAssistantPermissionLevel",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistantPermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_QUERY"
+    ]
+  },
+  "knowledgeassistants.KnowledgeAssistantPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "object_id": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "object_type": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistantPermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "permission_level": {
+        "ref": "knowledgeassistants.KnowledgeAssistantPermissionLevel",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistantPermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeAssistantState": {
+    "enum": [
+      "CREATING",
+      "ACTIVE",
+      "FAILED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "PUBLIC_BETA",
+      "CREATING": "PUBLIC_BETA",
+      "FAILED": "PUBLIC_BETA"
+    }
+  },
+  "knowledgeassistants.KnowledgeSource": {
+    "description": "KnowledgeSource represents a source of knowledge for the KnowledgeAssistant.\nUsed in create/update requests and returned in Get/List responses.\nNote: REQUIRED annotations below represent create-time requirements.\nFor updates, required fields are determined by the update mask.",
+    "fields": {
+      "create_time": {
+        "description": "Timestamp when this knowledge source was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "display_name": {
+        "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "file_table": {
+        "ref": "knowledgeassistants.FileTableSpec",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "files": {
+        "ref": "knowledgeassistants.FilesSpec",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "id": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "index": {
+        "ref": "knowledgeassistants.IndexSpec",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "knowledge_cutoff_time": {
+        "description": "Timestamp representing the cutoff before which content in this knowledge source is being ingested.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Full resource name:\nknowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "source_type": {
+        "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "state": {
+        "ref": "knowledgeassistants.KnowledgeSourceState",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "knowledgeassistants.KnowledgeSourceState": {
+    "enum": [
+      "UPDATING",
+      "UPDATED",
+      "FAILED_UPDATE"
+    ],
+    "enum_launch_stages": {
+      "FAILED_UPDATE": "PUBLIC_BETA",
+      "UPDATED": "PUBLIC_BETA",
+      "UPDATING": "PUBLIC_BETA"
+    }
+  },
+  "knowledgeassistants.ListExamplesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of examples to return.\nIf unspecified, at most 100 examples will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListExamples` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "knowledgeassistants.ListExamplesResponse": {
+    "description": "A list of Knowledge Assistant examples.",
+    "fields": {
+      "examples": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.ListKnowledgeAssistantsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of knowledge assistants to return.\nIf unspecified, at most 100 knowledge assistants will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListKnowledgeAssistants` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "knowledgeassistants.ListKnowledgeAssistantsResponse": {
+    "description": "A list of Knowledge Assistants.",
+    "fields": {
+      "knowledge_assistants": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "A token that can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.ListKnowledgeSourcesRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "knowledgeassistants.ListKnowledgeSourcesResponse": {
+    "fields": {
+      "knowledge_sources": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.SyncKnowledgeSourcesRequest": {},
+  "knowledgeassistants.UpdateExampleRequest": {
+    "fields": {
+      "example": {
+        "ref": "knowledgeassistants.Example",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.UpdateKnowledgeAssistantRequest": {
+    "fields": {
+      "knowledge_assistant": {
+        "description": "The Knowledge Assistant update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Assistant fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+        "ref": "knowledgeassistants.KnowledgeAssistant",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Comma-delimited list of fields to update on the Knowledge Assistant.\nAllowed values: `display_name`, `description`, `instructions`.\nExamples:\n- `display_name`\n- `description,instructions`",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "knowledgeassistants.UpdateKnowledgeSourceRequest": {
+    "fields": {
+      "knowledge_source": {
+        "description": "The Knowledge Source update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Source fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+        "ref": "knowledgeassistants.KnowledgeSource",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Comma-delimited list of fields to update on the Knowledge Source.\nAllowed values: `display_name`, `description`.\nExamples:\n- `display_name`\n- `display_name,description`",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  }
+}

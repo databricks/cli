@@ -1,0 +1,342 @@
+{
+  "id": "billing.LogDelivery",
+  "name": "LogDelivery",
+  "description": "These APIs manage log delivery configurations for this account. The two supported log types for this API are _billable usage logs_ (AWS only) and _audit logs_ (AWS and GCP). This feature is in Public Preview. This feature works with all account ID types.\n\nLog delivery works with all account types. However, if your account is on the E2 version of the platform or on a select custom plan that allows multiple workspaces per account, you can optionally configure different storage destinations for each workspace. Log delivery status is also provided to know the latest status of log delivery attempts.\n\nThe high-level flow of billable usage delivery (AWS only):\n\n1. **Create storage**: In AWS, [create a new AWS S3 bucket](https://docs.databricks.com/administration-guide/account-api/aws-storage.html) with a specific bucket policy. Using Databricks APIs, call the Account API to create a [storage configuration object](:method:Storage/Create) that uses the bucket name.\n\n2. **Create credentials**: In AWS, create the appropriate AWS IAM role. For full details, including the required IAM role policies and trust relationship, see [Billable usage log delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html). Using Databricks APIs, call the Account API to create a [credential configuration object](:method:Credentials/Create) that uses the IAM role's ARN.\n\n3. **Create log delivery configuration**: Using Databricks APIs, call the Account API to [create a log delivery configuration](:method:LogDelivery/Create) that uses the credential and storage configuration objects from previous steps. You can specify if the logs should include all events of that log type in your account (_Account level_ delivery) or only events for a specific set of workspaces (_workspace level_ delivery). Account level log delivery applies to all current and future workspaces plus account level logs, while workspace level log delivery solely delivers logs related to the specified workspaces. You can create multiple types of delivery configurations per account.\n\nFor billable usage delivery (AWS only):\n* For more information about billable usage logs, see [Billable usage log delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html). For the CSV schema, see the [Usage page](https://docs.databricks.com/administration-guide/account-settings/usage.html).\n* The delivery location is `\u003cbucket-name\u003e/\u003cprefix\u003e/billable-usage/csv/`, where `\u003cprefix\u003e` is the name of the optional delivery path prefix you set up during log delivery configuration. Files are named `workspaceId=\u003cworkspace-id\u003e-usageMonth=\u003cmonth\u003e.csv`.\n* All billable usage logs apply to specific workspaces (_workspace level_ logs). You can aggregate usage for your entire account by creating an _account level_ delivery configuration that delivers logs for all current and future workspaces in your account.\n* The files are delivered daily by overwriting the month's CSV file for each workspace.\n\nFor audit log delivery (AWS and GCP):\n* For more information about about audit log delivery, see Audit log delivery [AWS](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html) or [GCP](https://docs.databricks.com/gcp/en/admin/account-settings/audit-logs), which includes information about the used JSON schema.\n* The delivery location is `\u003cbucket-name\u003e/\u003cdelivery-path-prefix\u003e/workspaceId=\u003cworkspaceId\u003e/date=\u003cyyyy-mm-dd\u003e/auditlogs_\u003cinternal-id\u003e.json`. Files may get overwritten with the same content multiple times to achieve exactly-once delivery.\n* If the audit log delivery configuration included specific workspace IDs, only _workspace-level_ audit logs for those workspaces are delivered. If the log delivery configuration applies to the entire account (_account level_ delivery configuration), the audit log delivery includes workspace-level audit logs for all workspaces in the account as well as account-level audit logs. See Audit log delivery [AWS](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html) or [GCP](https://docs.databricks.com/gcp/en/admin/account-settings/audit-logs) for details.\n* Auditable events are typically available in logs within 15 minutes.",
+  "package": {
+    "name": "billing"
+  },
+  "is_accounts": true,
+  "docs_group": "billing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "LogDeliveryConfigurationConfigNameToConfigIdMap"
+    },
+    "request": {
+      "pascal_name": "ListLogDeliveryRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new Databricks log delivery configuration to enable delivery of the specified type of logs to your storage location.\nThis requires that you already created a [credential object](:method:Credentials/Create) (which encapsulates a cross-account service IAM role)\nand a [storage configuration object](:method:Storage/Create) (which encapsulates an S3 bucket).\n\nFor full details, including the required IAM role policies and bucket policies,\nsee [Deliver and access billable usage logs](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html)\nor [Configure audit logging](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html).\n\n**Note**: There is a limit on the number of log delivery configurations available per account (each limit applies separately to each log type including billable usage and audit logs).\nYou can create a maximum of two enabled account-level delivery configurations (configurations without a workspace filter) per type.\nAdditionally, you can create two enabled workspace-level delivery configurations per workspace for each log type, which means that the same workspace ID can occur in the workspace filter for no more than two delivery configurations per log type.\n\nYou cannot delete a log delivery configuration, but you can disable it (see [Enable or disable log delivery configuration](:method:LogDelivery/PatchStatus)).",
+      "summary": "Create a new log delivery configuration.",
+      "path": "/api/2.0/accounts/{account_id}/log-delivery",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "WrappedCreateLogDeliveryConfiguration",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "log_delivery_configuration",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateLogDeliveryConfigurationParams",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "log_delivery_configuration",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateLogDeliveryConfigurationParams",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WrappedLogDeliveryConfiguration",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "log_delivery_configuration",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreateLogDeliveryConfigurationParams",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a Databricks log delivery configuration object for an account, both specified by ID.",
+      "summary": "Get log delivery configuration.",
+      "path": "/api/2.0/accounts/{account_id}/log-delivery/{log_delivery_configuration_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetLogDeliveryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "log_delivery_configuration_id",
+            "description": "The log delivery configuration id of customer",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "log_delivery_configuration_id",
+            "description": "The log delivery configuration id of customer",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetLogDeliveryConfigurationResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "log_delivery_configuration_id",
+          "description": "The log delivery configuration id of customer",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "log_delivery_configuration_id",
+          "description": "The log delivery configuration id of customer",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets all Databricks log delivery configurations associated with an account specified by ID.",
+      "summary": "Get all log delivery configurations.",
+      "path": "/api/2.0/accounts/{account_id}/log-delivery",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListLogDeliveryRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "WrappedLogDeliveryConfigurations",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "credentials_id",
+          "description": "The Credentials id to filter the search results with",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token received from a previous get all budget configurations call. This token can be used to retrieve the subsequent page.\nRequests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "The log delivery status to filter the search results with",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "LogDeliveryConfigStatus",
+            "enum": [
+              {
+                "content": "DISABLED"
+              },
+              {
+                "content": "ENABLED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "storage_configuration_id",
+          "description": "The Storage Configuration id to filter the search results with",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token received from a previous get all budget configurations call. This token can be used to retrieve the subsequent page.\nRequests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PatchStatus",
+      "description": "Enables or disables a log delivery configuration.\nDeletion of delivery configurations is not supported, so disable log delivery configurations that are no longer needed.\nNote that you can't re-enable a delivery configuration if this would violate the delivery configuration limits described under [Create log delivery](:method:LogDelivery/Create).",
+      "summary": "Enable or disable log delivery configuration.",
+      "path": "/api/2.0/accounts/{account_id}/log-delivery/{log_delivery_configuration_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateLogDeliveryConfigurationStatusRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "log_delivery_configuration_id",
+            "description": "The log delivery configuration id of customer",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "Status of log delivery configuration. Set to `ENABLED` (enabled) or `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the configuration](#operation/patch-log-delivery-config-status) later. Deletion of a configuration is not supported, so disable a log delivery configuration that is no longer needed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LogDeliveryConfigStatus",
+              "enum": [
+                {
+                  "content": "DISABLED"
+                },
+                {
+                  "content": "ENABLED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "log_delivery_configuration_id",
+            "description": "The log delivery configuration id of customer",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "status",
+            "description": "Status of log delivery configuration. Set to `ENABLED` (enabled) or `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the configuration](#operation/patch-log-delivery-config-status) later. Deletion of a configuration is not supported, so disable a log delivery configuration that is no longer needed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LogDeliveryConfigStatus",
+              "enum": [
+                {
+                  "content": "DISABLED"
+                },
+                {
+                  "content": "ENABLED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PatchStatusResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "log_delivery_configuration_id",
+          "description": "The log delivery configuration id of customer",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Status of log delivery configuration. Set to `ENABLED` (enabled) or `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the configuration](#operation/patch-log-delivery-config-status) later. Deletion of a configuration is not supported, so disable a log delivery configuration that is no longer needed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LogDeliveryConfigStatus",
+            "enum": [
+              {
+                "content": "DISABLED"
+              },
+              {
+                "content": "ENABLED"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "log_delivery_configuration_id",
+          "description": "The log delivery configuration id of customer",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Status of log delivery configuration. Set to `ENABLED` (enabled) or `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the configuration](#operation/patch-log-delivery-config-status) later. Deletion of a configuration is not supported, so disable a log delivery configuration that is no longer needed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LogDeliveryConfigStatus",
+            "enum": [
+              {
+                "content": "DISABLED"
+              },
+              {
+                "content": "ENABLED"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

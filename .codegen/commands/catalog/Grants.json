@@ -1,0 +1,646 @@
+{
+  "id": "catalog.Grants",
+  "name": "Grants",
+  "description": "In Unity Catalog, data is secure by default. Initially, users have no access to data in\na metastore. Access can be granted by either a metastore admin, the owner of an object, or\nthe owner of the catalog or schema that contains the object. Securable objects in Unity\nCatalog are hierarchical and privileges are inherited downward.\n\nThis means that granting a privilege on the catalog automatically grants the privilege to\nall current and future objects within the catalog. Similarly, privileges granted on a schema\nare inherited by all current and future objects within that schema.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListPrivilegeAssignmentsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Get",
+      "description": "Gets the permissions for a securable. Does not include inherited permissions.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "Get permissions.",
+      "path": "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetGrantRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetPermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Specifies the maximum number of privileges to return (page length).\nEvery PrivilegeAssignment present in a single page response is guaranteed to contain all the privileges granted on\nthe requested Securable for the respective principal.\n\nIf not set, all the permissions are returned.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete PrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "principal",
+          "description": "If provided, only the permissions for the specified principal (user or group) are returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetEffective",
+      "description": "Gets the effective permissions for a securable. Includes inherited permissions from any parent securables.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "Get effective permissions.",
+      "path": "/api/2.1/unity-catalog/effective-permissions/{securable_type}/{full_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetEffectiveRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EffectivePermissionsList",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Specifies the maximum number of privileges to return (page length).\nEvery EffectivePrivilegeAssignment present in a single page response is guaranteed to contain all the effective\nprivileges granted on (or inherited by) the requested Securable for the respective principal.\n\nIf not set, all the effective permissions are returned.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete EffectivePrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque token for the next page of results (pagination).",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "principal",
+          "description": "If provided, only the effective permissions for the specified principal (user or group) are returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists the privilege assignments for a securable. Does not include inherited privileges.\nPaginated version of Get Permissions API.",
+      "summary": "List permissions.",
+      "path": "/api/2.1/unity-catalog/privilege-assignments/{securable_type}/{full_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPrivilegeAssignmentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListPrivilegeAssignmentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery PrivilegeAssignment present in a single page response is guaranteed to contain all the privileges granted on\nthe requested Securable for the respective principal.\n\nIf not set, page length is the server configured value.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete PrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "principal",
+          "description": "If provided, only the permissions for the specified principal (user or group) are returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListEffective",
+      "description": "Lists the effective privilege assignments for a securable. Includes inherited privileges.\nPaginated version of Get Effective Permissions API.",
+      "summary": "List effective permissions.",
+      "path": "/api/2.1/unity-catalog/effective-privilege-assignments/{securable_type}/{full_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListEffectivePrivilegeAssignmentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListEffectivePrivilegeAssignmentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Specifies the maximum number of privilege assignments to return (page length).\nEvery EffectivePrivilegeAssignment present in a single page response is guaranteed to contain all the effective\nprivileges granted on (or inherited by) the requested Securable for the respective principal.\n\nIf not set, a server-configured default is used.\nIf set to\n- lesser than 0: invalid parameter error\n- 0: page length is set to a server configured value\n- lesser than 150 but greater than 0: invalid parameter error (this is to ensure that server is able to return at\nleast one complete EffectivePrivilegeAssignment in a single page response)\n- greater than (or equal to) 150: page length is the minimum of this value and a server configured value",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "principal",
+          "description": "If provided, only the effective permissions for the specified principal (user or group) are returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates the permissions for a securable.",
+      "summary": "Update permissions.",
+      "path": "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdatePermissions",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "Type of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "Full name of securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdatePermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "changes",
+          "description": "Array of permissions change objects.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PermissionsChangeList",
+            "array_value": {
+              "pascal_name": "PermissionsChange",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "omit_permissions_in_response",
+          "description": "Optional, default false. Specifies whether all the permissions should be returned in the response.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "Type of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

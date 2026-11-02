@@ -1,0 +1,790 @@
+{
+  "id": "catalog.ExternalLineage",
+  "name": "ExternalLineage",
+  "description": "External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems. These APIs allow users to capture data flows connecting Databricks tables, models, and file paths with external metadata objects.\n\nWith these APIs, users can create, update, delete, and list lineage relationships with support for column-level mappings and custom properties.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListExternalLineageRelationshipsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateExternalLineageRelationship",
+      "description": "Creates an external lineage relationship between a Databricks or external metadata object and another external metadata object.",
+      "summary": "Create an external lineage relationship.",
+      "path": "/api/2.0/lineage-tracking/external-lineage",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateExternalLineageRelationshipRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "external_lineage_relationship",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateRequestExternalLineage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "external_lineage_relationship",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateRequestExternalLineage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "external_lineage_relationship",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CreateRequestExternalLineage",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "source",
+              "description": "Source object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            },
+            {
+              "name": "target",
+              "description": "Target object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "source",
+              "description": "Source object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            },
+            {
+              "name": "target",
+              "description": "Target object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ExternalLineageRelationship",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "source",
+            "description": "Source object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          },
+          {
+            "name": "target",
+            "description": "Target object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "source",
+            "description": "Source object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          },
+          {
+            "name": "target",
+            "description": "Target object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "external_lineage_relationship",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreateRequestExternalLineage",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "source",
+                "description": "Source object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "target",
+                "description": "Target object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "source",
+                "description": "Source object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "target",
+                "description": "Target object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "columns",
+          "description": "List of column relationships between source and target objects.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ColumnRelationshipList",
+            "array_value": {
+              "pascal_name": "ColumnRelationship",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the external lineage relationship.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "Key-value properties associated with the external lineage relationship.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "source",
+          "description": "Source object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        },
+        {
+          "name": "target",
+          "description": "Target object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "source",
+          "description": "Source object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        },
+        {
+          "name": "target",
+          "description": "Target object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteExternalLineageRelationship",
+      "description": "Deletes an external lineage relationship between a Databricks or external metadata object and another external metadata object.",
+      "summary": "Delete an external lineage relationship.",
+      "path": "/api/2.0/lineage-tracking/external-lineage",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteExternalLineageRelationshipRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "external_lineage_relationship",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "DeleteRequestExternalLineage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "external_lineage_relationship",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "DeleteRequestExternalLineage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "external_lineage_relationship",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "pascal_name": "DeleteRequestExternalLineage",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListExternalLineageRelationships",
+      "description": "Lists external lineage relationships of a Databricks object or external metadata given a supplied direction.",
+      "summary": "List external lineage relationships.",
+      "path": "/api/2.0/lineage-tracking/external-lineage",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListExternalLineageRelationshipsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_info",
+            "description": "The object to query external lineage relationships for.\nSince this field is a query parameter, please flatten the nested fields. For example, if the object is a table, the query parameter should look like:\n`object_info.table.name=main.sales.customers`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          },
+          {
+            "name": "lineage_direction",
+            "description": "The lineage direction to filter on.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "LineageDirection",
+              "enum": [
+                {
+                  "content": "DOWNSTREAM"
+                },
+                {
+                  "content": "UPSTREAM"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_info",
+            "description": "The object to query external lineage relationships for.\nSince this field is a query parameter, please flatten the nested fields. For example, if the object is a table, the query parameter should look like:\n`object_info.table.name=main.sales.customers`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          },
+          {
+            "name": "lineage_direction",
+            "description": "The lineage direction to filter on.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "LineageDirection",
+              "enum": [
+                {
+                  "content": "DOWNSTREAM"
+                },
+                {
+                  "content": "UPSTREAM"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListExternalLineageRelationshipsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "lineage_direction",
+          "description": "The lineage direction to filter on.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "pascal_name": "LineageDirection",
+            "enum": [
+              {
+                "content": "DOWNSTREAM"
+              },
+              {
+                "content": "UPSTREAM"
+              }
+            ]
+          }
+        },
+        {
+          "name": "object_info",
+          "description": "The object to query external lineage relationships for.\nSince this field is a query parameter, please flatten the nested fields. For example, if the object is a table, the query parameter should look like:\n`object_info.table.name=main.sales.customers`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Specifies the maximum number of external lineage relationships to return in a single response.\nThe value must be less than or equal to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateExternalLineageRelationship",
+      "description": "Updates an external lineage relationship between a Databricks or external metadata object and another external metadata object.",
+      "summary": "Update an external lineage relationship.",
+      "path": "/api/2.0/lineage-tracking/external-lineage",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateExternalLineageRelationshipRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "external_lineage_relationship",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UpdateRequestExternalLineage",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "external_lineage_relationship",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UpdateRequestExternalLineage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "external_lineage_relationship",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "UpdateRequestExternalLineage",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "source",
+              "description": "Source object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            },
+            {
+              "name": "target",
+              "description": "Target object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "source",
+              "description": "Source object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            },
+            {
+              "name": "target",
+              "description": "Target object of the external lineage relationship.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "ExternalLineageObject",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ExternalLineageRelationship",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "source",
+            "description": "Source object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          },
+          {
+            "name": "target",
+            "description": "Target object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "source",
+            "description": "Source object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          },
+          {
+            "name": "target",
+            "description": "Target object of the external lineage relationship.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalLineageObject",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "external_lineage_relationship",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UpdateRequestExternalLineage",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "source",
+                "description": "Source object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "target",
+                "description": "Target object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "source",
+                "description": "Source object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "target",
+                "description": "Target object of the external lineage relationship.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "ExternalLineageObject",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "columns",
+          "description": "List of column relationships between source and target objects.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ColumnRelationshipList",
+            "array_value": {
+              "pascal_name": "ColumnRelationship",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the external lineage relationship.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "Key-value properties associated with the external lineage relationship.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "source",
+          "description": "Source object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        },
+        {
+          "name": "target",
+          "description": "Target object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source",
+          "description": "Source object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        },
+        {
+          "name": "target",
+          "description": "Target object of the external lineage relationship.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalLineageObject",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

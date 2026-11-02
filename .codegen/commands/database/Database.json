@@ -1,0 +1,3838 @@
+{
+  "id": "database.Database",
+  "name": "Database",
+  "description": "Database Instances provide access to a database via REST API or direct SQL.\n\nFor new workloads, Databricks recommends the [Postgres API](https://docs.databricks.com/api/postgres/v1/postgres), which supports the latest Lakebase features.",
+  "package": {
+    "name": "database"
+  },
+  "docs_group": "database",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListDatabaseCatalogsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateDatabaseCatalog",
+      "description": "Create a Database Catalog.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Create a catalog](https://docs.databricks.com/api/postgres/v1/create-catalog).",
+      "summary": "Create a Database Catalog.",
+      "path": "/api/2.0/database/catalogs",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateDatabaseCatalogRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "catalog",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseCatalog",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "catalog",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseCatalog",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "catalog",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DatabaseCatalog",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the catalog in UC.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_instance_name",
+              "description": "The name of the DatabaseInstance housing the database.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_name",
+              "description": "The name of the database (in an instance) associated with the catalog.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the catalog in UC.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_instance_name",
+              "description": "The name of the DatabaseInstance housing the database.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_name",
+              "description": "The name of the database (in an instance) associated with the catalog.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DatabaseCatalog",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance_name",
+            "description": "The name of the DatabaseInstance housing the database.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_name",
+            "description": "The name of the database (in an instance) associated with the catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance_name",
+            "description": "The name of the DatabaseInstance housing the database.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_name",
+            "description": "The name of the database (in an instance) associated with the catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "catalog",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseCatalog",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the catalog in UC.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_instance_name",
+                "description": "The name of the DatabaseInstance housing the database.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_name",
+                "description": "The name of the database (in an instance) associated with the catalog.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the catalog in UC.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_instance_name",
+                "description": "The name of the DatabaseInstance housing the database.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_name",
+                "description": "The name of the database (in an instance) associated with the catalog.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_database_if_not_exists",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "database_instance_name",
+          "description": "The name of the DatabaseInstance housing the database.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "database_name",
+          "description": "The name of the database (in an instance) associated with the catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the catalog in UC.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "uid",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the catalog in UC.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "database_instance_name",
+          "description": "The name of the DatabaseInstance housing the database.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "database_name",
+          "description": "The name of the database (in an instance) associated with the catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateDatabaseInstance",
+      "description": "Create a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Create a project](https://docs.databricks.com/api/postgres/v1/create-project).",
+      "summary": "Create a Database Instance.",
+      "path": "/api/2.0/database/instances",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateDatabaseInstanceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "database_instance",
+            "description": "Instance to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseInstance",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "database_instance",
+            "description": "Instance to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseInstance",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "database_instance",
+        "description": "Instance to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DatabaseInstance",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the instance. This is the unique identifier for the instance.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the instance. This is the unique identifier for the instance.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DatabaseInstance",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "database_instance",
+          "description": "Instance to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstance",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the instance. This is the unique identifier for the instance.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the instance. This is the unique identifier for the instance.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "capacity",
+          "description": "The sku of the instance. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "child_instance_refs",
+          "description": "The refs of the child instances. This is only available if the instance is\nparent instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRefList",
+            "array_value": {
+              "pascal_name": "DatabaseInstanceRef",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "creation_time",
+          "description": "The timestamp when the instance was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The email of the creator of the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "Custom tags associated with the instance. This field is only included on create and update responses.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTagList",
+            "array_value": {
+              "pascal_name": "CustomTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "effective_capacity",
+          "description": "Deprecated. The sku of the instance; this field will always match the value of capacity.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_custom_tags",
+          "description": "The recorded custom tags associated with the instance.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTagList",
+            "array_value": {
+              "pascal_name": "CustomTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "effective_enable_pg_native_login",
+          "description": "Whether the instance has PG native password login enabled.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_enable_readable_secondaries",
+          "description": "Whether secondaries serving read-only traffic are enabled. Defaults to false.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_node_count",
+          "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "effective_retention_window_in_days",
+          "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "effective_stopped",
+          "description": "Whether the instance is stopped.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_usage_policy_id",
+          "description": "The policy that is applied to the instance.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_pg_native_login",
+          "description": "Whether to enable PG native password login on the instance. Defaults to false.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "enable_readable_secondaries",
+          "description": "Whether to enable secondaries to serve read-only traffic. Defaults to false.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the instance. This is the unique identifier for the instance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "node_count",
+          "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries. This field is input only, see effective_node_count for the output.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "parent_instance_ref",
+          "description": "The ref of the parent instance. This is only available if the instance is\nchild instance.\nInput: For specifying the parent instance to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRef",
+            "is_object": true
+          }
+        },
+        {
+          "name": "pg_version",
+          "description": "The version of Postgres running on the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_only_dns",
+          "description": "The DNS endpoint to connect to the instance for read only access. This is only available if\nenable_readable_secondaries is true.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_write_dns",
+          "description": "The DNS endpoint to connect to the instance for read+write access.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "retention_window_in_days",
+          "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current state of the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceState",
+            "enum": [
+              {
+                "content": "AVAILABLE"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "FAILING_OVER"
+              },
+              {
+                "content": "STARTING"
+              },
+              {
+                "content": "STOPPED"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stopped",
+          "description": "Whether to stop the instance. An input only param, see effective_stopped for the output.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "uid",
+          "description": "An immutable UUID identifier for the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The desired usage policy to associate with the instance.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the instance. This is the unique identifier for the instance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "AVAILABLE"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "DatabaseInstance"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateDatabaseInstanceRole",
+      "description": "Create a role for a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Create a role](https://docs.databricks.com/api/postgres/v1/create-role).",
+      "summary": "Create a role for a Database Instance.",
+      "path": "/api/2.0/database/instances/{instance_name}/roles",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateDatabaseInstanceRoleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance_role",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseInstanceRole",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "database_instance_role",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseInstanceRole",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "database_instance_role",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DatabaseInstanceRole",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the role. This is the unique identifier for the role in an instance.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the role. This is the unique identifier for the role in an instance.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DatabaseInstanceRole",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the role. This is the unique identifier for the role in an instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the role. This is the unique identifier for the role in an instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "database_instance_name",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "database_instance_role",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRole",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the role. This is the unique identifier for the role in an instance.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the role. This is the unique identifier for the role in an instance.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "attributes",
+          "description": "The desired API-exposed Postgres role attribute to associate with the role. Optional.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRoleAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_attributes",
+          "description": "The attributes that are applied to the role.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRoleAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "identity_type",
+          "description": "The type of the role.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRoleIdentityType",
+            "enum": [
+              {
+                "content": "GROUP"
+              },
+              {
+                "content": "PG_ONLY"
+              },
+              {
+                "content": "SERVICE_PRINCIPAL"
+              },
+              {
+                "content": "USER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "instance_name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "membership_role",
+          "description": "An enum value for a standard role that this role is a member of.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRoleMembershipRole",
+            "enum": [
+              {
+                "content": "DATABRICKS_SUPERUSER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the role. This is the unique identifier for the role in an instance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the role. This is the unique identifier for the role in an instance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateDatabaseTable",
+      "description": "Create a Database Table. Useful for registering pre-existing PG tables in UC.\nSee CreateSyncedDatabaseTable for creating synced tables in PG from a source table in UC.",
+      "summary": "Create a Database Table.",
+      "path": "/api/2.0/database/tables",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateDatabaseTableRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "table",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseTable",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "table",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseTable",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "table",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DatabaseTable",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "Full three-part (catalog, schema, table) name of the table.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "Full three-part (catalog, schema, table) name of the table.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DatabaseTable",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "table",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseTable",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "Full three-part (catalog, schema, table) name of the table.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "Full three-part (catalog, schema, table) name of the table.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "database_instance_name",
+          "description": "Name of the target database instance. This is required when creating database tables in standard catalogs.\nThis is optional when creating database tables in registered catalogs. If this field is specified\nwhen creating database tables in registered catalogs, the database instance name MUST\nmatch that of the registered catalog (or the request will be rejected).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "logical_database_name",
+          "description": "Target Postgres database object (logical database) name for this table.\n\nWhen creating a table in a standard catalog, this field is required.\nIn this scenario, specifying this field will allow targeting an arbitrary postgres database.\n\nRegistration of database tables via /database/tables is currently only supported in standard catalogs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSyncedDatabaseTable",
+      "description": "Create a Synced Database Table.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Create a synced table](https://docs.databricks.com/api/postgres/v1/create-synced-table).",
+      "summary": "Create a Synced Database Table.",
+      "path": "/api/2.0/database/synced_tables",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateSyncedDatabaseTableRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "synced_table",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SyncedDatabaseTable",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "synced_table",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SyncedDatabaseTable",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "synced_table",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "SyncedDatabaseTable",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "Full three-part (catalog, schema, table) name of the table.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "Full three-part (catalog, schema, table) name of the table.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "SyncedDatabaseTable",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "synced_table",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SyncedDatabaseTable",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "Full three-part (catalog, schema, table) name of the table.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "Full three-part (catalog, schema, table) name of the table.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "data_synchronization_status",
+          "description": "Synced Table data synchronization status",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SyncedTableStatus",
+            "is_object": true
+          }
+        },
+        {
+          "name": "database_instance_name",
+          "description": "Name of the target database instance. This is required when creating synced database tables in standard catalogs.\nThis is optional when creating synced database tables in registered catalogs. If this field is specified\nwhen creating synced database tables in registered catalogs, the database instance name MUST\nmatch that of the registered catalog (or the request will be rejected).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_database_instance_name",
+          "description": "The name of the database instance that this table is registered to. This field is always returned, and for\ntables inside database catalogs is inferred database instance associated with the catalog.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_logical_database_name",
+          "description": "The name of the logical database that this table is registered to.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "logical_database_name",
+          "description": "Target Postgres database object (logical database) name for this table.\n\nWhen creating a synced table in a registered Postgres catalog, the\ntarget Postgres database name is inferred to be that of the registered catalog.\nIf this field is specified in this scenario, the Postgres database name MUST\nmatch that of the registered catalog (or the request will be rejected).\n\nWhen creating a synced table in a standard catalog, this field is required.\nIn this scenario, specifying this field will allow targeting an arbitrary postgres database.\nNote that this has implications for the `create_database_objects_is_missing` field in `spec`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spec",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SyncedTableSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "unity_catalog_provisioning_state",
+          "description": "The provisioning state of the synced table entity in Unity Catalog. This is distinct from the\nstate of the data synchronization pipeline (i.e. the table may be in \"ACTIVE\" but the pipeline\nmay be in \"PROVISIONING\" as it runs asynchronously).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ProvisioningInfoState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DEGRADED"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "PROVISIONING"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDatabaseCatalog",
+      "description": "Delete a Database Catalog.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Delete a catalog](https://docs.databricks.com/api/postgres/v1/delete-catalog).",
+      "summary": "Delete a Database Catalog.",
+      "path": "/api/2.0/database/catalogs/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteDatabaseCatalogRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDatabaseInstance",
+      "description": "Delete a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Delete a project](https://docs.databricks.com/api/postgres/v1/delete-project).",
+      "summary": "Delete a Database Instance.",
+      "path": "/api/2.0/database/instances/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteDatabaseInstanceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the instance to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the instance to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "By default, an instance cannot be deleted if it has descendant instances created via PITR. If\nthis flag is specified as true, all descendent instances will be deleted as well.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the instance to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "purge",
+          "description": "Deprecated. Omitting the field or setting it to true will result in the field being hard deleted. Setting a value\nof false will throw a bad request.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the instance to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDatabaseInstanceRole",
+      "description": "Deletes a role for a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Delete a role](https://docs.databricks.com/api/postgres/v1/delete-role).",
+      "summary": "Delete a role for a Database Instance.",
+      "path": "/api/2.0/database/instances/{instance_name}/roles/{name}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteDatabaseInstanceRoleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "This is the AIP standard name for the equivalent of Postgres' `IF EXISTS` option",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "reassign_owned_to",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDatabaseTable",
+      "description": "Delete a Database Table.",
+      "summary": "Delete a Database Table.",
+      "path": "/api/2.0/database/tables/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteDatabaseTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSyncedDatabaseTable",
+      "description": "Delete a Synced Database Table.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Delete a synced table](https://docs.databricks.com/api/postgres/v1/delete-synced-table).",
+      "summary": "Delete a Synced Database Table.",
+      "path": "/api/2.0/database/synced_tables/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteSyncedDatabaseTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "purge_data",
+          "description": "Optional. When set to true, the actual PostgreSQL table will be dropped from the database.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "FindDatabaseInstanceByUid",
+      "description": "Find a Database Instance by uid.",
+      "summary": "Find a Database Instance by uid.",
+      "path": "/api/2.0/database/instances:findByUid",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "FindDatabaseInstanceByUidRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DatabaseInstance",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "uid",
+          "description": "UID of the cluster to get.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenerateDatabaseCredential",
+      "description": "Generates a credential that can be used to access database instances.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Generate a database credential](https://docs.databricks.com/api/postgres/v1/generate-database-credential).",
+      "summary": "Generates a credential that can be used to access database instances.",
+      "path": "/api/2.0/database/credentials",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GenerateDatabaseCredentialRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DatabaseCredential",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "claims",
+          "description": "A set of UC permissions to add to the credential. We verify that the caller has the necessary\npermissions in UC and include a reference in the token. Postgres uses that token to give the\nconnecting user additional grants to the Postgres resources that correspond to the UC resources.\nThe UC resources need to be something that have a Postgres counterpart. For example, a synced table or\na table in a UC database catalog.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RequestedClaimsList",
+            "array_value": {
+              "pascal_name": "RequestedClaims",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "instance_names",
+          "description": "Instances to request a credential for. At least one of instance_names or claims must be specified.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "request_id",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDatabaseCatalog",
+      "description": "Get a Database Catalog.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Get a catalog](https://docs.databricks.com/api/postgres/v1/get-catalog).",
+      "summary": "Get a Database Catalog.",
+      "path": "/api/2.0/database/catalogs/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetDatabaseCatalogRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DatabaseCatalog",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance_name",
+            "description": "The name of the DatabaseInstance housing the database.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_name",
+            "description": "The name of the database (in an instance) associated with the catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance_name",
+            "description": "The name of the DatabaseInstance housing the database.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_name",
+            "description": "The name of the database (in an instance) associated with the catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDatabaseInstance",
+      "description": "Get a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Get a project](https://docs.databricks.com/api/postgres/v1/get-project).",
+      "summary": "Get a Database Instance.",
+      "path": "/api/2.0/database/instances/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetDatabaseInstanceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the cluster to get.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the cluster to get.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DatabaseInstance",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the cluster to get.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the cluster to get.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDatabaseInstanceRole",
+      "description": "Gets a role for a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Get a role](https://docs.databricks.com/api/postgres/v1/get-role).",
+      "summary": "Get a role for a Database Instance.",
+      "path": "/api/2.0/database/instances/{instance_name}/roles/{name}",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetDatabaseInstanceRoleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DatabaseInstanceRole",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the role. This is the unique identifier for the role in an instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the role. This is the unique identifier for the role in an instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDatabaseTable",
+      "description": "Get a Database Table.",
+      "summary": "Get a Database Table.",
+      "path": "/api/2.0/database/tables/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetDatabaseTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DatabaseTable",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSyncedDatabaseTable",
+      "description": "Get a Synced Database Table.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[Get a synced table](https://docs.databricks.com/api/postgres/v1/get-synced-table).",
+      "summary": "Get a Synced Database Table.",
+      "path": "/api/2.0/database/synced_tables/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetSyncedDatabaseTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SyncedDatabaseTable",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListDatabaseCatalogs",
+      "description": "This API is currently unimplemented, but exposed for Terraform support.",
+      "summary": "List all Database Catalogs in a Database Instance.",
+      "path": "/api/2.0/database/instances/{instance_name}/catalogs",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListDatabaseCatalogsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_name",
+            "description": "Name of the instance to get database catalogs for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_name",
+            "description": "Name of the instance to get database catalogs for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListDatabaseCatalogsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "instance_name",
+          "description": "Name of the instance to get database catalogs for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Upper bound for items returned.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page of synced database tables. Requests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_name",
+          "description": "Name of the instance to get database catalogs for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page of synced database tables. Requests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListDatabaseInstanceRoles",
+      "description": "List roles for a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[List roles](https://docs.databricks.com/api/postgres/v1/list-roles).",
+      "summary": "List roles for a Database Instance.",
+      "path": "/api/2.0/database/instances/{instance_name}/roles",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListDatabaseInstanceRolesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListDatabaseInstanceRolesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Upper bound for items returned.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page of Database Instances. Requests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page of Database Instances. Requests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListDatabaseInstances",
+      "description": "List Database Instances.\n\nFor new workloads, Databricks recommends the Postgres API equivalent:\n[List projects](https://docs.databricks.com/api/postgres/v1/list-projects).",
+      "summary": "List Database Instances.",
+      "path": "/api/2.0/database/instances",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListDatabaseInstancesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListDatabaseInstancesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Upper bound for items returned. The maximum value is 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page of Database Instances. Requests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page of Database Instances. Requests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSyncedDatabaseTables",
+      "description": "List synced database tables in a Database Instance.",
+      "summary": "List all synced database tables in a Database Instance.",
+      "path": "/api/2.0/database/instances/{instance_name}/synced_tables",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListSyncedDatabaseTablesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_name",
+            "description": "Name of the instance to get synced tables for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_name",
+            "description": "Name of the instance to get synced tables for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSyncedDatabaseTablesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "instance_name",
+          "description": "Name of the instance to get synced tables for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Upper bound for items returned.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page of synced database tables. Requests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_name",
+          "description": "Name of the instance to get synced tables for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page of synced database tables. Requests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateDatabaseCatalog",
+      "description": "This API is currently unimplemented, but exposed for Terraform support.",
+      "summary": "Update a Database Catalog.",
+      "path": "/api/2.0/database/catalogs/{name}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateDatabaseCatalogRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_catalog",
+            "description": "Note that updating a database catalog is not yet supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseCatalog",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update. Setting this field is not yet supported.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update. Setting this field is not yet supported.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "database_catalog",
+            "description": "Note that updating a database catalog is not yet supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseCatalog",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "database_catalog",
+        "description": "Note that updating a database catalog is not yet supported.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DatabaseCatalog",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the catalog in UC.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_instance_name",
+              "description": "The name of the DatabaseInstance housing the database.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_name",
+              "description": "The name of the database (in an instance) associated with the catalog.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the catalog in UC.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_instance_name",
+              "description": "The name of the DatabaseInstance housing the database.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "database_name",
+              "description": "The name of the database (in an instance) associated with the catalog.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DatabaseCatalog",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance_name",
+            "description": "The name of the DatabaseInstance housing the database.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_name",
+            "description": "The name of the database (in an instance) associated with the catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog in UC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance_name",
+            "description": "The name of the DatabaseInstance housing the database.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_name",
+            "description": "The name of the database (in an instance) associated with the catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "database_catalog",
+          "description": "Note that updating a database catalog is not yet supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseCatalog",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the catalog in UC.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_instance_name",
+                "description": "The name of the DatabaseInstance housing the database.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_name",
+                "description": "The name of the database (in an instance) associated with the catalog.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the catalog in UC.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_instance_name",
+                "description": "The name of the DatabaseInstance housing the database.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "database_name",
+                "description": "The name of the database (in an instance) associated with the catalog.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the catalog in UC.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update. Setting this field is not yet supported.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_database_if_not_exists",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "database_instance_name",
+          "description": "The name of the DatabaseInstance housing the database.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "database_name",
+          "description": "The name of the database (in an instance) associated with the catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the catalog in UC.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "uid",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the catalog in UC.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update. Setting this field is not yet supported.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "database_instance_name",
+          "description": "The name of the DatabaseInstance housing the database.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "database_name",
+          "description": "The name of the database (in an instance) associated with the catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateDatabaseInstance",
+      "description": "Update a Database Instance.\n\nFor new workloads, Databricks recommends the Postgres API equivalents:\n[Update a project](https://docs.databricks.com/api/postgres/v1/update-project) and\n[Update an endpoint](https://docs.databricks.com/api/postgres/v1/update-endpoint).",
+      "summary": "Update a Database Instance.",
+      "path": "/api/2.0/database/instances/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateDatabaseInstanceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "database_instance",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseInstance",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update. If unspecified, all fields will be updated when possible. To wipe out custom_tags,\nspecify custom_tags in the update_mask with an empty custom_tags map.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update. If unspecified, all fields will be updated when possible. To wipe out custom_tags,\nspecify custom_tags in the update_mask with an empty custom_tags map.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "database_instance",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DatabaseInstance",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "database_instance",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DatabaseInstance",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the instance. This is the unique identifier for the instance.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the instance. This is the unique identifier for the instance.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DatabaseInstance",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the instance. This is the unique identifier for the instance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "database_instance",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstance",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the instance. This is the unique identifier for the instance.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the instance. This is the unique identifier for the instance.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the instance. This is the unique identifier for the instance.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update. If unspecified, all fields will be updated when possible. To wipe out custom_tags,\nspecify custom_tags in the update_mask with an empty custom_tags map.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "capacity",
+          "description": "The sku of the instance. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "child_instance_refs",
+          "description": "The refs of the child instances. This is only available if the instance is\nparent instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRefList",
+            "array_value": {
+              "pascal_name": "DatabaseInstanceRef",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "creation_time",
+          "description": "The timestamp when the instance was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The email of the creator of the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "Custom tags associated with the instance. This field is only included on create and update responses.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTagList",
+            "array_value": {
+              "pascal_name": "CustomTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "effective_capacity",
+          "description": "Deprecated. The sku of the instance; this field will always match the value of capacity.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_custom_tags",
+          "description": "The recorded custom tags associated with the instance.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTagList",
+            "array_value": {
+              "pascal_name": "CustomTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "effective_enable_pg_native_login",
+          "description": "Whether the instance has PG native password login enabled.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_enable_readable_secondaries",
+          "description": "Whether secondaries serving read-only traffic are enabled. Defaults to false.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_node_count",
+          "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "effective_retention_window_in_days",
+          "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "effective_stopped",
+          "description": "Whether the instance is stopped.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_usage_policy_id",
+          "description": "The policy that is applied to the instance.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_pg_native_login",
+          "description": "Whether to enable PG native password login on the instance. Defaults to false.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "enable_readable_secondaries",
+          "description": "Whether to enable secondaries to serve read-only traffic. Defaults to false.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the instance. This is the unique identifier for the instance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "node_count",
+          "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries. This field is input only, see effective_node_count for the output.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "parent_instance_ref",
+          "description": "The ref of the parent instance. This is only available if the instance is\nchild instance.\nInput: For specifying the parent instance to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceRef",
+            "is_object": true
+          }
+        },
+        {
+          "name": "pg_version",
+          "description": "The version of Postgres running on the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_only_dns",
+          "description": "The DNS endpoint to connect to the instance for read only access. This is only available if\nenable_readable_secondaries is true.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_write_dns",
+          "description": "The DNS endpoint to connect to the instance for read+write access.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "retention_window_in_days",
+          "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current state of the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatabaseInstanceState",
+            "enum": [
+              {
+                "content": "AVAILABLE"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "FAILING_OVER"
+              },
+              {
+                "content": "STARTING"
+              },
+              {
+                "content": "STOPPED"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stopped",
+          "description": "Whether to stop the instance. An input only param, see effective_stopped for the output.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "uid",
+          "description": "An immutable UUID identifier for the instance.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The desired usage policy to associate with the instance.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the instance. This is the unique identifier for the instance.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update. If unspecified, all fields will be updated when possible. To wipe out custom_tags,\nspecify custom_tags in the update_mask with an empty custom_tags map.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSyncedDatabaseTable",
+      "description": "This API is currently unimplemented, but exposed for Terraform support.",
+      "summary": "Update a Synced Database Table.",
+      "path": "/api/2.0/database/synced_tables/{name}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateSyncedDatabaseTableRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "synced_table",
+            "description": "Note that updating a synced database table is not yet supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SyncedDatabaseTable",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update. Setting this field is not yet supported.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update. Setting this field is not yet supported.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "synced_table",
+            "description": "Note that updating a synced database table is not yet supported.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SyncedDatabaseTable",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "synced_table",
+        "description": "Note that updating a synced database table is not yet supported.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "SyncedDatabaseTable",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "Full three-part (catalog, schema, table) name of the table.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "Full three-part (catalog, schema, table) name of the table.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "SyncedDatabaseTable",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "synced_table",
+          "description": "Note that updating a synced database table is not yet supported.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SyncedDatabaseTable",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "Full three-part (catalog, schema, table) name of the table.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "Full three-part (catalog, schema, table) name of the table.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update. Setting this field is not yet supported.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "data_synchronization_status",
+          "description": "Synced Table data synchronization status",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SyncedTableStatus",
+            "is_object": true
+          }
+        },
+        {
+          "name": "database_instance_name",
+          "description": "Name of the target database instance. This is required when creating synced database tables in standard catalogs.\nThis is optional when creating synced database tables in registered catalogs. If this field is specified\nwhen creating synced database tables in registered catalogs, the database instance name MUST\nmatch that of the registered catalog (or the request will be rejected).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_database_instance_name",
+          "description": "The name of the database instance that this table is registered to. This field is always returned, and for\ntables inside database catalogs is inferred database instance associated with the catalog.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_logical_database_name",
+          "description": "The name of the logical database that this table is registered to.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "logical_database_name",
+          "description": "Target Postgres database object (logical database) name for this table.\n\nWhen creating a synced table in a registered Postgres catalog, the\ntarget Postgres database name is inferred to be that of the registered catalog.\nIf this field is specified in this scenario, the Postgres database name MUST\nmatch that of the registered catalog (or the request will be rejected).\n\nWhen creating a synced table in a standard catalog, this field is required.\nIn this scenario, specifying this field will allow targeting an arbitrary postgres database.\nNote that this has implications for the `create_database_objects_is_missing` field in `spec`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spec",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SyncedTableSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "unity_catalog_provisioning_state",
+          "description": "The provisioning state of the synced table entity in Unity Catalog. This is distinct from the\nstate of the data synchronization pipeline (i.e. the table may be in \"ACTIVE\" but the pipeline\nmay be in \"PROVISIONING\" as it runs asynchronously).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ProvisioningInfoState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DEGRADED"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "PROVISIONING"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update. Setting this field is not yet supported.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

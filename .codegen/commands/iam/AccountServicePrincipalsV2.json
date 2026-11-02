@@ -1,0 +1,506 @@
+{
+  "id": "iam.AccountServicePrincipalsV2",
+  "name": "AccountServicePrincipalsV2",
+  "description": "Identities for use with jobs, automated tools, and systems such as scripts, apps, and\nCI/CD platforms. Databricks recommends creating service principals to run production jobs\nor modify production data. If all processes that act on production data run with service\nprincipals, interactive users do not need any write, delete, or modify privileges in\nproduction. This eliminates the risk of a user overwriting production data by accident.",
+  "package": {
+    "name": "iam"
+  },
+  "is_accounts": true,
+  "docs_group": "iam",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListAccountServicePrincipalsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new service principal in the Databricks account.",
+      "summary": "Create a service principal.",
+      "path": "/api/2.0/accounts/{account_id}/scim/v2/ServicePrincipals",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateAccountServicePrincipalRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "AccountServicePrincipal",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "active",
+          "description": "If this user is active",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "applicationId",
+          "description": "UUID relating to the service principal",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "displayName",
+          "description": "String that represents a concatenation of given and family names.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "externalId",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Databricks service principal ID.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "roles",
+          "description": "Indicates if the group has the admin role.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ComplexValueList",
+            "array_value": {
+              "pascal_name": "ComplexValue",
+              "is_object": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete a single service principal in the Databricks account.",
+      "summary": "Delete a service principal.",
+      "path": "/api/2.0/accounts/{account_id}/scim/v2/ServicePrincipals/{id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteAccountServicePrincipalRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID for a service principal in the Databricks account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID for a service principal in the Databricks account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Unique ID for a service principal in the Databricks account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique ID for a service principal in the Databricks account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets the details for a single service principal define in the Databricks account.",
+      "summary": "Get service principal details.",
+      "path": "/api/2.0/accounts/{account_id}/scim/v2/ServicePrincipals/{id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetAccountServicePrincipalRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID for a service principal in the Databricks account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID for a service principal in the Databricks account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AccountServicePrincipal",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Unique ID for a service principal in the Databricks account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique ID for a service principal in the Databricks account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets the set of service principals associated with a Databricks account.",
+      "summary": "List service principals.",
+      "path": "/api/2.0/accounts/{account_id}/scim/v2/ServicePrincipals",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAccountServicePrincipalsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAccountServicePrincipalsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "attributes",
+          "description": "Comma-separated list of attributes to return in response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "count",
+          "description": "Desired number of results per page. Default is 10000.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "excludedAttributes",
+          "description": "Comma-separated list of attributes to exclude in response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "filter",
+          "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "sortBy",
+          "description": "Attribute to sort the results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "sortOrder",
+          "description": "The order to sort the results.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ListSortOrder",
+            "enum": [
+              {
+                "content": "ascending"
+              },
+              {
+                "content": "descending"
+              }
+            ]
+          }
+        },
+        {
+          "name": "startIndex",
+          "description": "Specifies the index of the first result. First item is number 1.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "pagination": {
+        "offset": {
+          "name": "startIndex",
+          "description": "Specifies the index of the first result. First item is number 1.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        "limit": {
+          "name": "count",
+          "description": "Desired number of results per page. Default is 10000.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Patch",
+      "description": "Partially updates the details of a single service principal in the Databricks account.",
+      "summary": "Update service principal details.",
+      "path": "/api/2.0/accounts/{account_id}/scim/v2/ServicePrincipals/{id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PatchAccountServicePrincipalRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID in the Databricks workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID in the Databricks workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Unique ID in the Databricks workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "Operations",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PatchList",
+            "array_value": {
+              "pascal_name": "Patch",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "schemas",
+          "description": "The schema of the patch request. Must be [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"].",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PatchSchemaList",
+            "array_value": {
+              "pascal_name": "PatchSchema",
+              "enum": [
+                {
+                  "content": "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique ID in the Databricks workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the details of a single service principal.\n\nThis action replaces the existing service principal with the same name.",
+      "summary": "Replace service principal.",
+      "path": "/api/2.0/accounts/{account_id}/scim/v2/ServicePrincipals/{id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateAccountServicePrincipalRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Databricks service principal ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Databricks service principal ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "active",
+          "description": "If this user is active",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "applicationId",
+          "description": "UUID relating to the service principal",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "displayName",
+          "description": "String that represents a concatenation of given and family names.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "externalId",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Databricks service principal ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "roles",
+          "description": "Indicates if the group has the admin role.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ComplexValueList",
+            "array_value": {
+              "pascal_name": "ComplexValue",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Databricks service principal ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,874 @@
+{
+  "id": "compute.InstancePools",
+  "name": "InstancePools",
+  "description": "Instance Pools API are used to create, edit, delete and list instance pools by using\nready-to-use cloud instances which reduces a cluster start and auto-scaling times.\n\nDatabricks pools reduce cluster start and auto-scaling times by maintaining a set of idle,\nready-to-use instances. When a cluster is attached to a pool, cluster nodes are created using\nthe pool’s idle instances. If the pool has no idle instances, the pool expands by allocating\na new instance from the instance provider in order to accommodate the cluster’s request.\nWhen a cluster releases an instance, it returns to the pool and is free for another cluster\nto use. Only clusters attached to a pool can use that pool’s idle instances.\n\nYou can specify a different pool for the driver node and worker nodes, or use the same pool\nfor both.\n\nDatabricks does not charge DBUs while instances are idle in the pool. Instance provider\nbilling does apply. See pricing.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap"
+    },
+    "is_legacy_empty_request": true,
+    "request": {
+      "pascal_name": "ListInstancePoolsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new instance pool using idle and ready-to-use cloud instances.",
+      "summary": "Create a new instance pool.",
+      "path": "/api/2.0/instance-pools/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateInstancePool",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_name",
+            "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "node_type_id",
+            "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "instance_pool_name",
+            "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "node_type_id",
+            "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateInstancePoolResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "aws_attributes",
+          "description": "Attributes related to instance pools running on Amazon Web Services.\nIf not specified at pool creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "InstancePoolAwsAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "azure_attributes",
+          "description": "Attributes related to instance pools running on Azure.\nIf not specified at pool creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "InstancePoolAzureAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "Additional tags for pool resources. Databricks will tag all pool resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "disk_spec",
+          "description": "Defines the specification of the disks that will be attached to all spark containers.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DiskSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "enable_elastic_disk",
+          "description": "Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire\nadditional disk space when its Spark workers are running low on disk space. In AWS, this\nfeature requires specific AWS permissions to function correctly - refer to the User Guide for\nmore details.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "gcp_attributes",
+          "description": "Attributes related to instance pools running on Google Cloud Platform.\nIf not specified at pool creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "InstancePoolGcpAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "idle_instance_autotermination_minutes",
+          "description": "Automatically terminates the extra instances in the pool cache after they are inactive for this\ntime in minutes if min_idle_instances requirement is already met. If not set, the extra pool\ninstances will be automatically terminated after a default timeout. If specified, the\nthreshold must be between 0 and 10000 minutes.\nUsers can also set this value to 0 to instantly remove idle instances from the cache if\nmin cache size could still hold.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "instance_pool_name",
+          "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_capacity",
+          "description": "Maximum number of outstanding instances to keep in the pool, including both instances used by\nclusters and idle instances. Clusters that require further instance provisioning will fail during\nupsize requests.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "min_idle_instances",
+          "description": "Minimum number of idle instances to keep in the instance pool",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "node_type_flexibility",
+          "description": "Flexible node type configuration for the pool.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NodeTypeFlexibility",
+            "is_object": true
+          }
+        },
+        {
+          "name": "node_type_id",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "preloaded_docker_images",
+          "description": "Custom Docker Image BYOC",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DockerImageList",
+            "array_value": {
+              "pascal_name": "DockerImage",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "preloaded_spark_versions",
+          "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "remote_disk_throughput",
+          "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED types.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "total_initial_remote_disk_size",
+          "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED types.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_name",
+          "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "node_type_id",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes the instance pool permanently. The idle instances in the pool are terminated asynchronously.",
+      "summary": "Delete an instance pool.",
+      "path": "/api/2.0/instance-pools/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteInstancePool",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool to be terminated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool to be terminated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteInstancePoolResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool to be terminated.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool to be terminated.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edit",
+      "description": "Modifies the configuration of an existing instance pool.",
+      "summary": "Edit an existing instance pool.",
+      "path": "/api/2.0/instance-pools/edit",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EditInstancePool",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "Instance pool ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instance_pool_name",
+            "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "node_type_id",
+            "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "Instance pool ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instance_pool_name",
+            "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "node_type_id",
+            "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EditInstancePoolResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "custom_tags",
+          "description": "Additional tags for pool resources. Databricks will tag all pool resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "idle_instance_autotermination_minutes",
+          "description": "Automatically terminates the extra instances in the pool cache after they are inactive for this\ntime in minutes if min_idle_instances requirement is already met. If not set, the extra pool\ninstances will be automatically terminated after a default timeout. If specified, the\nthreshold must be between 0 and 10000 minutes.\nUsers can also set this value to 0 to instantly remove idle instances from the cache if\nmin cache size could still hold.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "instance_pool_id",
+          "description": "Instance pool ID",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instance_pool_name",
+          "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_capacity",
+          "description": "Maximum number of outstanding instances to keep in the pool, including both instances used by\nclusters and idle instances. Clusters that require further instance provisioning will fail during\nupsize requests.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "min_idle_instances",
+          "description": "Minimum number of idle instances to keep in the instance pool",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "node_type_id",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "remote_disk_throughput",
+          "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED types.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "total_initial_remote_disk_size",
+          "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED types.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_id",
+          "description": "Instance pool ID",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instance_pool_name",
+          "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "node_type_id",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Retrieve the information for an instance pool based on its identifier.",
+      "summary": "Get instance pool information.",
+      "path": "/api/2.0/instance-pools/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetInstancePoolRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The canonical unique identifier for the instance pool.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The canonical unique identifier for the instance pool.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetInstancePool",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "Canonical unique identifier for the pool.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "Canonical unique identifier for the pool.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "instance_pool_id",
+          "description": "The canonical unique identifier for the instance pool.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_id",
+          "description": "The canonical unique identifier for the instance pool.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get instance pool permission levels.",
+      "path": "/api/2.0/permissions/instance-pools/{instance_pool_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetInstancePoolPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetInstancePoolPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of an instance pool. Instance pools can inherit permissions from their root object.",
+      "summary": "Get instance pool permissions.",
+      "path": "/api/2.0/permissions/instance-pools/{instance_pool_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetInstancePoolPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "InstancePoolPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets a list of instance pools with their statistics.",
+      "summary": "List instance pool info.",
+      "path": "/api/2.0/instance-pools/list",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListInstancePoolsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListInstancePools",
+        "is_object": true
+      },
+      "pagination": {}
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set instance pool permissions.",
+      "path": "/api/2.0/permissions/instance-pools/{instance_pool_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "InstancePoolPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "InstancePoolPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "InstancePoolAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "InstancePoolAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on an instance pool. Instance pools can inherit permissions from their root object.",
+      "summary": "Update instance pool permissions.",
+      "path": "/api/2.0/permissions/instance-pools/{instance_pool_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "InstancePoolPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "instance_pool_id",
+            "description": "The instance pool for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "InstancePoolPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "InstancePoolAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "InstancePoolAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_pool_id",
+          "description": "The instance pool for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

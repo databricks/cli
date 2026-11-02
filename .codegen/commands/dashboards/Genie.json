@@ -1,0 +1,4416 @@
+{
+  "id": "dashboards.Genie",
+  "name": "Genie",
+  "description": "Genie provides a no-code experience for business users, powered by AI/BI. Analysts set up spaces that business users can use to ask questions using natural language. Genie uses data registered to Unity Catalog and requires at least CAN USE permission on a Pro or Serverless SQL warehouse. Also, Databricks Assistant must be enabled.",
+  "package": {
+    "name": "dashboards"
+  },
+  "docs_group": "dashboards",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CreateMessage",
+      "description": "Sends a new message in a chat-mode [conversation](:method:genie/startconversation).\nThe AI response uses all previously created messages in the conversation to respond.",
+      "summary": "Chat mode: Send a message.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieCreateConversationMessageRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the conversation is started.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "User message content.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the conversation is started.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "content",
+            "description": "User message content.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieMessage",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "User message content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "User message content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "content",
+          "description": "User message content.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_visualization",
+          "description": "Enable visualization generation.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the conversation is started.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the conversation is started.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "content",
+          "description": "User message content.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "COMPLETED"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "GenieMessage"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "Status"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateMessageComment",
+      "description": "Create a comment on a conversation message.",
+      "summary": "Add a comment to a message.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/comments",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GenieCreateMessageCommentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "Comment text content.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "content",
+            "description": "Comment text content.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieMessageComment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_comment_id",
+            "description": "Comment ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "Comment text content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_comment_id",
+            "description": "Comment ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "Comment text content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "content",
+          "description": "Comment text content.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "content",
+          "description": "Comment text content.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSpace",
+      "description": "Creates a Genie space from a serialized payload.",
+      "summary": "Create a Genie space.",
+      "path": "/api/2.0/genie/spaces",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieCreateSpaceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "Warehouse to associate with the new space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "serialized_space",
+            "description": "The contents of the Genie Space in serialized string form.\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "Warehouse to associate with the new space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "serialized_space",
+            "description": "The contents of the Genie Space in serialized string form.\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieSpace",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "title",
+            "description": "Title of the Genie Space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "title",
+            "description": "Title of the Genie Space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "Optional description",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "Parent folder path where the space will be registered",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serialized_space",
+          "description": "The contents of the Genie Space in serialized string form.\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "title",
+          "description": "Optional title override",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "Warehouse to associate with the new space",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "warehouse_id",
+          "description": "Warehouse to associate with the new space",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serialized_space",
+          "description": "The contents of the Genie Space in serialized string form.\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteConversation",
+      "description": "Delete a conversation.",
+      "summary": "Delete a conversation.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieDeleteConversationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the conversation is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID of the conversation to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the conversation is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID of the conversation to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "The ID of the conversation to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the conversation is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the conversation is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID of the conversation to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteConversationMessage",
+      "description": "Delete a conversation message.",
+      "summary": "Delete a conversation message.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieDeleteConversationMessageRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the message is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the message is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the message is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the message is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DownloadMessageAttachmentVisualization",
+      "description": "Download a rendered image of a message visualization attachment.\nThe response body is the raw PNG image, not a JSON payload.\nThis is only available if the attachment is a visualization and the message status is `COMPLETED`.",
+      "summary": "Download an attachment visualization.",
+      "path": "/api/2.0/genie/{name=spaces/*/conversations/*/messages/*/attachments/*}/download-visualization",
+      "is_crud_read": true,
+      "is_response_byte_stream": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DownloadMessageAttachmentVisualizationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DownloadMessageAttachmentVisualizationResponse",
+        "is_object": true
+      },
+      "response_body_field": {
+        "pascal_name": "Contents"
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the attachment to render, in the format\n`spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ExecuteMessageAttachmentQuery",
+      "description": "Execute the SQL for a message query attachment. Use this API when the query attachment has expired and needs to be re-executed.",
+      "summary": "Execute an attachment SQL query.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}/execute-query",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieExecuteMessageAttachmentQueryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieGetMessageQueryResultResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ExecuteMessageQuery",
+      "description": "DEPRECATED: Use [Execute Message Attachment Query](:method:genie/executemessageattachmentquery) instead.",
+      "summary": "[Deprecated] Execute SQL query in a conversation message.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/execute-query",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GenieExecuteMessageQueryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieGetMessageQueryResultResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenerateDownloadFullQueryResult",
+      "description": "Initiates a new SQL execution and returns a `download_id` and `download_id_signature` that you can use to track the progress of the download.\nThe query result is stored in an external link and can be retrieved using the [Get Download Full Query Result](:method:genie/getdownloadfullqueryresult) API.\nBoth `download_id` and `download_id_signature` must be provided when calling the Get endpoint.\n\n----\n\n### **Warning: Databricks strongly recommends that you protect the URLs that are returned by the `EXTERNAL_LINKS` disposition.**\n\nWhen you use the `EXTERNAL_LINKS` disposition, a short-lived cloud-storage URL is generated to download the\nresults. The URL contains temporary access credentials, so protect it and do not set an `Authorization` header in\nthe download request.\n\nSee [Execute Statement](:method:statementexecution/executestatement) for more details.\n\n----",
+      "summary": "Start a full query-result download.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}/downloads",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieGenerateDownloadFullQueryResultRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieGenerateDownloadFullQueryResultResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenieCancelResponse",
+      "description": "Cancels an in-flight agent-mode response. `response_id` is the id returned in the\n`response.created` event from the agent-mode responses endpoint. The response stops at\nthe next agent boundary and its terminal state is returned.",
+      "summary": "Agent mode: Cancel a response.",
+      "path": "/api/2.0/genie/agents/{agent_id}/conversations/{conversation_id}/responses/{response_id}/cancel",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieCancelResponseRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "agent_id",
+            "description": "The ID of the Genie agent (synonymous with the Genie space ID).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID of the conversation containing the response.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "response_id",
+            "description": "The ID of the response to cancel (the id from the `response.created` event).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "agent_id",
+            "description": "The ID of the Genie agent (synonymous with the Genie space ID).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID of the conversation containing the response.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "response_id",
+            "description": "The ID of the response to cancel (the id from the `response.created` event).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieMessage",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "User message content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "User message content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "agent_id",
+          "description": "The ID of the Genie agent (synonymous with the Genie space ID).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID of the conversation containing the response.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "response_id",
+          "description": "The ID of the response to cancel (the id from the `response.created` event).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "agent_id",
+          "description": "The ID of the Genie agent (synonymous with the Genie space ID).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID of the conversation containing the response.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "response_id",
+          "description": "The ID of the response to cancel (the id from the `response.created` event).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenieCreateEvalRun",
+      "description": "Creates and runs chat-mode evaluations for multiple benchmark questions in a Genie space.",
+      "summary": "Start a benchmark evaluation run.",
+      "path": "/api/2.0/genie/spaces/{space_id}/eval-runs",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GenieCreateEvalRunRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluations will be executed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluations will be executed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieEvalRunResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "benchmark_question_ids",
+          "description": "List of benchmark question IDs to evaluate. These questions must exist in the specified Genie space. If none are specified, then all benchmark questions are evaluated.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluations will be executed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluations will be executed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenieGetEvalResultDetails",
+      "description": "Get details for evaluation results.",
+      "summary": "Get benchmark evaluation result details.",
+      "path": "/api/2.0/genie/spaces/{space_id}/eval-runs/{eval_run_id}/results/{result_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GenieGetEvalResultDetailsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "result_id",
+            "description": "The unique identifier for the evaluation result.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "result_id",
+            "description": "The unique identifier for the evaluation result.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieEvalResultDetails",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "result_id",
+            "description": "The unique identifier for the evaluation result.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "space_id",
+            "description": "The ID of the space the evaluation result belongs to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "benchmark_question_id",
+            "description": "The ID of the benchmark question that was evaluated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "result_id",
+            "description": "The unique identifier for the evaluation result.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "space_id",
+            "description": "The ID of the space the evaluation result belongs to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "benchmark_question_id",
+            "description": "The ID of the benchmark question that was evaluated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "eval_run_id",
+          "description": "The unique identifier for the evaluation run.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "result_id",
+          "description": "The unique identifier for the evaluation result.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "eval_run_id",
+          "description": "The unique identifier for the evaluation run.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "result_id",
+          "description": "The unique identifier for the evaluation result.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenieGetEvalRun",
+      "description": "Get evaluation run details.",
+      "summary": "Get a benchmark evaluation run.",
+      "path": "/api/2.0/genie/spaces/{space_id}/eval-runs/{eval_run_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GenieGetEvalRunRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "eval_run_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "eval_run_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieEvalRunResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "eval_run_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "eval_run_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenieListEvalResults",
+      "description": "List evaluation results for a specific evaluation run.",
+      "summary": "List results for a benchmark evaluation run.",
+      "path": "/api/2.0/genie/spaces/{space_id}/eval-runs/{eval_run_id}/results",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GenieListEvalResultsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "eval_run_id",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieListEvalResultsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "eval_run_id",
+          "description": "The unique identifier for the evaluation run.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of eval results to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque token to retrieve the next page of results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "eval_run_id",
+          "description": "The unique identifier for the evaluation run.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GenieListEvalRuns",
+      "description": "Lists all evaluation runs in a space.",
+      "summary": "List benchmark evaluation runs.",
+      "path": "/api/2.0/genie/spaces/{space_id}/eval-runs",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GenieListEvalRunsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the evaluation run is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieListEvalRunsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of evaluation runs to return per page",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token to get the next page of results",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the evaluation run is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDownloadFullQueryResult",
+      "description": "After [Generating a Full Query Result Download](:method:genie/generatedownloadfullqueryresult) and successfully receiving a `download_id` and `download_id_signature`, use this API to poll the download progress.\nBoth `download_id` and `download_id_signature` are required to call this endpoint.\nWhen the download is complete, the API returns the result in the `EXTERNAL_LINKS` disposition, containing one or more external links to the query result files.\n\n----\n\n### **Warning: Databricks strongly recommends that you protect the URLs that are returned by the `EXTERNAL_LINKS` disposition.**\n\nWhen you use the `EXTERNAL_LINKS` disposition, a short-lived cloud-storage URL is generated to download the\nresults. The URL contains temporary access credentials, so protect it and do not set an `Authorization` header in\nthe download request.\n\nSee [Execute Statement](:method:statementexecution/executestatement) for more details.\n\n----",
+      "summary": "Get full query-result download status.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}/downloads/{download_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieGetDownloadFullQueryResultRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "download_id",
+            "description": "Download ID. This ID is provided by the [Generate Download endpoint](:method:genie/generateDownloadFullQueryResult)",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "download_id_signature",
+            "description": "JWT signature for the download_id to ensure secure access to query results",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "download_id",
+            "description": "Download ID. This ID is provided by the [Generate Download endpoint](:method:genie/generateDownloadFullQueryResult)",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "download_id_signature",
+            "description": "JWT signature for the download_id to ensure secure access to query results",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieGetDownloadFullQueryResultResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "download_id",
+          "description": "Download ID. This ID is provided by the [Generate Download endpoint](:method:genie/generateDownloadFullQueryResult)",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "download_id_signature",
+          "description": "JWT signature for the download_id to ensure secure access to query results",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "download_id",
+          "description": "Download ID. This ID is provided by the [Generate Download endpoint](:method:genie/generateDownloadFullQueryResult)",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "download_id_signature",
+          "description": "JWT signature for the download_id to ensure secure access to query results",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMessage",
+      "description": "Gets a message from a chat-mode or agent-mode conversation.\nFor a complete agent-mode transcript, use the List conversation items endpoint.",
+      "summary": "Get a conversation message.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieGetConversationMessageRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the target conversation is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the target conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the target message from the identified conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the target conversation is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the target conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the target message from the identified conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieMessage",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "User message content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "User message content",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the target conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the target message from the identified conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the target conversation is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the target conversation is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the target conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the target message from the identified conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMessageAttachmentQueryResult",
+      "description": "Get the result of SQL query if the message has a query attachment.\nThis is only available if a message has a query attachment and the message status is `EXECUTING_QUERY` OR `COMPLETED`.",
+      "summary": "Get an attachment SQL result.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}/query-result",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieGetMessageAttachmentQueryResultRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieGetMessageQueryResultResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMessageQueryResult",
+      "description": "DEPRECATED: Use [Get Message Attachment Query Result](:method:genie/getmessageattachmentqueryresult) instead.",
+      "summary": "[Deprecated] Get conversation message SQL query result.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/query-result",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GenieGetMessageQueryResultRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieGetMessageQueryResultResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMessageQueryResultByAttachment",
+      "description": "DEPRECATED: Use [Get Message Attachment Query Result](:method:genie/getmessageattachmentqueryresult) instead.",
+      "summary": "[Deprecated] Get conversation message SQL query result.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/query-result/{attachment_id}",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GenieGetQueryResultByAttachmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "attachment_id",
+            "description": "Attachment ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieGetMessageQueryResultResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "Conversation ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "Message ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "attachment_id",
+          "description": "Attachment ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSpace",
+      "description": "Get details of a Genie Space.",
+      "summary": "Get a Genie space.",
+      "path": "/api/2.0/genie/spaces/{space_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieGetSpaceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieSpace",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "title",
+            "description": "Title of the Genie Space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "title",
+            "description": "Title of the Genie Space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "include_serialized_space",
+          "description": "Whether to include the serialized space export in the response.\nRequires at least CAN EDIT permission on the space.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListConversationComments",
+      "description": "List all comments across all messages in a conversation.",
+      "summary": "List all comments in a conversation.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/list-comments",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GenieListConversationCommentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieListConversationCommentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of comments to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token for getting the next page of results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListConversationMessages",
+      "description": "Lists messages in a chat-mode or agent-mode conversation.\nAgent-mode messages are returned as GenieMessage projections. Use the List conversation items\nendpoint for the complete reasoning and tool-call history.",
+      "summary": "List conversation messages.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieListConversationMessagesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the conversation is located",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID of the conversation to list messages from",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the conversation is located",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID of the conversation to list messages from",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieListConversationMessagesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "The ID of the conversation to list messages from",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of messages to return per page",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token to get the next page of results",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the conversation is located",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the conversation is located",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID of the conversation to list messages from",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListConversations",
+      "description": "Get a list of conversations in a Genie Space.",
+      "summary": "List conversations.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieListConversationsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID of the Genie space to retrieve conversations from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID of the Genie space to retrieve conversations from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieListConversationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_all",
+          "description": "Include all conversations in the space across all users.\nRequires at least CAN MANAGE permission on the space.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of conversations to return per page",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token to get the next page of results",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID of the Genie space to retrieve conversations from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID of the Genie space to retrieve conversations from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListMessageComments",
+      "description": "List comments on a specific conversation message.",
+      "summary": "List comments on a message.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/comments",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GenieListMessageCommentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieListMessageCommentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of comments to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token for getting the next page of results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListSpaces",
+      "description": "Get list of Genie Spaces.",
+      "summary": "List Genie spaces.",
+      "path": "/api/2.0/genie/spaces",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieListSpacesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GenieListSpacesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of spaces to return per page",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token for getting the next page of results",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SendMessageFeedback",
+      "description": "Sends feedback for a message in a chat-mode or agent-mode conversation.",
+      "summary": "Send feedback on a message.",
+      "path": "/api/2.0/genie/spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/feedback",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieSendMessageFeedbackRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the message is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message to provide feedback for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rating",
+            "description": "The rating (POSITIVE, NEGATIVE, or NONE).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "GenieFeedbackRating",
+              "enum": [
+                {
+                  "content": "NEGATIVE"
+                },
+                {
+                  "content": "NONE"
+                },
+                {
+                  "content": "POSITIVE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where the message is located.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "The ID associated with the conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "message_id",
+            "description": "The ID associated with the message to provide feedback for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "rating",
+            "description": "The rating (POSITIVE, NEGATIVE, or NONE).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "GenieFeedbackRating",
+              "enum": [
+                {
+                  "content": "NEGATIVE"
+                },
+                {
+                  "content": "NONE"
+                },
+                {
+                  "content": "POSITIVE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "Optional text feedback that will be stored as a comment.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message to provide feedback for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rating",
+          "description": "The rating (POSITIVE, NEGATIVE, or NONE).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "GenieFeedbackRating",
+            "enum": [
+              {
+                "content": "NEGATIVE"
+              },
+              {
+                "content": "NONE"
+              },
+              {
+                "content": "POSITIVE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the message is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where the message is located.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "conversation_id",
+          "description": "The ID associated with the conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message_id",
+          "description": "The ID associated with the message to provide feedback for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rating",
+          "description": "The rating (POSITIVE, NEGATIVE, or NONE).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "GenieFeedbackRating",
+            "enum": [
+              {
+                "content": "NEGATIVE"
+              },
+              {
+                "content": "NONE"
+              },
+              {
+                "content": "POSITIVE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "StartConversation",
+      "description": "Starts a new chat-mode conversation and sends its first message.",
+      "summary": "Chat mode: Start a conversation.",
+      "path": "/api/2.0/genie/spaces/{space_id}/start-conversation",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieStartConversationMessageRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where you want to start a conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "content",
+            "description": "The text of the message that starts the conversation.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space where you want to start a conversation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "content",
+            "description": "The text of the message that starts the conversation.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieStartConversationResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "message_id",
+            "description": "Message ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "conversation_id",
+            "description": "Conversation ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "content",
+          "description": "The text of the message that starts the conversation.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_visualization",
+          "description": "Enable visualization generation.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where you want to start a conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space where you want to start a conversation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "content",
+          "description": "The text of the message that starts the conversation.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "COMPLETED"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "GenieMessage"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "Status"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TrashSpace",
+      "description": "Move a Genie Space to the trash.",
+      "summary": "Trash a Genie space.",
+      "path": "/api/2.0/genie/spaces/{space_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieTrashSpaceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space to be sent to the trash.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "The ID associated with the Genie space to be sent to the trash.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space to be sent to the trash.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "The ID associated with the Genie space to be sent to the trash.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSpace",
+      "description": "Updates a Genie space with a serialized payload.",
+      "summary": "Update a Genie space.",
+      "path": "/api/2.0/genie/spaces/{space_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GenieUpdateSpaceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GenieSpace",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "title",
+            "description": "Title of the Genie Space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "space_id",
+            "description": "Genie space ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "title",
+            "description": "Title of the Genie Space",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "Optional description",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "ETag returned by a previous GET or UPDATE. When set, the update will fail if the space\nhas been modified since. Omit to apply the update unconditionally.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "Parent workspace folder path to move this Genie space under.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serialized_space",
+          "description": "The contents of the Genie Space in serialized string form (full replacement).\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "title",
+          "description": "Optional title override",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "Optional warehouse override",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "space_id",
+          "description": "Genie space ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

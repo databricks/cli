@@ -1,0 +1,253 @@
+{
+  "id": "settings.AibiDashboardEmbeddingAccessPolicy",
+  "name": "AibiDashboardEmbeddingAccessPolicy",
+  "description": "Controls whether AI/BI published dashboard embedding is enabled, conditionally enabled, or disabled at the workspace level.\nBy default, this setting is conditionally enabled (ALLOW_APPROVED_DOMAINS).",
+  "package": {
+    "name": "settings"
+  },
+  "has_parent": true,
+  "docs_group": "settings",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "parent_service_id": "settings.Settings",
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Delete the AI/BI dashboard embedding access policy, reverting back to the default.",
+      "summary": "Delete the AI/BI dashboard embedding access policy.",
+      "path": "/api/2.0/settings/types/aibi_dash_embed_ws_acc_policy/names/default",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteAibiDashboardEmbeddingAccessPolicySettingRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DeleteAibiDashboardEmbeddingAccessPolicySettingResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Retrieves the AI/BI dashboard embedding access policy.\nThe default setting is ALLOW_APPROVED_DOMAINS, permitting AI/BI dashboards to be embedded on approved domains.",
+      "summary": "Retrieve the AI/BI dashboard embedding access policy.",
+      "path": "/api/2.0/settings/types/aibi_dash_embed_ws_acc_policy/names/default",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetAibiDashboardEmbeddingAccessPolicySettingRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "AibiDashboardEmbeddingAccessPolicySetting",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "aibi_dashboard_embedding_access_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AibiDashboardEmbeddingAccessPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "aibi_dashboard_embedding_access_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AibiDashboardEmbeddingAccessPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the AI/BI dashboard embedding access policy at the workspace level.",
+      "summary": "Update the AI/BI dashboard embedding access policy.",
+      "path": "/api/2.0/settings/types/aibi_dash_embed_ws_acc_policy/names/default",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateAibiDashboardEmbeddingAccessPolicySettingRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AibiDashboardEmbeddingAccessPolicySetting",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AibiDashboardEmbeddingAccessPolicySetting",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AibiDashboardEmbeddingAccessPolicySetting",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "aibi_dashboard_embedding_access_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AibiDashboardEmbeddingAccessPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "aibi_dashboard_embedding_access_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AibiDashboardEmbeddingAccessPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "field_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "setting",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AibiDashboardEmbeddingAccessPolicySetting",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

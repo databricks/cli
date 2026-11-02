@@ -1,0 +1,297 @@
+{
+  "id": "catalog.OnlineTables",
+  "name": "OnlineTables",
+  "description": "Online tables provide lower latency and higher QPS access to data from Delta tables.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a new Online Table.",
+      "summary": "Create an Online Table.",
+      "path": "/api/2.0/online-tables",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateOnlineTableRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "table",
+            "description": "Specification of the online table to be created.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "OnlineTable",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "table",
+            "description": "Specification of the online table to be created.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "OnlineTable",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "table",
+        "description": "Specification of the online table to be created.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "OnlineTable",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "OnlineTable",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "table",
+          "description": "Specification of the online table to be created.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "OnlineTable",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spec",
+          "description": "Specification of the online table.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "OnlineTableSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Online Table data synchronization status",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "OnlineTableStatus",
+            "is_object": true
+          }
+        },
+        {
+          "name": "table_serving_url",
+          "description": "Data serving REST API URL for this table",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "unity_catalog_provisioning_state",
+          "description": "The provisioning state of the online table entity in Unity Catalog. This is distinct from the\nstate of the data synchronization pipeline (i.e. the table may be in \"ACTIVE\" but the pipeline\nmay be in \"PROVISIONING\" as it runs asynchronously).",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ProvisioningInfoState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DEGRADED"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "PROVISIONING"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "ACTIVE"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "OnlineTable"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "UnityCatalogProvisioningState"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Delete",
+      "description": "Delete an online table.\nWarning: This will delete all the data in the online table. If the source Delta table was\ndeleted or modified since this Online Table was created, this will lose the data forever!",
+      "summary": "Delete an Online Table.",
+      "path": "/api/2.0/online-tables/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteOnlineTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get information about an existing online table and its status.",
+      "summary": "Get an Online Table.",
+      "path": "/api/2.0/online-tables/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetOnlineTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full three-part (catalog, schema, table) name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "OnlineTable",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full three-part (catalog, schema, table) name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

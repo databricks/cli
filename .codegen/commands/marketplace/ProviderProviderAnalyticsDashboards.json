@@ -1,0 +1,248 @@
+{
+  "id": "marketplace.ProviderProviderAnalyticsDashboards",
+  "name": "ProviderProviderAnalyticsDashboards",
+  "description": "Manage templated analytics solution for providers.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create provider analytics dashboard. Returns Marketplace specific `id`. Not to be confused with the Lakeview dashboard id.",
+      "summary": "Create provider analytics dashboard.",
+      "path": "/api/2.0/marketplace-provider/analytics_dashboard",
+      "is_legacy_empty_request": true,
+      "is_crud_create": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateProviderAnalyticsDashboardRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ProviderAnalyticsDashboard",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Get",
+      "description": "Get provider analytics dashboard.",
+      "summary": "Get provider analytics dashboard.",
+      "path": "/api/2.0/marketplace-provider/analytics_dashboard",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListProviderAnalyticsDashboardRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListProviderAnalyticsDashboardResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "dashboard_id",
+            "description": "dashboard_id will be used to open Lakeview dashboard.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "dashboard_id",
+            "description": "dashboard_id will be used to open Lakeview dashboard.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GetLatestVersion",
+      "description": "Get latest version of provider analytics dashboard.",
+      "summary": "Get latest version of provider analytics dashboard.",
+      "path": "/api/2.0/marketplace-provider/analytics_dashboard/latest",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetLatestVersionProviderAnalyticsDashboardRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetLatestVersionProviderAnalyticsDashboardResponse",
+        "is_object": true
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Update provider analytics dashboard.",
+      "summary": "Update provider analytics dashboard.",
+      "path": "/api/2.0/marketplace-provider/analytics_dashboard/{id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateProviderAnalyticsDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "id is immutable property and can't be updated.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "id is immutable property and can't be updated.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateProviderAnalyticsDashboardResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "id \u0026 version should be the same as the request",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "dashboard_id",
+            "description": "this is newly created Lakeview dashboard for the user",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "id",
+            "description": "id \u0026 version should be the same as the request",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "dashboard_id",
+            "description": "this is newly created Lakeview dashboard for the user",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "id is immutable property and can't be updated.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "this is the version of the dashboard template we want to update our user to\ncurrent expectation is that it should be equal to latest version of the dashboard template",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "id is immutable property and can't be updated.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

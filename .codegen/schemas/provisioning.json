@@ -1,0 +1,1117 @@
+{
+  "provisioning.AwsCredentials": {
+    "fields": {
+      "sts_role": {
+        "ref": "provisioning.StsRole",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.AwsKeyInfo": {
+    "fields": {
+      "key_alias": {
+        "description": "The AWS KMS key alias.",
+        "launch_stage": "GA"
+      },
+      "key_arn": {
+        "description": "The AWS KMS key's Amazon Resource Name (ARN).",
+        "launch_stage": "GA"
+      },
+      "key_region": {
+        "description": "The AWS KMS key region.",
+        "launch_stage": "GA"
+      },
+      "reuse_key_for_cluster_volumes": {
+        "description": "This field applies only if the `use_cases` property includes `STORAGE`. If this is set to true or omitted, the key is also used to encrypt\ncluster EBS volumes. If you do not want to use this key for encrypting EBS volumes, set to false.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.AzureKeyInfo": {
+    "fields": {
+      "disk_encryption_set_id": {
+        "description": "The Disk Encryption Set id that is used to represent the key info used for\nManaged Disk BYOK use case",
+        "launch_stage": "GA"
+      },
+      "key_access_configuration": {
+        "description": "The structure to store key access credential\nThis is set if the Managed Identity is being used to access the Azure Key Vault key.",
+        "ref": "provisioning.KeyAccessConfiguration",
+        "launch_stage": "GA"
+      },
+      "key_name": {
+        "description": "The name of the key in KeyVault.",
+        "launch_stage": "GA"
+      },
+      "key_vault_uri": {
+        "description": "The base URI of the KeyVault.",
+        "launch_stage": "GA"
+      },
+      "tenant_id": {
+        "description": "The tenant id where the KeyVault lives.",
+        "launch_stage": "GA"
+      },
+      "version": {
+        "description": "The current key version.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.AzureWorkspaceInfo": {
+    "fields": {
+      "resource_group": {
+        "description": "Azure Resource Group name",
+        "launch_stage": "GA"
+      },
+      "subscription_id": {
+        "description": "Azure Subscription ID",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CloudResourceContainer": {
+    "fields": {
+      "gcp": {
+        "ref": "provisioning.CustomerFacingGcpCloudResourceContainer",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateAwsKeyInfo": {
+    "fields": {
+      "key_alias": {
+        "description": "The AWS KMS key alias.",
+        "launch_stage": "GA"
+      },
+      "key_arn": {
+        "description": "The AWS KMS key's Amazon Resource Name (ARN).",
+        "launch_stage": "GA"
+      },
+      "key_region": {
+        "description": "The AWS KMS key region.",
+        "launch_stage": "GA"
+      },
+      "reuse_key_for_cluster_volumes": {
+        "description": "This field applies only if the `use_cases` property includes `STORAGE`. If this is set to true or omitted, the key is also used to encrypt\ncluster EBS volumes. If you do not want to use this key for encrypting EBS volumes, set to false.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateAzureKeyInfo": {
+    "fields": {
+      "disk_encryption_set_id": {
+        "description": "The Disk Encryption Set id that is used to represent the key info used for\nManaged Disk BYOK use case",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "key_access_configuration": {
+        "description": "The structure to store key access credential\nThis is set if the Managed Identity is being used to access the Azure Key Vault key.",
+        "ref": "provisioning.KeyAccessConfiguration",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "key_name": {
+        "description": "The name of the key in KeyVault.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "key_vault_uri": {
+        "description": "The base URI of the KeyVault.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "tenant_id": {
+        "description": "The tenant id where the KeyVault lives.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "version": {
+        "description": "The current key version.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "provisioning.CreateCredentialAwsCredentials": {
+    "fields": {
+      "sts_role": {
+        "ref": "provisioning.CreateCredentialStsRole",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateCredentialRequest": {
+    "fields": {
+      "aws_credentials": {
+        "ref": "provisioning.CreateCredentialAwsCredentials",
+        "launch_stage": "GA"
+      },
+      "credentials_name": {
+        "description": "The human-readable name of the credential configuration object.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateCredentialStsRole": {
+    "fields": {
+      "role_arn": {
+        "description": "The Amazon Resource Name (ARN) of the cross account IAM role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateCustomerManagedKeyRequest": {
+    "fields": {
+      "aws_key_info": {
+        "ref": "provisioning.CreateAwsKeyInfo",
+        "launch_stage": "GA"
+      },
+      "azure_key_info": {
+        "ref": "provisioning.CreateAzureKeyInfo",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "gcp_key_info": {
+        "ref": "provisioning.CreateGcpKeyInfo",
+        "launch_stage": "GA"
+      },
+      "use_cases": {
+        "description": "The cases that the key can be used for.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateGcpKeyInfo": {
+    "fields": {
+      "gcp_service_account": {
+        "description": "Globally unique service account email that has access to the KMS key.\nThe service account exists within the Databricks CP project.",
+        "ref": "provisioning.GcpServiceAccount",
+        "launch_stage": "GA"
+      },
+      "kms_key_id": {
+        "description": "Globally unique kms key resource id of the form\nprojects/testProjectId/locations/us-east4/keyRings/gcpCmkKeyRing/cryptoKeys/cmk-eastus4",
+        "launch_stage": "GA"
+      },
+      "manual": {
+        "description": "When true, Databricks will not use OAuth to grant the service account\naccess to the KMS key. The customer is responsible for granting access\nmanually.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "provisioning.CreateNetworkRequest": {
+    "fields": {
+      "gcp_network_info": {
+        "ref": "provisioning.GcpNetworkInfo",
+        "launch_stage": "GA"
+      },
+      "network_name": {
+        "description": "The human-readable name of the network configuration.",
+        "launch_stage": "GA"
+      },
+      "security_group_ids": {
+        "description": "IDs of one to five security groups associated with this network. Security group IDs **cannot** be used in multiple network configurations.",
+        "launch_stage": "GA"
+      },
+      "subnet_ids": {
+        "description": "IDs of at least two subnets associated with this network. Subnet IDs **cannot** be used in multiple network configurations.",
+        "launch_stage": "GA"
+      },
+      "vpc_endpoints": {
+        "ref": "provisioning.NetworkVpcEndpoints",
+        "launch_stage": "GA"
+      },
+      "vpc_id": {
+        "description": "The ID of the VPC associated with this network configuration. VPC IDs can be used in multiple networks.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreatePrivateAccessSettingsRequest": {
+    "fields": {
+      "allowed_vpc_endpoint_ids": {
+        "description": "An array of Databricks VPC endpoint IDs. This is the Databricks ID returned when registering the VPC endpoint configuration in your Databricks account. This is not the ID of the VPC endpoint in AWS.\nOnly used when private_access_level is set to ENDPOINT. This is an allow list of VPC endpoints registered in your Databricks account that can connect to your workspace over AWS PrivateLink.\nNote: If hybrid access to your workspace is enabled by setting public_access_enabled to true, this control only works for PrivateLink connections. To control how your workspace is accessed via public internet, see IP access lists.",
+        "launch_stage": "GA"
+      },
+      "private_access_level": {
+        "description": "The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.\n`ACCOUNT` level access (the default) allows only VPC endpoints that are registered in your Databricks account connect to your workspace.\n`ENDPOINT` level access allows only specified VPC endpoints connect to your workspace. For details, see allowed_vpc_endpoint_ids.",
+        "ref": "provisioning.PrivateAccessLevel",
+        "launch_stage": "GA"
+      },
+      "private_access_settings_name": {
+        "description": "The human-readable name of the private access settings object.",
+        "launch_stage": "GA"
+      },
+      "public_access_enabled": {
+        "description": "Determines if the workspace can be accessed over public internet. For fully private workspaces, you can optionally specify false, but only if you implement both the front-end and the back-end PrivateLink connections. Otherwise, specify true, which means that public access is enabled.",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "The AWS region for workspaces attached to this private access settings object.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateStorageConfigurationRequest": {
+    "fields": {
+      "role_arn": {
+        "description": "Optional IAM role that is used to access the workspace catalog which is created during workspace creation\nfor UC by Default. If a storage configuration with this field populated is used to create a workspace,\nthen a workspace catalog is created together with the workspace. The workspace catalog shares the root\nbucket with internal workspace storage (including DBFS root) but uses a dedicated bucket path prefix.",
+        "launch_stage": "GA"
+      },
+      "root_bucket_info": {
+        "description": "Root S3 bucket information.",
+        "ref": "provisioning.RootBucketInfo",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_name": {
+        "description": "The human-readable name of the storage configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateVpcEndpointRequest": {
+    "fields": {
+      "aws_vpc_endpoint_id": {
+        "description": "The ID of the VPC endpoint object in AWS.",
+        "launch_stage": "GA"
+      },
+      "gcp_vpc_endpoint_info": {
+        "description": "The cloud info of this vpc endpoint.",
+        "ref": "provisioning.GcpVpcEndpointInfo",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "The region in which this VPC endpoint object exists.",
+        "launch_stage": "GA"
+      },
+      "vpc_endpoint_name": {
+        "description": "The human-readable name of the storage configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CreateWorkspaceRequest": {
+    "fields": {
+      "aws_region": {
+        "launch_stage": "GA"
+      },
+      "cloud": {
+        "description": "DEPRECATED: This field is being ignored by the server and will be removed in the future.\nThe cloud name. This field always has the value `gcp`.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "cloud_resource_container": {
+        "ref": "provisioning.CloudResourceContainer",
+        "launch_stage": "GA"
+      },
+      "compute_mode": {
+        "description": "If the compute mode is `SERVERLESS`, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. This means you don't need to provide any resources managed by you, such as credentials, storage, or network.\nIf the compute mode is `HYBRID` (which is the default option), a classic workspace is created that uses customer-managed resources.",
+        "ref": "provisioning.CustomerFacingComputeMode",
+        "launch_stage": "GA"
+      },
+      "credentials_id": {
+        "description": "ID of the workspace's credential configuration object.",
+        "launch_stage": "GA"
+      },
+      "custom_tags": {
+        "description": "The custom tags key-value pairing that is attached to this workspace. The key-value pair is a string of utf-8 characters. The\nvalue can be an empty string, with maximum length of 255 characters. The key can be of maximum length of 127 characters, and cannot be empty.",
+        "launch_stage": "GA"
+      },
+      "deployment_name": {
+        "description": "The deployment name defines part of the subdomain for the workspace. The workspace URL for the web application and REST APIs is \u003cworkspace-deployment-name\u003e.cloud.databricks.com. For example, if the deployment name is abcsales, your workspace URL will be https://abcsales.cloud.databricks.com. Hyphens are allowed. This property supports only the set of characters that are allowed in a subdomain.\nTo set this value, you must have a deployment name prefix. Contact your Databricks account team to add an account deployment name prefix to your account.\nWorkspace deployment names follow the account prefix and a hyphen. For example, if your account's deployment prefix is acme and the workspace deployment name is workspace-1, the JSON response for the deployment_name field becomes acme-workspace-1. The workspace URL would be acme-workspace-1.cloud.databricks.com.\nYou can also set the deployment_name to the reserved keyword EMPTY if you want the deployment name to only include the deployment prefix. For example, if your account's deployment prefix is acme and the workspace deployment name is EMPTY, the deployment_name becomes acme only and the workspace URL is acme.cloud.databricks.com.\nThis value must be unique across all non-deleted deployments across all AWS regions.\nIf a new workspace omits this property, the server generates a unique deployment name for you with the pattern dbc-xxxxxxxx-xxxx.",
+        "launch_stage": "GA"
+      },
+      "gcp_managed_network_config": {
+        "ref": "provisioning.GcpManagedNetworkConfig",
+        "launch_stage": "GA"
+      },
+      "gke_config": {
+        "ref": "provisioning.GkeConfig",
+        "launch_stage": "GA"
+      },
+      "location": {
+        "description": "The Google Cloud region of the workspace data plane in your Google account (for example, `us-east4`).",
+        "launch_stage": "GA"
+      },
+      "managed_services_customer_managed_key_id": {
+        "description": "The ID of the workspace's managed services encryption key configuration object. This is used to help protect and control access to the workspace's notebooks, secrets, Databricks SQL queries, and query history. The provided key configuration object property use_cases must contain MANAGED_SERVICES.",
+        "launch_stage": "GA"
+      },
+      "network_connectivity_config_id": {
+        "description": "The object ID of network connectivity config. Once assigned, the workspace serverless compute resources use the same set of stable IP CIDR blocks and optional private link to access your resources.",
+        "launch_stage": "GA"
+      },
+      "network_id": {
+        "description": "The ID of the workspace's network configuration object. To use AWS PrivateLink, this field is required.",
+        "launch_stage": "GA"
+      },
+      "pricing_tier": {
+        "ref": "provisioning.PricingTier",
+        "launch_stage": "GA"
+      },
+      "private_access_settings_id": {
+        "description": "ID of the workspace's private access settings object. Only used for PrivateLink. You must specify this ID if you are using [AWS PrivateLink](https://aws.amazon.com/privatelink/) for either front-end (user-to-workspace connection), back-end (data plane to control plane connection), or both connection types.\nBefore configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).\",",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_id": {
+        "description": "ID of the workspace's storage configuration object.",
+        "launch_stage": "GA"
+      },
+      "storage_customer_managed_key_id": {
+        "description": "The ID of the workspace's storage encryption key configuration object. This is used to encrypt the workspace's root S3 bucket (root DBFS and system data) and, optionally, cluster EBS volumes. The provided key configuration object property use_cases must contain STORAGE.",
+        "launch_stage": "GA"
+      },
+      "workspace_name": {
+        "description": "The human-readable name of the workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.Credential": {
+    "fields": {
+      "account_id": {
+        "description": "The Databricks account ID that hosts the credential.",
+        "launch_stage": "GA"
+      },
+      "aws_credentials": {
+        "ref": "provisioning.AwsCredentials",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when the credential was created.",
+        "launch_stage": "GA"
+      },
+      "credentials_id": {
+        "description": "Databricks credential configuration ID.",
+        "launch_stage": "GA"
+      },
+      "credentials_name": {
+        "description": "The human-readable name of the credential configuration object.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CustomerFacingComputeMode": {
+    "description": "Corresponds to compute mode defined here:\nhttps://src.dev.databricks.com/databricks/universe@9076536b18479afd639d1c1f9dd5a59f72215e69/-/blob/central/api/common.proto?L872",
+    "enum": [
+      "HYBRID",
+      "SERVERLESS"
+    ],
+    "enum_launch_stages": {
+      "HYBRID": "GA",
+      "SERVERLESS": "GA"
+    }
+  },
+  "provisioning.CustomerFacingGcpCloudResourceContainer": {
+    "fields": {
+      "project_id": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.CustomerFacingStorageMode": {
+    "enum": [
+      "CUSTOMER_HOSTED",
+      "DEFAULT_STORAGE"
+    ],
+    "enum_launch_stages": {
+      "CUSTOMER_HOSTED": "GA",
+      "DEFAULT_STORAGE": "GA"
+    }
+  },
+  "provisioning.CustomerManagedKey": {
+    "fields": {
+      "account_id": {
+        "description": "The Databricks account ID that holds the customer-managed key.",
+        "launch_stage": "GA"
+      },
+      "aws_key_info": {
+        "ref": "provisioning.AwsKeyInfo",
+        "launch_stage": "GA"
+      },
+      "azure_key_info": {
+        "ref": "provisioning.AzureKeyInfo",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when the customer key was created.",
+        "launch_stage": "GA"
+      },
+      "customer_managed_key_id": {
+        "description": "ID of the encryption key configuration object.",
+        "launch_stage": "GA"
+      },
+      "gcp_key_info": {
+        "ref": "provisioning.GcpKeyInfo",
+        "launch_stage": "GA"
+      },
+      "use_cases": {
+        "description": "The cases that the key can be used for.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.DeleteCredentialRequest": {},
+  "provisioning.DeleteEncryptionKeyRequest": {},
+  "provisioning.DeleteNetworkRequest": {},
+  "provisioning.DeletePrivateAccesRequest": {},
+  "provisioning.DeleteStorageRequest": {},
+  "provisioning.DeleteVpcEndpointRequest": {},
+  "provisioning.DeleteWorkspaceRequest": {},
+  "provisioning.EndpointUseCase": {
+    "enum": [
+      "WORKSPACE_ACCESS",
+      "DATAPLANE_RELAY_ACCESS",
+      "GENERAL_ACCESS"
+    ],
+    "enum_launch_stages": {
+      "DATAPLANE_RELAY_ACCESS": "GA",
+      "GENERAL_ACCESS": "PUBLIC_BETA",
+      "WORKSPACE_ACCESS": "GA"
+    }
+  },
+  "provisioning.ErrorType": {
+    "description": "ErrorType and WarningType are used to represent the type of error or warning by NetworkHealth and NetworkWarning defined in central/api/accounts/accounts.proto",
+    "enum": [
+      "credentials",
+      "vpc",
+      "subnet",
+      "securityGroup",
+      "networkAcl"
+    ],
+    "enum_launch_stages": {
+      "credentials": "GA",
+      "networkAcl": "GA",
+      "securityGroup": "GA",
+      "subnet": "GA",
+      "vpc": "GA"
+    }
+  },
+  "provisioning.GcpCommonNetworkConfig": {
+    "description": "The shared network config for GCP workspace.\nThis object has common network configurations that are network attributions of a workspace.\nDEPRECATED. Use GkeConfig instead.",
+    "fields": {
+      "gke_cluster_master_ip_range": {
+        "description": "The IP range that will be used to allocate GKE cluster master resources from.\nThis field must not be set if gke_cluster_type=PUBLIC_NODE_PUBLIC_MASTER.",
+        "launch_stage": "GA"
+      },
+      "gke_connectivity_type": {
+        "description": "The type of network connectivity of the GKE cluster.",
+        "ref": "provisioning.GkeConfigConnectivityType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.GcpKeyInfo": {
+    "fields": {
+      "gcp_service_account": {
+        "description": "Globally unique service account email that has access to the KMS key.\nThe service account exists within the Databricks CP project.",
+        "ref": "provisioning.GcpServiceAccount",
+        "launch_stage": "GA"
+      },
+      "kms_key_id": {
+        "description": "Globally unique kms key resource id of the form\nprojects/testProjectId/locations/us-east4/keyRings/gcpCmkKeyRing/cryptoKeys/cmk-eastus4",
+        "launch_stage": "GA"
+      },
+      "manual": {
+        "description": "When true, Databricks will not use OAuth to grant the service account\naccess to the KMS key. The customer is responsible for granting access\nmanually.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "provisioning.GcpManagedNetworkConfig": {
+    "description": "The network configuration for the workspace.",
+    "fields": {
+      "gke_cluster_pod_ip_range": {
+        "description": "The IP range that will be used to allocate GKE cluster Pods from.",
+        "launch_stage": "GA"
+      },
+      "gke_cluster_service_ip_range": {
+        "description": "The IP range that will be used to allocate GKE cluster Services from.",
+        "launch_stage": "GA"
+      },
+      "subnet_cidr": {
+        "description": "The IP range which will be used to allocate GKE cluster nodes from.\nNote: Pods, services and master IP range must be mutually exclusive.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.GcpNetworkInfo": {
+    "fields": {
+      "network_project_id": {
+        "description": "The GCP project ID for network resources. This project is where the VPC and subnet resides.",
+        "launch_stage": "GA"
+      },
+      "pod_ip_range_name": {
+        "description": "Name of the secondary range within the subnet that will be used by GKE as Pod IP range.\nThis is BYO VPC specific. DB VPC uses network.getGcpManagedNetworkConfig.getGkeClusterPodIpRange",
+        "launch_stage": "GA"
+      },
+      "service_ip_range_name": {
+        "description": "Name of the secondary range within the subnet that will be used by GKE as Service IP range.",
+        "launch_stage": "GA"
+      },
+      "subnet_id": {
+        "description": "The customer-provided Subnet ID that will be available to Clusters in Workspaces using this\nNetwork.",
+        "launch_stage": "GA"
+      },
+      "subnet_region": {
+        "launch_stage": "GA"
+      },
+      "vpc_id": {
+        "description": "The customer-provided VPC ID.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.GcpServiceAccount": {
+    "fields": {
+      "service_account_email": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.GcpVpcEndpointInfo": {
+    "fields": {
+      "endpoint_region": {
+        "launch_stage": "GA"
+      },
+      "project_id": {
+        "launch_stage": "GA"
+      },
+      "psc_connection_id": {
+        "launch_stage": "GA"
+      },
+      "psc_endpoint_name": {
+        "launch_stage": "GA"
+      },
+      "service_attachment_id": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.GetCredentialRequest": {},
+  "provisioning.GetEncryptionKeyRequest": {},
+  "provisioning.GetNetworkRequest": {},
+  "provisioning.GetPrivateAccesRequest": {},
+  "provisioning.GetStorageRequest": {},
+  "provisioning.GetVpcEndpointRequest": {},
+  "provisioning.GetWorkspaceRequest": {},
+  "provisioning.GkeConfig": {
+    "description": "The configurations of the GKE cluster used by the GCP workspace.",
+    "fields": {
+      "connectivity_type": {
+        "description": "The type of network connectivity of the GKE cluster.",
+        "ref": "provisioning.GkeConfigConnectivityType",
+        "launch_stage": "GA"
+      },
+      "master_ip_range": {
+        "description": "The IP range that will be used to allocate GKE cluster master resources from.\nThis field must not be set if gke_cluster_type=PUBLIC_NODE_PUBLIC_MASTER.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.GkeConfigConnectivityType": {
+    "description": "Specifies the network connectivity types for the GKE nodes and the GKE master network.\n\nSet to `PRIVATE_NODE_PUBLIC_MASTER` for a private GKE cluster\nfor the workspace. The GKE nodes will not have public IPs.\n\nSet to `PUBLIC_NODE_PUBLIC_MASTER` for a public GKE cluster.\nThe nodes of a public GKE cluster have public IP addresses.",
+    "enum": [
+      "PRIVATE_NODE_PUBLIC_MASTER",
+      "PUBLIC_NODE_PUBLIC_MASTER"
+    ],
+    "enum_launch_stages": {
+      "PRIVATE_NODE_PUBLIC_MASTER": "GA",
+      "PUBLIC_NODE_PUBLIC_MASTER": "GA"
+    }
+  },
+  "provisioning.KeyAccessConfiguration": {
+    "description": "The credential ID that is used to access the key vault.",
+    "fields": {
+      "credential_id": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.KeyUseCase": {
+    "enum": [
+      "MANAGED_SERVICES",
+      "STORAGE"
+    ],
+    "enum_launch_stages": {
+      "MANAGED_SERVICES": "GA",
+      "STORAGE": "GA"
+    }
+  },
+  "provisioning.ListCredentialsRequest": {},
+  "provisioning.ListEncryptionKeysRequest": {},
+  "provisioning.ListNetworksRequest": {},
+  "provisioning.ListPrivateAccessRequest": {},
+  "provisioning.ListStorageRequest": {},
+  "provisioning.ListVpcEndpointsRequest": {},
+  "provisioning.ListWorkspacesRequest": {},
+  "provisioning.Network": {
+    "fields": {
+      "account_id": {
+        "description": "The Databricks account ID associated with this network configuration.",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when the network was created.",
+        "launch_stage": "GA"
+      },
+      "error_messages": {
+        "description": "Array of error messages about the network configuration.",
+        "launch_stage": "GA"
+      },
+      "gcp_network_info": {
+        "ref": "provisioning.GcpNetworkInfo",
+        "launch_stage": "GA"
+      },
+      "network_id": {
+        "description": "The Databricks network configuration ID.",
+        "launch_stage": "GA"
+      },
+      "network_name": {
+        "description": "The human-readable name of the network configuration.",
+        "launch_stage": "GA"
+      },
+      "security_group_ids": {
+        "description": "IDs of one to five security groups associated with this network. Security group IDs **cannot** be used in multiple network configurations.",
+        "launch_stage": "GA"
+      },
+      "subnet_ids": {
+        "description": "IDs of at least two subnets associated with this network. Subnet IDs **cannot** be used in multiple network configurations.",
+        "launch_stage": "GA"
+      },
+      "vpc_endpoints": {
+        "ref": "provisioning.NetworkVpcEndpoints",
+        "launch_stage": "GA"
+      },
+      "vpc_id": {
+        "description": "The ID of the VPC associated with this network configuration. VPC IDs can be used in multiple networks.",
+        "launch_stage": "GA"
+      },
+      "vpc_status": {
+        "ref": "provisioning.VpcStatus",
+        "launch_stage": "GA"
+      },
+      "warning_messages": {
+        "description": "Array of warning messages about the network configuration.",
+        "launch_stage": "GA"
+      },
+      "workspace_id": {
+        "description": "Workspace ID associated with this network configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.NetworkHealth": {
+    "fields": {
+      "error_message": {
+        "description": "Details of the error.",
+        "launch_stage": "GA"
+      },
+      "error_type": {
+        "ref": "provisioning.ErrorType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.NetworkVpcEndpoints": {
+    "fields": {
+      "dataplane_relay": {
+        "description": "The VPC endpoint ID used by this network to access the Databricks secure cluster connectivity relay.",
+        "launch_stage": "GA"
+      },
+      "rest_api": {
+        "description": "The VPC endpoint ID used by this network to access the Databricks REST API.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.NetworkWarning": {
+    "fields": {
+      "warning_message": {
+        "description": "Details of the warning.",
+        "launch_stage": "GA"
+      },
+      "warning_type": {
+        "ref": "provisioning.WarningType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.PricingTier": {
+    "enum": [
+      "UNKNOWN",
+      "COMMUNITY_EDITION",
+      "STANDARD",
+      "PREMIUM",
+      "ENTERPRISE",
+      "DEDICATED"
+    ],
+    "enum_launch_stages": {
+      "COMMUNITY_EDITION": "GA",
+      "DEDICATED": "GA",
+      "ENTERPRISE": "GA",
+      "PREMIUM": "GA",
+      "STANDARD": "GA",
+      "UNKNOWN": "GA"
+    }
+  },
+  "provisioning.PrivateAccessLevel": {
+    "enum": [
+      "ENDPOINT",
+      "ACCOUNT"
+    ],
+    "enum_launch_stages": {
+      "ACCOUNT": "GA",
+      "ENDPOINT": "GA"
+    }
+  },
+  "provisioning.PrivateAccessSettings": {
+    "description": "*",
+    "fields": {
+      "account_id": {
+        "description": "The Databricks account ID that hosts the private access settings.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "allowed_vpc_endpoint_ids": {
+        "description": "An array of Databricks VPC endpoint IDs. This is the Databricks ID that is returned when registering the VPC endpoint configuration in your Databricks account. This is not the ID of the VPC endpoint in AWS.\nOnly used when private_access_level is set to ENDPOINT. This is an allow list of VPC endpoints that in your account that can connect to your workspace over AWS PrivateLink.\nIf hybrid access to your workspace is enabled by setting public_access_enabled to true, this control only works for PrivateLink connections. To control how your workspace is accessed via public internet, see IP access lists.",
+        "launch_stage": "GA"
+      },
+      "private_access_level": {
+        "description": "The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.\n`ACCOUNT` level access (the default) allows only VPC endpoints that are registered in your Databricks account connect to your workspace.\n`ENDPOINT` level access allows only specified VPC endpoints connect to your workspace. For details, see allowed_vpc_endpoint_ids.",
+        "ref": "provisioning.PrivateAccessLevel",
+        "launch_stage": "GA"
+      },
+      "private_access_settings_id": {
+        "description": "Databricks private access settings ID.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "private_access_settings_name": {
+        "description": "The human-readable name of the private access settings object.",
+        "launch_stage": "GA"
+      },
+      "public_access_enabled": {
+        "description": "Determines if the workspace can be accessed over public internet. For fully private workspaces, you can optionally specify false, but only if you implement both the front-end and the back-end PrivateLink connections. Otherwise, specify true, which means that public access is enabled.",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "The AWS region for workspaces attached to this private access settings object.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.ReplacePrivateAccessSettingsRequest": {
+    "fields": {
+      "customer_facing_private_access_settings": {
+        "description": "Properties of the new private access settings object.",
+        "ref": "provisioning.PrivateAccessSettings",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.RootBucketInfo": {
+    "fields": {
+      "bucket_name": {
+        "description": "Name of the S3 bucket",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.StorageConfiguration": {
+    "fields": {
+      "account_id": {
+        "description": "The Databricks account ID associated with this storage configuration.",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when the storage configuration was created.",
+        "launch_stage": "GA"
+      },
+      "role_arn": {
+        "description": "Optional IAM role that is used to access the workspace catalog which is created during workspace creation\nfor UC by Default. If a storage configuration with this field populated is used to create a workspace,\nthen a workspace catalog is created together with the workspace. The workspace catalog shares the root\nbucket with internal workspace storage (including DBFS root) but uses a dedicated bucket path prefix.",
+        "launch_stage": "GA"
+      },
+      "root_bucket_info": {
+        "description": "The root bucket information for the storage configuration.",
+        "ref": "provisioning.RootBucketInfo",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_id": {
+        "description": "Databricks storage configuration ID.",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_name": {
+        "description": "The human-readable name of the storage configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.StsRole": {
+    "fields": {
+      "role_arn": {
+        "description": "The Amazon Resource Name (ARN) of the cross account IAM role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.UpdateWorkspaceRequest": {
+    "fields": {
+      "customer_facing_workspace": {
+        "ref": "provisioning.Workspace",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.VpcEndpoint": {
+    "description": "*",
+    "fields": {
+      "account_id": {
+        "description": "The Databricks account ID that hosts the VPC endpoint configuration.",
+        "launch_stage": "GA"
+      },
+      "aws_account_id": {
+        "description": "The AWS Account in which the VPC endpoint object exists.",
+        "launch_stage": "GA"
+      },
+      "aws_endpoint_service_id": {
+        "description": "The ID of the Databricks [endpoint service](https://docs.aws.amazon.com/vpc/latest/privatelink/endpoint-service.html) that this VPC endpoint is connected to. For a list of endpoint service IDs for each supported AWS region, see the [Databricks PrivateLink documentation](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).",
+        "launch_stage": "GA"
+      },
+      "aws_vpc_endpoint_id": {
+        "description": "The ID of the VPC endpoint object in AWS.",
+        "launch_stage": "GA"
+      },
+      "gcp_vpc_endpoint_info": {
+        "description": "The cloud info of this vpc endpoint.\nInfo for a GCP vpc endpoint.",
+        "ref": "provisioning.GcpVpcEndpointInfo",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "The AWS region in which this VPC endpoint object exists.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "The current state (such as `available` or `rejected`) of the VPC endpoint. Derived from AWS. For the full set of values, see [AWS DescribeVpcEndpoint documentation](https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-endpoints.html).",
+        "launch_stage": "GA"
+      },
+      "use_case": {
+        "description": "This enumeration represents the type of Databricks VPC endpoint service that was used when creating this VPC endpoint.\nIf the VPC endpoint connects to the Databricks control plane for either the front-end connection or the back-end REST API connection, the value is GENERAL_ACCESS.\nIf the VPC endpoint connects to the Databricks workspace for the back-end secure cluster connectivity relay, the value is DATAPLANE_RELAY_ACCESS.",
+        "ref": "provisioning.EndpointUseCase",
+        "launch_stage": "GA"
+      },
+      "vpc_endpoint_id": {
+        "description": "Databricks VPC endpoint ID. This is the Databricks-specific name of the VPC endpoint. Do not confuse this with the `aws_vpc_endpoint_id`, which is the ID within AWS of the VPC endpoint.",
+        "launch_stage": "GA"
+      },
+      "vpc_endpoint_name": {
+        "description": "The human-readable name of the storage configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.VpcStatus": {
+    "enum": [
+      "VALID",
+      "BROKEN",
+      "UNATTACHED",
+      "WARNED"
+    ],
+    "enum_launch_stages": {
+      "BROKEN": "GA",
+      "UNATTACHED": "GA",
+      "VALID": "GA",
+      "WARNED": "GA"
+    }
+  },
+  "provisioning.WarningType": {
+    "enum": [
+      "subnet",
+      "securityGroup"
+    ],
+    "enum_launch_stages": {
+      "securityGroup": "GA",
+      "subnet": "GA"
+    }
+  },
+  "provisioning.Workspace": {
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "aws_region": {
+        "launch_stage": "GA"
+      },
+      "azure_workspace_info": {
+        "ref": "provisioning.AzureWorkspaceInfo",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "cloud": {
+        "description": "The cloud name. This field can have values like `azure`, `gcp`.",
+        "launch_stage": "GA"
+      },
+      "cloud_resource_container": {
+        "ref": "provisioning.CloudResourceContainer",
+        "launch_stage": "GA"
+      },
+      "compute_mode": {
+        "description": "The compute mode of the workspace.",
+        "ref": "provisioning.CustomerFacingComputeMode",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when the workspace was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "credentials_id": {
+        "description": "ID of the workspace's credential configuration object.",
+        "launch_stage": "GA"
+      },
+      "custom_tags": {
+        "description": "The custom tags key-value pairing that is attached to this workspace. The key-value pair is a string of utf-8 characters. The value can be an empty string,\nwith maximum length of 255 characters. The key can be of maximum length of 127 characters, and cannot be empty.",
+        "launch_stage": "GA"
+      },
+      "deployment_name": {
+        "launch_stage": "GA"
+      },
+      "expected_workspace_status": {
+        "description": "A client owned field used to indicate the workspace status that the client expects to be in.\nFor now this is only used to unblock Temporal workflow for GCP least privileged workspace.",
+        "ref": "provisioning.WorkspaceStatus",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "gcp_managed_network_config": {
+        "ref": "provisioning.GcpManagedNetworkConfig",
+        "launch_stage": "GA"
+      },
+      "gke_config": {
+        "ref": "provisioning.GkeConfig",
+        "launch_stage": "GA"
+      },
+      "location": {
+        "description": "The Google Cloud region of the workspace data plane in your Google account (for example, `us-east4`).",
+        "launch_stage": "GA"
+      },
+      "managed_services_customer_managed_key_id": {
+        "description": "ID of the key configuration for encrypting managed services.",
+        "launch_stage": "GA"
+      },
+      "network": {
+        "description": "The network configuration for the workspace.\n\nDEPRECATED. Use `network_id` instead.",
+        "ref": "provisioning.WorkspaceNetwork",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "network_connectivity_config_id": {
+        "description": "The object ID of network connectivity config.",
+        "launch_stage": "GA"
+      },
+      "network_id": {
+        "description": "If this workspace is BYO VPC, then the network_id will be populated. If this workspace is not\nBYO VPC, then the network_id will be empty.",
+        "launch_stage": "GA"
+      },
+      "pricing_tier": {
+        "ref": "provisioning.PricingTier",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "private_access_settings_id": {
+        "description": "ID of the workspace's private access settings object. Only used for PrivateLink. You must specify this ID if you are using [AWS PrivateLink](https://aws.amazon.com/privatelink/) for either front-end (user-to-workspace connection), back-end (data plane to control plane connection), or both connection types.\n\nBefore configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).\",",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_id": {
+        "description": "ID of the workspace's storage configuration object.",
+        "launch_stage": "GA"
+      },
+      "storage_customer_managed_key_id": {
+        "description": "ID of the key configuration for encrypting workspace storage.",
+        "launch_stage": "GA"
+      },
+      "storage_mode": {
+        "description": "The storage mode of the workspace.",
+        "ref": "provisioning.CustomerFacingStorageMode",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_id": {
+        "description": "A unique integer ID for the workspace",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_name": {
+        "description": "The human-readable name of the workspace.",
+        "launch_stage": "GA"
+      },
+      "workspace_status": {
+        "description": "The status of a workspace",
+        "ref": "provisioning.WorkspaceStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_status_message": {
+        "description": "Message describing the current workspace status.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "provisioning.WorkspaceNetwork": {
+    "description": "The network configuration for workspaces.",
+    "fields": {
+      "gcp_common_network_config": {
+        "description": "The shared network config for GCP workspace.\nThis object has common network configurations that are network attributions of a workspace.\nThis object is input-only.",
+        "ref": "provisioning.GcpCommonNetworkConfig",
+        "launch_stage": "GA"
+      },
+      "gcp_managed_network_config": {
+        "description": "The mutually exclusive network deployment modes. The option decides which network mode the\nworkspace will use.\nThe network config for GCP workspace with Databricks managed network.\nThis object is input-only and will not be provided when listing workspaces.",
+        "ref": "provisioning.GcpManagedNetworkConfig",
+        "launch_stage": "GA"
+      },
+      "network_id": {
+        "description": "The ID of the network object, if the workspace is a BYOVPC workspace.\nThis should apply to workspaces on all clouds in internal services. In accounts-rest-api, user will use\nworkspace.network_id for input and output instead.\nCurrently (2021-06-19) the network ID is only used by GCP.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "provisioning.WorkspaceStatus": {
+    "description": "The different statuses of a workspace. The following represents the current set of valid\ntransitions from status to status:\nNOT_PROVISIONED\n-\u003e PROVISIONING\n-\u003e CANCELLED\nPROVISIONING\n-\u003e RUNNING\n-\u003e FAILED\n-\u003e CANCELLED (note that this transition is disallowed in the MultiWorkspace Project)\nRUNNING\n-\u003e PROVISIONING\n-\u003e BANNED\n-\u003e CANCELLED\nFAILED\n-\u003e PROVISIONING\n-\u003e CANCELLED\nBANNED\n-\u003e RUNNING\n-\u003e CANCELLED\nNote that a transition from any state to itself is also valid.",
+    "enum": [
+      "NOT_PROVISIONED",
+      "PROVISIONING",
+      "RUNNING",
+      "FAILED",
+      "BANNED",
+      "CANCELLING"
+    ],
+    "enum_launch_stages": {
+      "BANNED": "GA",
+      "CANCELLING": "GA",
+      "FAILED": "GA",
+      "NOT_PROVISIONED": "GA",
+      "PROVISIONING": "GA",
+      "RUNNING": "GA"
+    }
+  }
+}

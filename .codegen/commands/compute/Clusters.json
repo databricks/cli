@@ -1,0 +1,2471 @@
+{
+  "id": "compute.Clusters",
+  "name": "Clusters",
+  "description": "The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.\n\nDatabricks maps cluster node instance types to compute units known as DBUs. See the instance\ntype pricing page for a list of the supported instance types and their corresponding DBUs.\n\nA Databricks cluster is a set of computation resources and configurations on which you run\ndata engineering, data science, and data analytics workloads, such as production\nETL pipelines, streaming analytics, ad-hoc analytics, and machine learning.\n\nYou run these workloads as a set of commands in a notebook or as an automated job.\nDatabricks makes a distinction between all-purpose clusters and job clusters. You use\nall-purpose clusters to analyze data collaboratively using interactive notebooks. You use\njob clusters to run fast and robust automated jobs.\n\nYou can create an all-purpose cluster using the UI, CLI, or REST API. You can manually\nterminate and restart an all-purpose cluster. Multiple users can share such clusters to do\ncollaborative interactive analysis.\n\nIMPORTANT: Databricks retains cluster configuration information for terminated clusters for 30 days. To keep an all-purpose cluster configuration even after it has been\nterminated for more than 30 days, an administrator can pin a cluster to the cluster list.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "ClusterDetailsClusterNameToClusterIdMap"
+    },
+    "request": {
+      "pascal_name": "ListClustersRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "ChangeOwner",
+      "description": "Change the owner of the cluster. You must be an admin and the cluster must be terminated to perform this operation. The service principal application ID can be supplied as an argument to `owner_username`.",
+      "summary": "Change cluster owner.",
+      "path": "/api/2.1/clusters/change-owner",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ChangeClusterOwner",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "owner_username",
+            "description": "New owner of the cluster_id after this RPC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "owner_username",
+            "description": "New owner of the cluster_id after this RPC.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ChangeClusterOwnerResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner_username",
+          "description": "New owner of the cluster_id after this RPC.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner_username",
+          "description": "New owner of the cluster_id after this RPC.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create",
+      "description": "Creates a new Spark cluster. This method will acquire new instances from the cloud provider\nif necessary. This method is asynchronous; the returned ``cluster_id`` can be used to poll the\ncluster status. When this method returns, the cluster will be in\na ``PENDING`` state. The cluster will be usable once it enters a ``RUNNING`` state.\nNote: Databricks may not be able to acquire some of the requested nodes, due to cloud provider\nlimitations (account limits, spot price, etc.) or transient network issues.\n\nIf Databricks acquires at least 85% of the requested on-demand nodes, cluster creation will succeed.\nOtherwise the cluster will terminate with an informative error message.\n\nRather than authoring the cluster's JSON definition from scratch, Databricks recommends filling out the\n[create compute UI](https://docs.databricks.com/compute/configure.html) and then copying the generated JSON definition from the UI.",
+      "summary": "Create new cluster.",
+      "path": "/api/2.1/clusters/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "spark_version",
+            "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "spark_version",
+            "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateClusterResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "apply_policy_default_values",
+          "description": "When set to true, fixed and default values from the policy will be used for fields that are omitted.\nWhen set to false, only fixed values from the policy will be applied.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "autoscale",
+          "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AutoScale",
+            "is_object": true
+          }
+        },
+        {
+          "name": "autotermination_minutes",
+          "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 10000 minutes.\nUsers can also set this value to 0 to explicitly disable automatic termination.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "aws_attributes",
+          "description": "Attributes related to clusters running on Amazon Web Services.\nIf not specified at cluster creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AwsAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "azure_attributes",
+          "description": "Attributes related to clusters running on Microsoft Azure.\nIf not specified at cluster creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AzureAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "clone_from",
+          "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CloneCluster",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_log_conf",
+          "description": "The configuration for delivering spark logs to a long-term storage destination.\nThree kinds of destinations (DBFS, S3 and Unity Catalog volumes) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ClusterLogConf",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_name",
+          "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\nFor job clusters, the cluster name is automatically set based on the job and job run IDs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "data_security_mode",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DataSecurityMode",
+            "enum": [
+              {
+                "content": "DATA_SECURITY_MODE_AUTO"
+              },
+              {
+                "content": "DATA_SECURITY_MODE_DEDICATED"
+              },
+              {
+                "content": "DATA_SECURITY_MODE_STANDARD"
+              },
+              {
+                "content": "LEGACY_PASSTHROUGH"
+              },
+              {
+                "content": "LEGACY_SINGLE_USER"
+              },
+              {
+                "content": "LEGACY_SINGLE_USER_STANDARD"
+              },
+              {
+                "content": "LEGACY_TABLE_ACL"
+              },
+              {
+                "content": "NONE"
+              },
+              {
+                "content": "SINGLE_USER"
+              },
+              {
+                "content": "USER_ISOLATION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "dependency_mode",
+          "description": "Controls dependency configuration for the cluster.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DependencyMode",
+            "enum": [
+              {
+                "content": "DEPENDENCY_MODE_AUTO"
+              },
+              {
+                "content": "DEPENDENCY_MODE_CLUSTER_LIBRARIES"
+              },
+              {
+                "content": "DEPENDENCY_MODE_ENVIRONMENTS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "docker_image",
+          "description": "Custom docker image BYOC",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DockerImage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "driver_instance_pool_id",
+          "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "driver_node_type_flexibility",
+          "description": "Flexible node type configuration for the driver node.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NodeTypeFlexibility",
+            "is_object": true
+          }
+        },
+        {
+          "name": "driver_node_type_id",
+          "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_elastic_disk",
+          "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "enable_local_disk_encryption",
+          "description": "Whether to enable LUKS on cluster VMs' local disks",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "gcp_attributes",
+          "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "init_scripts",
+          "description": "The configuration for storing init scripts. Any number of destinations can be specified.\nThe scripts are executed sequentially in the order provided.\nIf `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "InitScriptInfoList",
+            "array_value": {
+              "pascal_name": "InitScriptInfo",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "instance_pool_id",
+          "description": "The optional ID of the instance pool to which the cluster belongs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "is_single_node",
+          "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\nWhen set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "kind",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Kind",
+            "enum": [
+              {
+                "content": "CLASSIC_PREVIEW"
+              }
+            ]
+          }
+        },
+        {
+          "name": "node_type_id",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "num_workers",
+          "description": "Number of worker nodes that this cluster should have. A cluster has one Spark Driver\nand `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.\n\nNote: When reading the properties of a cluster, this field reflects the desired number\nof workers rather than the actual current number of workers. For instance, if a cluster\nis resized from 5 to 10 workers, this field will immediately be updated to reflect\nthe target size of 10 workers, whereas the workers listed in `spark_info` will gradually\nincrease from 5 to 10 as the new nodes are provisioned.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The ID of the cluster policy used to create the cluster if applicable.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "remote_disk_throughput",
+          "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "runtime_engine",
+          "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RuntimeEngine",
+            "enum": [
+              {
+                "content": "NULL"
+              },
+              {
+                "content": "PHOTON"
+              },
+              {
+                "content": "STANDARD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "single_user_name",
+          "description": "Single user name if data_security_mode is `SINGLE_USER`",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spark_conf",
+          "description": "An object containing a set of optional, user-specified Spark configuration key-value pairs.\nUsers can also pass in a string of extra JVM options to the driver and the executors via\n`spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "spark_env_vars",
+          "description": "An object containing a set of optional, user-specified environment variable key-value pairs.\nPlease note that key-value pair of the form (X,Y) will be exported as is (i.e.,\n`export X='Y'`) while launching the driver and workers.\n\nIn order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending\nthem to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all\ndefault databricks managed environmental variables are included as well.\n\nExample Spark environment variables:\n`{\"SPARK_WORKER_MEMORY\": \"28000m\", \"SPARK_LOCAL_DIRS\": \"/local_disk0\"}` or\n`{\"SPARK_DAEMON_JAVA_OPTS\": \"$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true\"}`",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "spark_version",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ssh_public_keys",
+          "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "total_initial_remote_disk_size",
+          "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Supported for GCP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "use_ml_runtime",
+          "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "worker_node_type_flexibility",
+          "description": "Flexible node type configuration for worker nodes.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NodeTypeFlexibility",
+            "is_object": true
+          }
+        },
+        {
+          "name": "workload_type",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "WorkloadType",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "spark_version",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ClusterDetails"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "StateMessage"
+        }
+      }
+    },
+    {
+      "name": "Delete",
+      "description": "Terminates the Spark cluster with the specified ID. The cluster is removed asynchronously.\nOnce the termination has completed, the cluster will be in a `TERMINATED` state.\nIf the cluster is already in a `TERMINATING` or `TERMINATED` state, nothing will happen.",
+      "summary": "Terminate cluster.",
+      "path": "/api/2.1/clusters/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be terminated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be terminated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be terminated.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be terminated.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "TERMINATED"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ClusterDetails"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "StateMessage"
+        }
+      }
+    },
+    {
+      "name": "Edit",
+      "description": "Updates the configuration of a cluster to match the provided attributes and size.\nA cluster can be updated if it is in a `RUNNING` or `TERMINATED` state.\n\nIf a cluster is updated while in a `RUNNING` state, it will be restarted so that the new attributes can take effect.\n\nIf a cluster is updated while in a `TERMINATED` state, it will remain `TERMINATED`.\nThe next time it is started using the `clusters/start` API, the new attributes will take effect.\nAny attempt to update a cluster in any other state will be rejected with an `INVALID_STATE` error code.\n\nClusters created by the Databricks Jobs service cannot be edited.",
+      "summary": "Update cluster configuration.",
+      "path": "/api/2.1/clusters/edit",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EditCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "ID of the cluster",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "spark_version",
+            "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "ID of the cluster",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "spark_version",
+            "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EditClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "apply_policy_default_values",
+          "description": "When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "autoscale",
+          "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AutoScale",
+            "is_object": true
+          }
+        },
+        {
+          "name": "autotermination_minutes",
+          "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 10000 minutes.\nUsers can also set this value to 0 to explicitly disable automatic termination.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "aws_attributes",
+          "description": "Attributes related to clusters running on Amazon Web Services.\nIf not specified at cluster creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AwsAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "azure_attributes",
+          "description": "Attributes related to clusters running on Microsoft Azure.\nIf not specified at cluster creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AzureAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_id",
+          "description": "ID of the cluster",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cluster_log_conf",
+          "description": "The configuration for delivering spark logs to a long-term storage destination.\nThree kinds of destinations (DBFS, S3 and Unity Catalog volumes) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ClusterLogConf",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_name",
+          "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\nFor job clusters, the cluster name is automatically set based on the job and job run IDs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "data_security_mode",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DataSecurityMode",
+            "enum": [
+              {
+                "content": "DATA_SECURITY_MODE_AUTO"
+              },
+              {
+                "content": "DATA_SECURITY_MODE_DEDICATED"
+              },
+              {
+                "content": "DATA_SECURITY_MODE_STANDARD"
+              },
+              {
+                "content": "LEGACY_PASSTHROUGH"
+              },
+              {
+                "content": "LEGACY_SINGLE_USER"
+              },
+              {
+                "content": "LEGACY_SINGLE_USER_STANDARD"
+              },
+              {
+                "content": "LEGACY_TABLE_ACL"
+              },
+              {
+                "content": "NONE"
+              },
+              {
+                "content": "SINGLE_USER"
+              },
+              {
+                "content": "USER_ISOLATION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "dependency_mode",
+          "description": "Controls dependency configuration for the cluster.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DependencyMode",
+            "enum": [
+              {
+                "content": "DEPENDENCY_MODE_AUTO"
+              },
+              {
+                "content": "DEPENDENCY_MODE_CLUSTER_LIBRARIES"
+              },
+              {
+                "content": "DEPENDENCY_MODE_ENVIRONMENTS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "docker_image",
+          "description": "Custom docker image BYOC",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DockerImage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "driver_instance_pool_id",
+          "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "driver_node_type_flexibility",
+          "description": "Flexible node type configuration for the driver node.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NodeTypeFlexibility",
+            "is_object": true
+          }
+        },
+        {
+          "name": "driver_node_type_id",
+          "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_elastic_disk",
+          "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "enable_local_disk_encryption",
+          "description": "Whether to enable LUKS on cluster VMs' local disks",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "gcp_attributes",
+          "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpAttributes",
+            "is_object": true
+          }
+        },
+        {
+          "name": "init_scripts",
+          "description": "The configuration for storing init scripts. Any number of destinations can be specified.\nThe scripts are executed sequentially in the order provided.\nIf `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "InitScriptInfoList",
+            "array_value": {
+              "pascal_name": "InitScriptInfo",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "instance_pool_id",
+          "description": "The optional ID of the instance pool to which the cluster belongs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "is_single_node",
+          "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\nWhen set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "kind",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Kind",
+            "enum": [
+              {
+                "content": "CLASSIC_PREVIEW"
+              }
+            ]
+          }
+        },
+        {
+          "name": "node_type_id",
+          "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "num_workers",
+          "description": "Number of worker nodes that this cluster should have. A cluster has one Spark Driver\nand `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.\n\nNote: When reading the properties of a cluster, this field reflects the desired number\nof workers rather than the actual current number of workers. For instance, if a cluster\nis resized from 5 to 10 workers, this field will immediately be updated to reflect\nthe target size of 10 workers, whereas the workers listed in `spark_info` will gradually\nincrease from 5 to 10 as the new nodes are provisioned.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The ID of the cluster policy used to create the cluster if applicable.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "remote_disk_throughput",
+          "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "runtime_engine",
+          "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RuntimeEngine",
+            "enum": [
+              {
+                "content": "NULL"
+              },
+              {
+                "content": "PHOTON"
+              },
+              {
+                "content": "STANDARD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "single_user_name",
+          "description": "Single user name if data_security_mode is `SINGLE_USER`",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spark_conf",
+          "description": "An object containing a set of optional, user-specified Spark configuration key-value pairs.\nUsers can also pass in a string of extra JVM options to the driver and the executors via\n`spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "spark_env_vars",
+          "description": "An object containing a set of optional, user-specified environment variable key-value pairs.\nPlease note that key-value pair of the form (X,Y) will be exported as is (i.e.,\n`export X='Y'`) while launching the driver and workers.\n\nIn order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending\nthem to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all\ndefault databricks managed environmental variables are included as well.\n\nExample Spark environment variables:\n`{\"SPARK_WORKER_MEMORY\": \"28000m\", \"SPARK_LOCAL_DIRS\": \"/local_disk0\"}` or\n`{\"SPARK_DAEMON_JAVA_OPTS\": \"$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true\"}`",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "spark_version",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ssh_public_keys",
+          "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "total_initial_remote_disk_size",
+          "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Supported for GCP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "use_ml_runtime",
+          "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "worker_node_type_flexibility",
+          "description": "Flexible node type configuration for worker nodes.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NodeTypeFlexibility",
+            "is_object": true
+          }
+        },
+        {
+          "name": "workload_type",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "WorkloadType",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "ID of the cluster",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spark_version",
+          "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ClusterDetails"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "StateMessage"
+        }
+      }
+    },
+    {
+      "name": "Events",
+      "description": "Retrieves a list of events about the activity of a cluster.\nThis API is paginated. If there are more events to read, the response includes all the\nparameters necessary to request the next page of events.",
+      "summary": "List cluster activity events.",
+      "path": "/api/2.1/clusters/events",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetEvents",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster to retrieve events about.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster to retrieve events about.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetEventsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster to retrieve events about.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "end_time",
+          "description": "The end time in epoch milliseconds.\nIf empty, returns events up to the current time.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "event_types",
+          "description": "An optional set of event types to filter on.\nIf empty, all event types are returned.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EventTypeList",
+            "array_value": {
+              "pascal_name": "EventType",
+              "enum": [
+                {
+                  "content": "ADD_NODES_FAILED"
+                },
+                {
+                  "content": "AUTOMATIC_CLUSTER_UPDATE"
+                },
+                {
+                  "content": "AUTOSCALING_BACKOFF"
+                },
+                {
+                  "content": "AUTOSCALING_FAILED"
+                },
+                {
+                  "content": "AUTOSCALING_STATS_REPORT"
+                },
+                {
+                  "content": "CLUSTER_MIGRATED"
+                },
+                {
+                  "content": "CREATING"
+                },
+                {
+                  "content": "DBFS_DOWN"
+                },
+                {
+                  "content": "DECOMMISSION_ENDED"
+                },
+                {
+                  "content": "DECOMMISSION_STARTED"
+                },
+                {
+                  "content": "DEFERRED_POLICY_ENFORCEMENT_FAILED"
+                },
+                {
+                  "content": "DEFERRED_POLICY_ENFORCEMENT_SCHEDULED"
+                },
+                {
+                  "content": "DID_NOT_EXPAND_DISK"
+                },
+                {
+                  "content": "DRIVER_HEALTHY"
+                },
+                {
+                  "content": "DRIVER_NOT_RESPONDING"
+                },
+                {
+                  "content": "DRIVER_UNAVAILABLE"
+                },
+                {
+                  "content": "EDITED"
+                },
+                {
+                  "content": "EXPANDED_DISK"
+                },
+                {
+                  "content": "FAILED_TO_EXPAND_DISK"
+                },
+                {
+                  "content": "INIT_SCRIPTS_FINISHED"
+                },
+                {
+                  "content": "INIT_SCRIPTS_STARTED"
+                },
+                {
+                  "content": "METASTORE_DOWN"
+                },
+                {
+                  "content": "NODES_LOST"
+                },
+                {
+                  "content": "NODE_BLACKLISTED"
+                },
+                {
+                  "content": "NODE_EXCLUDED_DECOMMISSIONED"
+                },
+                {
+                  "content": "PINNED"
+                },
+                {
+                  "content": "RESIZING"
+                },
+                {
+                  "content": "RESTARTING"
+                },
+                {
+                  "content": "RUNNING"
+                },
+                {
+                  "content": "SPARK_EXCEPTION"
+                },
+                {
+                  "content": "STARTING"
+                },
+                {
+                  "content": "TERMINATING"
+                },
+                {
+                  "content": "UC_VOLUME_MISCONFIGURED"
+                },
+                {
+                  "content": "UNPINNED"
+                },
+                {
+                  "content": "UPSIZE_COMPLETED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "limit",
+          "description": "Deprecated: use page_token in combination with page_size instead.\n\nThe maximum number of events to include in a page of events.\nDefaults to 50, and maximum allowed value is 500.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "offset",
+          "description": "Deprecated: use page_token in combination with page_size instead.\n\nThe offset in the result set. Defaults to 0 (no offset). When an offset is specified\nand the results are requested in descending order, the end_time field is required.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "order",
+          "description": "The order to list events in; either \"ASC\" or \"DESC\". Defaults to \"DESC\".",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "GetEventsOrder",
+            "enum": [
+              {
+                "content": "ASC"
+              },
+              {
+                "content": "DESC"
+              }
+            ]
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of events to include in a page of events.\nThe server may further constrain the maximum number of results returned in a single page.\nIf the page_size is empty or 0, the server will decide the number of results to be returned.\nThe field has to be in the range [0,500]. If the value is outside the range, the server enforces 0 or 500.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of events respectively.\nIf page_token is empty, the first page is returned.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "start_time",
+          "description": "The start time in epoch milliseconds.\nIf empty, returns events starting from the beginning of time.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster to retrieve events about.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of events respectively.\nIf page_token is empty, the first page is returned.",
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Get",
+      "description": "Retrieves the information for a cluster given its identifier.\nClusters can be described while they are running, or up to 60 days after they are terminated.",
+      "summary": "Get cluster info.",
+      "path": "/api/2.1/clusters/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetClusterRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster about which to retrieve information.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster about which to retrieve information.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterDetails",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster about which to retrieve information.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster about which to retrieve information.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get cluster permission levels.",
+      "path": "/api/2.0/permissions/clusters/{cluster_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetClusterPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetClusterPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a cluster. Clusters can inherit permissions from their root object.",
+      "summary": "Get cluster permissions.",
+      "path": "/api/2.0/permissions/clusters/{cluster_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetClusterPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Return information about all pinned and active clusters, and all clusters terminated within the last 30 days. Clusters terminated prior to this period are not included.",
+      "summary": "List clusters.",
+      "path": "/api/2.1/clusters/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListClustersRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListClustersResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter_by",
+          "description": "Filters to apply to the list of clusters.",
+          "is_query": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ListClustersFilterBy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Use this field to specify the maximum number of results to be returned by the server. The server may further constrain the maximum number of results returned in a single page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of clusters respectively.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "sort_by",
+          "description": "Sort the list of clusters by a specific criteria.",
+          "is_query": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ListClustersSortBy",
+            "is_object": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of clusters respectively.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListNodeTypes",
+      "description": "Returns a list of supported Spark node types. These node types can be used to launch a cluster.",
+      "summary": "List node types.",
+      "path": "/api/2.1/clusters/list-node-types",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListNodeTypesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListNodeTypesResponse",
+        "is_object": true
+      }
+    },
+    {
+      "name": "ListZones",
+      "description": "Returns a list of availability zones where clusters can be created in (For example, us-west-2a).\nThese zones can be used to launch a cluster.",
+      "summary": "List availability zones.",
+      "path": "/api/2.1/clusters/list-zones",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListZonesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAvailableZonesResponse",
+        "is_object": true
+      }
+    },
+    {
+      "name": "PermanentDelete",
+      "description": "Permanently deletes a Spark cluster. This cluster is terminated and resources are asynchronously removed.\n\nIn addition, users will no longer see permanently deleted clusters in the cluster list, and API users can no longer\nperform any action on permanently deleted clusters.",
+      "summary": "Permanently delete cluster.",
+      "path": "/api/2.1/clusters/permanent-delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PermanentDeleteCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be deleted.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be deleted.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PermanentDeleteClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be deleted.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be deleted.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pin",
+      "description": "Pinning a cluster ensures that the cluster will always be returned by the ListClusters API.\nPinning a cluster that is already pinned will have no effect.\nThis API can only be called by workspace admins.",
+      "summary": "Pin cluster.",
+      "path": "/api/2.1/clusters/pin",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PinCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PinClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resize",
+      "description": "Resizes a cluster to have a desired number of workers. This will fail unless the cluster is in a `RUNNING` state.",
+      "summary": "Resize cluster.",
+      "path": "/api/2.1/clusters/resize",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ResizeCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be resized.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be resized.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ResizeClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "autoscale",
+          "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AutoScale",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be resized.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "num_workers",
+          "description": "Number of worker nodes that this cluster should have. A cluster has one Spark Driver\nand `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.\n\nNote: When reading the properties of a cluster, this field reflects the desired number\nof workers rather than the actual current number of workers. For instance, if a cluster\nis resized from 5 to 10 workers, this field will immediately be updated to reflect\nthe target size of 10 workers, whereas the workers listed in `spark_info` will gradually\nincrease from 5 to 10 as the new nodes are provisioned.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be resized.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ClusterDetails"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "StateMessage"
+        }
+      }
+    },
+    {
+      "name": "Restart",
+      "description": "Restarts a Spark cluster with the supplied ID. If the cluster is not currently in a `RUNNING` state, nothing will happen.",
+      "summary": "Restart cluster.",
+      "path": "/api/2.1/clusters/restart",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RestartCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be started.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be started.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RestartClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be started.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "restart_user",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be started.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ClusterDetails"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "StateMessage"
+        }
+      }
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set cluster permissions.",
+      "path": "/api/2.0/permissions/clusters/{cluster_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ClusterPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ClusterAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ClusterAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SparkVersions",
+      "description": "Returns the list of available Spark versions. These versions can be used to launch a cluster.",
+      "summary": "List available Spark versions.",
+      "path": "/api/2.1/clusters/spark-versions",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SparkVersionsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetSparkVersionsResponse",
+        "is_object": true
+      }
+    },
+    {
+      "name": "Start",
+      "description": "Starts a terminated Spark cluster with the supplied ID. This works similar to `createCluster` except:\n- The previous cluster id and attributes are preserved.\n- The cluster starts with the last specified cluster size.\n- If the previous cluster was an autoscaling cluster, the current cluster starts with\nthe minimum number of nodes.\n- If the cluster is not currently in a ``TERMINATED`` state, nothing will happen.\n- Clusters launched to run a job cannot be started.",
+      "summary": "Start terminated cluster.",
+      "path": "/api/2.1/clusters/start",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "StartCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be started.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster to be started.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StartClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be started.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster to be started.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ClusterDetails"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "StateMessage"
+        }
+      }
+    },
+    {
+      "name": "Unpin",
+      "description": "Unpinning a cluster will allow the cluster to eventually be removed from the ListClusters API.\nUnpinning a cluster that is not pinned will have no effect.\nThis API can only be called by workspace admins.",
+      "summary": "Unpin cluster.",
+      "path": "/api/2.1/clusters/unpin",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UnpinCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UnpinClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the configuration of a cluster to match the partial set of attributes and size.\nDenote which fields to update using the `update_mask` field in the request body.\nA cluster can be updated if it is in a `RUNNING` or `TERMINATED` state.\nIf a cluster is updated while in a `RUNNING` state, it will be restarted so that the new attributes can take effect.\nIf a cluster is updated while in a `TERMINATED` state, it will remain `TERMINATED`.\nThe updated attributes will take effect the next time the cluster is started using the `clusters/start` API.\nAttempts to update a cluster in any other state will be rejected with an `INVALID_STATE` error code.\nClusters created by the Databricks Jobs service cannot be updated.",
+      "summary": "Update cluster configuration (partial).",
+      "path": "/api/2.1/clusters/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateCluster",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "ID of the cluster.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Used to specify which cluster attributes and size fields to update. See https://google.aip.dev/161 for more details.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "ID of the cluster.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Used to specify which cluster attributes and size fields to update. See https://google.aip.dev/161 for more details.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateClusterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster",
+          "description": "The cluster to be updated.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UpdateClusterResource",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_id",
+          "description": "ID of the cluster.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Used to specify which cluster attributes and size fields to update. See https://google.aip.dev/161 for more details.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "ID of the cluster.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Used to specify which cluster attributes and size fields to update. See https://google.aip.dev/161 for more details.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ClusterDetails"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "StateMessage"
+        }
+      }
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a cluster. Clusters can inherit permissions from their root object.",
+      "summary": "Update cluster permissions.",
+      "path": "/api/2.0/permissions/clusters/{cluster_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ClusterPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The cluster for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ClusterAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ClusterAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The cluster for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

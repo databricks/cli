@@ -1,0 +1,414 @@
+{
+  "id": "billing.BudgetPolicy",
+  "name": "BudgetPolicy",
+  "description": "A service serves REST API about Budget policies",
+  "package": {
+    "name": "billing"
+  },
+  "is_accounts": true,
+  "docs_group": "billing",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListBudgetPoliciesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new policy.",
+      "summary": "Create a budget policy.",
+      "path": "/api/2.1/accounts/{account_id}/budget-policies",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateBudgetPolicyRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "BudgetPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy",
+          "description": "The policy to create. `policy_id` needs to be empty as it will be generated\n`policy_name` must be provided, custom_tags may need to be provided\ndepending on the cloud provider. All other fields are optional.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "BudgetPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "request_id",
+          "description": "A unique identifier for this request. Restricted to 36 ASCII characters.\nA random UUID is recommended.\nThis request is only idempotent if a `request_id` is provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a policy",
+      "summary": "Delete a budget policy.",
+      "path": "/api/2.1/accounts/{account_id}/budget-policies/{policy_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteBudgetPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "The Id of the policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "policy_id",
+            "description": "The Id of the policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "policy_id",
+          "description": "The Id of the policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "The Id of the policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Retrieves a policy by it's ID.",
+      "summary": "Get a budget policy.",
+      "path": "/api/2.1/accounts/{account_id}/budget-policies/{policy_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetBudgetPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "The Id of the policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "policy_id",
+            "description": "The Id of the policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "BudgetPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy_id",
+          "description": "The Id of the policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "The Id of the policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists all policies. Policies are returned in the alphabetically ascending order of their names.",
+      "summary": "List policies.",
+      "path": "/api/2.1/accounts/{account_id}/budget-policies",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListBudgetPoliciesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListBudgetPoliciesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter_by",
+          "description": "A filter to apply to the list of policies.",
+          "is_query": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Filter",
+            "is_object": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of budget policies to return.\nIf unspecified, at most 100 budget policies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListServerlessPolicies` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.\n\nWhen paginating, all other parameters provided to `ListServerlessPoliciesRequest` must match\nthe call that provided the page token.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "sort_spec",
+          "description": "The sort specification.",
+          "is_query": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SortSpec",
+            "is_object": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListServerlessPolicies` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.\n\nWhen paginating, all other parameters provided to `ListServerlessPoliciesRequest` must match\nthe call that provided the page token.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates a policy",
+      "summary": "Update a budget policy.",
+      "path": "/api/2.1/accounts/{account_id}/budget-policies/{policy_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateBudgetPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "The Id of the policy. This field is generated by Databricks and globally unique.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "policy",
+            "description": "The policy to update. `creator_user_id` cannot be specified in the request. All other fields\nmust be specified even if not changed. The `policy_id` is used to identify the policy to\nupdate.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "BudgetPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "policy_id",
+            "description": "The Id of the policy. This field is generated by Databricks and globally unique.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy",
+            "description": "The policy to update. `creator_user_id` cannot be specified in the request. All other fields\nmust be specified even if not changed. The `policy_id` is used to identify the policy to\nupdate.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "BudgetPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "policy",
+        "description": "The policy to update. `creator_user_id` cannot be specified in the request. All other fields\nmust be specified even if not changed. The `policy_id` is used to identify the policy to\nupdate.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "BudgetPolicy",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "BudgetPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "limit_config",
+          "description": "DEPRECATED. This is redundant field as LimitConfig is part of the BudgetPolicy",
+          "is_query": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "LimitConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "policy",
+          "description": "The policy to update. `creator_user_id` cannot be specified in the request. All other fields\nmust be specified even if not changed. The `policy_id` is used to identify the policy to\nupdate.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "BudgetPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The Id of the policy. This field is generated by Databricks and globally unique.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "binding_workspace_ids",
+          "description": "List of workspaces that this budget policy will be exclusively bound to.\nAn empty binding implies that this budget policy is open to any workspace in the account.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_int64": true
+            }
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "A list of tags defined by the customer. At most 20 entries are allowed per policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomPolicyTagList",
+            "array_value": {
+              "pascal_name": "CustomPolicyTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The Id of the policy. This field is generated by Databricks and globally unique.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_name",
+          "description": "The name of the policy.\n- Must be unique among active policies.\n- Can contain only characters from the ISO 8859-1 (latin1) set.\n- Can't start with reserved keywords such as `databricks:default-policy`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "The Id of the policy. This field is generated by Databricks and globally unique.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

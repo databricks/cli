@@ -71,6 +71,7 @@ linters:
             - "!**/bundle/internal/schema/**"
             - "!**/bundle/internal/validation/**"
             - "!**/internal/cligen/**"
+            - "!**/internal/clijson/split/**"
           deny:
             - pkg: "log$"
               desc: "use libs/log instead of the standard library log package"

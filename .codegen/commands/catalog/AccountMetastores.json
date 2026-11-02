@@ -1,0 +1,271 @@
+{
+  "id": "catalog.AccountMetastores",
+  "name": "AccountMetastores",
+  "description": "These APIs manage Unity Catalog metastores for an account. A metastore contains catalogs that can be associated with workspaces",
+  "package": {
+    "name": "catalog"
+  },
+  "is_accounts": true,
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "is_legacy_empty_request": true,
+    "request": {
+      "pascal_name": "ListAccountMetastoresRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a Unity Catalog metastore.",
+      "summary": "Create Metastore.",
+      "path": "/api/2.0/accounts/{account_id}/metastores",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "AccountsCreateMetastore",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "AccountsCreateMetastoreResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "metastore_info",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CreateAccountsMetastore",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a Unity Catalog metastore for an account, both specified by ID.",
+      "summary": "Delete a metastore.",
+      "path": "/api/2.0/accounts/{account_id}/metastores/{metastore_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteAccountMetastoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "metastore_id",
+            "description": "Unity Catalog metastore ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "metastore_id",
+            "description": "Unity Catalog metastore ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AccountsDeleteMetastoreResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "Force deletion even if the metastore is not empty. Default is false.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Unity Catalog metastore ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "metastore_id",
+          "description": "Unity Catalog metastore ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a Unity Catalog metastore from an account, both specified by ID.",
+      "summary": "Get a metastore.",
+      "path": "/api/2.0/accounts/{account_id}/metastores/{metastore_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetAccountMetastoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "metastore_id",
+            "description": "Unity Catalog metastore ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "metastore_id",
+            "description": "Unity Catalog metastore ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AccountsGetMetastoreResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "metastore_id",
+          "description": "Unity Catalog metastore ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "metastore_id",
+          "description": "Unity Catalog metastore ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets all Unity Catalog metastores associated with an account specified by ID.",
+      "summary": "Get all metastores associated with an account.",
+      "path": "/api/2.0/accounts/{account_id}/metastores",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAccountMetastoresRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "AccountsListMetastoresResponse",
+        "is_object": true
+      },
+      "pagination": {}
+    },
+    {
+      "name": "Update",
+      "description": "Updates an existing Unity Catalog metastore.",
+      "summary": "Update a metastore.",
+      "path": "/api/2.0/accounts/{account_id}/metastores/{metastore_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "AccountsUpdateMetastore",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "metastore_id",
+            "description": "Unity Catalog metastore ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "metastore_id",
+            "description": "Unity Catalog metastore ID",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AccountsUpdateMetastoreResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "metastore_id",
+          "description": "Unity Catalog metastore ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_info",
+          "description": "Properties of the metastore to change.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UpdateAccountsMetastore",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "metastore_id",
+          "description": "Unity Catalog metastore ID",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

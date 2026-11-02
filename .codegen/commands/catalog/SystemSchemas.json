@@ -1,0 +1,328 @@
+{
+  "id": "catalog.SystemSchemas",
+  "name": "SystemSchemas",
+  "description": "A system schema is a schema that lives within the system catalog. A system schema may contain\ninformation about customer usage of Unity Catalog such as audit logs, billing logs,\nand lineage information.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListSystemSchemasRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Disable",
+      "description": "Disables the system schema and removes it from the system catalog.\nThe caller must be an account admin or a metastore admin.",
+      "summary": "Disable a system schema.",
+      "path": "/api/2.1/unity-catalog/metastores/{metastore_id}/systemschemas/{schema_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DisableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "metastore_id",
+            "description": "The metastore ID under which the system schema lives.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Full name of the system schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "metastore_id",
+            "description": "The metastore ID under which the system schema lives.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Full name of the system schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DisableResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "metastore_id",
+          "description": "The metastore ID under which the system schema lives.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Full name of the system schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "metastore_id",
+          "description": "The metastore ID under which the system schema lives.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Full name of the system schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enable",
+      "description": "Enables the system schema and adds it to the system catalog.\nThe caller must be an account admin or a metastore admin.",
+      "summary": "Enable a system schema.",
+      "path": "/api/2.1/unity-catalog/metastores/{metastore_id}/systemschemas/{schema_name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "EnableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "metastore_id",
+            "description": "The metastore ID under which the system schema lives.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Full name of the system schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "metastore_id",
+            "description": "The metastore ID under which the system schema lives.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Full name of the system schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EnableResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "the catalog for which the system schema is to enabled in",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The metastore ID under which the system schema lives.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Full name of the system schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "metastore_id",
+          "description": "The metastore ID under which the system schema lives.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Full name of the system schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of system schemas for a metastore.\nThe caller must be an account admin or a metastore admin.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List system schemas.",
+      "path": "/api/2.1/unity-catalog/metastores/{metastore_id}/systemschemas",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListSystemSchemasRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "metastore_id",
+            "description": "The ID for the metastore in which the system schema resides.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "metastore_id",
+            "description": "The ID for the metastore in which the system schema resides.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSystemSchemasResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of schemas to return.\n- When set to 0, the page length is set to a server configured value (recommended);\n- When set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- When set to a value less than 0, an invalid parameter error is returned;\n- If not set, all the schemas are returned (not recommended).",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The ID for the metastore in which the system schema resides.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "metastore_id",
+          "description": "The ID for the metastore in which the system schema resides.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of schemas to return.\n- When set to 0, the page length is set to a server configured value (recommended);\n- When set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- When set to a value less than 0, an invalid parameter error is returned;\n- If not set, all the schemas are returned (not recommended).",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    }
+  ]
+}

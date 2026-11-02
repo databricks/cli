@@ -1,0 +1,678 @@
+{
+  "id": "agentbricks.AgentBricks",
+  "name": "AgentBricks",
+  "description": "The Custom LLMs service manages state and powers the UI for the Custom LLM product.",
+  "package": {
+    "name": "agentbricks"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "agentbricks",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "methods": [
+    {
+      "name": "CancelOptimize",
+      "description": "Cancel a Custom LLM Optimization Run.",
+      "summary": "Cancel a Custom LLM Optimization Run.",
+      "path": "/api/2.0/custom-llms/{id}/optimize/cancel",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CancelCustomLlmOptimizationRunRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateCustomLlm",
+      "description": "Create a Custom LLM.",
+      "summary": "Create a Custom LLM.",
+      "path": "/api/2.0/custom-llms",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateCustomLlmRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM. Only alphanumeric characters and dashes allowed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM. Only alphanumeric characters and dashes allowed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomLlm",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "agent_artifact_path",
+          "description": "This will soon be deprecated!!\nOptional: UC path for agent artifacts. If you are using a dataset that you only have read permissions,\nplease provide a destination path where you have write permissions. Please provide this in catalog.schema format.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "datasets",
+          "description": "Datasets used for training and evaluating the model, not for inference.\nCurrently, only 1 dataset is accepted.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DatasetList",
+            "array_value": {
+              "pascal_name": "Dataset",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "guidelines",
+          "description": "Guidelines for the custom LLM to adhere to",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "instructions",
+          "description": "Instructions for the custom LLM to follow",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the custom LLM. Only alphanumeric characters and dashes allowed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the custom LLM. Only alphanumeric characters and dashes allowed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instructions",
+          "description": "Instructions for the custom LLM to follow",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteCustomLlm",
+      "description": "Delete a Custom LLM.",
+      "summary": "Delete a Custom LLM.",
+      "path": "/api/2.0/custom-llms/{id}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteCustomLlmRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "The id of the custom llm",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "The id of the custom llm",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "The id of the custom llm",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "The id of the custom llm",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetCustomLlm",
+      "description": "Get a Custom LLM.",
+      "summary": "Get a Custom LLM.",
+      "path": "/api/2.0/custom-llms/{id}",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetCustomLlmRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "The id of the custom llm",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "The id of the custom llm",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomLlm",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "The id of the custom llm",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "The id of the custom llm",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "StartOptimize",
+      "description": "Start a Custom LLM Optimization Run.",
+      "summary": "Start a Custom LLM Optimization Run.",
+      "path": "/api/2.0/custom-llms/{id}/optimize",
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "StartCustomLlmOptimizationRunRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "The Id of the tile.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "The Id of the tile.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomLlm",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "The Id of the tile.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "The Id of the tile.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateCustomLlm",
+      "description": "Update a Custom LLM.",
+      "summary": "Update a Custom LLM.",
+      "path": "/api/2.0/custom-llms/{id}",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateCustomLlmRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "The id of the custom llm",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "custom_llm",
+            "description": "The CustomLlm containing the fields which should be updated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomLlm",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of the CustomLlm fields to update. These should correspond to the values (or lack thereof) present in `custom_llm`.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "The id of the custom llm",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "custom_llm",
+            "description": "The CustomLlm containing the fields which should be updated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomLlm",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of the CustomLlm fields to update. These should correspond to the values (or lack thereof) present in `custom_llm`.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomLlm",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the custom LLM",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "instructions",
+            "description": "Instructions for the custom LLM to follow",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "custom_llm",
+          "description": "The CustomLlm containing the fields which should be updated.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomLlm",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "The id of the custom llm",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of the CustomLlm fields to update. These should correspond to the values (or lack thereof) present in `custom_llm`.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "The id of the custom llm",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

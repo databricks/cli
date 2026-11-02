@@ -1,0 +1,632 @@
+{
+  "dataquality.AggregationGranularity": {
+    "description": "The granularity for aggregating data into time windows based on their timestamp.",
+    "enum": [
+      "AGGREGATION_GRANULARITY_5_MINUTES",
+      "AGGREGATION_GRANULARITY_30_MINUTES",
+      "AGGREGATION_GRANULARITY_1_HOUR",
+      "AGGREGATION_GRANULARITY_1_DAY",
+      "AGGREGATION_GRANULARITY_1_WEEK",
+      "AGGREGATION_GRANULARITY_2_WEEKS",
+      "AGGREGATION_GRANULARITY_3_WEEKS",
+      "AGGREGATION_GRANULARITY_4_WEEKS",
+      "AGGREGATION_GRANULARITY_1_MONTH",
+      "AGGREGATION_GRANULARITY_1_YEAR"
+    ],
+    "enum_launch_stages": {
+      "AGGREGATION_GRANULARITY_1_DAY": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_1_HOUR": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_1_MONTH": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_1_WEEK": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_1_YEAR": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_2_WEEKS": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_30_MINUTES": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_3_WEEKS": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_4_WEEKS": "PUBLIC_PREVIEW",
+      "AGGREGATION_GRANULARITY_5_MINUTES": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataquality.AnomalyDetectionConfig": {
+    "description": "Anomaly Detection Configurations.",
+    "fields": {
+      "excluded_table_full_names": {
+        "description": "List of fully qualified table names to exclude from anomaly detection.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "notification_settings": {
+        "description": "Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to\n`schema` monitors only. This is the same schema alert you manage from **Manage alerts** in the\nData Quality Monitoring UI, so a change made in either place shows in both.\n\nSet the recipients in `on_unhealthy_table`; `on_failure` is not supported here. Only\n`destination_ids` and `destination_user_ids` are supported.\n\nOn update, an update mask of `*`, `anomaly_detection_config`, or\n`anomaly_detection_config.notification_settings` replaces the alert's recipients with the ones\nin the request; omitting the field, or leaving both recipient lists empty, removes the alert.\nOther masks leave the alert unchanged.",
+        "ref": "dataquality.NotificationSettings",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dataquality.CancelRefreshRequest": {
+    "description": "Request to cancel a refresh."
+  },
+  "dataquality.CancelRefreshResponse": {
+    "description": "Response to cancelling a refresh.",
+    "fields": {
+      "refresh": {
+        "description": "The refresh to cancel.",
+        "ref": "dataquality.Refresh",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dataquality.CreateMonitorRequest": {
+    "fields": {
+      "monitor": {
+        "description": "The monitor to create.",
+        "ref": "dataquality.Monitor",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.CreateRefreshRequest": {
+    "fields": {
+      "refresh": {
+        "description": "The refresh to create",
+        "ref": "dataquality.Refresh",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.CronSchedule": {
+    "description": "The data quality monitoring workflow cron schedule.",
+    "fields": {
+      "pause_status": {
+        "description": "Read only field that indicates whether the schedule is paused or not.",
+        "ref": "dataquality.CronSchedulePauseStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "quartz_cron_expression": {
+        "description": "The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "timezone_id": {
+        "description": "A Java timezone id. The schedule for a job will be resolved with respect to this timezone.\nSee `Java TimeZone \u003chttp://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html\u003e`_ for details.\nThe timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.CronSchedulePauseStatus": {
+    "description": "The data quality monitoring workflow cron schedule pause status.",
+    "enum": [
+      "CRON_SCHEDULE_PAUSE_STATUS_UNPAUSED",
+      "CRON_SCHEDULE_PAUSE_STATUS_PAUSED"
+    ],
+    "enum_launch_stages": {
+      "CRON_SCHEDULE_PAUSE_STATUS_PAUSED": "PUBLIC_PREVIEW",
+      "CRON_SCHEDULE_PAUSE_STATUS_UNPAUSED": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataquality.DataProfilingConfig": {
+    "description": "Data Profiling Configurations.",
+    "fields": {
+      "assets_dir": {
+        "description": "Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "baseline_table_name": {
+        "description": "Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "custom_metrics": {
+        "description": "Custom metrics.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "dashboard_id": {
+        "description": "Id of dashboard that visualizes the computed metrics.\nThis can be empty if the monitor is in PENDING state.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "drift_metrics_table_name": {
+        "description": "Table that stores drift metrics data. Format: `catalog.schema.table_name`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_warehouse_id": {
+        "description": "The warehouse for dashboard creation",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "inference_log": {
+        "description": "`Analysis Configuration` for monitoring inference log tables.",
+        "ref": "dataquality.InferenceLogConfig",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "latest_monitor_failure_message": {
+        "description": "The latest error message for a monitor failure.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "monitor_version": {
+        "description": "Represents the current monitor configuration version in use. The version will be represented in a\nnumeric fashion (1,2,3...). The field has flexibility to take on negative values, which can indicate corrupted\nmonitor_version numbers.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "monitored_table_name": {
+        "description": "Unity Catalog table to monitor. Format: `catalog.schema.table_name`",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "notification_settings": {
+        "description": "Field for specifying notification settings.",
+        "ref": "dataquality.NotificationSettings",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "output_schema_id": {
+        "description": "ID of the schema where output tables are created.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "profile_metrics_table_name": {
+        "description": "Table that stores profile metrics data. Format: `catalog.schema.table_name`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "schedule": {
+        "description": "The cron schedule.",
+        "ref": "dataquality.CronSchedule",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "skip_builtin_dashboard": {
+        "description": "Whether to skip creating a default dashboard summarizing data quality metrics.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "slicing_exprs": {
+        "description": "List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "snapshot": {
+        "description": "`Analysis Configuration` for monitoring snapshot tables.",
+        "ref": "dataquality.SnapshotConfig",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "The data profiling monitor status.",
+        "ref": "dataquality.DataProfilingStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "time_series": {
+        "description": "`Analysis Configuration` for monitoring time series tables.",
+        "ref": "dataquality.TimeSeriesConfig",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "warehouse_id": {
+        "description": "Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dataquality.DataProfilingCustomMetric": {
+    "description": "Custom metric definition.",
+    "fields": {
+      "definition": {
+        "description": "Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "input_columns": {
+        "description": "A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the metric in the output tables.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "output_data_type": {
+        "description": "The output type of the custom metric.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "type": {
+        "description": "The type of the custom metric.",
+        "ref": "dataquality.DataProfilingCustomMetricType",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.DataProfilingCustomMetricType": {
+    "description": "The custom metric type.",
+    "enum": [
+      "DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE",
+      "DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED",
+      "DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT"
+    ],
+    "enum_launch_stages": {
+      "DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE": "PUBLIC_PREVIEW",
+      "DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED": "PUBLIC_PREVIEW",
+      "DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataquality.DataProfilingStatus": {
+    "description": "The status of the data profiling monitor.",
+    "enum": [
+      "DATA_PROFILING_STATUS_ACTIVE",
+      "DATA_PROFILING_STATUS_PENDING",
+      "DATA_PROFILING_STATUS_DELETE_PENDING",
+      "DATA_PROFILING_STATUS_ERROR",
+      "DATA_PROFILING_STATUS_FAILED"
+    ],
+    "enum_launch_stages": {
+      "DATA_PROFILING_STATUS_ACTIVE": "PUBLIC_PREVIEW",
+      "DATA_PROFILING_STATUS_DELETE_PENDING": "PUBLIC_PREVIEW",
+      "DATA_PROFILING_STATUS_ERROR": "PUBLIC_PREVIEW",
+      "DATA_PROFILING_STATUS_FAILED": "PUBLIC_PREVIEW",
+      "DATA_PROFILING_STATUS_PENDING": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataquality.DeleteMonitorRequest": {},
+  "dataquality.DeleteRefreshRequest": {},
+  "dataquality.GetMonitorRequest": {},
+  "dataquality.GetRefreshRequest": {},
+  "dataquality.InferenceLogConfig": {
+    "description": "Inference log configuration.",
+    "fields": {
+      "granularities": {
+        "description": "List of granularities to use when aggregating data into time windows based on their timestamp.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "label_column": {
+        "description": "Column for the label.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "model_id_column": {
+        "description": "Column for the model identifier.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "prediction_column": {
+        "description": "Column for the prediction.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "problem_type": {
+        "description": "Problem type the model aims to solve.",
+        "ref": "dataquality.InferenceProblemType",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "timestamp_column": {
+        "description": "Column for the timestamp.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.InferenceProblemType": {
+    "description": "Inference problem type the model aims to solve.",
+    "enum": [
+      "INFERENCE_PROBLEM_TYPE_CLASSIFICATION",
+      "INFERENCE_PROBLEM_TYPE_REGRESSION"
+    ],
+    "enum_launch_stages": {
+      "INFERENCE_PROBLEM_TYPE_CLASSIFICATION": "PUBLIC_PREVIEW",
+      "INFERENCE_PROBLEM_TYPE_REGRESSION": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataquality.ListMonitorRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dataquality.ListMonitorResponse": {
+    "description": "Response for listing Monitors.",
+    "fields": {
+      "monitors": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "next_page_token": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.ListRefreshRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dataquality.ListRefreshResponse": {
+    "description": "Response for listing refreshes.",
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "refreshes": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.Monitor": {
+    "description": "Monitor for the data quality of unity catalog entities such as schema or table.",
+    "fields": {
+      "anomaly_detection_config": {
+        "description": "Anomaly Detection Configuration, applicable to `schema` object types.",
+        "ref": "dataquality.AnomalyDetectionConfig",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "data_profiling_config": {
+        "description": "Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`\nmust be present.",
+        "ref": "dataquality.DataProfilingConfig",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "object_id": {
+        "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "object_type": {
+        "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.NotificationDestination": {
+    "description": "Destination of the data quality monitoring notification.",
+    "fields": {
+      "destination_ids": {
+        "description": "The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The\ndestinations must already exist in the workspace; a workspace admin creates them. A maximum of\n25 destination IDs is supported.\nOnly supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "destination_user_ids": {
+        "description": "The IDs of the workspace users to notify by email. A maximum of 25 user IDs is supported.\nOnly supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "email_addresses": {
+        "description": "The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dataquality.NotificationSettings": {
+    "description": "Settings for sending notifications on the data quality monitoring.",
+    "fields": {
+      "on_failure": {
+        "description": "Destinations to send notifications on failure/timeout.",
+        "ref": "dataquality.NotificationDestination",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "on_unhealthy_table": {
+        "description": "Recipients to notify when anomaly detection finds unhealthy tables in the schema. Each\nrecipient gets one notification per important unhealthy table. Only supported on schema\nmonitors, via `anomaly_detection_config`.",
+        "ref": "dataquality.NotificationDestination",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dataquality.Refresh": {
+    "description": "The Refresh object gives information on a refresh of the data quality monitoring pipeline.",
+    "fields": {
+      "end_time_ms": {
+        "description": "Time when the refresh ended (milliseconds since 1/1/1970 UTC).",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message": {
+        "description": "An optional message to give insight into the current state of the refresh (e.g. FAILURE messages).",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "object_id": {
+        "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "object_type": {
+        "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "refresh_id": {
+        "description": "Unique id of the refresh operation.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "start_time_ms": {
+        "description": "Time when the refresh started (milliseconds since 1/1/1970 UTC).",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "The current state of the refresh.",
+        "ref": "dataquality.RefreshState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "trigger": {
+        "description": "What triggered the refresh.",
+        "ref": "dataquality.RefreshTrigger",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dataquality.RefreshState": {
+    "description": "The state of the refresh.",
+    "enum": [
+      "MONITOR_REFRESH_STATE_UNKNOWN",
+      "MONITOR_REFRESH_STATE_PENDING",
+      "MONITOR_REFRESH_STATE_RUNNING",
+      "MONITOR_REFRESH_STATE_SUCCESS",
+      "MONITOR_REFRESH_STATE_FAILED",
+      "MONITOR_REFRESH_STATE_CANCELED"
+    ],
+    "enum_launch_stages": {
+      "MONITOR_REFRESH_STATE_CANCELED": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_STATE_FAILED": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_STATE_PENDING": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_STATE_RUNNING": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_STATE_SUCCESS": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_STATE_UNKNOWN": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataquality.RefreshTrigger": {
+    "description": "The trigger of the refresh.",
+    "enum": [
+      "MONITOR_REFRESH_TRIGGER_UNKNOWN",
+      "MONITOR_REFRESH_TRIGGER_MANUAL",
+      "MONITOR_REFRESH_TRIGGER_SCHEDULE",
+      "MONITOR_REFRESH_TRIGGER_DATA_CHANGE"
+    ],
+    "enum_launch_stages": {
+      "MONITOR_REFRESH_TRIGGER_DATA_CHANGE": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_TRIGGER_MANUAL": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_TRIGGER_SCHEDULE": "PUBLIC_PREVIEW",
+      "MONITOR_REFRESH_TRIGGER_UNKNOWN": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataquality.SnapshotConfig": {
+    "description": "Snapshot analysis configuration."
+  },
+  "dataquality.TimeSeriesConfig": {
+    "description": "Time series analysis configuration.",
+    "fields": {
+      "granularities": {
+        "description": "List of granularities to use when aggregating data into time windows based on their timestamp.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "timestamp_column": {
+        "description": "Column for the timestamp.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.UpdateMonitorRequest": {
+    "fields": {
+      "monitor": {
+        "description": "The monitor to update.",
+        "ref": "dataquality.Monitor",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The field mask to specify which fields to update as a comma-separated list.\nExample value: `data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression`",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataquality.UpdateRefreshRequest": {
+    "fields": {
+      "refresh": {
+        "description": "The refresh to update.",
+        "ref": "dataquality.Refresh",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The field mask to specify which fields to update.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  }
+}

@@ -1,0 +1,265 @@
+{
+  "id": "marketplace.ProviderPersonalizationRequests",
+  "name": "ProviderPersonalizationRequests",
+  "description": "Personalization requests are an alternate to instantly available listings. Control the lifecycle of personalized solutions.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListAllPersonalizationRequestsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "List",
+      "description": "List personalization requests to this provider.\nThis will return all personalization requests, regardless of which listing they are for.",
+      "summary": "All personalization requests across all listings.",
+      "path": "/api/2.0/marketplace-provider/personalization-requests",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListAllPersonalizationRequestsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAllPersonalizationRequestsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Update personalization request. This method only permits updating the status of the request.",
+      "summary": "Update personalization request status.",
+      "path": "/api/2.0/marketplace-provider/listings/{listing_id}/personalization-requests/{request_id}/request-status",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdatePersonalizationRequestRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "request_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PersonalizationRequestStatus",
+              "enum": [
+                {
+                  "content": "DENIED"
+                },
+                {
+                  "content": "FULFILLED"
+                },
+                {
+                  "content": "NEW"
+                },
+                {
+                  "content": "REQUEST_PENDING"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "request_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "status",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PersonalizationRequestStatus",
+              "enum": [
+                {
+                  "content": "DENIED"
+                },
+                {
+                  "content": "FULFILLED"
+                },
+                {
+                  "content": "NEW"
+                },
+                {
+                  "content": "REQUEST_PENDING"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdatePersonalizationRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "reason",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "request_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "share",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ShareInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PersonalizationRequestStatus",
+            "enum": [
+              {
+                "content": "DENIED"
+              },
+              {
+                "content": "FULFILLED"
+              },
+              {
+                "content": "NEW"
+              },
+              {
+                "content": "REQUEST_PENDING"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "request_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PersonalizationRequestStatus",
+            "enum": [
+              {
+                "content": "DENIED"
+              },
+              {
+                "content": "FULFILLED"
+              },
+              {
+                "content": "NEW"
+              },
+              {
+                "content": "REQUEST_PENDING"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

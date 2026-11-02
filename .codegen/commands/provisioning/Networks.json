@@ -1,0 +1,235 @@
+{
+  "id": "provisioning.Networks",
+  "name": "Networks",
+  "description": "These APIs manage network configurations for customer-managed VPCs (optional). Its ID is\nused when creating a new workspace if you use customer-managed VPCs.",
+  "package": {
+    "name": "provisioning"
+  },
+  "is_accounts": true,
+  "docs_group": "provisioning",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a Databricks network configuration that represents an VPC and its resources. The VPC will be used for new Databricks clusters. This requires a pre-existing VPC and subnets.",
+      "summary": "Create network configuration.",
+      "path": "/api/2.0/accounts/{account_id}/networks",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateNetworkRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "Network",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "gcp_network_info",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpNetworkInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "network_name",
+          "description": "The human-readable name of the network configuration.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "security_group_ids",
+          "description": "IDs of one to five security groups associated with this network. Security group IDs **cannot** be used in multiple network configurations.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "subnet_ids",
+          "description": "IDs of at least two subnets associated with this network. Subnet IDs **cannot** be used in multiple network configurations.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "vpc_endpoints",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NetworkVpcEndpoints",
+            "is_object": true
+          }
+        },
+        {
+          "name": "vpc_id",
+          "description": "The ID of the VPC associated with this network configuration. VPC IDs can be used in multiple networks.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a Databricks network configuration, which represents a cloud VPC and its resources. You cannot delete a network that is associated with a workspace.\n\nThis operation is available only if your account is on the E2 version of the platform.",
+      "summary": "Delete a network configuration.",
+      "path": "/api/2.0/accounts/{account_id}/networks/{network_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteNetworkRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_id",
+            "description": "Databricks Account API network configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_id",
+            "description": "Databricks Account API network configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Network",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_id",
+          "description": "Databricks Account API network configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_id",
+          "description": "Databricks Account API network configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a Databricks network configuration, which represents a cloud VPC and its resources.",
+      "summary": "Get a network configuration.",
+      "path": "/api/2.0/accounts/{account_id}/networks/{network_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetNetworkRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_id",
+            "description": "Databricks Account API network configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_id",
+            "description": "Databricks Account API network configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Network",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_id",
+          "description": "Databricks Account API network configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_id",
+          "description": "Databricks Account API network configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists Databricks network configurations for an account.",
+      "summary": "List network configurations.",
+      "path": "/api/2.0/accounts/{account_id}/networks",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListNetworksRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "NetworkList",
+        "array_value": {
+          "pascal_name": "Network",
+          "is_object": true
+        }
+      }
+    }
+  ]
+}

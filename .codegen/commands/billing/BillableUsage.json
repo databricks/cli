@@ -1,0 +1,123 @@
+{
+  "id": "billing.BillableUsage",
+  "name": "BillableUsage",
+  "description": "This API allows you to download billable usage logs for the specified account and date range. This feature works with all account types.",
+  "package": {
+    "name": "billing"
+  },
+  "is_accounts": true,
+  "docs_group": "billing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Download",
+      "description": "Returns billable usage logs in CSV format for the specified account and date range.\n\nNote that this method might take multiple minutes to complete.\n\n**Warning**: Depending on the queried date range, the number of workspaces\nin the account, the size of the response and the internet speed of the caller,\nthis API may hit a timeout after a few minutes. If you experience this, try to mitigate\nby calling the API with narrower date ranges.",
+      "summary": "Return billable usage logs.",
+      "path": "/api/2.0/accounts/{account_id}/usage/download",
+      "is_response_byte_stream": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DownloadRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "start_month",
+            "description": "Format specification for month in the format `YYYY-MM`. This is\nused to specify billable usage `start_month` and `end_month`\nproperties. **Note**: Billable usage logs are unavailable before\nMarch 2019 (`2019-03`).",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "end_month",
+            "description": "Format: `YYYY-MM`. Last month to return billable usage logs for.\nThis field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "start_month",
+            "description": "Format specification for month in the format `YYYY-MM`. This is\nused to specify billable usage `start_month` and `end_month`\nproperties. **Note**: Billable usage logs are unavailable before\nMarch 2019 (`2019-03`).",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "end_month",
+            "description": "Format: `YYYY-MM`. Last month to return billable usage logs for.\nThis field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DownloadResponse",
+        "is_object": true
+      },
+      "response_body_field": {
+        "pascal_name": "Contents"
+      },
+      "all_fields": [
+        {
+          "name": "end_month",
+          "description": "Format: `YYYY-MM`. Last month to return billable usage logs for.\nThis field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "personal_data",
+          "description": "Specify whether to include personally identifiable information in\nthe billable usage logs, for example the email addresses of cluster\ncreators. Handle this information with care. Defaults to false.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "start_month",
+          "description": "Format specification for month in the format `YYYY-MM`. This is\nused to specify billable usage `start_month` and `end_month`\nproperties. **Note**: Billable usage logs are unavailable before\nMarch 2019 (`2019-03`).",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "start_month",
+          "description": "Format specification for month in the format `YYYY-MM`. This is\nused to specify billable usage `start_month` and `end_month`\nproperties. **Note**: Billable usage logs are unavailable before\nMarch 2019 (`2019-03`).",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "end_month",
+          "description": "Format: `YYYY-MM`. Last month to return billable usage logs for.\nThis field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

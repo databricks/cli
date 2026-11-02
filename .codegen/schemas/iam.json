@@ -1,0 +1,1829 @@
+{
+  "iam.AccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "iam.PermissionLevel",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.AccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.AccountGroup": {
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID",
+        "launch_stage": "GA"
+      },
+      "displayName": {
+        "description": "String that represents a human-readable group name",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "description": "external_id should be unique for identifying groups",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Databricks group ID",
+        "launch_stage": "GA"
+      },
+      "members": {
+        "launch_stage": "GA"
+      },
+      "meta": {
+        "description": "Container for the group identifier. Workspace local versus account.",
+        "ref": "iam.ResourceMeta",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.AccountServicePrincipal": {
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID",
+        "launch_stage": "GA"
+      },
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "GA"
+      },
+      "applicationId": {
+        "description": "UUID relating to the service principal",
+        "launch_stage": "GA"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names.",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Databricks service principal ID.",
+        "launch_stage": "GA"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.AccountUser": {
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID",
+        "launch_stage": "GA"
+      },
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "GA"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names. For example `John Smith`.",
+        "launch_stage": "GA"
+      },
+      "emails": {
+        "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "description": "External ID is not currently supported. It is reserved for future use.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Databricks user ID.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "ref": "iam.Name",
+        "launch_stage": "GA"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      },
+      "userName": {
+        "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.Actor": {
+    "description": "represents an identity trying to access a resource - user or a service principal\ngroup can be a principal of a permission set assignment but an actor is always a user or a service principal",
+    "fields": {
+      "actor_id": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.AutoscopeState": {
+    "description": "State of inferred scope collection (autoscope) for an external PAT.\nMirrored in databricks.identity.AutoscopeState in common/principal-context/api/proto/tokendetails.proto.\nToken store and token management proto can depend on this.\nPrincipal context proto should NOT depend on this proto definitions because too many services depend on the principal context proto.",
+    "enum": [
+      "AUTOSCOPE_STATE_DISABLED",
+      "AUTOSCOPE_STATE_RUNNING",
+      "AUTOSCOPE_STATE_COMPLETED",
+      "AUTOSCOPE_STATE_BACKFILLED",
+      "AUTOSCOPE_STATE_USER_SELECTED",
+      "AUTOSCOPE_STATE_API_NOT_COVERED"
+    ],
+    "enum_launch_stages": {
+      "AUTOSCOPE_STATE_API_NOT_COVERED": "PRIVATE_PREVIEW",
+      "AUTOSCOPE_STATE_BACKFILLED": "PRIVATE_PREVIEW",
+      "AUTOSCOPE_STATE_COMPLETED": "PRIVATE_PREVIEW",
+      "AUTOSCOPE_STATE_DISABLED": "PRIVATE_PREVIEW",
+      "AUTOSCOPE_STATE_RUNNING": "PRIVATE_PREVIEW",
+      "AUTOSCOPE_STATE_USER_SELECTED": "PRIVATE_PREVIEW"
+    }
+  },
+  "iam.CheckPolicyRequest": {
+    "fields": {
+      "actor": {
+        "ref": "iam.Actor",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "authz_identity": {
+        "ref": "iam.RequestAuthzIdentity",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "consistency_token": {
+        "ref": "iam.ConsistencyToken",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "permission": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "resource": {
+        "description": "Ex: (servicePrincipal/use, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e)\nEx: (servicePrincipal.ruleSet/update, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e/ruleSets/default)",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "resource_info": {
+        "ref": "iam.ResourceInfo",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.CheckPolicyResponse": {
+    "fields": {
+      "consistency_token": {
+        "ref": "iam.ConsistencyToken",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "is_permitted": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.ComplexValue": {
+    "fields": {
+      "$ref": {
+        "launch_stage": "GA"
+      },
+      "display": {
+        "launch_stage": "GA"
+      },
+      "primary": {
+        "launch_stage": "GA"
+      },
+      "type": {
+        "launch_stage": "GA"
+      },
+      "value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ConsistencyToken": {
+    "fields": {
+      "value": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.CreateAccountGroupRequest": {
+    "fields": {
+      "displayName": {
+        "description": "String that represents a human-readable group name",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Databricks group ID",
+        "launch_stage": "GA"
+      },
+      "members": {
+        "launch_stage": "GA"
+      },
+      "meta": {
+        "description": "Container  for the group identifier. Workspace local versus account.",
+        "ref": "iam.ResourceMeta",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.CreateAccountServicePrincipalRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "GA"
+      },
+      "applicationId": {
+        "description": "UUID relating to the service principal",
+        "launch_stage": "GA"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names.",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Databricks service principal ID.",
+        "launch_stage": "GA"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.CreateAccountUserRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "GA"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names. For example `John Smith`.",
+        "launch_stage": "GA"
+      },
+      "emails": {
+        "description": "All the emails associated with the Databricks user.",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "description": "External ID is not currently supported. It is reserved for future use.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Databricks user ID.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "ref": "iam.Name",
+        "launch_stage": "GA"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      },
+      "userName": {
+        "description": "Email address of the Databricks user.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.CreateGroupRequest": {
+    "fields": {
+      "displayName": {
+        "description": "String that represents a human-readable group name",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the group. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Databricks group ID",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "members": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "meta": {
+        "description": "Container  for the group identifier. Workspace local versus account.",
+        "ref": "iam.ResourceMeta",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the group.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.CreateServicePrincipalRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "applicationId": {
+        "description": "UUID relating to the service principal",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the service principal. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Databricks service principal ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the List response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.CreateUserRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names. For example `John Smith`. This field cannot be updated through the Workspace SCIM APIs when [identity federation is enabled](https://docs.databricks.com/administration-guide/users-groups/best-practices.html#enable-identity-federation). Use Account SCIM APIs to update `displayName`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "emails": {
+        "description": "All the emails associated with the Databricks user.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the user. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "description": "External ID is not currently supported. It is reserved for future use.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Databricks user ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "ref": "iam.Name",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the user.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "userName": {
+        "description": "Email address of the Databricks user.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.DeleteAccountGroupRequest": {},
+  "iam.DeleteAccountServicePrincipalRequest": {},
+  "iam.DeleteAccountUserRequest": {},
+  "iam.DeleteGroupRequest": {},
+  "iam.DeleteServicePrincipalRequest": {},
+  "iam.DeleteUserRequest": {},
+  "iam.DeleteWorkspaceAssignmentRequest": {},
+  "iam.DeleteWorkspacePermissionAssignmentResponse": {},
+  "iam.GetAccountGroupRequest": {},
+  "iam.GetAccountServicePrincipalRequest": {},
+  "iam.GetAccountUserRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "GA"
+      },
+      "count": {
+        "description": "Desired number of results per page. Default is 10000.",
+        "launch_stage": "GA"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "GA"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "GA"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results. Multi-part paths are supported. For example, `userName`, `name.givenName`, and `emails`.",
+        "launch_stage": "GA"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.GetSortOrder",
+        "launch_stage": "GA"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.GetAssignableRolesForResourceRequest": {
+    "fields": {
+      "resource": {
+        "description": "The resource name for which assignable roles will be listed.\n\nExamples | Summary\n:--- | :---\n`resource=accounts/\u003cACCOUNT_ID\u003e` | A resource name for the account.\n`resource=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e` | A resource name for the group.\n`resource=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSP_ID\u003e` | A resource name for the service principal.\n`resource=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e` | A resource name for the tag policy.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.GetAssignableRolesForResourceResponse": {
+    "fields": {
+      "roles": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.GetGroupRequest": {},
+  "iam.GetPasswordPermissionLevelsRequest": {},
+  "iam.GetPasswordPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.GetPasswordPermissionsRequest": {},
+  "iam.GetPermissionLevelsRequest": {},
+  "iam.GetPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.GetPermissionRequest": {},
+  "iam.GetRuleSetRequest": {
+    "fields": {
+      "etag": {
+        "description": "Etag used for versioning. The response is at least as fresh as the eTag provided. Etag is used for optimistic\nconcurrency control as a way to help prevent simultaneous updates of a rule set from overwriting each other. It is\nstrongly suggested that systems make use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set\nupdates in order to avoid race conditions that is get an etag from a GET rule set request, and pass it with the\nPUT update request to identify the rule set version you are updating.\n\nExamples | Summary\n:--- | :---\n`etag=` | An empty etag can only be used in GET to indicate no freshness requirements.\n`etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ==` | An etag encoded a specific version of the rule set to get or to be updated.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "The ruleset name associated with the request.\n\nExamples | Summary\n:--- | :---\n`name=accounts/\u003cACCOUNT_ID\u003e/ruleSets/default` | A name for a rule set on the account.\n`name=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e/ruleSets/default` | A name for a rule set on the group.\n`name=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSERVICE_PRINCIPAL_APPLICATION_ID\u003e/ruleSets/default` | A name for a rule set on the service principal.\n`name=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e/ruleSets/default` | A name for a rule set on the tag policy.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.GetServicePrincipalRequest": {},
+  "iam.GetSortOrder": {
+    "enum": [
+      "ascending",
+      "descending"
+    ],
+    "enum_launch_stages": {
+      "ascending": "GA",
+      "descending": "GA"
+    }
+  },
+  "iam.GetUserRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "count": {
+        "description": "Desired number of results per page.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results. Multi-part paths are supported. For example, `userName`, `name.givenName`, and `emails`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.GetSortOrder",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.GetWorkspaceAssignmentRequest": {},
+  "iam.GrantRule": {
+    "fields": {
+      "principals": {
+        "description": "Principals this grant rule applies to.\nA principal can be a user (for end users), a service principal (for applications and\ncompute workloads), or an account group. Each principal has its own identifier format:\n* users/\u003cUSERNAME\u003e\n* groups/\u003cGROUP_NAME\u003e\n* servicePrincipals/\u003cSERVICE_PRINCIPAL_APPLICATION_ID\u003e",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "role": {
+        "description": "Role that is assigned to the list of principals.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.Group": {
+    "fields": {
+      "displayName": {
+        "description": "String that represents a human-readable group name",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the group. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "description": "external_id should be unique for identifying groups",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Databricks group ID",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "members": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "meta": {
+        "description": "Container for the group identifier. Workspace local versus account.",
+        "ref": "iam.ResourceMeta",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the group.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.GroupSchema": {
+    "enum": [
+      "urn:ietf:params:scim:schemas:core:2.0:Group"
+    ],
+    "enum_launch_stages": {
+      "urn:ietf:params:scim:schemas:core:2.0:Group": "PUBLIC_PREVIEW"
+    }
+  },
+  "iam.ListAccountGroupsRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "GA"
+      },
+      "count": {
+        "description": "Desired number of results per page. Default is 10000.",
+        "launch_stage": "GA"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "GA"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "GA"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results.",
+        "launch_stage": "GA"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.ListSortOrder",
+        "launch_stage": "GA"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ListAccountGroupsResponse": {
+    "fields": {
+      "Resources": {
+        "description": "User objects returned in the response.",
+        "launch_stage": "GA"
+      },
+      "itemsPerPage": {
+        "description": "Total results returned in the response.",
+        "launch_stage": "GA"
+      },
+      "startIndex": {
+        "description": "Starting index of all the results that matched the request filters. First item is number 1.",
+        "launch_stage": "GA"
+      },
+      "totalResults": {
+        "description": "Total results that match the request filters.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ListAccountServicePrincipalsRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "GA"
+      },
+      "count": {
+        "description": "Desired number of results per page. Default is 10000.",
+        "launch_stage": "GA"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "GA"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "GA"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results.",
+        "launch_stage": "GA"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.ListSortOrder",
+        "launch_stage": "GA"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ListAccountServicePrincipalsResponse": {
+    "fields": {
+      "Resources": {
+        "description": "User objects returned in the response.",
+        "launch_stage": "GA"
+      },
+      "itemsPerPage": {
+        "description": "Total results returned in the response.",
+        "launch_stage": "GA"
+      },
+      "startIndex": {
+        "description": "Starting index of all the results that matched the request filters. First item is number 1.",
+        "launch_stage": "GA"
+      },
+      "totalResults": {
+        "description": "Total results that match the request filters.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ListAccountUsersRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "GA"
+      },
+      "count": {
+        "description": "Desired number of results per page. Default is 10000.",
+        "launch_stage": "GA"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "GA"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "GA"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results. Multi-part paths are supported. For example, `userName`, `name.givenName`, and `emails`.",
+        "launch_stage": "GA"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.ListSortOrder",
+        "launch_stage": "GA"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ListAccountUsersResponse": {
+    "fields": {
+      "Resources": {
+        "description": "User objects returned in the response.",
+        "launch_stage": "GA"
+      },
+      "itemsPerPage": {
+        "description": "Total results returned in the response.",
+        "launch_stage": "GA"
+      },
+      "startIndex": {
+        "description": "Starting index of all the results that matched the request filters. First item is number 1.",
+        "launch_stage": "GA"
+      },
+      "totalResults": {
+        "description": "Total results that match the request filters.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ListGroupsRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "count": {
+        "description": "Desired number of results per page.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.ListSortOrder",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ListGroupsResponse": {
+    "fields": {
+      "Resources": {
+        "description": "User objects returned in the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "itemsPerPage": {
+        "description": "Total results returned in the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the service principal.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "startIndex": {
+        "description": "Starting index of all the results that matched the request filters. First item is number 1.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "totalResults": {
+        "description": "Total results that match the request filters.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ListResponseSchema": {
+    "enum": [
+      "urn:ietf:params:scim:api:messages:2.0:ListResponse"
+    ],
+    "enum_launch_stages": {
+      "urn:ietf:params:scim:api:messages:2.0:ListResponse": "PUBLIC_PREVIEW"
+    }
+  },
+  "iam.ListServicePrincipalResponse": {
+    "fields": {
+      "Resources": {
+        "description": "User objects returned in the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "itemsPerPage": {
+        "description": "Total results returned in the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the List response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "startIndex": {
+        "description": "Starting index of all the results that matched the request filters. First item is number 1.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "totalResults": {
+        "description": "Total results that match the request filters.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ListServicePrincipalsRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "count": {
+        "description": "Desired number of results per page.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.ListSortOrder",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ListSortOrder": {
+    "enum": [
+      "ascending",
+      "descending"
+    ],
+    "enum_launch_stages": {
+      "ascending": "GA",
+      "descending": "GA"
+    }
+  },
+  "iam.ListUsersRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "count": {
+        "description": "Desired number of results per page.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "filter": {
+        "description": "Query by which the results have to be filtered. Supported operators are equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`). Additionally, simple expressions can be formed using logical operators - `and` and `or`. The [SCIM RFC](https://tools.ietf.org/html/rfc7644#section-3.4.2.2) has more details but we currently only support simple expressions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortBy": {
+        "description": "Attribute to sort the results. Multi-part paths are supported. For example, `userName`, `name.givenName`, and `emails`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sortOrder": {
+        "description": "The order to sort the results.",
+        "ref": "iam.ListSortOrder",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "startIndex": {
+        "description": "Specifies the index of the first result. First item is number 1.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ListUsersResponse": {
+    "fields": {
+      "Resources": {
+        "description": "User objects returned in the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "itemsPerPage": {
+        "description": "Total results returned in the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the List response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "startIndex": {
+        "description": "Starting index of all the results that matched the request filters. First item is number 1.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "totalResults": {
+        "description": "Total results that match the request filters.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ListWorkspaceAssignmentRequest": {},
+  "iam.MeRequest": {
+    "fields": {
+      "attributes": {
+        "description": "Comma-separated list of attributes to return in response.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "excludedAttributes": {
+        "description": "Comma-separated list of attributes to exclude in response.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iam.MigratePermissionsRequest": {
+    "fields": {
+      "from_workspace_group_name": {
+        "description": "The name of the workspace group that permissions will be migrated from.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "size": {
+        "description": "The maximum number of permissions that will be migrated.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "to_account_group_name": {
+        "description": "The name of the account group that permissions will be migrated to.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "workspace_id": {
+        "description": "WorkspaceId of the associated workspace where the permission migration will occur.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.MigratePermissionsResponse": {
+    "fields": {
+      "permissions_migrated": {
+        "description": "Number of permissions migrated.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.Name": {
+    "fields": {
+      "familyName": {
+        "description": "Family name of the Databricks user.",
+        "launch_stage": "GA"
+      },
+      "givenName": {
+        "description": "Given name of the Databricks user.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.ObjectPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PasswordAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "permission_level": {
+        "description": "Permission level",
+        "ref": "iam.PasswordPermissionLevel",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.PasswordAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.PasswordPermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "inherited_from_object": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "permission_level": {
+        "description": "Permission level",
+        "ref": "iam.PasswordPermissionLevel",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.PasswordPermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_USE"
+    ],
+    "enum_launch_stages": {
+      "CAN_USE": "PUBLIC_PREVIEW"
+    }
+  },
+  "iam.PasswordPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "object_id": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "object_type": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.PasswordPermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "permission_level": {
+        "description": "Permission level",
+        "ref": "iam.PasswordPermissionLevel",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.PasswordPermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.Patch": {
+    "fields": {
+      "op": {
+        "description": "Type of patch operation.",
+        "ref": "iam.PatchOp",
+        "launch_stage": "GA"
+      },
+      "path": {
+        "description": "Selection of patch operation",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "Value to modify",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PatchAccountGroupRequest": {
+    "fields": {
+      "Operations": {
+        "launch_stage": "GA"
+      },
+      "schemas": {
+        "description": "The schema of the patch request. Must be [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"].",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PatchAccountServicePrincipalRequest": {
+    "fields": {
+      "Operations": {
+        "launch_stage": "GA"
+      },
+      "schemas": {
+        "description": "The schema of the patch request. Must be [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"].",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PatchAccountUserRequest": {
+    "fields": {
+      "Operations": {
+        "launch_stage": "GA"
+      },
+      "schemas": {
+        "description": "The schema of the patch request. Must be [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"].",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PatchGroupRequest": {
+    "fields": {
+      "Operations": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the patch request. Must be [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"].",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.PatchOp": {
+    "description": "Type of patch operation.",
+    "enum": [
+      "add",
+      "remove",
+      "replace"
+    ],
+    "enum_launch_stages": {
+      "add": "GA",
+      "remove": "GA",
+      "replace": "GA"
+    }
+  },
+  "iam.PatchSchema": {
+    "enum": [
+      "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+    ],
+    "enum_launch_stages": {
+      "urn:ietf:params:scim:api:messages:2.0:PatchOp": "GA"
+    }
+  },
+  "iam.PatchServicePrincipalRequest": {
+    "fields": {
+      "Operations": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the patch request. Must be [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"].",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.PatchUserRequest": {
+    "fields": {
+      "Operations": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the patch request. Must be [\"urn:ietf:params:scim:api:messages:2.0:PatchOp\"].",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.Permission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "GA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "iam.PermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PermissionAssignment": {
+    "description": "The output format for existing workspace PermissionAssignment records, which contains some info for\nuser consumption.",
+    "fields": {
+      "error": {
+        "description": "Error response associated with a workspace permission assignment, if any.",
+        "launch_stage": "GA"
+      },
+      "permissions": {
+        "description": "The permissions level of the principal.",
+        "launch_stage": "GA"
+      },
+      "principal": {
+        "description": "Information about the principal assigned to the workspace.",
+        "ref": "iam.PrincipalOutput",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PermissionAssignments": {
+    "fields": {
+      "permission_assignments": {
+        "description": "Array of permissions assignments defined for a workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_RESTART",
+      "CAN_ATTACH_TO",
+      "IS_OWNER",
+      "CAN_MANAGE_RUN",
+      "CAN_VIEW",
+      "CAN_READ",
+      "CAN_RUN",
+      "CAN_EDIT",
+      "CAN_USE",
+      "CAN_MANAGE_STAGING_VERSIONS",
+      "CAN_MANAGE_PRODUCTION_VERSIONS",
+      "CAN_EDIT_METADATA",
+      "CAN_VIEW_METADATA",
+      "CAN_BIND",
+      "CAN_QUERY",
+      "CAN_MONITOR",
+      "CAN_CREATE",
+      "CAN_MONITOR_ONLY",
+      "CAN_CREATE_APP"
+    ],
+    "enum_launch_stages": {
+      "CAN_ATTACH_TO": "GA",
+      "CAN_BIND": "GA",
+      "CAN_CREATE": "GA",
+      "CAN_CREATE_APP": "PRIVATE_PREVIEW",
+      "CAN_EDIT": "GA",
+      "CAN_EDIT_METADATA": "GA",
+      "CAN_MANAGE": "GA",
+      "CAN_MANAGE_PRODUCTION_VERSIONS": "GA",
+      "CAN_MANAGE_RUN": "GA",
+      "CAN_MANAGE_STAGING_VERSIONS": "GA",
+      "CAN_MONITOR": "GA",
+      "CAN_MONITOR_ONLY": "PRIVATE_PREVIEW",
+      "CAN_QUERY": "GA",
+      "CAN_READ": "GA",
+      "CAN_RESTART": "GA",
+      "CAN_RUN": "GA",
+      "CAN_USE": "GA",
+      "CAN_VIEW": "GA",
+      "CAN_VIEW_METADATA": "GA",
+      "IS_OWNER": "GA"
+    }
+  },
+  "iam.PermissionOutput": {
+    "fields": {
+      "description": {
+        "description": "The results of a permissions query.",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "iam.WorkspacePermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "iam.PermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.PrincipalOutput": {
+    "description": "Information about the principal assigned to the workspace.",
+    "fields": {
+      "display_name": {
+        "description": "The display name of the principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "The group name of the group. Present only if the principal is a group.",
+        "launch_stage": "GA"
+      },
+      "principal_id": {
+        "description": "The unique, opaque id of the principal.",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "The name of the service principal. Present only if the principal is a service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "The username of the user. Present only if the principal is a user.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.RequestAuthzIdentity": {
+    "description": "Defines the identity to be used for authZ of the request on the server side. See one pager for\nfor more information: http://go/acl/service-identity",
+    "enum": [
+      "REQUEST_AUTHZ_IDENTITY_USER_CONTEXT",
+      "REQUEST_AUTHZ_IDENTITY_SERVICE_IDENTITY"
+    ],
+    "enum_launch_stages": {
+      "REQUEST_AUTHZ_IDENTITY_SERVICE_IDENTITY": "PRIVATE_PREVIEW",
+      "REQUEST_AUTHZ_IDENTITY_USER_CONTEXT": "PRIVATE_PREVIEW"
+    }
+  },
+  "iam.ResourceInfo": {
+    "fields": {
+      "id": {
+        "description": "Id of the current resource.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "legacy_acl_path": {
+        "description": "The legacy acl path of the current resource.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "parent_resource_info": {
+        "description": "Parent resource info for the current resource. The parent may have another parent.",
+        "ref": "iam.ResourceInfo",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.ResourceMeta": {
+    "fields": {
+      "resourceType": {
+        "description": "Identifier for group type. Can be local workspace group (`WorkspaceGroup`) or account group (`Group`).",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iam.Role": {
+    "fields": {
+      "name": {
+        "description": "Role to assign to a principal or a list of principals on a resource.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.RuleSetResponse": {
+    "fields": {
+      "etag": {
+        "description": "Identifies the version of the rule set returned.\nEtag used for versioning. The response is at least as fresh as the eTag provided.\nEtag is used for optimistic concurrency control as a way to help prevent simultaneous\nupdates of a rule set from overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set updates in\norder to avoid race conditions that is get an etag from a GET rule set request, and pass it\nwith the PUT update request to identify the rule set version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "grant_rules": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the rule set.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.RuleSetUpdateRequest": {
+    "fields": {
+      "etag": {
+        "description": "Identifies the version of the rule set returned.\nEtag used for versioning. The response is at least as fresh as the eTag provided.\nEtag is used for optimistic concurrency control as a way to help prevent simultaneous\nupdates of a rule set from overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set updates in\norder to avoid race conditions that is get an etag from a GET rule set request, and pass it\nwith the PUT update request to identify the rule set version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "grant_rules": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the rule set.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ServicePrincipal": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "applicationId": {
+        "description": "UUID relating to the service principal",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the service principal. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Databricks service principal ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the List response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.ServicePrincipalSchema": {
+    "enum": [
+      "urn:ietf:params:scim:schemas:core:2.0:ServicePrincipal"
+    ],
+    "enum_launch_stages": {
+      "urn:ietf:params:scim:schemas:core:2.0:ServicePrincipal": "PUBLIC_PREVIEW"
+    }
+  },
+  "iam.SetObjectPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.UpdateAccountGroupRequest": {
+    "fields": {
+      "displayName": {
+        "description": "String that represents a human-readable group name",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "launch_stage": "GA"
+      },
+      "members": {
+        "launch_stage": "GA"
+      },
+      "meta": {
+        "description": "Container  for the group identifier. Workspace local versus account.",
+        "ref": "iam.ResourceMeta",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.UpdateAccountServicePrincipalRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "GA"
+      },
+      "applicationId": {
+        "description": "UUID relating to the service principal",
+        "launch_stage": "GA"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names.",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "launch_stage": "GA"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.UpdateAccountUserRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "GA"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names. For example `John Smith`.",
+        "launch_stage": "GA"
+      },
+      "emails": {
+        "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "GA"
+      },
+      "externalId": {
+        "description": "External ID is not currently supported. It is reserved for future use.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "ref": "iam.Name",
+        "launch_stage": "GA"
+      },
+      "roles": {
+        "description": "Indicates if the group has the admin role.",
+        "launch_stage": "GA"
+      },
+      "userName": {
+        "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.UpdateGroupRequest": {
+    "fields": {
+      "displayName": {
+        "description": "String that represents a human-readable group name",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the group. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "members": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "meta": {
+        "description": "Container  for the group identifier. Workspace local versus account.",
+        "ref": "iam.ResourceMeta",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the group.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.UpdateObjectPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.UpdateRuleSetRequest": {
+    "fields": {
+      "name": {
+        "description": "Name of the rule set.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "rule_set": {
+        "ref": "iam.RuleSetUpdateRequest",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.UpdateServicePrincipalRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "applicationId": {
+        "description": "UUID relating to the service principal",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the service principal. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the List response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.UpdateUserRequest": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names. For example `John Smith`. This field cannot be updated through the Workspace SCIM APIs when [identity federation is enabled](https://docs.databricks.com/administration-guide/users-groups/best-practices.html#enable-identity-federation). Use Account SCIM APIs to update `displayName`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "emails": {
+        "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the user. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "description": "External ID is not currently supported. It is reserved for future use.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "ref": "iam.Name",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the user.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "userName": {
+        "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.UpdateWorkspaceAssignments": {
+    "fields": {
+      "permissions": {
+        "description": "Array of permissions assignments to update on the workspace.\nValid values are \"USER\" and \"ADMIN\" (case-sensitive).\nIf both \"USER\" and \"ADMIN\" are provided, \"ADMIN\" takes precedence.\nOther values will be ignored.\nNote that excluding this field, or providing unsupported values, will have the same effect as providing an empty list, which will result in the deletion of all permissions for the principal.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iam.User": {
+    "fields": {
+      "active": {
+        "description": "If this user is active",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "displayName": {
+        "description": "String that represents a concatenation of given and family names. For example `John Smith`. This field cannot be updated through the Workspace SCIM APIs when [identity federation is enabled](https://docs.databricks.com/administration-guide/users-groups/best-practices.html#enable-identity-federation). Use Account SCIM APIs to update `displayName`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "emails": {
+        "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entitlements": {
+        "description": "Entitlements assigned to the user. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "externalId": {
+        "description": "External ID is not currently supported. It is reserved for future use.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "groups": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Databricks user ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "ref": "iam.Name",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "roles": {
+        "description": "Corresponds to AWS instance profile/arn role.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schemas": {
+        "description": "The schema of the user.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "userName": {
+        "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "iam.UserSchema": {
+    "enum": [
+      "urn:ietf:params:scim:schemas:core:2.0:User",
+      "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
+    ],
+    "enum_launch_stages": {
+      "urn:ietf:params:scim:schemas:core:2.0:User": "PUBLIC_PREVIEW",
+      "urn:ietf:params:scim:schemas:extension:workspace:2.0:User": "PUBLIC_PREVIEW"
+    }
+  },
+  "iam.WorkspacePermission": {
+    "enum": [
+      "UNKNOWN",
+      "USER",
+      "ADMIN"
+    ],
+    "enum_launch_stages": {
+      "ADMIN": "GA",
+      "UNKNOWN": "GA",
+      "USER": "GA"
+    }
+  },
+  "iam.WorkspacePermissions": {
+    "fields": {
+      "permissions": {
+        "description": "Array of permissions defined for a workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

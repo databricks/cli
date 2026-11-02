@@ -1,0 +1,821 @@
+{
+  "id": "provisioning.Workspaces",
+  "name": "Workspaces",
+  "description": "These APIs manage workspaces for this account. A Databricks workspace is an environment for\naccessing all of your Databricks assets. The workspace organizes objects (notebooks,\nlibraries, and experiments) into folders, and provides access to data and computational\nresources such as clusters and jobs.\n\nThese endpoints are available if your account is on the E2 version of the platform or on\na select custom plan that allows multiple workspaces per account.",
+  "package": {
+    "name": "provisioning"
+  },
+  "is_accounts": true,
+  "docs_group": "provisioning",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new workspace using a credential configuration and a storage configuration, an optional network configuration (if using a customer-managed VPC), an optional managed services key configuration (if using customer-managed keys for managed services), and an optional storage key configuration (if using customer-managed keys for storage). The key configurations used for managed services and storage encryption can be the same or different.\n\nImportant: This operation is asynchronous. A response with HTTP status code 200 means the request has been accepted and is in progress, but does not mean that the workspace deployed successfully and is running. The initial workspace status is typically PROVISIONING. Use the workspace ID (workspace_id) field in the response to identify the new workspace and make repeated GET requests with the workspace ID and check its status. The workspace becomes available when the status changes to RUNNING.\n\nYou can share one customer-managed VPC with multiple workspaces in a single account. It is not required to create a new VPC for each workspace. However, you cannot reuse subnets or Security Groups between workspaces. If you plan to share one VPC with multiple workspaces, make sure you size your VPC and subnets accordingly. Because a Databricks Account API network configuration encapsulates this information, you cannot reuse a Databricks Account API network configuration across workspaces.\n\nFor information about how to create a new workspace with this API including error handling, see [Create a new workspace using the Account API](http://docs.databricks.com/administration-guide/account-api/new-workspace.html).\n\nImportant: Customer-managed VPCs, PrivateLink, and customer-managed keys are supported on a limited set of deployment and subscription types. If you have questions about availability, contact your Databricks representative.\n\nThis operation is available only if your account is on the E2 version of the platform or on a select custom plan that allows multiple workspaces per account.",
+      "summary": "Create a workspace.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateWorkspaceRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "Workspace",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "aws_region",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cloud",
+          "description": "DEPRECATED: This field is being ignored by the server and will be removed in the future.\nThe cloud name. This field always has the value `gcp`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cloud_resource_container",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CloudResourceContainer",
+            "is_object": true
+          }
+        },
+        {
+          "name": "compute_mode",
+          "description": "If the compute mode is `SERVERLESS`, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. This means you don't need to provide any resources managed by you, such as credentials, storage, or network.\nIf the compute mode is `HYBRID` (which is the default option), a classic workspace is created that uses customer-managed resources.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomerFacingComputeMode",
+            "enum": [
+              {
+                "content": "HYBRID"
+              },
+              {
+                "content": "SERVERLESS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "credentials_id",
+          "description": "ID of the workspace's credential configuration object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "The custom tags key-value pairing that is attached to this workspace. The key-value pair is a string of utf-8 characters. The\nvalue can be an empty string, with maximum length of 255 characters. The key can be of maximum length of 127 characters, and cannot be empty.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "deployment_name",
+          "description": "The deployment name defines part of the subdomain for the workspace. The workspace URL for the web application and REST APIs is \u003cworkspace-deployment-name\u003e.cloud.databricks.com. For example, if the deployment name is abcsales, your workspace URL will be https://abcsales.cloud.databricks.com. Hyphens are allowed. This property supports only the set of characters that are allowed in a subdomain.\nTo set this value, you must have a deployment name prefix. Contact your Databricks account team to add an account deployment name prefix to your account.\nWorkspace deployment names follow the account prefix and a hyphen. For example, if your account's deployment prefix is acme and the workspace deployment name is workspace-1, the JSON response for the deployment_name field becomes acme-workspace-1. The workspace URL would be acme-workspace-1.cloud.databricks.com.\nYou can also set the deployment_name to the reserved keyword EMPTY if you want the deployment name to only include the deployment prefix. For example, if your account's deployment prefix is acme and the workspace deployment name is EMPTY, the deployment_name becomes acme only and the workspace URL is acme.cloud.databricks.com.\nThis value must be unique across all non-deleted deployments across all AWS regions.\nIf a new workspace omits this property, the server generates a unique deployment name for you with the pattern dbc-xxxxxxxx-xxxx.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "gcp_managed_network_config",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpManagedNetworkConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "gke_config",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GkeConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "location",
+          "description": "The Google Cloud region of the workspace data plane in your Google account (for example, `us-east4`).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "managed_services_customer_managed_key_id",
+          "description": "The ID of the workspace's managed services encryption key configuration object. This is used to help protect and control access to the workspace's notebooks, secrets, Databricks SQL queries, and query history. The provided key configuration object property use_cases must contain MANAGED_SERVICES.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "network_connectivity_config_id",
+          "description": "The object ID of network connectivity config. Once assigned, the workspace serverless compute resources use the same set of stable IP CIDR blocks and optional private link to access your resources.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "network_id",
+          "description": "The ID of the workspace's network configuration object. To use AWS PrivateLink, this field is required.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "pricing_tier",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PricingTier",
+            "enum": [
+              {
+                "content": "COMMUNITY_EDITION"
+              },
+              {
+                "content": "DEDICATED"
+              },
+              {
+                "content": "ENTERPRISE"
+              },
+              {
+                "content": "PREMIUM"
+              },
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "UNKNOWN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "private_access_settings_id",
+          "description": "ID of the workspace's private access settings object. Only used for PrivateLink. You must specify this ID if you are using [AWS PrivateLink](https://aws.amazon.com/privatelink/) for either front-end (user-to-workspace connection), back-end (data plane to control plane connection), or both connection types.\nBefore configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).\",",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_configuration_id",
+          "description": "ID of the workspace's storage configuration object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_customer_managed_key_id",
+          "description": "The ID of the workspace's storage encryption key configuration object. This is used to encrypt the workspace's root S3 bucket (root DBFS and system data) and, optionally, cluster EBS volumes. The provided key configuration object property use_cases must contain STORAGE.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_name",
+          "description": "The human-readable name of the workspace.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "Workspace"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "WorkspaceStatus"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "WorkspaceStatusMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "WorkspaceStatusMessage"
+        }
+      }
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a Databricks workspace, both specified by ID.",
+      "summary": "Delete a workspace.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteWorkspaceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Workspace",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets information including status for a Databricks workspace, specified by ID. In the response, the `workspace_status` field indicates the current status. After initial workspace creation (which is asynchronous), make repeated `GET` requests with the workspace ID and check its status. The workspace becomes available when the status changes to `RUNNING`.\nFor information about how to create a new workspace with this API **including error handling**, see [Create a new workspace using the Account API](http://docs.databricks.com/administration-guide/account-api/new-workspace.html).",
+      "summary": "Get a workspace.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Workspace",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists Databricks workspaces for an account.",
+      "summary": "List workspaces.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListWorkspacesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "WorkspaceList",
+        "array_value": {
+          "pascal_name": "Workspace",
+          "is_object": true
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates a workspace.",
+      "summary": "Update a workspace.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateWorkspaceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A unique integer ID for the workspace",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "customer_facing_workspace",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Workspace",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A unique integer ID for the workspace",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "customer_facing_workspace",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Workspace",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "customer_facing_workspace",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Workspace",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Workspace",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "customer_facing_workspace",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Workspace",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "A unique integer ID for the workspace",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "Databricks account ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "aws_region",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "azure_workspace_info",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AzureWorkspaceInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cloud",
+          "description": "The cloud name. This field can have values like `azure`, `gcp`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cloud_resource_container",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CloudResourceContainer",
+            "is_object": true
+          }
+        },
+        {
+          "name": "compute_mode",
+          "description": "The compute mode of the workspace.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomerFacingComputeMode",
+            "enum": [
+              {
+                "content": "HYBRID"
+              },
+              {
+                "content": "SERVERLESS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creation_time",
+          "description": "Time in epoch milliseconds when the workspace was created.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "credentials_id",
+          "description": "ID of the workspace's credential configuration object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "The custom tags key-value pairing that is attached to this workspace. The key-value pair is a string of utf-8 characters. The value can be an empty string,\nwith maximum length of 255 characters. The key can be of maximum length of 127 characters, and cannot be empty.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "deployment_name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "expected_workspace_status",
+          "description": "A client owned field used to indicate the workspace status that the client expects to be in.\nFor now this is only used to unblock Temporal workflow for GCP least privileged workspace.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceStatus",
+            "enum": [
+              {
+                "content": "BANNED"
+              },
+              {
+                "content": "CANCELLING"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "NOT_PROVISIONED"
+              },
+              {
+                "content": "PROVISIONING"
+              },
+              {
+                "content": "RUNNING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "gcp_managed_network_config",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpManagedNetworkConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "gke_config",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GkeConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "location",
+          "description": "The Google Cloud region of the workspace data plane in your Google account (for example, `us-east4`).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "managed_services_customer_managed_key_id",
+          "description": "ID of the key configuration for encrypting managed services.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "network",
+          "description": "The network configuration for the workspace.\n\nDEPRECATED. Use `network_id` instead.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "WorkspaceNetwork",
+            "is_object": true
+          }
+        },
+        {
+          "name": "network_connectivity_config_id",
+          "description": "The object ID of network connectivity config.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "network_id",
+          "description": "If this workspace is BYO VPC, then the network_id will be populated. If this workspace is not\nBYO VPC, then the network_id will be empty.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "pricing_tier",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PricingTier",
+            "enum": [
+              {
+                "content": "COMMUNITY_EDITION"
+              },
+              {
+                "content": "DEDICATED"
+              },
+              {
+                "content": "ENTERPRISE"
+              },
+              {
+                "content": "PREMIUM"
+              },
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "UNKNOWN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "private_access_settings_id",
+          "description": "ID of the workspace's private access settings object. Only used for PrivateLink. You must specify this ID if you are using [AWS PrivateLink](https://aws.amazon.com/privatelink/) for either front-end (user-to-workspace connection), back-end (data plane to control plane connection), or both connection types.\n\nBefore configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).\",",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_configuration_id",
+          "description": "ID of the workspace's storage configuration object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_customer_managed_key_id",
+          "description": "ID of the key configuration for encrypting workspace storage.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_mode",
+          "description": "The storage mode of the workspace.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomerFacingStorageMode",
+            "enum": [
+              {
+                "content": "CUSTOMER_HOSTED"
+              },
+              {
+                "content": "DEFAULT_STORAGE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "A unique integer ID for the workspace",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "workspace_name",
+          "description": "The human-readable name of the workspace.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_status",
+          "description": "The status of a workspace",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceStatus",
+            "enum": [
+              {
+                "content": "BANNED"
+              },
+              {
+                "content": "CANCELLING"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "NOT_PROVISIONED"
+              },
+              {
+                "content": "PROVISIONING"
+              },
+              {
+                "content": "RUNNING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_status_message",
+          "description": "Message describing the current workspace status.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "A unique integer ID for the workspace",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "Workspace"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "WorkspaceStatus"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "WorkspaceStatusMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "WorkspaceStatusMessage"
+        }
+      }
+    }
+  ]
+}

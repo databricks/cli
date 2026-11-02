@@ -1,0 +1,227 @@
+{
+  "id": "catalog.TableConstraints",
+  "name": "TableConstraints",
+  "description": "Primary key and foreign key constraints encode relationships between fields in tables.\n\nPrimary and foreign keys are informational only and are not enforced. Foreign keys must reference a primary key in another table.\nThis primary key is the parent constraint of the foreign key, and the table this primary key is on is the parent table of the foreign key.\nSimilarly, the foreign key is the child constraint of its referenced primary key. The table of the foreign key is the child table of the primary key.\n\nYou can declare primary keys and foreign keys as part of the table specification during table creation.\nYou can also add or drop constraints on existing tables.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new table constraint.\n\nFor the table constraint creation to succeed, the user must satisfy both of these conditions:\n- the user must have the **USE_CATALOG** privilege on the table's parent catalog,\nthe **USE_SCHEMA** privilege on the table's parent schema, and be the owner of the table.\n- if the new constraint is a __ForeignKeyConstraint__,\nthe user must have the **USE_CATALOG** privilege on the referenced parent table's catalog,\nthe **USE_SCHEMA** privilege on the referenced parent table's schema,\nand be the owner of the referenced parent table.",
+      "summary": "Create a table constraint.",
+      "path": "/api/2.1/unity-catalog/constraints",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateTableConstraint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "full_name_arg",
+            "description": "The full name of the table referenced by the constraint.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "constraint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TableConstraint",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "full_name_arg",
+            "description": "The full name of the table referenced by the constraint.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "constraint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TableConstraint",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TableConstraint",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "constraint",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TableConstraint",
+            "is_object": true
+          }
+        },
+        {
+          "name": "full_name_arg",
+          "description": "The full name of the table referenced by the constraint.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a table constraint.\n\nFor the table constraint deletion to succeed, the user must satisfy both of these conditions:\n- the user must have the **USE_CATALOG** privilege on the table's parent catalog,\nthe **USE_SCHEMA** privilege on the table's parent schema, and be the owner of the table.\n- if __cascade__ argument is **true**, the user must have the following permissions on all of the child tables:\nthe **USE_CATALOG** privilege on the table's catalog,\nthe **USE_SCHEMA** privilege on the table's schema,\nand be the owner of the table.",
+      "summary": "Delete a table constraint.",
+      "path": "/api/2.1/unity-catalog/constraints/{full_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteTableConstraintRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table referenced by the constraint.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "constraint_name",
+            "description": "The name of the constraint to delete.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "cascade",
+            "description": "If true, try deleting all child constraints of the current constraint.\nIf false, reject this operation if the current constraint has any child constraints.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table referenced by the constraint.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "constraint_name",
+            "description": "The name of the constraint to delete.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "cascade",
+            "description": "If true, try deleting all child constraints of the current constraint.\nIf false, reject this operation if the current constraint has any child constraints.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteTableConstraintResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cascade",
+          "description": "If true, try deleting all child constraints of the current constraint.\nIf false, reject this operation if the current constraint has any child constraints.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "constraint_name",
+          "description": "The name of the constraint to delete.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of the table referenced by the constraint.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table referenced by the constraint.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "constraint_name",
+          "description": "The name of the constraint to delete.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cascade",
+          "description": "If true, try deleting all child constraints of the current constraint.\nIf false, reject this operation if the current constraint has any child constraints.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ]
+    }
+  ]
+}

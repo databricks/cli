@@ -1,0 +1,683 @@
+{
+  "id": "catalog.ModelVersions",
+  "name": "ModelVersions",
+  "description": "Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.\nModels in Unity Catalog provide centralized access control, auditing, lineage, and discovery of\nML models across Databricks workspaces.\n\nThis API reference documents the REST endpoints for managing model versions in Unity Catalog. For\nmore details, see the [registered models API docs](/api/workspace/registeredmodels).",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListModelVersionsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Deletes a model version from the specified registered model. Any aliases assigned to the\nmodel version will also be deleted.\n\nThe caller must be a metastore admin or an owner of the parent registered model.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Delete a Model Version.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}/versions/{version}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteModelVersionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "The integer version number of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "The integer version number of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "The integer version number of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "The integer version number of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a model version.\n\nThe caller must be a metastore admin or an owner of (or have the **EXECUTE**\nprivilege on) the parent registered model. For the latter case, the caller must also be the owner\nor have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege\non the parent schema.",
+      "summary": "Get a Model Version.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}/versions/{version}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetModelVersionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "The integer version number of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "The integer version number of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ModelVersionInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_aliases",
+          "description": "Whether to include aliases associated with the model version in the response",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include model versions in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "The integer version number of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "The integer version number of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetByAlias",
+      "description": "Get a model version by alias.\n\nThe caller must be a metastore admin or an owner of (or have the **EXECUTE**\nprivilege on) the registered model. For the latter case, the caller must also be the owner\nor have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege\non the parent schema.",
+      "summary": "Get Model Version By Alias.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetByAliasRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "alias",
+            "description": "The name of the alias",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "alias",
+            "description": "The name of the alias",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ModelVersionInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "alias",
+          "description": "The name of the alias",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_aliases",
+          "description": "Whether to include aliases associated with the model version in the response",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "alias",
+          "description": "The name of the alias",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List the model versions of the specified registered model, identified by its\nfull three-level name (catalog.schema.model).\n\nThe returned models are filtered based on the privileges of the calling user.\nFor example, the metastore admin is able to list all the model versions.\nA regular user needs to be the owner or have the **EXECUTE** privilege\non the parent registered model to receive the model versions in the response.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.\n\nThere is no guarantee of a specific ordering of the elements in the response. The\nelements in the response will not contain any aliases or tags.\n\nPAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List Model Versions.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}/versions",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListModelVersionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The full three-level name of the registered model under which to list model versions",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The full three-level name of the registered model under which to list model versions",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListModelVersionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "The full three-level name of the registered model under which to list model versions",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include model versions in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of model versions to return.\nIf not set, the page length is set to a server configured value (100, as of 1/3/2024).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value(1000, as of 1/3/2024);\n- when set to 0, the page length is set to a server configured value (100, as of 1/3/2024) (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The full three-level name of the registered model under which to list model versions",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates the specified model version.\n\nThe caller must be a metastore admin or an owner of the parent registered model.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.\n\nCurrently only the comment of the model version can be updated.",
+      "summary": "Update a Model Version.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}/versions/{version}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateModelVersionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "The integer version number of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "The integer version number of the model version",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ModelVersionInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "aliases",
+          "description": "List of aliases associated with the model version",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegisteredModelAliasList",
+            "array_value": {
+              "pascal_name": "RegisteredModelAlias",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "catalog_name",
+          "description": "The name of the catalog containing the model version",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "The comment attached to the model version",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_at",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "The identifier of the user who created the model version",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "The unique identifier of the model version",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The unique identifier of the metastore containing the model version",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_name",
+          "description": "The name of the parent registered model of the model version, relative to parent schema",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_version_dependencies",
+          "description": "Model version dependencies, for feature-store packaged models",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DependencyList",
+            "is_object": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "MLflow run ID used when creating the model version, if ``source`` was generated by an\nexperiment run stored in an MLflow tracking server",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_workspace_id",
+          "description": "ID of the Databricks workspace containing the MLflow run that generated this model\nversion, if applicable",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The name of the schema containing the model version, relative to parent catalog",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source",
+          "description": "URI indicating the location of the source artifacts (files) for the model version",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Current status of the model version. Newly created model versions start in\nPENDING_REGISTRATION status, then move to READY status once the model version files are uploaded and\nthe model version is finalized. Only model versions in READY status can be loaded for inference or\nserved.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelVersionInfoStatus",
+            "enum": [
+              {
+                "content": "FAILED_REGISTRATION"
+              },
+              {
+                "content": "MODEL_VERSION_STATUS_UNKNOWN"
+              },
+              {
+                "content": "PENDING_REGISTRATION"
+              },
+              {
+                "content": "READY"
+              }
+            ]
+          }
+        },
+        {
+          "name": "storage_location",
+          "description": "The storage location on the cloud under which model version data files are stored",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "updated_at",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "The identifier of the user who updated the model version last time",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "The integer version number of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "The integer version number of the model version",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,432 @@
+{
+  "disasterrecovery.CreateFailoverGroupRequest": {
+    "fields": {
+      "failover_group": {
+        "description": "The failover group to create.",
+        "ref": "disasterrecovery.FailoverGroup",
+        "launch_stage": "GA"
+      },
+      "failover_group_id": {
+        "description": "Client-provided identifier for the failover group. Used to construct the\nresource name as {parent}/failover-groups/{failover_group_id}.",
+        "launch_stage": "GA"
+      },
+      "validate_only": {
+        "description": "When true, validates the request without creating the failover group.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.CreateStableUrlRequest": {
+    "fields": {
+      "stable_url": {
+        "description": "The stable URL to create.",
+        "ref": "disasterrecovery.StableUrl",
+        "launch_stage": "GA"
+      },
+      "stable_url_id": {
+        "description": "Client-provided identifier for the stable URL. Used to construct the\nresource name as {parent}/stable-urls/{stable_url_id}.",
+        "launch_stage": "GA"
+      },
+      "validate_only": {
+        "description": "When true, validates the request without creating the stable URL.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.DeleteFailoverGroupRequest": {
+    "fields": {
+      "etag": {
+        "description": "Opaque version string for optimistic locking. If provided, must match the\ncurrent etag. If omitted, the delete proceeds without an etag check.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.DeleteStableUrlRequest": {},
+  "disasterrecovery.FailoverFailoverGroupRequest": {
+    "description": "Request to failover a failover group to a new primary region.",
+    "fields": {
+      "etag": {
+        "description": "Opaque version string for optimistic locking. If provided, must match the\ncurrent etag. If omitted, the failover proceeds regardless of current state.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "failover_type": {
+        "description": "The type of failover to perform.",
+        "ref": "disasterrecovery.FailoverFailoverGroupRequestFailoverType",
+        "launch_stage": "GA"
+      },
+      "target_primary_region": {
+        "description": "The target primary region. Must be one of the participating regions and different\nfrom the current effective_primary_region. Serves as an idempotency check.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.FailoverFailoverGroupRequestFailoverType": {
+    "description": "The type of failover to perform.",
+    "enum": [
+      "FORCED"
+    ],
+    "enum_launch_stages": {
+      "FORCED": "GA"
+    }
+  },
+  "disasterrecovery.FailoverGroup": {
+    "description": "A failover group manages disaster recovery across workspace sets,\ncoordinating Unity Catalog and workspace assets replication.",
+    "fields": {
+      "create_time": {
+        "description": "Time at which this failover group was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_primary_region": {
+        "description": "Current effective primary region. Replication flows FROM workspaces in this region.\nChanges after a successful failover.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "etag": {
+        "description": "Opaque version string for optimistic locking. Server-generated and returned in responses.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "has_replication_point_blocking_errors": {
+        "description": "True if errors currently block the replication point.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "initial_primary_region": {
+        "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "INPUT_ONLY"
+        ]
+      },
+      "initial_replication_progress": {
+        "description": "Initial replication progress of all in-scope assets. Set only when the FailoverGroup is in INITIAL_REPLICATION state.",
+        "ref": "disasterrecovery.InitialReplicationProgress",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Fully qualified resource name in the format\naccounts/{account_id}/failover-groups/{failover_group_id}.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "regions": {
+        "description": "List of all regions participating in this failover group.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "replication_point": {
+        "description": "The latest point in time to which data has been replicated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "Aggregate state of the failover group.",
+        "ref": "disasterrecovery.FailoverGroupState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "unity_catalog_assets": {
+        "description": "Unity Catalog replication configuration.",
+        "ref": "disasterrecovery.UcReplicationConfig",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "update_time": {
+        "description": "Time at which this failover group was last modified.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_sets": {
+        "description": "Workspace sets, each containing workspaces that replicate to each other.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.FailoverGroupState": {
+    "description": "The aggregate state of a FailoverGroup.",
+    "enum": [
+      "CREATING",
+      "CREATION_FAILED",
+      "INITIAL_REPLICATION",
+      "ACTIVE",
+      "FAILING_OVER",
+      "DELETING",
+      "FAILOVER_FAILED",
+      "DELETION_FAILED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "CREATING": "GA",
+      "CREATION_FAILED": "GA",
+      "DELETING": "GA",
+      "DELETION_FAILED": "GA",
+      "FAILING_OVER": "GA",
+      "FAILOVER_FAILED": "GA",
+      "INITIAL_REPLICATION": "GA"
+    }
+  },
+  "disasterrecovery.GetFailoverGroupRequest": {},
+  "disasterrecovery.GetStableUrlRequest": {},
+  "disasterrecovery.InitialReplicationProgress": {
+    "description": "Progress of the initial replication of all in-scope assets (Unity Catalog and\nworkspace assets) of a FailoverGroup. Populated only while the FailoverGroup\nis in INITIAL_REPLICATION.",
+    "fields": {
+      "completed": {
+        "description": "Percent complete, 0-100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.ListFailoverGroupsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of failover groups to return per page:\n- when set to a value greater than 0, the page length is the minimum of this value\nand a server configured value;\n- when set to 0 or unset, the page length is set to a server configured value\n(recommended);\n- when set to a value less than 0, an invalid parameter error is returned.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token received from a previous ListFailoverGroups call.\nProvide this to retrieve the subsequent page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.ListFailoverGroupsResponse": {
+    "description": "Response for listing failover groups.",
+    "fields": {
+      "failover_groups": {
+        "description": "The failover groups for this account.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token that can be sent as page_token to retrieve the next page.\nIf omitted, there are no subsequent pages.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.ListStableUrlsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of stable URLs to return per page:\n- when set to a value greater than 0, the page length is the minimum of this value\nand a server configured value;\n- when set to 0 or unset, the page length is set to a server configured value\n(recommended);\n- when set to a value less than 0, an invalid parameter error is returned.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token received from a previous ListStableUrls call.\nProvide this to retrieve the subsequent page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.ListStableUrlsResponse": {
+    "description": "Response for listing stable URLs.",
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be sent as page_token to retrieve the next page.\nIf omitted, there are no subsequent pages.",
+        "launch_stage": "GA"
+      },
+      "stable_urls": {
+        "description": "The stable URLs for this account.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.LocationMapping": {
+    "description": "A location mapping identified by a name, with URIs per region.\nThe system derives replication direction from effective_primary_region.",
+    "fields": {
+      "name": {
+        "description": "Resource name for this location.",
+        "launch_stage": "GA"
+      },
+      "uri_by_region": {
+        "description": "URI for each region. Each entry maps a region name to a storage URI.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.LocationMappingEntry": {
+    "description": "A single entry in a location mapping, mapping a region to a storage URI.\nUsed instead of map\u003cstring, string\u003e for proto2 compatibility.",
+    "fields": {
+      "region": {
+        "description": "The region name.",
+        "launch_stage": "GA"
+      },
+      "uri": {
+        "description": "The storage URI for this region.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.StableUrl": {
+    "description": "A stable URL provides a failover-aware endpoint for accessing a workspace.\nIts lifecycle is independent of any failover group.",
+    "fields": {
+      "effective_workspace_id": {
+        "description": "The workspace this stable URL currently routes to. Set to\n`initial_workspace_id` at creation, advanced to the failover group's primary\nwhile attached (including across a failover), and preserved when the stable\nURL is detached from its failover group. Read this to see where an unattached\nstable URL points: after a failover followed by a detach it reflects the\npost-failover primary, not `initial_workspace_id`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "failover_group_name": {
+        "description": "Fully qualified resource name of the FailoverGroup this stable URL is\ncurrently linked to, in the format\n`accounts/{account_id}/failover-groups/{failover_group_id}`. Empty when\nthe stable URL is not attached to any failover group.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "initial_workspace_id": {
+        "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "INPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "stable_workspace_id": {
+        "description": "The stable workspace ID for this stable URL. Generated on creation and\nimmutable thereafter; identifies the URL across failovers and is the same\nvalue embedded in the `url` (as the `w=` query parameter for SPOG URLs,\nor in the `conn-\u003cid\u003e` hostname for Private-Link URLs).",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OUTPUT_ONLY"
+        ]
+      },
+      "url": {
+        "description": "The stable URL endpoint. Generated on creation and\nimmutable thereafter. For non-Private-Link workspaces this is\n`https://\u003cspog_host\u003e/?w=\u003cconnection_id\u003e`. For Private-Link workspaces\nthis is the per-connection hostname.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.UcCatalog": {
+    "description": "A Unity Catalog catalog to replicate.",
+    "fields": {
+      "name": {
+        "description": "The name of the UC catalog to replicate.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.UcReplicationConfig": {
+    "description": "Unity Catalog replication configuration (top-level, not per-set).",
+    "fields": {
+      "catalogs": {
+        "description": "UC catalogs to replicate.",
+        "launch_stage": "GA"
+      },
+      "data_replication_workspace_set": {
+        "description": "The workspace set whose workspaces will be used for data replication\nof all UC catalogs' underlying storage.",
+        "launch_stage": "GA"
+      },
+      "location_mappings": {
+        "description": "Location mappings - storage URI per region for each location.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "disasterrecovery.UpdateFailoverGroupRequest": {
+    "fields": {
+      "etag": {
+        "description": "Optional opaque version string for optimistic locking, obtained from a prior read of\nthe failover group. If provided, the update is rejected unless it matches the failover\ngroup's current etag. If omitted, the update proceeds without an optimistic-lock check.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "failover_group": {
+        "description": "The failover group with updated fields. The name field identifies the resource\nand is populated from the URL path.",
+        "ref": "disasterrecovery.FailoverGroup",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "Comma-separated list of fields to update.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "disasterrecovery.WorkspaceSet": {
+    "description": "A set of workspaces that replicate to each other across regions.",
+    "fields": {
+      "name": {
+        "description": "Resource name for this workspace set.",
+        "launch_stage": "GA"
+      },
+      "replicate_workspace_assets": {
+        "description": "Whether to enable control plane DR (notebooks, jobs, clusters, etc.) for this set.\nDefaults to false.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "stable_url_names": {
+        "description": "Resource names of stable URLs associated with this workspace set.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.\nThe referenced stable URLs must already exist (via CreateStableUrl).",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "workspace_ids": {
+        "description": "Workspace IDs in this set. The system derives and validates regions.\nAll workspaces must be in the Mission Critical tier.",
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

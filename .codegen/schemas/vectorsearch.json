@@ -1,0 +1,1114 @@
+{
+  "vectorsearch.ColumnInfo": {
+    "fields": {
+      "name": {
+        "description": "Name of the column.",
+        "launch_stage": "GA"
+      },
+      "type_text": {
+        "description": "Data type of the column (e.g., \"string\", \"int\", \"array\u003cfloat\u003e\")",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.CreateEndpoint": {
+    "fields": {
+      "budget_policy_id": {
+        "description": "The budget policy id to be applied",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "endpoint_type": {
+        "description": "Type of endpoint",
+        "ref": "vectorsearch.EndpointType",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the AI Search endpoint",
+        "launch_stage": "GA"
+      },
+      "target_qps": {
+        "description": "Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
+        "launch_stage": "GA"
+      },
+      "usage_policy_id": {
+        "description": "The usage policy id to be applied once we've migrated to usage policies",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "vectorsearch.CreateVectorIndexRequest": {
+    "fields": {
+      "delta_sync_index_spec": {
+        "description": "Specification for Delta Sync Index. Required if `index_type` is `DELTA_SYNC`.",
+        "ref": "vectorsearch.DeltaSyncVectorIndexSpecRequest",
+        "launch_stage": "GA"
+      },
+      "direct_access_index_spec": {
+        "description": "Specification for Direct Vector Access Index. Required if `index_type` is `DIRECT_ACCESS`.",
+        "ref": "vectorsearch.DirectAccessVectorIndexSpec",
+        "launch_stage": "GA"
+      },
+      "endpoint_name": {
+        "description": "Name of the endpoint to be used for serving the index",
+        "launch_stage": "GA"
+      },
+      "index_subtype": {
+        "description": "The subtype of the index. Use `HYBRID` or `FULL_TEXT`. `VECTOR` is not supported.",
+        "ref": "vectorsearch.IndexSubtype",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "index_type": {
+        "ref": "vectorsearch.VectorIndexType",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the index",
+        "launch_stage": "GA"
+      },
+      "primary_key": {
+        "description": "Primary key of the index",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.CustomTag": {
+    "fields": {
+      "key": {
+        "description": "Key field for an AI Search endpoint tag.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "value": {
+        "description": "[Optional] Value field for an AI Search endpoint tag.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "vectorsearch.DeleteDataResult": {
+    "fields": {
+      "failed_primary_keys": {
+        "description": "List of primary keys for rows that failed to process.",
+        "launch_stage": "GA"
+      },
+      "success_row_count": {
+        "description": "Count of successfully processed rows.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.DeleteDataStatus": {
+    "enum": [
+      "SUCCESS",
+      "PARTIAL_SUCCESS",
+      "FAILURE"
+    ],
+    "enum_launch_stages": {
+      "FAILURE": "GA",
+      "PARTIAL_SUCCESS": "GA",
+      "SUCCESS": "GA"
+    }
+  },
+  "vectorsearch.DeleteDataVectorIndexRequest": {
+    "fields": {
+      "primary_keys": {
+        "description": "List of primary keys for the data to be deleted.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.DeleteDataVectorIndexResponse": {
+    "fields": {
+      "result": {
+        "description": "Result of the upsert or delete operation.",
+        "ref": "vectorsearch.DeleteDataResult",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Status of the delete operation.",
+        "ref": "vectorsearch.DeleteDataStatus",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.DeleteEndpointRequest": {},
+  "vectorsearch.DeleteEndpointResponse": {},
+  "vectorsearch.DeleteIndexRequest": {},
+  "vectorsearch.DeleteIndexResponse": {},
+  "vectorsearch.DeltaSyncVectorIndexSpecRequest": {
+    "fields": {
+      "columns_to_index": {
+        "description": "[Optional] Alias for columns_to_sync. Select the columns to include in the vector index.\nIf you leave this field blank, all columns from the source table are included.\nThe primary key column and embedding source column or embedding vector column are always included.\nOnly one of columns_to_sync or columns_to_index may be specified.",
+        "launch_stage": "GA"
+      },
+      "columns_to_sync": {
+        "description": "[Optional] Select the columns to sync with the vector index. If you leave this field blank, all columns\nfrom the source table are synced with the index. The primary key column and embedding source column or\nembedding vector column are always synced.",
+        "launch_stage": "GA"
+      },
+      "embedding_source_columns": {
+        "description": "The columns that contain the embedding source.",
+        "launch_stage": "GA"
+      },
+      "embedding_vector_columns": {
+        "description": "The columns that contain the embedding vectors.",
+        "launch_stage": "GA"
+      },
+      "embedding_writeback_table": {
+        "description": "[Optional] Name of the Delta table to sync the vector index contents and computed embeddings to.",
+        "launch_stage": "GA"
+      },
+      "pipeline_type": {
+        "description": "Pipeline execution mode.\n- `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started.\n- `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.",
+        "ref": "vectorsearch.PipelineType",
+        "launch_stage": "GA"
+      },
+      "source_table": {
+        "description": "The name of the source table.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.DeltaSyncVectorIndexSpecResponse": {
+    "fields": {
+      "columns_to_index": {
+        "description": "[Optional] Alias for columns_to_sync. Select the columns to include in the vector index.\nIf you leave this field blank, all columns from the source table are included.\nThe primary key column and embedding source column or embedding vector column are always included.\nOnly one of columns_to_sync or columns_to_index may be specified.",
+        "launch_stage": "GA"
+      },
+      "columns_to_sync": {
+        "description": "[Optional] Select the columns to sync with the vector index. If you leave this field blank, all columns\nfrom the source table are synced with the index. The primary key column and embedding source column or\nembedding vector column are always synced.",
+        "launch_stage": "GA"
+      },
+      "embedding_source_columns": {
+        "description": "The columns that contain the embedding source.",
+        "launch_stage": "GA"
+      },
+      "embedding_vector_columns": {
+        "description": "The columns that contain the embedding vectors.",
+        "launch_stage": "GA"
+      },
+      "embedding_writeback_table": {
+        "description": "[Optional] Name of the Delta table to sync the vector index contents and computed embeddings to.",
+        "launch_stage": "GA"
+      },
+      "pipeline_id": {
+        "description": "The ID of the pipeline that is used to sync the index.",
+        "launch_stage": "GA"
+      },
+      "pipeline_type": {
+        "description": "Pipeline execution mode.\n- `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started.\n- `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.",
+        "ref": "vectorsearch.PipelineType",
+        "launch_stage": "GA"
+      },
+      "source_table": {
+        "description": "The name of the source table.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.DirectAccessVectorIndexSpec": {
+    "fields": {
+      "embedding_source_columns": {
+        "description": "The columns that contain the embedding source. The format should be array[double].",
+        "launch_stage": "GA"
+      },
+      "embedding_vector_columns": {
+        "description": "The columns that contain the embedding vectors. The format should be array[double].",
+        "launch_stage": "GA"
+      },
+      "schema_json": {
+        "description": "The schema of the index in JSON format.\nSupported types are `integer`, `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.\nSupported types for vector column: `array\u003cfloat\u003e`, `array\u003cdouble\u003e`,`.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.EmbeddingSourceColumn": {
+    "fields": {
+      "embedding_model_endpoint_name": {
+        "description": "Name of the embedding model endpoint, used by default for both ingestion and querying.",
+        "launch_stage": "GA"
+      },
+      "model_endpoint_name_for_query": {
+        "description": "Name of the embedding model endpoint which, if specified, is used for querying (not ingestion).",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the column",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.EmbeddingVectorColumn": {
+    "fields": {
+      "embedding_dimension": {
+        "description": "Dimension of the embedding vector",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the column",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.EndpointInfo": {
+    "fields": {
+      "budget_policy_id": {
+        "description": "The user-selected budget policy id for the endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "creation_timestamp": {
+        "description": "Timestamp of endpoint creation",
+        "launch_stage": "GA"
+      },
+      "creator": {
+        "description": "Creator of the endpoint",
+        "launch_stage": "GA"
+      },
+      "custom_tags": {
+        "description": "The custom tags assigned to the endpoint",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "effective_budget_policy_id": {
+        "description": "The budget policy id applied to the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "endpoint_status": {
+        "description": "Current status of the endpoint",
+        "ref": "vectorsearch.EndpointStatus",
+        "launch_stage": "GA"
+      },
+      "endpoint_type": {
+        "description": "Type of endpoint",
+        "ref": "vectorsearch.EndpointType",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Unique identifier of the endpoint",
+        "launch_stage": "GA"
+      },
+      "last_updated_timestamp": {
+        "description": "Timestamp of last update to the endpoint",
+        "launch_stage": "GA"
+      },
+      "last_updated_user": {
+        "description": "User who last updated the endpoint",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the AI Search endpoint",
+        "launch_stage": "GA"
+      },
+      "num_indexes": {
+        "description": "Number of indexes on the endpoint",
+        "launch_stage": "GA"
+      },
+      "scaling_info": {
+        "description": "Scaling information for the endpoint",
+        "ref": "vectorsearch.EndpointScalingInfo",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.EndpointScalingInfo": {
+    "description": "Scaling information for a Standard endpoint: the current scaling state, the requested QPS\ntarget, and the progress of an in-progress scaling change.",
+    "fields": {
+      "requested_target_qps": {
+        "description": "The requested QPS target for the endpoint. Best-effort; the system does not\nguarantee this QPS will be achieved.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "The current state of the scaling change request.",
+        "ref": "vectorsearch.ScalingChangeState",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "vectorsearch.EndpointStatus": {
+    "description": "Status information of an endpoint",
+    "fields": {
+      "message": {
+        "description": "Additional status message",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "Current state of the endpoint",
+        "ref": "vectorsearch.EndpointStatusState",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.EndpointStatusState": {
+    "description": "Current state of the endpoint",
+    "enum": [
+      "PROVISIONING",
+      "ONLINE",
+      "OFFLINE",
+      "RED_STATE",
+      "YELLOW_STATE",
+      "DELETED",
+      "STOPPING",
+      "STOPPED",
+      "STARTING"
+    ],
+    "enum_launch_stages": {
+      "DELETED": "GA",
+      "OFFLINE": "GA",
+      "ONLINE": "GA",
+      "PROVISIONING": "GA",
+      "RED_STATE": "GA",
+      "STARTING": "PRIVATE_PREVIEW",
+      "STOPPED": "PRIVATE_PREVIEW",
+      "STOPPING": "PRIVATE_PREVIEW",
+      "YELLOW_STATE": "GA"
+    }
+  },
+  "vectorsearch.EndpointType": {
+    "description": "Type of endpoint.",
+    "enum": [
+      "STORAGE_OPTIMIZED",
+      "STANDARD"
+    ],
+    "enum_launch_stages": {
+      "STANDARD": "GA",
+      "STORAGE_OPTIMIZED": "GA"
+    }
+  },
+  "vectorsearch.FacetResultData": {
+    "description": "Facet aggregation rows returned by a query.",
+    "fields": {
+      "facet_array": {
+        "description": "Facet rows. Each row is `[facet_column_name, value_or_range, count]`.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "facet_row_count": {
+        "description": "Number of facet rows returned.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "vectorsearch.GetEndpointRequest": {},
+  "vectorsearch.GetIndexRequest": {
+    "fields": {
+      "ensure_reranker_compatible": {
+        "description": "If true, the URL returned for the index is guaranteed to be compatible with the reranker.\nCurrently this means we return the CP URL regardless of how the index is being accessed.\nIf not set or set to false, the URL may still be compatible with the reranker depending on\nwhat URL we return.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.GetVectorSearchEndpointPermissionLevelsRequest": {},
+  "vectorsearch.GetVectorSearchEndpointPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.GetVectorSearchEndpointPermissionsRequest": {},
+  "vectorsearch.IndexSubtype": {
+    "description": "The subtype of the AI Search index, determining the indexing and retrieval strategy.\n- `VECTOR`: Not supported. Use `HYBRID` instead.\n- `FULL_TEXT`: An index that uses full-text search without vector embeddings.\n- `HYBRID`: An index that uses vector embeddings for similarity search and hybrid search.",
+    "enum": [
+      "VECTOR",
+      "FULL_TEXT",
+      "HYBRID"
+    ],
+    "enum_launch_stages": {
+      "FULL_TEXT": "PUBLIC_BETA",
+      "HYBRID": "PUBLIC_BETA",
+      "VECTOR": "PUBLIC_BETA"
+    },
+    "enum_descriptions": {
+      "FULL_TEXT": "An index that uses full-text search without vector embeddings.",
+      "HYBRID": "An index that uses vector embeddings for similarity search and hybrid search.",
+      "VECTOR": "Not supported. Use `HYBRID` instead."
+    }
+  },
+  "vectorsearch.ListEndpointResponse": {
+    "fields": {
+      "endpoints": {
+        "description": "An array of Endpoint objects",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. If not present, there are no more results to show.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ListEndpointsRequest": {
+    "fields": {
+      "page_token": {
+        "description": "Token for pagination",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ListIndexesRequest": {
+    "fields": {
+      "endpoint_name": {
+        "description": "Name of the endpoint",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Token for pagination",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ListValue": {
+    "fields": {
+      "values": {
+        "description": "Repeated field of dynamically typed values.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ListVectorIndexesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. If not present, there are no more results to show.",
+        "launch_stage": "GA"
+      },
+      "vector_indexes": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.MapStringValueEntry": {
+    "description": "Key-value pair.",
+    "fields": {
+      "key": {
+        "description": "Column name.",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "Column value, nullable.",
+        "ref": "vectorsearch.Value",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.Metric": {
+    "description": "Metric specification",
+    "fields": {
+      "labels": {
+        "description": "Metric labels",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Metric name",
+        "launch_stage": "GA"
+      },
+      "percentile": {
+        "description": "Percentile for the metric",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.MetricLabel": {
+    "description": "Label for a metric",
+    "fields": {
+      "name": {
+        "description": "Label name",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "Label value",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.MetricValue": {
+    "description": "Single metric value at a specific timestamp",
+    "fields": {
+      "timestamp": {
+        "description": "Timestamp of the metric value (milliseconds since epoch)",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "Metric value",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.MetricValues": {
+    "description": "Collection of metric values for a specific metric",
+    "fields": {
+      "metric": {
+        "description": "Metric specification",
+        "ref": "vectorsearch.Metric",
+        "launch_stage": "GA"
+      },
+      "values": {
+        "description": "Time series of metric values",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.MiniVectorIndex": {
+    "fields": {
+      "creator": {
+        "description": "The user who created the index.",
+        "launch_stage": "GA"
+      },
+      "endpoint_id": {
+        "description": "ID of the endpoint associated with the index.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "endpoint_name": {
+        "description": "Name of the endpoint associated with the index",
+        "launch_stage": "GA"
+      },
+      "index_subtype": {
+        "description": "The subtype of the index.",
+        "ref": "vectorsearch.IndexSubtype",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "index_type": {
+        "ref": "vectorsearch.VectorIndexType",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the index",
+        "launch_stage": "GA"
+      },
+      "primary_key": {
+        "description": "Primary key of the index",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.PatchEndpointBudgetPolicyRequest": {
+    "fields": {
+      "budget_policy_id": {
+        "description": "The budget policy id to be applied",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "vectorsearch.PatchEndpointBudgetPolicyResponse": {
+    "fields": {
+      "budget_policy_id": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "effective_budget_policy_id": {
+        "description": "The budget policy applied to the AI Search endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "vectorsearch.PatchEndpointRequest": {
+    "fields": {
+      "target_qps": {
+        "description": "Target QPS for the endpoint. Best-effort; the system does not guarantee this QPS\nwill be achieved.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "vectorsearch.PipelineType": {
+    "description": "Pipeline execution mode.\n- `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started.\n- `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.",
+    "enum": [
+      "TRIGGERED",
+      "CONTINUOUS"
+    ],
+    "enum_launch_stages": {
+      "CONTINUOUS": "GA",
+      "TRIGGERED": "GA"
+    },
+    "enum_descriptions": {
+      "CONTINUOUS": "If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.",
+      "TRIGGERED": "If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started."
+    }
+  },
+  "vectorsearch.QueryVectorIndexNextPageRequest": {
+    "description": "Request payload for getting next page of results.",
+    "fields": {
+      "endpoint_name": {
+        "description": "Name of the endpoint.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Page token returned from previous `QueryVectorIndex` or `QueryVectorIndexNextPage` API.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.QueryVectorIndexRequest": {
+    "fields": {
+      "columns": {
+        "description": "List of column names to include in the response.",
+        "launch_stage": "GA"
+      },
+      "columns_to_rerank": {
+        "description": "Column names used to retrieve data to send to the reranker.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "facets": {
+        "description": "Facets to compute over the matched results. Each entry has one of these forms:\n`\"\u003ccolumn\u003e\"`                         - top 10 distinct values by count\n`\"\u003ccolumn\u003e TOP \u003cn\u003e\"`                 - top n distinct values, where n \u003e 0\n`\"\u003ccolumn\u003e BUCKETS [[from,to],...]\"` - inclusive numeric ranges\n`TOP` and `BUCKETS` are case-insensitive. A column may appear at most once.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "filters_json": {
+        "description": "JSON string representing query filters.\n\nExample filters:\n\n- `{\"id \u003c\": 5}`: Filter for id less than 5.\n- `{\"id \u003e\": 5}`: Filter for id greater than 5.\n- `{\"id \u003c=\": 5}`: Filter for id less than equal to 5.\n- `{\"id \u003e=\": 5}`: Filter for id greater than equal to 5.\n- `{\"id\": 5}`: Filter for id equal to 5.",
+        "launch_stage": "GA"
+      },
+      "num_results": {
+        "description": "Number of results to return. Defaults to 10.",
+        "launch_stage": "GA"
+      },
+      "query_columns": {
+        "description": "Text columns to search for `query_text`. When empty, all text columns are searched.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "query_text": {
+        "description": "Query text. Required for Delta Sync Index using model endpoint.",
+        "launch_stage": "GA"
+      },
+      "query_type": {
+        "description": "The query type to use. Choices are `ANN` and `HYBRID` and `FULL_TEXT`. Defaults to `ANN`.",
+        "launch_stage": "GA"
+      },
+      "query_vector": {
+        "description": "Query vector. Required for Direct Vector Access Index and Delta Sync Index using self-managed vectors.",
+        "launch_stage": "GA"
+      },
+      "reranker": {
+        "description": "If set, the top 50 results are reranked with the Databricks Reranker model before returning the `num_results` results to the user.\nThe setting `columns_to_rerank` selects which columns are used for reranking. For each datapoint, the columns selected are concatenated before\nbeing sent to the reranking model. See https://docs.databricks.com/aws/en/vector-search/query-vector-search#rerank for more information.",
+        "ref": "vectorsearch.RerankerConfig",
+        "launch_stage": "GA"
+      },
+      "score_threshold": {
+        "description": "Threshold for the approximate nearest neighbor search. Defaults to 0.0.",
+        "launch_stage": "GA"
+      },
+      "sort_columns": {
+        "description": "Sort results by column values instead of the default relevance ordering.\nEach clause has the form `\"\u003ccolumn\u003e ASC\"` or `\"\u003ccolumn\u003e DESC\"`, for example\n`[\"rating DESC\", \"price ASC\"]`.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "vectorsearch.QueryVectorIndexResponse": {
+    "fields": {
+      "facet_result": {
+        "description": "Facet aggregation rows returned by a query.",
+        "ref": "vectorsearch.FacetResultData",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "manifest": {
+        "description": "Metadata about the result set.",
+        "ref": "vectorsearch.ResultManifest",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "[Optional] Token that can be used in `QueryVectorIndexNextPage` API to get next page of results.\nIf more than 1000 results satisfy the query, they are returned in groups of 1000.\nEmpty value means no more results. The maximum number of results that can be returned is 10,000.",
+        "launch_stage": "GA"
+      },
+      "result": {
+        "description": "Data returned in the query result.",
+        "ref": "vectorsearch.ResultData",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.RerankerConfig": {
+    "fields": {
+      "model": {
+        "description": "Reranker identifier:\n- When model_type=BASE/UNSPECIFIED: must be \"databricks_reranker\".\n- When model_type=FINETUNED: the Model Serving endpoint name hosting a finetuned reranker.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "Parameters that control how the reranker processes the query results.",
+        "ref": "vectorsearch.RerankerConfigRerankerParameters",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.RerankerConfigRerankerParameters": {
+    "fields": {
+      "columns_to_rerank": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ResultData": {
+    "description": "Data returned in the query result.",
+    "fields": {
+      "data_array": {
+        "description": "Data rows returned in the query.",
+        "launch_stage": "GA"
+      },
+      "row_count": {
+        "description": "Number of rows in the result set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ResultManifest": {
+    "description": "Metadata about the result set.",
+    "fields": {
+      "column_count": {
+        "description": "Number of columns in the result set.",
+        "launch_stage": "GA"
+      },
+      "columns": {
+        "description": "Information about each column in the result set.",
+        "launch_stage": "GA"
+      },
+      "facet_column_count": {
+        "description": "Number of columns in `facet_result`.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "facet_columns": {
+        "description": "Information about each column in `facet_result`.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "vectorsearch.RetrieveUserVisibleMetricsRequest": {
+    "description": "Request to retrieve user-visible metrics",
+    "fields": {
+      "end_time": {
+        "description": "End time for metrics query",
+        "launch_stage": "GA"
+      },
+      "granularity_in_seconds": {
+        "description": "Granularity in seconds",
+        "launch_stage": "GA"
+      },
+      "metrics": {
+        "description": "List of metrics to retrieve",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Token for pagination",
+        "launch_stage": "GA"
+      },
+      "start_time": {
+        "description": "Start time for metrics query",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.RetrieveUserVisibleMetricsResponse": {
+    "description": "Response containing user-visible metrics",
+    "fields": {
+      "metric_values": {
+        "description": "Collection of metric values",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. If not present, there are no more results to show.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ScalingChangeState": {
+    "enum": [
+      "SCALING_CHANGE_UNSPECIFIED",
+      "SCALING_CHANGE_APPLIED",
+      "SCALING_CHANGE_IN_PROGRESS"
+    ],
+    "enum_launch_stages": {
+      "SCALING_CHANGE_APPLIED": "PUBLIC_BETA",
+      "SCALING_CHANGE_IN_PROGRESS": "PUBLIC_BETA",
+      "SCALING_CHANGE_UNSPECIFIED": "PUBLIC_BETA"
+    }
+  },
+  "vectorsearch.ScanVectorIndexRequest": {
+    "fields": {
+      "last_primary_key": {
+        "description": "Primary key of the last entry returned in the previous scan.",
+        "launch_stage": "GA"
+      },
+      "num_results": {
+        "description": "Number of results to return. Defaults to 10.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.ScanVectorIndexResponse": {
+    "description": "Response to a scan vector index request.",
+    "fields": {
+      "data": {
+        "description": "List of data entries",
+        "launch_stage": "GA"
+      },
+      "last_primary_key": {
+        "description": "Primary key of the last entry.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.StartEndpointRequest": {},
+  "vectorsearch.StopEndpointRequest": {},
+  "vectorsearch.Struct": {
+    "fields": {
+      "fields": {
+        "description": "Data entry, corresponding to a row in a vector index.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.SyncIndexRequest": {},
+  "vectorsearch.SyncIndexResponse": {},
+  "vectorsearch.UpdateEndpointCustomTagsRequest": {
+    "fields": {
+      "custom_tags": {
+        "description": "The new custom tags for the AI Search endpoint",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "vectorsearch.UpdateEndpointCustomTagsResponse": {
+    "fields": {
+      "custom_tags": {
+        "description": "All the custom tags that are applied to the AI Search endpoint.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "name": {
+        "description": "The name of the AI Search endpoint whose custom tags were updated.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "vectorsearch.UpsertDataResult": {
+    "fields": {
+      "failed_primary_keys": {
+        "description": "List of primary keys for rows that failed to process.",
+        "launch_stage": "GA"
+      },
+      "success_row_count": {
+        "description": "Count of successfully processed rows.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.UpsertDataStatus": {
+    "enum": [
+      "SUCCESS",
+      "PARTIAL_SUCCESS",
+      "FAILURE"
+    ],
+    "enum_launch_stages": {
+      "FAILURE": "GA",
+      "PARTIAL_SUCCESS": "GA",
+      "SUCCESS": "GA"
+    }
+  },
+  "vectorsearch.UpsertDataVectorIndexRequest": {
+    "fields": {
+      "inputs_json": {
+        "description": "JSON string representing the data to be upserted.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.UpsertDataVectorIndexResponse": {
+    "fields": {
+      "result": {
+        "description": "Result of the upsert or delete operation.",
+        "ref": "vectorsearch.UpsertDataResult",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Status of the upsert operation.",
+        "ref": "vectorsearch.UpsertDataStatus",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.Value": {
+    "fields": {
+      "bool_value": {
+        "launch_stage": "GA"
+      },
+      "list_value": {
+        "ref": "vectorsearch.ListValue",
+        "launch_stage": "GA"
+      },
+      "number_value": {
+        "launch_stage": "GA"
+      },
+      "string_value": {
+        "launch_stage": "GA"
+      },
+      "struct_value": {
+        "ref": "vectorsearch.Struct",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorIndex": {
+    "fields": {
+      "creator": {
+        "description": "The user who created the index.",
+        "launch_stage": "GA"
+      },
+      "delta_sync_index_spec": {
+        "ref": "vectorsearch.DeltaSyncVectorIndexSpecResponse",
+        "launch_stage": "GA"
+      },
+      "direct_access_index_spec": {
+        "ref": "vectorsearch.DirectAccessVectorIndexSpec",
+        "launch_stage": "GA"
+      },
+      "endpoint_id": {
+        "description": "ID of the endpoint associated with the index.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "endpoint_name": {
+        "description": "Name of the endpoint associated with the index",
+        "launch_stage": "GA"
+      },
+      "index_subtype": {
+        "description": "The subtype of the index.",
+        "ref": "vectorsearch.IndexSubtype",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "index_type": {
+        "ref": "vectorsearch.VectorIndexType",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the index",
+        "launch_stage": "GA"
+      },
+      "primary_key": {
+        "description": "Primary key of the index",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "ref": "vectorsearch.VectorIndexStatus",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorIndexStatus": {
+    "fields": {
+      "index_url": {
+        "description": "Index API Url to be used to perform operations on the index",
+        "launch_stage": "GA"
+      },
+      "indexed_row_count": {
+        "description": "Number of rows indexed",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "description": "Message associated with the index status",
+        "launch_stage": "GA"
+      },
+      "ready": {
+        "description": "Whether the index is ready for search",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorIndexType": {
+    "description": "There are 2 types of AI Search indexes:\n- `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.\n- `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.",
+    "enum": [
+      "DELTA_SYNC",
+      "DIRECT_ACCESS"
+    ],
+    "enum_launch_stages": {
+      "DELTA_SYNC": "GA",
+      "DIRECT_ACCESS": "GA"
+    },
+    "enum_descriptions": {
+      "DELTA_SYNC": "An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.",
+      "DIRECT_ACCESS": "An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates."
+    }
+  },
+  "vectorsearch.VectorSearchEndpointAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "vectorsearch.VectorSearchEndpointPermissionLevel",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorSearchEndpointAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorSearchEndpointPermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "GA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "vectorsearch.VectorSearchEndpointPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorSearchEndpointPermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_CREATE",
+      "CAN_MANAGE",
+      "CAN_USE"
+    ]
+  },
+  "vectorsearch.VectorSearchEndpointPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorSearchEndpointPermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "vectorsearch.VectorSearchEndpointPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "vectorsearch.VectorSearchEndpointPermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

@@ -1,0 +1,3194 @@
+{
+  "id": "knowledgeassistants.KnowledgeAssistants",
+  "name": "KnowledgeAssistants",
+  "description": "Manage legacy Knowledge Assistants and related resources.",
+  "package": {
+    "name": "knowledgeassistants"
+  },
+  "docs_group": "agentbricks",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListExamplesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateExample",
+      "description": "Creates an example for a Knowledge Assistant.",
+      "summary": "Create an example for a Knowledge Assistant.",
+      "path": "/api/2.1/{parent=knowledge-assistants/*}/examples",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateExampleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this example will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "example",
+            "description": "The example to create under the parent Knowledge Assistant.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this example will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "example",
+            "description": "The example to create under the parent Knowledge Assistant.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "example",
+        "description": "The example to create under the parent Knowledge Assistant.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Example",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Example",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "example",
+          "description": "The example to create under the parent Knowledge Assistant.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Example",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource where this example will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when this example was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "example_id",
+          "description": "The universally unique identifier (UUID) of the example.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "guidelines",
+          "description": "Guidelines for answering the question. Optional — examples may be created\nwith just a question; the front-end form does not require guidelines.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nknowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when this example was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource where this example will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateKnowledgeAssistant",
+      "description": "Creates a Knowledge Assistant.",
+      "summary": "Create a Knowledge Assistant.",
+      "path": "/api/2.1/knowledge-assistants",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateKnowledgeAssistantRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "knowledge_assistant",
+            "description": "The Knowledge Assistant to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeAssistant",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "knowledge_assistant",
+            "description": "The Knowledge Assistant to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeAssistant",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "knowledge_assistant",
+        "description": "The Knowledge Assistant to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "KnowledgeAssistant",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "KnowledgeAssistant",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "knowledge_assistant",
+          "description": "The Knowledge Assistant to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistant",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Creation timestamp.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The creator of the Knowledge Assistant.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_name",
+          "description": "The name of the knowledge assistant agent endpoint.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "error_info",
+          "description": "Error details when the Knowledge Assistant is in FAILED state.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "experiment_id",
+          "description": "The MLflow experiment ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Deprecated: use knowledge_assistant_id instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instructions",
+          "description": "Additional global instructions on how the agent should generate answers.\nOptional on create and update.\nWhen updating a Knowledge Assistant, include this field in update_mask to\nmodify it.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "State of the Knowledge Assistant. Not returned in List responses.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistantState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "CREATING"
+              },
+              {
+                "content": "FAILED"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "display_name",
+          "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateKnowledgeSource",
+      "description": "Creates a Knowledge Source under a Knowledge Assistant.",
+      "summary": "Create a Knowledge Source.",
+      "path": "/api/2.1/{parent=knowledge-assistants/*}/knowledge-sources",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateKnowledgeSourceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this source will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "knowledge_source",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeSource",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this source will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "knowledge_source",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeSource",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "knowledge_source",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "KnowledgeSource",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "source_type",
+              "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "source_type",
+              "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "KnowledgeSource",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source_type",
+            "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source_type",
+            "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "knowledge_source",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeSource",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "source_type",
+                "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "source_type",
+                "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource where this source will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when this knowledge source was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "file_table",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FileTableSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "files",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FilesSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "index",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IndexSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "knowledge_cutoff_time",
+          "description": "Timestamp representing the cutoff before which content in this knowledge source is being ingested.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nknowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "state",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeSourceState",
+            "enum": [
+              {
+                "content": "FAILED_UPDATE"
+              },
+              {
+                "content": "UPDATED"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource where this source will be created.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteExample",
+      "description": "Deletes an example from a Knowledge Assistant.",
+      "summary": "Delete an example from a Knowledge Assistant.",
+      "path": "/api/2.1/{name=knowledge-assistants/*/examples/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteExampleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the example to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the example to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteKnowledgeAssistant",
+      "description": "Deletes a Knowledge Assistant.",
+      "summary": "Delete a Knowledge Assistant.",
+      "path": "/api/2.1/{name=knowledge-assistants/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteKnowledgeAssistantRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the knowledge assistant to be deleted.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the knowledge assistant to be deleted.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the knowledge assistant to be deleted.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the knowledge assistant to be deleted.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteKnowledgeSource",
+      "description": "Deletes a Knowledge Source.",
+      "summary": "Delete a Knowledge Source.",
+      "path": "/api/2.1/{name=knowledge-assistants/*/knowledge-sources/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteKnowledgeSourceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Source to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Source to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Source to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Source to delete.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetExample",
+      "description": "Gets an example from a Knowledge Assistant.",
+      "summary": "Get an example from a Knowledge Assistant.",
+      "path": "/api/2.1/{name=knowledge-assistants/*/examples/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetExampleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Example",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the example.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the example.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetKnowledgeAssistant",
+      "description": "Gets a Knowledge Assistant.",
+      "summary": "Get a Knowledge Assistant.",
+      "path": "/api/2.1/{name=knowledge-assistants/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetKnowledgeAssistantRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the knowledge assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the knowledge assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "KnowledgeAssistant",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the knowledge assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the knowledge assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetKnowledgeSource",
+      "description": "Gets a Knowledge Source.",
+      "summary": "Get a Knowledge Source.",
+      "path": "/api/2.1/{name=knowledge-assistants/*/knowledge-sources/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetKnowledgeSourceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Source.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Source.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "KnowledgeSource",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source_type",
+            "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source_type",
+            "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Source.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Source.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get knowledge assistant permission levels.",
+      "path": "/api/2.0/permissions/knowledge-assistants/{knowledge_assistant_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetKnowledgeAssistantPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetKnowledgeAssistantPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a knowledge assistant. Knowledge assistants can inherit permissions from their root object.",
+      "summary": "Get knowledge assistant permissions.",
+      "path": "/api/2.0/permissions/knowledge-assistants/{knowledge_assistant_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetKnowledgeAssistantPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "KnowledgeAssistantPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListExamples",
+      "description": "Lists examples under a Knowledge Assistant.",
+      "summary": "List examples for a Knowledge Assistant.",
+      "path": "/api/2.1/{parent=knowledge-assistants/*}/examples",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListExamplesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListExamplesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of examples to return.\nIf unspecified, at most 100 examples will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListExamples` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListExamples` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListKnowledgeAssistants",
+      "description": "List Knowledge Assistants",
+      "summary": "List Knowledge Assistants.",
+      "path": "/api/2.1/knowledge-assistants",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListKnowledgeAssistantsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListKnowledgeAssistantsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of knowledge assistants to return.\nIf unspecified, at most 100 knowledge assistants will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListKnowledgeAssistants` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListKnowledgeAssistants` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListKnowledgeSources",
+      "description": "Lists Knowledge Sources under a Knowledge Assistant.",
+      "summary": "List Knowledge Sources.",
+      "path": "/api/2.1/{parent=knowledge-assistants/*}/knowledge-sources",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListKnowledgeSourcesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListKnowledgeSourcesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set knowledge assistant permissions.",
+      "path": "/api/2.0/permissions/knowledge-assistants/{knowledge_assistant_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "KnowledgeAssistantPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "KnowledgeAssistantPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistantAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "KnowledgeAssistantAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SyncKnowledgeSources",
+      "description": "Sync all non-index Knowledge Sources for a Knowledge Assistant (index sources do not require sync)",
+      "summary": "Syncs all Knowledge Sources for a Knowledge Assistant.",
+      "path": "/api/2.1/{name=knowledge-assistants/*}/knowledge-sources:sync",
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "SyncKnowledgeSourcesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateExample",
+      "description": "Updates an example in a Knowledge Assistant.",
+      "summary": "Update an example in a Knowledge Assistant.",
+      "path": "/api/2.1/{name=knowledge-assistants/*/examples/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateExampleRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "example",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "example",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "example",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Example",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Example",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "example",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Example",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the example to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when this example was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "example_id",
+          "description": "The universally unique identifier (UUID) of the example.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "guidelines",
+          "description": "Guidelines for answering the question. Optional — examples may be created\nwith just a question; the front-end form does not require guidelines.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nknowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when this example was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the example to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateKnowledgeAssistant",
+      "description": "Updates a Knowledge Assistant.",
+      "summary": "Update a Knowledge Assistant.",
+      "path": "/api/2.1/{name=knowledge-assistants/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateKnowledgeAssistantRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "knowledge_assistant",
+            "description": "The Knowledge Assistant update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Assistant fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeAssistant",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the Knowledge Assistant.\nAllowed values: `display_name`, `description`, `instructions`.\nExamples:\n- `display_name`\n- `description,instructions`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the Knowledge Assistant.\nAllowed values: `display_name`, `description`, `instructions`.\nExamples:\n- `display_name`\n- `description,instructions`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "knowledge_assistant",
+            "description": "The Knowledge Assistant update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Assistant fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeAssistant",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "knowledge_assistant",
+        "description": "The Knowledge Assistant update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Assistant fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "KnowledgeAssistant",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "KnowledgeAssistant",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "knowledge_assistant",
+          "description": "The Knowledge Assistant update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Assistant fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistant",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the Knowledge Assistant.\nAllowed values: `display_name`, `description`, `instructions`.\nExamples:\n- `display_name`\n- `description,instructions`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Creation timestamp.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The creator of the Knowledge Assistant.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_name",
+          "description": "The name of the knowledge assistant agent endpoint.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "error_info",
+          "description": "Error details when the Knowledge Assistant is in FAILED state.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "experiment_id",
+          "description": "The MLflow experiment ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Deprecated: use knowledge_assistant_id instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instructions",
+          "description": "Additional global instructions on how the agent should generate answers.\nOptional on create and update.\nWhen updating a Knowledge Assistant, include this field in update_mask to\nmodify it.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "State of the Knowledge Assistant. Not returned in List responses.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistantState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "CREATING"
+              },
+              {
+                "content": "FAILED"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Assistant.\nFormat: knowledge-assistants/{knowledge_assistant_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the Knowledge Assistant.\nAllowed values: `display_name`, `description`, `instructions`.\nExamples:\n- `display_name`\n- `description,instructions`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the Knowledge Assistant, unique at workspace level.\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this agent can do (user-facing).\nRequired when creating a Knowledge Assistant.\nWhen updating a Knowledge Assistant, optional unless included in\nupdate_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateKnowledgeSource",
+      "description": "Updates a Knowledge Source.",
+      "summary": "Update a Knowledge Source.",
+      "path": "/api/2.1/{name=knowledge-assistants/*/knowledge-sources/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateKnowledgeSourceRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Source to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "knowledge_source",
+            "description": "The Knowledge Source update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Source fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeSource",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the Knowledge Source.\nAllowed values: `display_name`, `description`.\nExamples:\n- `display_name`\n- `display_name,description`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Knowledge Source to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the Knowledge Source.\nAllowed values: `display_name`, `description`.\nExamples:\n- `display_name`\n- `display_name,description`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "knowledge_source",
+            "description": "The Knowledge Source update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Source fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KnowledgeSource",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "knowledge_source",
+        "description": "The Knowledge Source update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Source fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "KnowledgeSource",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "source_type",
+              "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "description",
+              "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "source_type",
+              "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "KnowledgeSource",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source_type",
+            "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "description",
+            "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source_type",
+            "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "knowledge_source",
+          "description": "The Knowledge Source update payload.\nOnly fields listed in update_mask are updated.\nREQUIRED annotations on Knowledge Source fields describe create-time\nrequirements and do not mean all those fields are required for update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeSource",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "source_type",
+                "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "description",
+                "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "source_type",
+                "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Source to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the Knowledge Source.\nAllowed values: `display_name`, `description`.\nExamples:\n- `display_name`\n- `display_name,description`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when this knowledge source was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "file_table",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FileTableSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "files",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FilesSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "index",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IndexSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "knowledge_cutoff_time",
+          "description": "Timestamp representing the cutoff before which content in this knowledge source is being ingested.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nknowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "state",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeSourceState",
+            "enum": [
+              {
+                "content": "FAILED_UPDATE"
+              },
+              {
+                "content": "UPDATED"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Knowledge Source to update.\nFormat: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the Knowledge Source.\nAllowed values: `display_name`, `description`.\nExamples:\n- `display_name`\n- `display_name,description`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display name of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of the knowledge source.\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, optional unless included in update_mask.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "The type of the source: \"index\", \"files\", or \"file_table\".\nRequired when creating a Knowledge Source.\nWhen updating a Knowledge Source, this field is ignored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a knowledge assistant. Knowledge assistants can inherit permissions from their root object.",
+      "summary": "Update knowledge assistant permissions.",
+      "path": "/api/2.0/permissions/knowledge-assistants/{knowledge_assistant_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "KnowledgeAssistantPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "knowledge_assistant_id",
+            "description": "The knowledge assistant for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "KnowledgeAssistantPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistantAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "KnowledgeAssistantAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "knowledge_assistant_id",
+          "description": "The knowledge assistant for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

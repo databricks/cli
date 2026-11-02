@@ -1,0 +1,3110 @@
+{
+  "id": "catalog.AiGateway",
+  "name": "AiGateway",
+  "description": "Govern AI workloads in Unity Catalog. This API manages the Unity Catalog securables that bring centralized access control, lineage, and auditing to AI-serving entities: model services (governed access to foundation models and external LLMs), model provider services (governed resources for external model providers), and MCP services (governed Model Context Protocol servers).",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListMcpServicesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateMcpService",
+      "description": "Creates an MCP service in a Unity Catalog schema. An MCP (Model Context\nProtocol) service is a governed securable that registers an MCP server and\nexposes its tools for discovery, access control, and invocation. Specify\nits name in `mcp_service_id`.\n\nYou must be the owner of the parent schema or have the `CREATE_SERVICE`\nand `USE_SCHEMA` privileges on the parent schema and `USE_CATALOG` on the\nparent catalog. You also need `USE_CONNECTION` on the connection the MCP\nservice references.",
+      "summary": "Create an MCP service.",
+      "path": "/api/2.1/unity-catalog/mcp-services",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateMcpServiceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "mcp_service",
+            "description": "The MCP service to create. Do not set `name`; the server derives it from\n`parent` and `mcp_service_id`. `source_connection` is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "McpService",
+              "is_object": true
+            }
+          },
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "mcp_service_id",
+            "description": "Name for the MCP service, e.g. \"my_mcp_service\".",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "mcp_service_id",
+            "description": "Name for the MCP service, e.g. \"my_mcp_service\".",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "mcp_service",
+            "description": "The MCP service to create. Do not set `name`; the server derives it from\n`parent` and `mcp_service_id`. `source_connection` is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "McpService",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "mcp_service",
+        "description": "The MCP service to create. Do not set `name`; the server derives it from\n`parent` and `mcp_service_id`. `source_connection` is required.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "McpService",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "McpService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "mcp_service",
+          "description": "The MCP service to create. Do not set `name`; the server derives it from\n`parent` and `mcp_service_id`. `source_connection` is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "McpService",
+            "is_object": true
+          }
+        },
+        {
+          "name": "mcp_service_id",
+          "description": "Name for the MCP service, e.g. \"my_mcp_service\".",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "Connection, tool selectors, and rate limits. Required on Create. On Update,\nprovide this field when `update_mask` contains `config` or one of its\nsubpaths.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "McpServiceConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the MCP service was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the MCP service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the MCP service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`mcp_service_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the MCP service was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "mcp_service_id",
+          "description": "Name for the MCP service, e.g. \"my_mcp_service\".",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateMcpServiceUserMappedCredential",
+      "description": "Logs the caller in to an MCP service: creates their per-user OAuth credential, or\nre-authenticates it if one already exists. The request body carries the OAuth exchange fields.\n\nYou must be the owner of the MCP service or have `EXECUTE` on it, plus `USE_CATALOG` on the\nparent catalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Create an MCP service user credential.",
+      "path": "/api/2.1/unity-catalog/{name=mcp-services/*}/user-credentials",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateMcpServiceUserMappedCredentialRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "login",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "McpServiceUserMappedCredentialLogin",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "login",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "McpServiceUserMappedCredentialLogin",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "login",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "McpServiceUserMappedCredentialLogin",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "McpServiceUserMappedCredential",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "login",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "McpServiceUserMappedCredentialLogin",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "OAuth exchange fields: `pkce_verifier`, `authorization_code`, and `oauth_redirect_uri`.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateModelProviderService",
+      "description": "Creates a model provider service in a Unity Catalog schema. A model\nprovider service stores authentication and request configuration for an\nexternal model provider, such as OpenAI, Azure OpenAI, or Amazon Bedrock.\nModel services reference it to invoke the provider. Specify its name in\n`model_provider_service_id`.\n\nYou must be the owner of the parent schema or have the `CREATE_SERVICE`\nand `USE_SCHEMA` privileges on the parent schema and `USE_CATALOG` on the\nparent catalog. Inline credentials additionally require `CREATE_CONNECTION`\non the parent schema. When using a Unity Catalog service credential, you\nmust have `ACCESS` on that credential.",
+      "summary": "Create a model provider service.",
+      "path": "/api/2.1/unity-catalog/model-provider-services",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateModelProviderServiceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "model_provider_service",
+            "description": "The model provider service to create. Do not set `name`; the server derives\nit from `parent` and `model_provider_service_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelProviderService",
+              "is_object": true
+            }
+          },
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "model_provider_service_id",
+            "description": "Name for the model provider service, e.g. \"openai_prod\".",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "model_provider_service_id",
+            "description": "Name for the model provider service, e.g. \"openai_prod\".",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "model_provider_service",
+            "description": "The model provider service to create. Do not set `name`; the server derives\nit from `parent` and `model_provider_service_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelProviderService",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "model_provider_service",
+        "description": "The model provider service to create. Do not set `name`; the server derives\nit from `parent` and `model_provider_service_id`.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ModelProviderService",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "ModelProviderService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "model_provider_service",
+          "description": "The model provider service to create. Do not set `name`; the server derives\nit from `parent` and `model_provider_service_id`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelProviderService",
+            "is_object": true
+          }
+        },
+        {
+          "name": "model_provider_service_id",
+          "description": "Name for the model provider service, e.g. \"openai_prod\".",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "Provider authentication, exposed models, request-forwarding controls, rate\nlimits, and payload logging. Required on Create. On Update, it is required\nonly when `config` or one of its subpaths appears in `update_mask`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ModelProviderServiceConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the provider service was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the model provider service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the provider service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_provider_service_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the provider service was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_provider_service_id",
+          "description": "Name for the model provider service, e.g. \"openai_prod\".",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateModelService",
+      "description": "Creates a model service in a Unity Catalog schema. A model service is a\ngoverned AI Gateway endpoint that routes inference requests to one or more\nmodel destinations. Specify its name in `model_service_id`.\n\nYou must be the owner of the parent schema or have the `CREATE_SERVICE`\nand `USE_SCHEMA` privileges on the parent schema and `USE_CATALOG` on the\nparent catalog. For every destination, you also need `USE_CATALOG` and\n`USE_SCHEMA` on its parent and `EXECUTE` on the referenced Unity Catalog\nmodel or model provider service. A provisioned-throughput destination\nadditionally requires `CAN_MANAGE` on its Model Serving endpoint.\nConfiguring an inference table additionally requires `CREATE_TABLE`.",
+      "summary": "Create a model service.",
+      "path": "/api/2.1/unity-catalog/model-services",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateModelServiceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "model_service",
+            "description": "The model service to create. Do not set `name`; the server derives it from\n`parent` and `model_service_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelService",
+              "is_object": true
+            }
+          },
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "model_service_id",
+            "description": "Name for the model service, e.g. \"my_model_service\".",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "model_service_id",
+            "description": "Name for the model service, e.g. \"my_model_service\".",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "model_service",
+            "description": "The model service to create. Do not set `name`; the server derives it from\n`parent` and `model_service_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelService",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "model_service",
+        "description": "The model service to create. Do not set `name`; the server derives it from\n`parent` and `model_service_id`.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ModelService",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "ModelService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "model_service",
+          "description": "The model service to create. Do not set `name`; the server derives it from\n`parent` and `model_service_id`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelService",
+            "is_object": true
+          }
+        },
+        {
+          "name": "model_service_id",
+          "description": "Name for the model service, e.g. \"my_model_service\".",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "Destinations, routing, rate limits, and payload logging configuration.\nRequired on Create. On Update, provide this field when `update_mask`\ncontains `config` or one of its subpaths.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ModelServiceConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the model service was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the model service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the model service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_service_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "supported_api_types",
+          "description": "API types supported across this service's destinations, such as\n`openai/v1/chat/completions`, `openai/v1/embeddings`, and\n`mlflow/v1/chat/completions`. Derived from the backing models and providers\nat read time.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the model service was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_service_id",
+          "description": "Name for the model service, e.g. \"my_model_service\".",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSkill",
+      "description": "Creates a skill in a Unity Catalog schema and provisions its managed bundle\nstorage. Specify its name in `skill_id`. The request contains an optional\ncomment but no bundle bytes.\n\nTo publish a skill:\n\n1. Call CreateSkill to create the skill in Unity Catalog.\n2. Upload every bundle file, including `SKILL.md` at the bundle root,\nwith the Files API:\n`PUT /api/2.0/fs/files/Skills/{catalog}/{schema}/{skill}/{file_path}`.\nThe CreateSkill caller owns the skill and can upload. Other callers\nneed `READ_VOLUME` and `WRITE_VOLUME` on the skill.\n3. Call FinalizeSkill to validate `SKILL.md` and set the skill's\n`bundle_name` and `description` from its frontmatter `name` and\n`description`.\n\nYou must be the owner of the parent schema or have `CREATE_VOLUME` and\n`USE_SCHEMA` on it, plus `USE_CATALOG` on the parent catalog.",
+      "summary": "Create a skill.",
+      "path": "/api/2.1/unity-catalog/skills",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateSkillRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "skill",
+            "description": "The skill to create. `comment` is the only accepted client input and may be\nomitted. Do not set `name`; the server derives it from `parent` and\n`skill_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Skill",
+              "is_object": true
+            }
+          },
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "skill_id",
+            "description": "Name for the skill, e.g. \"basic-math\". The server normalizes this\nidentifier to lowercase. It is independent of the bundle name read from\nSKILL.md.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "skill_id",
+            "description": "Name for the skill, e.g. \"basic-math\". The server normalizes this\nidentifier to lowercase. It is independent of the bundle name read from\nSKILL.md.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "skill",
+            "description": "The skill to create. `comment` is the only accepted client input and may be\nomitted. Do not set `name`; the server derives it from `parent` and\n`skill_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Skill",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "skill",
+        "description": "The skill to create. `comment` is the only accepted client input and may be\nomitted. Do not set `name`; the server derives it from `parent` and\n`skill_id`.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Skill",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Skill",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "skill",
+          "description": "The skill to create. `comment` is the only accepted client input and may be\nomitted. Do not set `name`; the server derives it from `parent` and\n`skill_id`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Skill",
+            "is_object": true
+          }
+        },
+        {
+          "name": "skill_id",
+          "description": "Name for the skill, e.g. \"basic-math\". The server normalizes this\nidentifier to lowercase. It is independent of the bundle name read from\nSKILL.md.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "bundle_name",
+          "description": "Name from the most recently successfully finalized SKILL.md. It may differ\nfrom the final component of the Skill resource name. Unset until\nFinalizeSkill succeeds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided comment for the skill. Free-text, user-editable via\nUpdateSkill (listed in its `update_mask`). DISTINCT from `description`,\nwhich is the server-parsed, OUTPUT_ONLY SKILL.md frontmatter value: `comment`\nis the customer's own annotation and is preserved across bundle re-uploads.\nWhen `comment` is in the update mask, omitting it clears the field, while\nan explicitly empty string is retained.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the skill was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description from the most recently successfully finalized SKILL.md. Unset\nuntil FinalizeSkill succeeds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the skill.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "finalize_time",
+          "description": "Time of the most recent successful FinalizeSkill. Unset until one succeeds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the skill.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`skill_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time of the most recent Skill metadata mutation. Uploading bundle files\nalone does not change this value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Name of the parent schema.\nFormat: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "skill_id",
+          "description": "Name for the skill, e.g. \"basic-math\". The server normalizes this\nidentifier to lowercase. It is independent of the bundle name read from\nSKILL.md.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteMcpService",
+      "description": "Deletes the MCP service identified by its resource name. Optionally supply\nan `etag` to make the delete conditional on the MCP service not having\nchanged since it was read.\n\nYou must be the owner of the MCP service or have `MANAGE` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Delete an MCP service.",
+      "path": "/api/2.1/unity-catalog/{name=mcp-services/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteMcpServiceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\ndelete succeeds only if the resource has not changed. Leave unset for an\nunconditional delete. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteMcpServiceUserMappedCredential",
+      "description": "Revokes (deletes) the caller's per-user OAuth credential for an MCP service (logout).\n\nYou must be the owner of the MCP service or have `EXECUTE` on it, plus `USE_CATALOG` on the\nparent catalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Delete an MCP service user credential.",
+      "path": "/api/2.1/unity-catalog/{name=mcp-services/*}/user-credentials",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteMcpServiceUserMappedCredentialRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteMcpServiceUserMappedCredentialResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteModelProviderService",
+      "description": "Deletes the model provider service identified by its resource name.\nOptionally supply an `etag` to make the delete conditional on the model\nprovider service not having changed since it was read.\n\nYou must be the owner of the model provider service or have `MANAGE` on\nit, plus `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the\nparent schema.",
+      "summary": "Delete a model provider service.",
+      "path": "/api/2.1/unity-catalog/{name=model-provider-services/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteModelProviderServiceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\ndelete succeeds only if the resource has not changed. Leave unset for an\nunconditional delete. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteModelService",
+      "description": "Deletes the model service identified by its resource name. Optionally\nsupply an `etag` to make the delete conditional on the model service not\nhaving changed since it was read.\n\nYou must be the owner of the model service or have `MANAGE` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Delete a model service.",
+      "path": "/api/2.1/unity-catalog/{name=model-services/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteModelServiceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\ndelete succeeds only if the resource has not changed. Leave unset for an\nunconditional delete. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSkill",
+      "description": "Deletes the skill identified by its resource name and makes its managed\nbundle path unavailable. Managed bundle data is deleted asynchronously.\nOptionally supply an `etag` to make the delete conditional on the skill not\nhaving changed since it was read.\n\nYou must be the owner of the skill or have `MANAGE` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Delete a skill.",
+      "path": "/api/2.1/unity-catalog/{name=skills/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteSkillRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\ndelete succeeds only if the resource has not changed. Leave unset for an\nunconditional delete. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "FinalizeSkill",
+      "description": "Finalizes a skill after its bundle files are uploaded or changed through\nthe Files API. Call it again after every bundle change. This method reads\nSKILL.md through the Files API using the caller's authorization. Its YAML\nfrontmatter must contain an agentskills.io-compliant `name` and a nonblank\n`description` within the configured UTF-8 byte limit. On success, it\nreplaces `bundle_name` and `description`; refreshes `finalize_time`,\n`update_time`, and `updated_by`; and returns the updated skill. `comment` is\npreserved. Re-finalization uses the latest SKILL.md and is last-write-wins\nwithout an etag precondition. Validation failures do not change metadata.\n\nYou must be the owner of the skill or have `READ_VOLUME` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Finalize a skill.",
+      "path": "/api/2.1/unity-catalog/{name=skills/*}/finalize",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "FinalizeSkillRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Skill",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMcpService",
+      "description": "Returns the MCP service identified by its resource name.\n\nYou must be the owner of the MCP service or have `EXECUTE`,\n`READ_METADATA`, or `MANAGE` on it, plus `USE_CATALOG` on the parent\ncatalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Get an MCP service.",
+      "path": "/api/2.1/unity-catalog/{name=mcp-services/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetMcpServiceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "McpService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMcpServiceUserMappedCredential",
+      "description": "Returns the caller's per-user OAuth login state for an MCP service. Read\n`provisioning_info.state`: `ACTIVE` means the caller is logged in and the credential is\nusable; any other state (for example a failed or still-provisioning login) means the login has\nnot completed and the caller should log in again. If the caller has no credential yet, the RPC\nreturns `NOT_FOUND`.\n\nYou must be the owner of the MCP service or have `EXECUTE` on it, plus `USE_CATALOG` on the\nparent catalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Get MCP service user credential status.",
+      "path": "/api/2.1/unity-catalog/{name=mcp-services/*}/user-credentials",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetMcpServiceUserMappedCredentialRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "McpServiceUserMappedCredential",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetModelProviderService",
+      "description": "Returns the model provider service identified by its resource name.\n\nYou must be the owner of the model provider service or have `EXECUTE`,\n`READ_METADATA`, or `MANAGE` on it, plus `USE_CATALOG` on the parent\ncatalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Get a model provider service.",
+      "path": "/api/2.1/unity-catalog/{name=model-provider-services/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetModelProviderServiceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ModelProviderService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetModelService",
+      "description": "Returns the model service identified by its resource name.\n\nYou must be the owner of the model service or have `EXECUTE`,\n`READ_METADATA`, or `MANAGE` on it, plus `USE_CATALOG` on the parent\ncatalog and `USE_SCHEMA` on the parent schema.",
+      "summary": "Get a model service.",
+      "path": "/api/2.1/unity-catalog/{name=model-services/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetModelServiceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ModelService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSkill",
+      "description": "Returns the skill identified by its resource name.\n\nYou must be the owner of the skill or have `READ_VOLUME`, `READ_METADATA`,\nor `MANAGE` on it, plus `USE_CATALOG` on the parent catalog and\n`USE_SCHEMA` on the parent schema.",
+      "summary": "Get a skill.",
+      "path": "/api/2.1/unity-catalog/{name=skills/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetSkillRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Skill",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListMcpServices",
+      "description": "Lists the MCP services in a Unity Catalog schema. Provide `parent` as\n`schemas/{catalog}.{schema}`. Results are paginated; pass the returned\n`next_page_token` to fetch subsequent pages.\n\nRequires `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the\nparent schema. Only MCP services the caller can access (as owner or\nthrough `EXECUTE`, `READ_METADATA`, or `MANAGE`) are returned.",
+      "summary": "List MCP services.",
+      "path": "/api/2.1/unity-catalog/mcp-services",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListMcpServicesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListMcpServicesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of MCP services to return. Defaults to 200 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token from the previous response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent schema to list within, in the form\n`schemas/{catalog}.{schema}`. Required. Each `{...}` component is capped at\n255 characters individually.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "Fields to return for each service. `FULL` includes source-connection\ndetails and rate-limit principal names. `BASIC` omits the source connection\nand omits principal names from rate limits. Defaults to `BASIC` when unset.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ListMcpServicesRequestView",
+            "enum": [
+              {
+                "content": "BASIC"
+              },
+              {
+                "content": "FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token from the previous response.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListModelProviderServices",
+      "description": "Lists the model provider services in a Unity Catalog schema. Provide\n`parent` as `schemas/{catalog}.{schema}`. Results are paginated; pass the\nreturned `next_page_token` to fetch subsequent pages.\n\nRequires `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the\nparent schema. Only model provider services the caller can access (as\nowner or through `EXECUTE`, `READ_METADATA`, or `MANAGE`) are returned.",
+      "summary": "List model provider services.",
+      "path": "/api/2.1/unity-catalog/model-provider-services",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListModelProviderServicesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListModelProviderServicesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of provider services to return. Defaults to 200 when unset or\n0; the maximum is 200. Use `page_token` to retrieve additional pages.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token from the previous response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent schema to list within, in the form\n`schemas/{catalog}.{schema}`. Required. Each `{...}` component is capped at\n255 characters individually.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "Fields to return for each service. `FULL` includes resolved\nservice-credential and inference-table details and rate-limit principal\nnames. `BASIC` omits those details and principal names from rate limits.\nDefaults to `BASIC` when unset.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ListModelProviderServicesRequestView",
+            "enum": [
+              {
+                "content": "BASIC"
+              },
+              {
+                "content": "FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token from the previous response.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListModelServices",
+      "description": "Lists the model services in a Unity Catalog schema. Provide `parent` as\n`schemas/{catalog}.{schema}`. Results are paginated; pass the returned\n`next_page_token` to fetch subsequent pages.\n\nRequires `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the\nparent schema. Only model services the caller can access (as owner or\nthrough `EXECUTE`, `READ_METADATA`, or `MANAGE`) are returned by default.",
+      "summary": "List model services.",
+      "path": "/api/2.1/unity-catalog/model-services",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListModelServicesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListModelServicesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of model services to return. Defaults to 200 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token from the previous response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent schema to list within, in the form\n`schemas/{catalog}.{schema}`. Required. Each `{...}` component is capped at\n255 characters individually.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "Fields to return for each service. `FULL` includes destinations,\ninference-table details, and rate-limit principal names. `BASIC` omits\ndestinations and inference-table details and omits principal names from\nrate limits. Defaults to `BASIC` when unset.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ListModelServicesRequestView",
+            "enum": [
+              {
+                "content": "BASIC"
+              },
+              {
+                "content": "FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token from the previous response.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSkills",
+      "description": "Lists skills in a Unity Catalog schema. Provide `parent` as\n`schemas/{catalog}.{schema}`. Results are paginated; pass the returned\n`next_page_token` to fetch subsequent pages.\n\nRequires `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent\nschema. Only skills the caller can access as owner or through `READ_VOLUME`,\n`READ_METADATA`, or `MANAGE` are returned.",
+      "summary": "List skills.",
+      "path": "/api/2.1/unity-catalog/skills",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListSkillsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Name of the parent schema. Format: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.\n\nRequired: skill listing is schema-scoped, so `parent` must be set; an unset\nor empty `parent` is rejected with INVALID_PARAMETER_VALUE.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Name of the parent schema. Format: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.\n\nRequired: skill listing is schema-scoped, so `parent` must be set; an unset\nor empty `parent` is rejected with INVALID_PARAMETER_VALUE.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSkillsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of skills to return. Defaults to 200 when unset or 0; the\nmaximum is 200. Use `page_token` to retrieve additional pages.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token from a previous request.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Name of the parent schema. Format: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.\n\nRequired: skill listing is schema-scoped, so `parent` must be set; an unset\nor empty `parent` is rejected with INVALID_PARAMETER_VALUE.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Name of the parent schema. Format: `schemas/{catalog}.{schema}`.\nEach `{...}` component is capped at 255 characters individually.\n\nRequired: skill listing is schema-scoped, so `parent` must be set; an unset\nor empty `parent` is rejected with INVALID_PARAMETER_VALUE.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token from a previous request.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateMcpService",
+      "description": "Updates an MCP service. Only the fields named in `update_mask` are\nchanged; the resource name is immutable. Optionally supply an `etag` to\nmake the update conditional on the MCP service not having changed since it\nwas read.\n\nYou must be the owner of the MCP service or have `MANAGE` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.\nWhen changing `config.source_connection.name`, the MCP service owner must\nalso have `USE_CONNECTION` on the new connection.",
+      "summary": "Update an MCP service.",
+      "path": "/api/2.1/unity-catalog/{name=mcp-services/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateMcpServiceRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`mcp_service_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "mcp_service",
+            "description": "The MCP service with the updated field values. `name` identifies the\nresource (`mcp-services/{catalog}.{schema}.{mcp_service}`); only fields\nlisted in `update_mask` are applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "McpService",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.source_connection.name`, `config.include_tool_selectors`, or\n`config.rate_limits`.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`mcp_service_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.source_connection.name`, `config.include_tool_selectors`, or\n`config.rate_limits`.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "mcp_service",
+            "description": "The MCP service with the updated field values. `name` identifies the\nresource (`mcp-services/{catalog}.{schema}.{mcp_service}`); only fields\nlisted in `update_mask` are applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "McpService",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "mcp_service",
+        "description": "The MCP service with the updated field values. `name` identifies the\nresource (`mcp-services/{catalog}.{schema}.{mcp_service}`); only fields\nlisted in `update_mask` are applied.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "McpService",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "McpService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\nupdate succeeds only if the resource has not changed. Leave unset for an\nunconditional update. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "mcp_service",
+          "description": "The MCP service with the updated field values. `name` identifies the\nresource (`mcp-services/{catalog}.{schema}.{mcp_service}`); only fields\nlisted in `update_mask` are applied.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "McpService",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`mcp_service_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.source_connection.name`, `config.include_tool_selectors`, or\n`config.rate_limits`.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "Connection, tool selectors, and rate limits. Required on Create. On Update,\nprovide this field when `update_mask` contains `config` or one of its\nsubpaths.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "McpServiceConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the MCP service was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the MCP service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the MCP service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`mcp_service_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the MCP service was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`mcp_service_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.source_connection.name`, `config.include_tool_selectors`, or\n`config.rate_limits`.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateModelProviderService",
+      "description": "Updates a model provider service. Only the fields named in `update_mask`\nare changed; the resource name and provider type are immutable. Optionally\nsupply an `etag` to make the update conditional on the model provider\nservice not having changed since it was read.\n\nYou must be the owner of the model provider service or have `MANAGE` on\nit, plus `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the\nparent schema.\n\nUpdating `config.provider` cannot change the provider type. Authentication\nmode changes require feature availability and support for both modes on the\nselected provider.",
+      "summary": "Update a model provider service.",
+      "path": "/api/2.1/unity-catalog/{name=model-provider-services/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateModelProviderServiceRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_provider_service_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "model_provider_service",
+            "description": "The model provider service with the updated field values. `name`\nidentifies the resource\n(`model-provider-services/{catalog}.{schema}.{model_provider_service}`);\nonly fields listed in `update_mask` are applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelProviderService",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`; `config.provider` to replace the active provider-specific value\n(for example, `config.openai`; the mask path remains `config.provider`);\n`config.allow_all_targets`, `config.targets`, `config.forward_headers`,\n`config.forward_query_parameters`, `config.forward_unmanaged_paths`,\n`config.rate_limits`, `config.pricing.default_discount_basis_points`, or\n`config.inference_table`. For a pricing update, an explicitly empty `pricing`\nobject clears the discount but retains the object; omitting `pricing` clears\nit. `config.pricing` is not a supported mask path. The provider type is\nimmutable. A `config` or `config.provider` replacement that carries no\nauthentication material preserves the existing authentication binding;\ninput-only plaintext does not need to be read back and re-sent.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_provider_service_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`; `config.provider` to replace the active provider-specific value\n(for example, `config.openai`; the mask path remains `config.provider`);\n`config.allow_all_targets`, `config.targets`, `config.forward_headers`,\n`config.forward_query_parameters`, `config.forward_unmanaged_paths`,\n`config.rate_limits`, `config.pricing.default_discount_basis_points`, or\n`config.inference_table`. For a pricing update, an explicitly empty `pricing`\nobject clears the discount but retains the object; omitting `pricing` clears\nit. `config.pricing` is not a supported mask path. The provider type is\nimmutable. A `config` or `config.provider` replacement that carries no\nauthentication material preserves the existing authentication binding;\ninput-only plaintext does not need to be read back and re-sent.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "model_provider_service",
+            "description": "The model provider service with the updated field values. `name`\nidentifies the resource\n(`model-provider-services/{catalog}.{schema}.{model_provider_service}`);\nonly fields listed in `update_mask` are applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelProviderService",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "model_provider_service",
+        "description": "The model provider service with the updated field values. `name`\nidentifies the resource\n(`model-provider-services/{catalog}.{schema}.{model_provider_service}`);\nonly fields listed in `update_mask` are applied.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ModelProviderService",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "ModelProviderService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\nupdate succeeds only if the resource has not changed. Leave unset for an\nunconditional update. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_provider_service",
+          "description": "The model provider service with the updated field values. `name`\nidentifies the resource\n(`model-provider-services/{catalog}.{schema}.{model_provider_service}`);\nonly fields listed in `update_mask` are applied.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelProviderService",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_provider_service_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`; `config.provider` to replace the active provider-specific value\n(for example, `config.openai`; the mask path remains `config.provider`);\n`config.allow_all_targets`, `config.targets`, `config.forward_headers`,\n`config.forward_query_parameters`, `config.forward_unmanaged_paths`,\n`config.rate_limits`, `config.pricing.default_discount_basis_points`, or\n`config.inference_table`. For a pricing update, an explicitly empty `pricing`\nobject clears the discount but retains the object; omitting `pricing` clears\nit. `config.pricing` is not a supported mask path. The provider type is\nimmutable. A `config` or `config.provider` replacement that carries no\nauthentication material preserves the existing authentication binding;\ninput-only plaintext does not need to be read back and re-sent.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "Provider authentication, exposed models, request-forwarding controls, rate\nlimits, and payload logging. Required on Create. On Update, it is required\nonly when `config` or one of its subpaths appears in `update_mask`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ModelProviderServiceConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the provider service was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the model provider service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the provider service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_provider_service_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the provider service was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_provider_service_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`; `config.provider` to replace the active provider-specific value\n(for example, `config.openai`; the mask path remains `config.provider`);\n`config.allow_all_targets`, `config.targets`, `config.forward_headers`,\n`config.forward_query_parameters`, `config.forward_unmanaged_paths`,\n`config.rate_limits`, `config.pricing.default_discount_basis_points`, or\n`config.inference_table`. For a pricing update, an explicitly empty `pricing`\nobject clears the discount but retains the object; omitting `pricing` clears\nit. `config.pricing` is not a supported mask path. The provider type is\nimmutable. A `config` or `config.provider` replacement that carries no\nauthentication material preserves the existing authentication binding;\ninput-only plaintext does not need to be read back and re-sent.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateModelService",
+      "description": "Updates a model service. Only the fields named in `update_mask` are\nchanged; the resource name is immutable. Optionally supply an `etag` to\nmake the update conditional on the model service not having changed since\nit was read.\n\nYou must be the owner of the model service or have `MANAGE` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.\nWhen changing destinations, both you and the model service owner need\n`USE_CATALOG` and `USE_SCHEMA` on each destination's parent and `EXECUTE`\non the referenced Unity Catalog model or model provider service. A\nprovisioned-throughput destination additionally requires `CAN_MANAGE` for\nyou and `CAN_QUERY` for the model service owner. Adding an inference table\nadditionally requires `CREATE_TABLE`.",
+      "summary": "Update a model service.",
+      "path": "/api/2.1/unity-catalog/{name=model-services/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateModelServiceRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_service_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "model_service",
+            "description": "The model service with the updated field values. `name` identifies the\nresource (`model-services/{catalog}.{schema}.{model_service}`); only\nfields listed in `update_mask` are applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelService",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.routing.destinations`,\n`config.routing.fallback.destinations`,\n`config.rate_limits`, or `config.inference_table`. Intermediate paths such\nas `config.routing` and `config.routing.fallback` are not supported.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_service_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.routing.destinations`,\n`config.routing.fallback.destinations`,\n`config.rate_limits`, or `config.inference_table`. Intermediate paths such\nas `config.routing` and `config.routing.fallback` are not supported.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "model_service",
+            "description": "The model service with the updated field values. `name` identifies the\nresource (`model-services/{catalog}.{schema}.{model_service}`); only\nfields listed in `update_mask` are applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ModelService",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "model_service",
+        "description": "The model service with the updated field values. `name` identifies the\nresource (`model-services/{catalog}.{schema}.{model_service}`); only\nfields listed in `update_mask` are applied.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ModelService",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "ModelService",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\nupdate succeeds only if the resource has not changed. Leave unset for an\nunconditional update. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "model_service",
+          "description": "The model service with the updated field values. `name` identifies the\nresource (`model-services/{catalog}.{schema}.{model_service}`); only\nfields listed in `update_mask` are applied.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelService",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_service_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.routing.destinations`,\n`config.routing.fallback.destinations`,\n`config.rate_limits`, or `config.inference_table`. Intermediate paths such\nas `config.routing` and `config.routing.fallback` are not supported.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "Destinations, routing, rate limits, and payload logging configuration.\nRequired on Create. On Update, provide this field when `update_mask`\ncontains `config` or one of its subpaths.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ModelServiceConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the model service was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the model service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the model service.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_service_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "supported_api_types",
+          "description": "API types supported across this service's destinations, such as\n`openai/v1/chat/completions`, `openai/v1/embeddings`, and\n`mlflow/v1/chat/completions`. Derived from the backing models and providers\nat read time.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the model service was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`model_service_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Use `config` to replace the entire configuration. The\nreplacement must include every required field; any optional field you omit\nis cleared. To preserve sibling fields, use one or more granular paths:\n`comment`, `config.routing.destinations`,\n`config.routing.fallback.destinations`,\n`config.rate_limits`, or `config.inference_table`. Intermediate paths such\nas `config.routing` and `config.routing.fallback` are not supported.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSkill",
+      "description": "Updates a skill. Only fields named in `update_mask` are changed; currently\nonly `comment` is supported. The resource name is immutable. Optionally\nsupply an `etag` to make the update conditional on the skill not having\nchanged since it was read. Bundle files, grants, tags, and ownership are\nunchanged.\n\nTo update the bundle, add, overwrite (`overwrite=true`), or delete files\nunder `/Skills/{catalog}/{schema}/{skill}/` with the Files API, then call\nFinalizeSkill. Changing bundle files requires being the owner of the skill\nor having `READ_VOLUME` and `WRITE_VOLUME` on it; `MANAGE` does not grant\naccess to bundle files.\n\nTo call UpdateSkill, you must be the owner of the skill or have `MANAGE` on\nit, plus `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent\nschema.",
+      "summary": "Update a skill.",
+      "path": "/api/2.1/unity-catalog/{name=skills/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateSkillRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`skill_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "skill",
+            "description": "The skill with the updated field values. `name` identifies the resource\n(`skills/{catalog}.{schema}.{skill}`); only fields listed in `update_mask`\nare applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Skill",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update; validated against `skill`. REQUIRED, matching the sibling\nUpdate RPCs. `comment` is the only mutable field.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`skill_id`; required and immutable on Update/Get/Delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update; validated against `skill`. REQUIRED, matching the sibling\nUpdate RPCs. `comment` is the only mutable field.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "skill",
+            "description": "The skill with the updated field values. `name` identifies the resource\n(`skills/{catalog}.{schema}.{skill}`); only fields listed in `update_mask`\nare applied.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Skill",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "skill",
+        "description": "The skill with the updated field values. `name` identifies the resource\n(`skills/{catalog}.{schema}.{skill}`); only fields listed in `update_mask`\nare applied.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Skill",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Skill",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token from the most recent read. When set, the\nupdate succeeds only if the resource has not changed. Leave unset for an\nunconditional update. For REST requests, URL-encode the base64 string\nreturned by the API when setting the `etag` query parameter.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`skill_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "skill",
+          "description": "The skill with the updated field values. `name` identifies the resource\n(`skills/{catalog}.{schema}.{skill}`); only fields listed in `update_mask`\nare applied.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Skill",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update; validated against `skill`. REQUIRED, matching the sibling\nUpdate RPCs. `comment` is the only mutable field.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "bundle_name",
+          "description": "Name from the most recently successfully finalized SKILL.md. It may differ\nfrom the final component of the Skill resource name. Unset until\nFinalizeSkill succeeds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided comment for the skill. Free-text, user-editable via\nUpdateSkill (listed in its `update_mask`). DISTINCT from `description`,\nwhich is the server-parsed, OUTPUT_ONLY SKILL.md frontmatter value: `comment`\nis the customer's own annotation and is preserved across bundle re-uploads.\nWhen `comment` is in the update mask, omitting it clears the field, while\nan explicitly empty string is retained.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the skill was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Creator identity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description from the most recently successfully finalized SKILL.md. Unset\nuntil FinalizeSkill succeeds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_owner",
+          "description": "Owner of the skill.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Optimistic concurrency token returned on every read. To make an Update or\nDelete conditional, pass the last-read value in that request's `etag`\nfield. In REST responses, this value is a base64 string; URL-encode it when\nsetting the `etag` query parameter.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "finalize_time",
+          "description": "Time of the most recent successful FinalizeSkill. Unset until one succeeds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Metastore hosting the skill.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`skill_id`; required and immutable on Update/Get/Delete.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time of the most recent Skill metadata mutation. Uploading bundle files\nalone does not change this value.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Identity of the last updater.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the skill.\nFormat: `skills/{catalog}.{schema}.{skill}`.\nEach `{...}` component is capped at 255 characters individually.\nServer-derived on Create from `parent` +\n`skill_id`; required and immutable on Update/Get/Delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update; validated against `skill`. REQUIRED, matching the sibling\nUpdate RPCs. `comment` is the only mutable field.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    }
+  ]
+}

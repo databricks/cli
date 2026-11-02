@@ -1,0 +1,725 @@
+{
+  "settingsv2.AibiDashboardEmbeddingAccessPolicy": {
+    "fields": {
+      "access_policy_type": {
+        "ref": "settingsv2.AibiDashboardEmbeddingAccessPolicyAccessPolicyType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.AibiDashboardEmbeddingAccessPolicyAccessPolicyType": {
+    "enum": [
+      "ALLOW_ALL_DOMAINS",
+      "ALLOW_APPROVED_DOMAINS",
+      "DENY_ALL_DOMAINS"
+    ],
+    "enum_launch_stages": {
+      "ALLOW_ALL_DOMAINS": "GA",
+      "ALLOW_APPROVED_DOMAINS": "GA",
+      "DENY_ALL_DOMAINS": "GA"
+    }
+  },
+  "settingsv2.AibiDashboardEmbeddingApprovedDomains": {
+    "fields": {
+      "approved_domains": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.AllowedAppsUserApiScopesMessage": {
+    "fields": {
+      "allowed_scopes": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.BooleanMessage": {
+    "fields": {
+      "value": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.ClusterAutoRestartMessage": {
+    "fields": {
+      "can_toggle": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "enabled": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "enablement_details": {
+        "ref": "settingsv2.ClusterAutoRestartMessageEnablementDetails",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "maintenance_window": {
+        "ref": "settingsv2.ClusterAutoRestartMessageMaintenanceWindow",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "restart_even_if_no_updates_available": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.ClusterAutoRestartMessageEnablementDetails": {
+    "description": "Contains an information about the enablement status judging (e.g. whether the enterprise tier\nis enabled)\nThis is only additional information that MUST NOT be used to decide whether the setting is\nenabled or not. This is intended to use only for purposes like showing an error message to\nthe customer with the additional details. For example, using these details we can check\nwhy exactly the feature is disabled for this customer.",
+    "fields": {
+      "forced_for_compliance_mode": {
+        "description": "The feature is force enabled if compliance mode is active",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "unavailable_for_disabled_entitlement": {
+        "description": "The feature is unavailable if the corresponding entitlement disabled (see getShieldEntitlementEnable)",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "unavailable_for_non_enterprise_tier": {
+        "description": "The feature is unavailable if the customer doesn't have enterprise tier",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.ClusterAutoRestartMessageMaintenanceWindow": {
+    "fields": {
+      "week_day_based_schedule": {
+        "ref": "settingsv2.ClusterAutoRestartMessageMaintenanceWindowWeekDayBasedSchedule",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.ClusterAutoRestartMessageMaintenanceWindowDayOfWeek": {
+    "enum": [
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY",
+      "SUNDAY"
+    ],
+    "enum_launch_stages": {
+      "FRIDAY": "GA",
+      "MONDAY": "GA",
+      "SATURDAY": "GA",
+      "SUNDAY": "GA",
+      "THURSDAY": "GA",
+      "TUESDAY": "GA",
+      "WEDNESDAY": "GA"
+    }
+  },
+  "settingsv2.ClusterAutoRestartMessageMaintenanceWindowWeekDayBasedSchedule": {
+    "fields": {
+      "day_of_week": {
+        "ref": "settingsv2.ClusterAutoRestartMessageMaintenanceWindowDayOfWeek",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "frequency": {
+        "ref": "settingsv2.ClusterAutoRestartMessageMaintenanceWindowWeekDayFrequency",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "window_start_time": {
+        "ref": "settingsv2.ClusterAutoRestartMessageMaintenanceWindowWindowStartTime",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.ClusterAutoRestartMessageMaintenanceWindowWeekDayFrequency": {
+    "enum": [
+      "FIRST_OF_MONTH",
+      "SECOND_OF_MONTH",
+      "THIRD_OF_MONTH",
+      "FOURTH_OF_MONTH",
+      "FIRST_AND_THIRD_OF_MONTH",
+      "SECOND_AND_FOURTH_OF_MONTH",
+      "EVERY_WEEK"
+    ],
+    "enum_launch_stages": {
+      "EVERY_WEEK": "GA",
+      "FIRST_AND_THIRD_OF_MONTH": "GA",
+      "FIRST_OF_MONTH": "GA",
+      "FOURTH_OF_MONTH": "GA",
+      "SECOND_AND_FOURTH_OF_MONTH": "GA",
+      "SECOND_OF_MONTH": "GA",
+      "THIRD_OF_MONTH": "GA"
+    }
+  },
+  "settingsv2.ClusterAutoRestartMessageMaintenanceWindowWindowStartTime": {
+    "fields": {
+      "hours": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "minutes": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.CollaborationPlatformConnectivityMessage": {
+    "description": "Controls which external collaboration platforms (Slack, Microsoft Teams) can connect\nto a workspace. Defaults to ALLOW_ALL.",
+    "fields": {
+      "connectivity": {
+        "ref": "settingsv2.CollaborationPlatformConnectivityMessageConnectivity",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.CollaborationPlatformConnectivityMessageConnectivity": {
+    "enum": [
+      "ALLOW_ALL",
+      "ALLOW_TEAMS",
+      "ALLOW_SLACK",
+      "DENY_ALL"
+    ],
+    "enum_launch_stages": {
+      "ALLOW_ALL": "PRIVATE_PREVIEW",
+      "ALLOW_SLACK": "PRIVATE_PREVIEW",
+      "ALLOW_TEAMS": "PRIVATE_PREVIEW",
+      "DENY_ALL": "PRIVATE_PREVIEW"
+    }
+  },
+  "settingsv2.GetPublicAccountSettingRequest": {},
+  "settingsv2.GetPublicAccountUserPreferenceRequest": {},
+  "settingsv2.GetPublicWorkspaceSettingRequest": {},
+  "settingsv2.IntegerMessage": {
+    "fields": {
+      "value": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.ListAccountSettingsMetadataRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of settings to return. The service may return fewer than this value.\nIf unspecified, at most 200 settings will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListAccountSettingsMetadataRequest` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListAccountSettingsMetadataRequest` must match\nthe call that provided the page token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settingsv2.ListAccountSettingsMetadataResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "GA"
+      },
+      "settings_metadata": {
+        "description": "List of all settings available via public APIs and their metadata",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settingsv2.ListAccountUserPreferencesMetadataRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of settings to return. The service may return fewer than this value.\nIf unspecified, at most 200 settings will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListAccountUserPreferencesMetadataRequest` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListAccountUserPreferencesMetadataRequest` must match\nthe call that provided the page token.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.ListAccountUserPreferencesMetadataResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "settings_metadata": {
+        "description": "List of all settings available via public APIs and their metadata",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settingsv2.ListWorkspaceSettingsMetadataRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of settings to return. The service may return fewer than this value.\nIf unspecified, at most 200 settings will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListWorkspaceSettingsMetadataRequest` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListWorkspaceSettingsMetadataRequest` must match\nthe call that provided the page token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settingsv2.ListWorkspaceSettingsMetadataResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "GA"
+      },
+      "settings_metadata": {
+        "description": "List of all settings available via public APIs and their metadata",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settingsv2.OperationalEmailCustomRecipientMessage": {
+    "fields": {
+      "email": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.PatchPublicAccountSettingRequest": {
+    "fields": {
+      "setting": {
+        "ref": "settingsv2.Setting",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settingsv2.PatchPublicAccountUserPreferenceRequest": {
+    "fields": {
+      "setting": {
+        "ref": "settingsv2.UserPreference",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settingsv2.PatchPublicWorkspaceSettingRequest": {
+    "fields": {
+      "setting": {
+        "ref": "settingsv2.Setting",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settingsv2.PersonalComputeMessage": {
+    "fields": {
+      "value": {
+        "ref": "settingsv2.PersonalComputeMessagePersonalComputeMessageEnum",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.PersonalComputeMessagePersonalComputeMessageEnum": {
+    "description": "ON: Grants all users in all workspaces access to the Personal Compute default policy, allowing all users to create single-machine compute resources.\nDELEGATE: Moves access control for the Personal Compute default policy to individual workspaces and requires a workspace’s users or groups to be added to the ACLs of that workspace’s Personal Compute default policy before they will be able to create compute resources through that policy.",
+    "enum": [
+      "ON",
+      "DELEGATE"
+    ],
+    "enum_launch_stages": {
+      "DELEGATE": "GA",
+      "ON": "GA"
+    }
+  },
+  "settingsv2.PreviewPhase": {
+    "description": "Preview phase for settings that are feature previews.\nFor settings that are not feature previews, the preview_phase field is left unset.\nMirrors only the customer-facing phases surfaced in the UI; internal-only phases\n(DISABLED, DEV, UNDER_MIGRATION, LAUNCHED, etc.) are not exposed here.",
+    "enum": [
+      "PRIVATE_PREVIEW",
+      "PUBLIC_PREVIEW",
+      "BETA",
+      "GA_SOON",
+      "GA"
+    ],
+    "enum_launch_stages": {
+      "BETA": "PUBLIC_BETA",
+      "GA": "PUBLIC_BETA",
+      "GA_SOON": "PUBLIC_BETA",
+      "PRIVATE_PREVIEW": "PUBLIC_BETA",
+      "PUBLIC_PREVIEW": "PUBLIC_BETA"
+    }
+  },
+  "settingsv2.RestrictWorkspaceAdminsMessage": {
+    "fields": {
+      "disable_gov_tag_creation": {
+        "description": "When true, workspace admins cannot create governance tags.\nALLOW_ALL status does not override this; they are independent.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "ref": "settingsv2.RestrictWorkspaceAdminsMessageStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.RestrictWorkspaceAdminsMessageStatus": {
+    "enum": [
+      "ALLOW_ALL",
+      "RESTRICT_TOKENS_AND_JOB_RUN_AS"
+    ],
+    "enum_launch_stages": {
+      "ALLOW_ALL": "GA",
+      "RESTRICT_TOKENS_AND_JOB_RUN_AS": "GA"
+    }
+  },
+  "settingsv2.Setting": {
+    "fields": {
+      "aibi_dashboard_embedding_access_policy": {
+        "description": "Setting value for aibi_dashboard_embedding_access_policy setting. This is the setting value set by consumers, check effective_aibi_dashboard_embedding_access_policy for final setting value.",
+        "ref": "settingsv2.AibiDashboardEmbeddingAccessPolicy",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "aibi_dashboard_embedding_approved_domains": {
+        "description": "Setting value for aibi_dashboard_embedding_approved_domains setting. This is the setting value set by consumers, check effective_aibi_dashboard_embedding_approved_domains for final setting value.",
+        "ref": "settingsv2.AibiDashboardEmbeddingApprovedDomains",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "allowed_apps_user_api_scopes": {
+        "description": "Setting value for allowed_apps_user_api_scopes setting. This is the setting value set by consumers, check effective_allowed_apps_user_api_scopes for final setting value.",
+        "ref": "settingsv2.AllowedAppsUserApiScopesMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "automatic_cluster_update_workspace": {
+        "description": "Setting value for automatic_cluster_update_workspace setting. This is the setting value set by consumers, check effective_automatic_cluster_update_workspace for final setting value.",
+        "ref": "settingsv2.ClusterAutoRestartMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "boolean_val": {
+        "description": "Setting value for boolean type setting. This is the setting value set by consumers, check effective_boolean_val for final setting value.",
+        "ref": "settingsv2.BooleanMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "collaboration_platform_connectivity": {
+        "description": "Setting value for collaboration_platform_connectivity setting. This is the setting value set by consumers, check effective_collaboration_platform_connectivity for final setting value.",
+        "ref": "settingsv2.CollaborationPlatformConnectivityMessage",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_aibi_dashboard_embedding_access_policy": {
+        "description": "Effective setting value for aibi_dashboard_embedding_access_policy setting. This is the final effective value of setting. To set a value use aibi_dashboard_embedding_access_policy.",
+        "ref": "settingsv2.AibiDashboardEmbeddingAccessPolicy",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_aibi_dashboard_embedding_approved_domains": {
+        "description": "Effective setting value for aibi_dashboard_embedding_approved_domains setting. This is the final effective value of setting. To set a value use aibi_dashboard_embedding_approved_domains.",
+        "ref": "settingsv2.AibiDashboardEmbeddingApprovedDomains",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_allowed_apps_user_api_scopes": {
+        "description": "Effective setting value for allowed_apps_user_api_scopes setting. This is the final effective value of setting. To set a value use allowed_apps_user_api_scopes.",
+        "ref": "settingsv2.AllowedAppsUserApiScopesMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_automatic_cluster_update_workspace": {
+        "description": "Effective setting value for automatic_cluster_update_workspace setting. This is the final effective value of setting. To set a value use automatic_cluster_update_workspace.",
+        "ref": "settingsv2.ClusterAutoRestartMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_boolean_val": {
+        "description": "Effective setting value for boolean type setting. This is the final effective value of setting. To set a value use boolean_val.",
+        "ref": "settingsv2.BooleanMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_collaboration_platform_connectivity": {
+        "description": "Effective setting value for collaboration_platform_connectivity setting. This is the final effective value of setting. To set a value use collaboration_platform_connectivity.",
+        "ref": "settingsv2.CollaborationPlatformConnectivityMessage",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_integer_val": {
+        "description": "Effective setting value for integer type setting. This is the final effective value of setting. To set a value use integer_val.",
+        "ref": "settingsv2.IntegerMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_operational_email_custom_recipient": {
+        "description": "Effective setting value for operational_email_custom_recipient setting. This is the final effective value of setting. To set a value use operational_email_custom_recipient.",
+        "ref": "settingsv2.OperationalEmailCustomRecipientMessage",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_personal_compute": {
+        "description": "Effective setting value for personal_compute setting. This is the final effective value of setting. To set a value use personal_compute.",
+        "ref": "settingsv2.PersonalComputeMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_restrict_workspace_admins": {
+        "description": "Effective setting value for restrict_workspace_admins setting. This is the final effective value of setting. To set a value use restrict_workspace_admins.",
+        "ref": "settingsv2.RestrictWorkspaceAdminsMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_string_val": {
+        "description": "Effective setting value for string type setting. This is the final effective value of setting. To set a value use string_val.",
+        "ref": "settingsv2.StringMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_workspace_label": {
+        "description": "Effective setting value for workspace_label setting. This is the final effective value of setting. To set a value use workspace_label.",
+        "ref": "settingsv2.WorkspaceLabelMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "integer_val": {
+        "description": "Setting value for integer type setting. This is the setting value set by consumers, check effective_integer_val for final setting value.",
+        "ref": "settingsv2.IntegerMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Name of the setting.",
+        "launch_stage": "GA"
+      },
+      "operational_email_custom_recipient": {
+        "description": "Setting value for operational_email_custom_recipient setting. This is the setting value set by consumers, check effective_operational_email_custom_recipient for final setting value.",
+        "ref": "settingsv2.OperationalEmailCustomRecipientMessage",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "personal_compute": {
+        "description": "Setting value for personal_compute setting. This is the setting value set by consumers, check effective_personal_compute for final setting value.",
+        "ref": "settingsv2.PersonalComputeMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "restrict_workspace_admins": {
+        "description": "Setting value for restrict_workspace_admins setting. This is the setting value set by consumers, check effective_restrict_workspace_admins for final setting value.",
+        "ref": "settingsv2.RestrictWorkspaceAdminsMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "string_val": {
+        "description": "Setting value for string type setting. This is the setting value set by consumers, check effective_string_val for final setting value.",
+        "ref": "settingsv2.StringMessage",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "workspace_label": {
+        "description": "Setting value for workspace_label setting. This is the setting value set by consumers, check effective_workspace_label for final setting value.",
+        "ref": "settingsv2.WorkspaceLabelMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.SettingsMetadata": {
+    "fields": {
+      "description": {
+        "description": "Setting description for what this setting controls",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Human-readable display name for the setting or feature preview.\nThis field may be unset if no display name is available.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "docs_link": {
+        "description": "Link to databricks documentation for the setting",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the setting.",
+        "launch_stage": "GA"
+      },
+      "preview_phase": {
+        "description": "Preview phase for feature preview settings. This field is not set for non-preview settings.",
+        "ref": "settingsv2.PreviewPhase",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "type": {
+        "description": "Sample message depicting the type of the setting. To set this setting, the value sent must match this type.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settingsv2.StringMessage": {
+    "fields": {
+      "value": {
+        "description": "Represents a generic string value.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settingsv2.UserPreference": {
+    "description": "User Preference represents a user-specific setting scoped to an individual user within an account.\nUnlike workspace or account settings that apply to all users, user preferences allow personal\ncustomization (e.g., UI theme, editor preferences) without affecting other users.",
+    "fields": {
+      "boolean_val": {
+        "ref": "settingsv2.BooleanMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_boolean_val": {
+        "ref": "settingsv2.BooleanMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_string_val": {
+        "ref": "settingsv2.StringMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Name of the setting.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "string_val": {
+        "ref": "settingsv2.StringMessage",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "user_id": {
+        "description": "User ID of the user.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settingsv2.WorkspaceLabelMessage": {
+    "description": "Workspace label and color for display (e.g. in account console).",
+    "fields": {
+      "color": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "label": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  }
+}

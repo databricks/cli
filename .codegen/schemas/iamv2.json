@@ -1,0 +1,1566 @@
+{
+  "iamv2.CreateDirectGroupMemberProxyRequest": {
+    "fields": {
+      "direct_group_member": {
+        "description": "Required. The group membership to create.",
+        "ref": "iamv2.DirectGroupMember",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateDirectGroupMemberRequest": {
+    "fields": {
+      "direct_group_member": {
+        "description": "Required. The direct group member to be added to the group.",
+        "ref": "iamv2.DirectGroupMember",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateGroupProxyRequest": {
+    "fields": {
+      "group": {
+        "description": "Required. Group to be created in Databricks",
+        "ref": "iamv2.Group",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateGroupRequest": {
+    "fields": {
+      "group": {
+        "description": "Required. Group to be created in Databricks",
+        "ref": "iamv2.Group",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateIdentityVisibilityFilterRequest": {
+    "fields": {
+      "identity_visibility_filter": {
+        "description": "Required. The filter to create. Set `principal_type` to `GROUP` and specify exactly one of\n`exact`, `prefix`, or `regex`. The server assigns the resource name; any supplied `name` is ignored.",
+        "ref": "iamv2.IdentityVisibilityFilter",
+        "launch_stage": "GA"
+      },
+      "identity_visibility_filter_id": {
+        "description": "Optional. The ID to use for the filter, which becomes the final component of its resource name.\nIf not specified or empty, the server generates one. Must not contain `/`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.CreateServicePrincipalProxyRequest": {
+    "fields": {
+      "service_principal": {
+        "description": "Required. Service principal to be created in Databricks",
+        "ref": "iamv2.ServicePrincipal",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateServicePrincipalRequest": {
+    "fields": {
+      "service_principal": {
+        "description": "Required. Service principal to be created in Databricks",
+        "ref": "iamv2.ServicePrincipal",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateUserProxyRequest": {
+    "fields": {
+      "user": {
+        "description": "Required. User to be created in Databricks",
+        "ref": "iamv2.User",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateUserRequest": {
+    "fields": {
+      "user": {
+        "description": "Required. User to be created in Databricks",
+        "ref": "iamv2.User",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateWorkspaceAssignmentDetailProxyRequest": {
+    "fields": {
+      "workspace_assignment_detail": {
+        "description": "Required. Workspace assignment detail to be created in Databricks.",
+        "ref": "iamv2.WorkspaceAssignmentDetail",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iamv2.CreateWorkspaceAssignmentDetailRequest": {
+    "fields": {
+      "workspace_assignment_detail": {
+        "description": "Required. Workspace assignment detail to be created in Databricks.",
+        "ref": "iamv2.WorkspaceAssignmentDetail",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iamv2.CreateWorkspaceAssignmentProxyRequest": {
+    "fields": {
+      "workspace_assignment": {
+        "description": "Required. Workspace assignment to be created in Databricks.",
+        "ref": "iamv2.WorkspaceAssignment",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.CreateWorkspaceAssignmentRequest": {
+    "fields": {
+      "workspace_assignment": {
+        "description": "Required. Workspace assignment to be created in Databricks.",
+        "ref": "iamv2.WorkspaceAssignment",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.DeleteDirectGroupMemberProxyRequest": {},
+  "iamv2.DeleteDirectGroupMemberRequest": {},
+  "iamv2.DeleteGroupProxyRequest": {},
+  "iamv2.DeleteGroupRequest": {},
+  "iamv2.DeleteIdentityVisibilityFilterRequest": {},
+  "iamv2.DeleteServicePrincipalProxyRequest": {},
+  "iamv2.DeleteServicePrincipalRequest": {},
+  "iamv2.DeleteUserProxyRequest": {},
+  "iamv2.DeleteUserRequest": {},
+  "iamv2.DeleteWorkspaceAssignmentDetailProxyRequest": {},
+  "iamv2.DeleteWorkspaceAssignmentDetailRequest": {},
+  "iamv2.DeleteWorkspaceAssignmentProxyRequest": {},
+  "iamv2.DeleteWorkspaceAssignmentRequest": {},
+  "iamv2.DirectGroupMember": {
+    "description": "Represents a principal that is a direct member of a group, with its source of membership.",
+    "fields": {
+      "display_name": {
+        "description": "Display name of the principal.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "external_id": {
+        "description": "The external ID of the principal in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "group_id": {
+        "description": "The internal ID of the group this member belongs to.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL",
+          "OUTPUT_ONLY"
+        ]
+      },
+      "membership_source": {
+        "description": "The source of group membership (internal or from identity provider).",
+        "ref": "iamv2.GroupMembershipSource",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "principal_id": {
+        "description": "Internal ID of the principal in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "principal_type": {
+        "description": "The type of the principal (user/service principal/group).",
+        "ref": "iamv2.PrincipalType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.Entitlement": {
+    "enum": [
+      "WORKSPACE_ACCESS",
+      "WORKSPACE_CONSUME",
+      "DATABRICKS_SQL_ACCESS",
+      "WORKSPACE_ADMIN",
+      "ALLOW_CLUSTER_CREATE",
+      "ALLOW_INSTANCE_POOL_CREATE"
+    ],
+    "enum_launch_stages": {
+      "ALLOW_CLUSTER_CREATE": "PUBLIC_BETA",
+      "ALLOW_INSTANCE_POOL_CREATE": "PUBLIC_BETA",
+      "DATABRICKS_SQL_ACCESS": "PUBLIC_BETA",
+      "WORKSPACE_ACCESS": "PUBLIC_BETA",
+      "WORKSPACE_ADMIN": "PUBLIC_BETA",
+      "WORKSPACE_CONSUME": "PUBLIC_BETA"
+    }
+  },
+  "iamv2.ExactMatchRule": {
+    "description": "An exact-match rule that matches a group's external ID from the identity provider.",
+    "fields": {
+      "external_id": {
+        "description": "The identity provider's external ID for the group to match. This is not the Databricks group ID.\nThe value must be non-empty and is matched exactly, including case.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "iamv2.ExternalGroup": {
+    "description": "An external group from the customer's Identity Provider, resolved into\nDatabricks. This is a read-only resource keyed by the IdP external ID.\nThe Get method may trigger an idempotent sync from the customer's IdP to\nprovision or refresh the group's data in Databricks.",
+    "fields": {
+      "account_id": {
+        "description": "The parent account ID, from Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "Display name of the group from the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "external_group_id": {
+        "description": "The external ID of the group in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "internal_id": {
+        "description": "Internal groupId of the group in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the external group. The format depends on the API that\nreturned it:\n- Account-scoped: accounts/{account_id}/external-groups/{external_group_id}\n- Workspace-scoped: external-groups/{external_group_id}",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.ExternalServicePrincipal": {
+    "description": "An external service principal from the customer's Identity Provider, resolved\ninto Databricks. This is a read-only resource keyed by the IdP external ID.\nThe Get method may trigger an idempotent sync from the customer's IdP to\nprovision or refresh the service principal's data in Databricks.",
+    "fields": {
+      "account_id": {
+        "description": "The parent account ID, from Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "account_sp_status": {
+        "description": "The activity status of the service principal in the Databricks account.",
+        "ref": "iamv2.State",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "application_id": {
+        "description": "Application ID of the service principal, from the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "Display name of the service principal, from the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "external_service_principal_id": {
+        "description": "The external ID of the service principal in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "internal_id": {
+        "description": "Internal servicePrincipalId of the service principal in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the external service principal. The format depends on\nthe API that returned it:\n- Account-scoped: accounts/{account_id}/external-service-principals/{external_service_principal_id}\n- Workspace-scoped: external-service-principals/{external_service_principal_id}",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.ExternalUser": {
+    "description": "An external user from the customer's Identity Provider, resolved into\nDatabricks. This is a read-only resource that allows customers to look up\nexternal user identities by their IdP external ID and retrieve the\ncorresponding Databricks internal ID and metadata. The Get method may\ntrigger an idempotent sync from the customer's IdP to provision or refresh\nthe user's data in Databricks.",
+    "fields": {
+      "account_id": {
+        "description": "The parent account ID, from Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "account_user_status": {
+        "description": "The activity status of the user in the Databricks account.",
+        "ref": "iamv2.State",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "Display name of the user from the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "external_user_id": {
+        "description": "The external ID of the user in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "full_name": {
+        "description": "The full name of the user, from the customer's IdP.",
+        "ref": "iamv2.FullName",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "internal_id": {
+        "description": "Internal userId of the user in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the external user. The format depends on the API that\nreturned it:\n- Account-scoped: accounts/{account_id}/external-users/{external_user_id}\n- Workspace-scoped: external-users/{external_user_id}",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "username": {
+        "description": "Username/email of the user, from Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.FullName": {
+    "description": "The full name of a user.",
+    "fields": {
+      "family_name": {
+        "description": "The family (last) name of the user, from the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "given_name": {
+        "description": "The given (first) name of the user, from the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.GetDirectGroupMemberProxyRequest": {},
+  "iamv2.GetDirectGroupMemberRequest": {},
+  "iamv2.GetExternalGroupProxyRequest": {},
+  "iamv2.GetExternalGroupRequest": {},
+  "iamv2.GetExternalServicePrincipalProxyRequest": {},
+  "iamv2.GetExternalServicePrincipalRequest": {},
+  "iamv2.GetExternalUserProxyRequest": {},
+  "iamv2.GetExternalUserRequest": {},
+  "iamv2.GetGroupProxyRequest": {},
+  "iamv2.GetGroupRequest": {},
+  "iamv2.GetIdentityVisibilityFilterRequest": {},
+  "iamv2.GetServicePrincipalProxyRequest": {},
+  "iamv2.GetServicePrincipalRequest": {},
+  "iamv2.GetUserProxyRequest": {},
+  "iamv2.GetUserRequest": {},
+  "iamv2.GetWorkspaceAccessDetailLocalRequest": {
+    "fields": {
+      "view": {
+        "description": "Controls what fields are returned.",
+        "ref": "iamv2.WorkspaceAccessDetailView",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.GetWorkspaceAccessDetailRequest": {
+    "fields": {
+      "view": {
+        "description": "Controls what fields are returned.",
+        "ref": "iamv2.WorkspaceAccessDetailView",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.GetWorkspaceAssignmentDetailProxyRequest": {},
+  "iamv2.GetWorkspaceAssignmentDetailRequest": {},
+  "iamv2.GetWorkspaceAssignmentProxyRequest": {},
+  "iamv2.GetWorkspaceAssignmentRequest": {},
+  "iamv2.GetWorkspaceIdentityDetailRequest": {},
+  "iamv2.Group": {
+    "description": "The details of a Group resource.",
+    "fields": {
+      "account_id": {
+        "description": "The parent account ID for group in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "external_id": {
+        "description": "ExternalId of the group in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "group_id": {
+        "description": "Internal group ID of the group in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "group_name": {
+        "description": "Display name of the group.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.GroupMembershipSource": {
+    "description": "The source of the group membership (internal or from identity provider).",
+    "enum": [
+      "INTERNAL",
+      "IDENTITY_PROVIDER"
+    ],
+    "enum_launch_stages": {
+      "IDENTITY_PROVIDER": "PUBLIC_BETA",
+      "INTERNAL": "PUBLIC_BETA"
+    }
+  },
+  "iamv2.IdentityVisibilityFilter": {
+    "description": "An account-level rule that controls which identity provider groups are discoverable in directory\nsearch and group pickers when automatic identity management is enabled. Filters apply across all\nworkspaces in the account.\n\nIf no group filters are configured, all groups are visible. Otherwise, a group is visible if it\nor any of its transitive parent groups matches at least one rule. A group is also visible if it\nor any transitive parent group is already provisioned in the account. Local Databricks groups\nremain visible regardless of the filters.\n\nOnly group filters can be created. Filters do not change provisioning or sign-in for users and\nservice principals. Filters are immutable: to change a rule, delete it and create a new one.",
+    "fields": {
+      "exact": {
+        "description": "Exact match on the group's external ID from the identity provider.",
+        "ref": "iamv2.ExactMatchRule",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the identity-visibility filter.\nFormat: accounts/{account_id}/identity-visibility-filters/{identity_visibility_filter_id}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "prefix": {
+        "description": "Case-sensitive starts-with match on the group's display name.",
+        "ref": "iamv2.PrefixMatchRule",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "principal_type": {
+        "description": "The type of principal this rule applies to. Set to `GROUP` when creating a filter.\nOther principal types are not supported for creation.",
+        "ref": "iamv2.PrincipalType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "regex": {
+        "description": "Full, case-sensitive RE2 match on the identity's display name.",
+        "ref": "iamv2.RegexMatchRule",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListDirectGroupMembersProxyRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of members to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListDirectGroupMembersRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of members to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListDirectGroupMembers call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListDirectGroupMembersResponse": {
+    "description": "Response message for listing direct group members.",
+    "fields": {
+      "direct_group_members": {
+        "description": "The list of direct group members with their membership source type.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ListGroupsProxyRequest": {
+    "fields": {
+      "filter": {
+        "description": "Optional. Allows filtering groups by group name or external id.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListGroups call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListGroupsRequest": {
+    "fields": {
+      "filter": {
+        "description": "Optional. Allows filtering groups by group name or external id.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListGroups call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListGroupsResponse": {
+    "description": "Response message containing a page of groups in the account.",
+    "fields": {
+      "groups": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ListIdentityVisibilityFiltersRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of filters to return. The service may return fewer than this value.\nIf omitted or non-positive, defaults to 100. Values above 1000 are reduced to 1000.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListIdentityVisibilityFilters call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListIdentityVisibilityFiltersResponse": {
+    "description": "Response message containing a page of identity-visibility filters in the account.",
+    "fields": {
+      "identity_visibility_filters": {
+        "description": "The filters in this page. These are filter rules, not the groups matched by the rules.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If omitted, there are no subsequent pages.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iamv2.ListServicePrincipalsProxyRequest": {
+    "fields": {
+      "filter": {
+        "description": "Optional. Allows filtering service principals by application id or external id.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of SPs to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListServicePrincipals call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListServicePrincipalsRequest": {
+    "fields": {
+      "filter": {
+        "description": "Optional. Allows filtering service principals by application id or external id.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of service principals to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListServicePrincipals call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListServicePrincipalsResponse": {
+    "description": "Response message containing a page of service principals in the account.",
+    "fields": {
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "service_principals": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ListTransitiveParentGroupsProxyRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of parent groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListTransitiveParentGroups call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListTransitiveParentGroupsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of parent groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListTransitiveParentGroups call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListTransitiveParentGroupsResponse": {
+    "description": "Response message for listing all transitive parent groups of a principal.",
+    "fields": {
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "transitive_parent_groups": {
+        "description": "The list of transitive parent groups.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ListUsersProxyRequest": {
+    "fields": {
+      "filter": {
+        "description": "Optional. Allows filtering users by username or external id.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of users to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListUsers call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListUsersRequest": {
+    "fields": {
+      "filter": {
+        "description": "Optional. Allows filtering users by username or external id.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of users to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListUsers call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListUsersResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "users": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ListWorkspaceAssignmentDetailsProxyRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of workspace assignment details to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListWorkspaceAssignmentDetailsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of workspace assignment details to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListWorkspaceAssignmentDetails call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListWorkspaceAssignmentDetailsResponse": {
+    "description": "Response message for listing workspace assignment details.",
+    "fields": {
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "workspace_assignment_details": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iamv2.ListWorkspaceAssignmentsProxyRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of workspace assignments to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListWorkspaceAssignmentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of workspace assignments to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous ListWorkspaceAssignments call. Provide this to retrieve the subsequent page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.ListWorkspaceAssignmentsResponse": {
+    "description": "Response message for listing workspace assignments.",
+    "fields": {
+      "next_page_token": {
+        "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "workspace_assignments": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.PrefixMatchRule": {
+    "description": "A starts-with rule that matches groups whose display name begins with a specified prefix.\nMatching is case-sensitive. For example, the prefix `data-` matches `data-platform`.",
+    "fields": {
+      "display_name_prefix": {
+        "description": "The display-name prefix to match. Must contain at least one non-whitespace character.\nLeading and trailing whitespace are preserved, and matching is case-sensitive.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "iamv2.PrincipalType": {
+    "description": "The type of the principal (user/sp/group).",
+    "enum": [
+      "USER",
+      "SERVICE_PRINCIPAL",
+      "GROUP"
+    ],
+    "enum_launch_stages": {
+      "GROUP": "GA",
+      "SERVICE_PRINCIPAL": "GA",
+      "USER": "GA"
+    }
+  },
+  "iamv2.RegexMatchRule": {
+    "description": "A rule that matches an identity whose complete display name matches an RE2 regular expression.\nMatching is case-sensitive. Use .* explicitly when substring matching is desired.",
+    "fields": {
+      "display_name_regex": {
+        "description": "The RE2 regular expression matched against the complete display name.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "iamv2.ResolveGroupProxyRequest": {
+    "description": "Request message for resolving a group with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the group's name and inherited parent groups.",
+    "fields": {
+      "external_id": {
+        "description": "Required. The external ID of the group in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveGroupRequest": {
+    "description": "Request message for resolving a group with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the group's name and inherited parent groups.",
+    "fields": {
+      "external_id": {
+        "description": "Required. The external ID of the group in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveGroupResponse": {
+    "fields": {
+      "group": {
+        "description": "The group that was resolved.",
+        "ref": "iamv2.Group",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveServicePrincipalProxyRequest": {
+    "description": "Request message for resolving a service principal with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the service principal's display name, status, and inherited parent groups.",
+    "fields": {
+      "external_id": {
+        "description": "Required. The external ID of the service principal in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveServicePrincipalRequest": {
+    "description": "Request message for resolving a service principal with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the service principal's display name, status, and inherited parent groups.",
+    "fields": {
+      "external_id": {
+        "description": "Required. The external ID of the service principal in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveServicePrincipalResponse": {
+    "fields": {
+      "service_principal": {
+        "description": "The service principal that was resolved.",
+        "ref": "iamv2.ServicePrincipal",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveUserProxyRequest": {
+    "description": "Request message for resolving a user with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the user's display name, status, and inherited parent groups.",
+    "fields": {
+      "external_id": {
+        "description": "Required. The external ID of the user in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveUserRequest": {
+    "description": "Request message for resolving a user with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the user's display name, status, and inherited parent groups.",
+    "fields": {
+      "external_id": {
+        "description": "Required. The external ID of the user in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ResolveUserResponse": {
+    "fields": {
+      "user": {
+        "description": "The user that was resolved.",
+        "ref": "iamv2.User",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.ServicePrincipal": {
+    "description": "The details of a ServicePrincipal resource.",
+    "fields": {
+      "account_id": {
+        "description": "The parent account ID for the service principal in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "account_sp_status": {
+        "description": "The activity status of a service principal in a Databricks account.",
+        "ref": "iamv2.State",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "application_id": {
+        "description": "Application ID of the service principal. Set at creation time and cannot be changed\nafterwards; when omitted, the server generates one.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "display_name": {
+        "description": "Display name of the service principal.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "external_id": {
+        "description": "ExternalId of the service principal in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "service_principal_id": {
+        "description": "Internal service principal ID of the service principal in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.State": {
+    "description": "The activity status of a user or service principal in a Databricks account or workspace.",
+    "enum": [
+      "ACTIVE",
+      "INACTIVE"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "PUBLIC_BETA",
+      "INACTIVE": "PUBLIC_BETA"
+    }
+  },
+  "iamv2.TransitiveParentGroup": {
+    "description": "Represents a group that is a transitive parent of a principal.",
+    "fields": {
+      "account_id": {
+        "description": "The parent account ID for group in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "external_id": {
+        "description": "ExternalId of the group in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "group_id": {
+        "description": "Internal group ID of the group in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.UpdateGroupProxyRequest": {
+    "fields": {
+      "group": {
+        "description": "Required. Group to be updated in Databricks",
+        "ref": "iamv2.Group",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Optional. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateGroupRequest": {
+    "fields": {
+      "group": {
+        "description": "Required. Group to be updated in Databricks",
+        "ref": "iamv2.Group",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Optional. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateServicePrincipalProxyRequest": {
+    "fields": {
+      "service_principal": {
+        "description": "Required. Service principal to be updated in Databricks",
+        "ref": "iamv2.ServicePrincipal",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Optional. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateServicePrincipalRequest": {
+    "fields": {
+      "service_principal": {
+        "description": "Required. Service Principal to be updated in Databricks",
+        "ref": "iamv2.ServicePrincipal",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Optional. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateUserProxyRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "Optional. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user": {
+        "description": "Required. User to be updated in Databricks",
+        "ref": "iamv2.User",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateUserRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "Optional. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user": {
+        "description": "Required. User to be updated in Databricks",
+        "ref": "iamv2.User",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateWorkspaceAssignmentDetailProxyRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "Required. The list of fields to update.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "workspace_assignment_detail": {
+        "description": "Required. Workspace assignment detail to be updated in Databricks.",
+        "ref": "iamv2.WorkspaceAssignmentDetail",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iamv2.UpdateWorkspaceAssignmentDetailRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "Required. The list of fields to update.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "workspace_assignment_detail": {
+        "description": "Required. Workspace assignment detail to be updated in Databricks.",
+        "ref": "iamv2.WorkspaceAssignmentDetail",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "iamv2.UpdateWorkspaceAssignmentProxyRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "Required. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "workspace_assignment": {
+        "description": "Required. Workspace assignment to be updated in Databricks.",
+        "ref": "iamv2.WorkspaceAssignment",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateWorkspaceAssignmentRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "Required. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "workspace_assignment": {
+        "description": "Required. Workspace assignment to be updated in Databricks.",
+        "ref": "iamv2.WorkspaceAssignment",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.UpdateWorkspaceIdentityDetailRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "Required. The list of fields to update.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "workspace_identity_detail": {
+        "description": "Required. Workspace identity detail to be updated in Databricks.",
+        "ref": "iamv2.WorkspaceIdentityDetail",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "iamv2.User": {
+    "description": "The details of a User resource.",
+    "fields": {
+      "account_id": {
+        "description": "The accountId parent of the user in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "account_user_status": {
+        "description": "The activity status of a user in a Databricks account.",
+        "ref": "iamv2.State",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "external_id": {
+        "description": "ExternalId of the user in the customer's IdP.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "full_name": {
+        "ref": "iamv2.UserFullName",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user_id": {
+        "description": "Internal userId of the user in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "username": {
+        "description": "Username/email of the user.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "iamv2.UserFullName": {
+    "fields": {
+      "family_name": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "given_name": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.WorkspaceAccessDetail": {
+    "description": "The details of a principal's access to a workspace.",
+    "fields": {
+      "access_type": {
+        "ref": "iamv2.WorkspaceAccessDetailAccessType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "account_id": {
+        "description": "The account ID parent of the workspace where the principal has access.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "permissions": {
+        "description": "The permissions granted to the principal in the workspace.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "principal_id": {
+        "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "principal_type": {
+        "ref": "iamv2.PrincipalType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status": {
+        "description": "The activity status of the principal in the workspace. Not applicable for groups at the moment.",
+        "ref": "iamv2.State",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "workspace_id": {
+        "description": "The workspace ID where the principal has access.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.WorkspaceAccessDetailAccessType": {
+    "description": "The type of access the principal has to the workspace.",
+    "enum": [
+      "DIRECT",
+      "INDIRECT"
+    ],
+    "enum_launch_stages": {
+      "DIRECT": "PUBLIC_BETA",
+      "INDIRECT": "PUBLIC_BETA"
+    }
+  },
+  "iamv2.WorkspaceAccessDetailView": {
+    "description": "Controls what fields are returned in the GetWorkspaceAccessDetail response.",
+    "enum": [
+      "BASIC",
+      "FULL"
+    ],
+    "enum_launch_stages": {
+      "BASIC": "PUBLIC_BETA",
+      "FULL": "PUBLIC_BETA"
+    }
+  },
+  "iamv2.WorkspaceAssignment": {
+    "description": "The direct assignment of a provisioned account-level principal (user, service\nprincipal, or group) to a workspace, together with the entitlements that\nassignment grants in the workspace.\n\nThis resource covers only principals assigned directly to the workspace.\nPrincipals that inherit workspace access through a group are not represented\nhere. See WorkspaceAccessDetail and WorkspaceIdentityDetail for the effective,\ndirect-or-indirect view. Creating the resource assigns the principal to the\nworkspace, and deleting it removes the assignment.\n\n`entitlements` is the only client-settable field. It holds the entitlements\ngranted directly on this assignment, including any the principal also holds\nthrough a group. `effective_entitlements` is the read-only union of those and\nany granted through group membership.\n\nA direct assignment always carries at least one directly-assigned entitlement,\nbecause the assignment is what grants it. Create and update both reject an\nempty `entitlements` set. To remove a principal's assignment entirely, delete\nthe resource.\n\nThis resource replaces workspace assignment previously managed through the\nworkspace SCIM and permission-assignment APIs, and is intended for account\nand workspace admins.",
+    "fields": {
+      "account_id": {
+        "description": "The account ID parent of the workspace where the principal is assigned",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_entitlements": {
+        "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY",
+          "UNORDERED_LIST"
+        ]
+      },
+      "entitlements": {
+        "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL",
+          "UNORDERED_LIST"
+        ]
+      },
+      "principal_id": {
+        "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "principal_type": {
+        "description": "The type of the principal (user/service principal/group) that is assigned.",
+        "ref": "iamv2.PrincipalType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_id": {
+        "description": "The workspace ID where the principal is assigned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL",
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.WorkspaceAssignmentDetail": {
+    "description": "The direct assignment of a provisioned account-level principal (user, service\nprincipal, or group) to a workspace, together with the entitlements that\nassignment grants in the workspace.\n\nThis resource covers only principals assigned directly to the workspace.\nPrincipals that inherit workspace access through a group are not represented\nhere. See WorkspaceAccessDetail and WorkspaceIdentityDetail for the effective,\ndirect-or-indirect view. Creating the resource assigns the principal to the\nworkspace, and deleting it removes the assignment.\n\n`entitlements` is the only client-settable field. It holds the entitlements\ngranted directly on this assignment, including any the principal also holds\nthrough a group. `effective_entitlements` is the read-only union of those and\nany granted through group membership.\n\nA direct assignment always carries at least one directly-assigned entitlement,\nbecause the assignment is what grants it. Create and update both reject an\nempty `entitlements` set. To remove a principal's assignment entirely, delete\nthe resource.\n\nThis resource replaces workspace assignment previously managed through the\nworkspace SCIM and permission-assignment APIs, and is intended for account\nand workspace admins.",
+    "fields": {
+      "account_id": {
+        "description": "The account ID parent of the workspace where the principal is assigned",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_entitlements": {
+        "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY",
+          "UNORDERED_LIST"
+        ]
+      },
+      "entitlements": {
+        "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL",
+          "UNORDERED_LIST"
+        ]
+      },
+      "principal_id": {
+        "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "principal_type": {
+        "ref": "iamv2.PrincipalType",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_id": {
+        "description": "The workspace ID where the principal is assigned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL",
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "iamv2.WorkspaceIdentityDetail": {
+    "description": "The details of a directly or indirectly assigned principal's details in a workspace.",
+    "fields": {
+      "assignment_type": {
+        "description": "The type of assignment the principal has to the workspace (direct or indirect).",
+        "ref": "iamv2.WorkspaceIdentityDetailAssignmentType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "principal_id": {
+        "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "principal_type": {
+        "description": "The type of the principal (user/service principal/group).",
+        "ref": "iamv2.PrincipalType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_identity_status": {
+        "description": "The activity status of an identity in a Databricks workspace.",
+        "ref": "iamv2.State",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "iamv2.WorkspaceIdentityDetailAssignmentType": {
+    "description": "The type of assignment the principal has to the workspace.",
+    "enum": [
+      "DIRECT",
+      "INDIRECT"
+    ],
+    "enum_launch_stages": {
+      "DIRECT": "PUBLIC_BETA",
+      "INDIRECT": "PUBLIC_BETA"
+    }
+  },
+  "iamv2.WorkspacePermission": {
+    "description": "The type of permission a principal has to a workspace (admin/user).",
+    "enum": [
+      "USER_PERMISSION",
+      "ADMIN_PERMISSION"
+    ],
+    "enum_launch_stages": {
+      "ADMIN_PERMISSION": "PUBLIC_BETA",
+      "USER_PERMISSION": "PUBLIC_BETA"
+    }
+  }
+}

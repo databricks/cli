@@ -1,0 +1,612 @@
+{
+  "id": "settings.IpAccessLists",
+  "name": "IpAccessLists",
+  "description": "IP Access List enables admins to configure IP access lists.\n\nIP access lists affect web application access and REST API access to this workspace only.\nIf the feature is disabled for a workspace, all access is allowed for this workspace.\nThere is support for allow lists (inclusion) and block lists (exclusion).\n\nWhen a connection is attempted:\n1. **First, all block lists are checked.** If the connection IP address matches any block list, the connection is rejected.\n2. **If the connection was not rejected by block lists**, the IP address is compared with the allow lists.\n\nIf there is at least one allow list for the workspace, the connection is allowed only if the IP address matches an allow list.\nIf there are no allow lists for the workspace, all IP addresses are allowed.\n\nFor all allow lists and block lists combined, the workspace supports a maximum of 1000 IP/CIDR values, where one CIDR counts as a single value.\n\nAfter changes to the IP access list feature, it can take a few minutes for changes to take effect.",
+  "package": {
+    "name": "settings"
+  },
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "IpAccessListInfoLabelToListIdMap"
+    },
+    "is_legacy_empty_request": true,
+    "request": {
+      "pascal_name": "ListIpAccessLists"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates an IP access list for this workspace.\n\nA list can be an allow list or a block list.\nSee the top of this file for a description of how the server treats allow lists and block lists at runtime.\n\nWhen creating or updating an IP access list:\n\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code` value `QUOTA_EXCEEDED`.\n* If the new list would block the calling user's current IP, error 400 is returned with `error_code` value `INVALID_STATE`.\n\nIt can take a few minutes for the changes to take effect. **Note**: Your new IP access list has no effect until you enable the feature. See [workspaceconf/setStatus](https://docs.databricks.com/api/workspace/workspaceconf/setstatus)",
+      "summary": "Create access list.",
+      "path": "/api/2.0/ip-access-lists",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateIpAccessList",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "label",
+            "description": "Label for the IP access list. This **cannot** be empty.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "list_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ListType",
+              "enum": [
+                {
+                  "content": "ALLOW"
+                },
+                {
+                  "content": "BLOCK"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "label",
+            "description": "Label for the IP access list. This **cannot** be empty.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "list_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ListType",
+              "enum": [
+                {
+                  "content": "ALLOW"
+                },
+                {
+                  "content": "BLOCK"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateIpAccessListResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "ip_addresses",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "label",
+          "description": "Label for the IP access list. This **cannot** be empty.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "list_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ListType",
+            "enum": [
+              {
+                "content": "ALLOW"
+              },
+              {
+                "content": "BLOCK"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "label",
+          "description": "Label for the IP access list. This **cannot** be empty.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "list_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ListType",
+            "enum": [
+              {
+                "content": "ALLOW"
+              },
+              {
+                "content": "BLOCK"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes an IP access list, specified by its list ID.",
+      "summary": "Delete access list.",
+      "path": "/api/2.0/ip-access-lists/{ip_access_list_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteIpAccessListRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets an IP access list, specified by its list ID.",
+      "summary": "Get access list.",
+      "path": "/api/2.0/ip-access-lists/{ip_access_list_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetIpAccessListRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FetchIpAccessListResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets all IP access lists for the specified workspace.",
+      "summary": "Get access lists.",
+      "path": "/api/2.0/ip-access-lists",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListIpAccessLists",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListIpAccessListResponse",
+        "is_object": true
+      },
+      "pagination": {}
+    },
+    {
+      "name": "Replace",
+      "description": "Replaces an IP access list, specified by its ID.\n\nA list can include allow lists and block lists. See the top\nof this file for a description of how the server treats allow lists and block lists at run time. When\nreplacing an IP access list:\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code`\nvalue `QUOTA_EXCEEDED`.\n* If the resulting list would block the calling user's current IP, error 400 is returned with `error_code`\nvalue `INVALID_STATE`.\nIt can take a few minutes for the changes to take effect. Note that your resulting IP access list has no\neffect until you enable the feature. See [workspaceconf/setStatus](https://docs.databricks.com/api/workspace/workspaceconf/setstatus).",
+      "summary": "Replace access list.",
+      "path": "/api/2.0/ip-access-lists/{ip_access_list_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ReplaceIpAccessList",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "label",
+            "description": "Label for the IP access list. This **cannot** be empty.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "list_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ListType",
+              "enum": [
+                {
+                  "content": "ALLOW"
+                },
+                {
+                  "content": "BLOCK"
+                }
+              ]
+            }
+          },
+          {
+            "name": "enabled",
+            "description": "Specifies whether this IP access list is enabled.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "label",
+            "description": "Label for the IP access list. This **cannot** be empty.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "list_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ListType",
+              "enum": [
+                {
+                  "content": "ALLOW"
+                },
+                {
+                  "content": "BLOCK"
+                }
+              ]
+            }
+          },
+          {
+            "name": "enabled",
+            "description": "Specifies whether this IP access list is enabled.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "enabled",
+          "description": "Specifies whether this IP access list is enabled.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ip_addresses",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "label",
+          "description": "Label for the IP access list. This **cannot** be empty.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "list_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ListType",
+            "enum": [
+              {
+                "content": "ALLOW"
+              },
+              {
+                "content": "BLOCK"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "label",
+          "description": "Label for the IP access list. This **cannot** be empty.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "list_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ListType",
+            "enum": [
+              {
+                "content": "ALLOW"
+              },
+              {
+                "content": "BLOCK"
+              }
+            ]
+          }
+        },
+        {
+          "name": "enabled",
+          "description": "Specifies whether this IP access list is enabled.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates an existing IP access list, specified by its ID.\n\nA list can include allow lists and block lists.\nSee the top of this file for a description of how the server treats allow lists and block lists at run time.\n\nWhen updating an IP access list:\n\n* For all allow lists and block lists combined, the API supports a maximum of 1000 IP/CIDR values,\nwhere one CIDR counts as a single value. Attempts to exceed that number return error 400 with `error_code` value `QUOTA_EXCEEDED`.\n* If the updated list would block the calling user's current IP, error 400 is returned with `error_code` value `INVALID_STATE`.\n\nIt can take a few minutes for the changes to take effect. Note that your resulting IP access list has no effect until you enable\nthe feature. See [workspaceconf/setStatus](https://docs.databricks.com/api/workspace/workspaceconf/setstatus).",
+      "summary": "Update access list.",
+      "path": "/api/2.0/ip-access-lists/{ip_access_list_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateIpAccessList",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "ip_access_list_id",
+            "description": "The ID for the corresponding IP access list",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "enabled",
+          "description": "Specifies whether this IP access list is enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ip_addresses",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "label",
+          "description": "Label for the IP access list. This **cannot** be empty.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "list_type",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ListType",
+            "enum": [
+              {
+                "content": "ALLOW"
+              },
+              {
+                "content": "BLOCK"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "ip_access_list_id",
+          "description": "The ID for the corresponding IP access list",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

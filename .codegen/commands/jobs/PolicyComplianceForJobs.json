@@ -1,0 +1,234 @@
+{
+  "id": "jobs.PolicyComplianceForJobs",
+  "name": "PolicyComplianceForJobs",
+  "description": "The compliance APIs allow you to view and manage the policy compliance status of jobs\nin your workspace. This API currently only supports compliance controls for cluster policies.\n\nA job is in compliance if its cluster configurations satisfy the rules of all their respective\ncluster policies. A job could be out of compliance if a cluster policy it uses was updated after\nthe job was last edited. The job is considered out of compliance if any of its clusters no longer\ncomply with their updated policies.\n\nThe get and list compliance APIs allow you to view the policy compliance status of a job.\nThe enforce compliance API allows you to update a job so that it becomes compliant with all of its policies.",
+  "package": {
+    "name": "jobs"
+  },
+  "docs_group": "lakeflow",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "EnforceCompliance",
+      "description": "Updates a job so the job clusters that are created when running\nthe job (specified in `new_cluster`) are compliant with the\ncurrent versions of their respective cluster policies.\nAll-purpose clusters used in the job will not be updated.",
+      "summary": "Enforce job policy compliance.",
+      "path": "/api/2.0/policies/jobs/enforce-compliance",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EnforcePolicyComplianceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The ID of the job you want to enforce policy compliance on.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "job_id",
+            "description": "The ID of the job you want to enforce policy compliance on.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EnforcePolicyComplianceResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "job_id",
+          "description": "The ID of the job you want to enforce policy compliance on.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "validate_only",
+          "description": "If set, previews changes made to the job to comply with its policy, but\ndoes not update the job.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The ID of the job you want to enforce policy compliance on.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetCompliance",
+      "description": "Returns the policy compliance status of a job. Jobs could be out of\ncompliance if a cluster policy they use was updated after the job was\nlast edited and some of its job clusters no longer comply with\ntheir updated policies.",
+      "summary": "Get job policy compliance.",
+      "path": "/api/2.0/policies/jobs/get-compliance",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPolicyComplianceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The ID of the job whose compliance status you are requesting.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "job_id",
+            "description": "The ID of the job whose compliance status you are requesting.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetPolicyComplianceResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "job_id",
+          "description": "The ID of the job whose compliance status you are requesting.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The ID of the job whose compliance status you are requesting.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListCompliance",
+      "description": "Returns the policy compliance status of all jobs that use a\ngiven policy. Jobs could be out of compliance if a cluster policy they\nuse was updated after the job was last edited and its job\nclusters no longer comply with the updated policy.",
+      "summary": "List job policy compliance.",
+      "path": "/api/2.0/policies/jobs/list-compliance",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListJobComplianceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "Canonical unique identifier for the cluster policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "policy_id",
+            "description": "Canonical unique identifier for the cluster policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListJobComplianceForPolicyResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Use this field to specify the maximum number of results to be returned by the server.\nThe server may further constrain the maximum number of results returned in a\nsingle page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token that can be used to navigate to the next page or previous page as\nreturned by `next_page_token` or `prev_page_token`.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "Canonical unique identifier for the cluster policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "Canonical unique identifier for the cluster policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token that can be used to navigate to the next page or previous page as\nreturned by `next_page_token` or `prev_page_token`.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

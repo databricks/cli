@@ -1,0 +1,415 @@
+{
+  "id": "catalog.WorkspaceBindings",
+  "name": "WorkspaceBindings",
+  "description": "A securable in Databricks can be configured as __OPEN__ or __ISOLATED__. An __OPEN__ securable can\nbe accessed from any workspace, while an __ISOLATED__ securable can only be accessed from a configured\nlist of workspaces. This API allows you to configure (bind) securables to workspaces.\n\nNOTE:\nThe __isolation_mode__ is configured for the securable itself (using its Update method) and\nthe workspace bindings are only consulted when the securable's __isolation_mode__ is set to __ISOLATED__.\n\nA securable's workspace bindings can be configured by a metastore admin or the owner of the securable.\n\nThe original path (/api/2.1/unity-catalog/workspace-bindings/catalogs/{name}) is deprecated.\nUse the new path (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}),\nwhich introduces the ability to bind a securable in READ_ONLY mode (catalogs only).\n\nSecurable types that support binding:\n- catalog\n- storage_credential\n- credential\n- external_location",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Get",
+      "description": "Gets workspace bindings of the catalog.\nThe caller must be a metastore admin or an owner of the catalog.",
+      "summary": "Get catalog workspace bindings.",
+      "path": "/api/2.1/unity-catalog/workspace-bindings/catalogs/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceBindingRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetCatalogWorkspaceBindingsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetBindings",
+      "description": "Gets workspace bindings of the securable.\nThe caller must be a metastore admin or an owner of the securable.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "Get securable workspace bindings.",
+      "path": "/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetBindingsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "securable_name",
+            "description": "The name of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "securable_name",
+            "description": "The name of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetWorkspaceBindingsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of workspace bindings to return.\n- When set to 0, the page length is set to a server configured value (recommended);\n- When set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- When set to a value less than 0, an invalid parameter error is returned;\n- If not set, all the workspace bindings are returned (not recommended).",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_name",
+          "description": "The name of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_name",
+          "description": "The name of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of workspace bindings to return.\n- When set to 0, the page length is set to a server configured value (recommended);\n- When set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- When set to a value less than 0, an invalid parameter error is returned;\n- If not set, all the workspace bindings are returned (not recommended).",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates workspace bindings of the catalog.\nThe caller must be a metastore admin or an owner of the catalog.",
+      "summary": "Update catalog workspace bindings.",
+      "path": "/api/2.1/unity-catalog/workspace-bindings/catalogs/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateWorkspaceBindings",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateCatalogWorkspaceBindingsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "assign_workspaces",
+          "description": "A list of workspace IDs.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_int64": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "unassign_workspaces",
+          "description": "A list of workspace IDs.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_int64": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateBindings",
+      "description": "Updates workspace bindings of the securable.\nThe caller must be a metastore admin or an owner of the securable.",
+      "summary": "Update securable workspace bindings.",
+      "path": "/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateWorkspaceBindingsParameters",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "securable_name",
+            "description": "The name of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "securable_name",
+            "description": "The name of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateWorkspaceBindingsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "add",
+          "description": "List of workspace bindings to add. If a binding for the workspace already exists with a\ndifferent binding_type, adding it again with a new binding_type will update the existing\nbinding (e.g., from READ_WRITE to READ_ONLY).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceBindingList",
+            "array_value": {
+              "pascal_name": "WorkspaceBinding",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "remove",
+          "description": "List of workspace bindings to remove.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceBindingList",
+            "array_value": {
+              "pascal_name": "WorkspaceBinding",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "securable_name",
+          "description": "The name of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "The type of the securable to bind to a workspace (catalog, storage_credential, credential, or external_location).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_name",
+          "description": "The name of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

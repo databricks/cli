@@ -1,0 +1,1330 @@
+{
+  "id": "catalog.Tables",
+  "name": "Tables",
+  "description": "A table resides in the third layer of Unity Catalog’s three-level namespace. It contains\nrows of data. To create a table, users must have CREATE_TABLE and USE_SCHEMA permissions on the schema,\nand they must have the USE_CATALOG permission on its parent catalog. To query a table, users must\nhave the SELECT permission on the table, and they must have the USE_CATALOG permission on its\nparent catalog and the USE_SCHEMA permission on its parent schema.\n\nA table can be managed or external.\nFrom an API perspective, a __VIEW__ is a particular kind of table (rather than a managed or external table).",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListTablesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new table in the specified catalog and schema.\n\nTo create an external delta table, the caller must have the **EXTERNAL_USE_SCHEMA** privilege on the parent schema\nand the **EXTERNAL_USE_LOCATION** privilege on the external location. These privileges must always be granted explicitly,\nand cannot be inherited through ownership or **ALL_PRIVILEGES**.\n\nStandard UC permissions needed to create tables still apply: **USE_CATALOG** on the parent catalog (or ownership of\nthe parent catalog), **CREATE_TABLE** and **USE_SCHEMA** on the parent schema (or ownership of the parent schema),\nand **CREATE_EXTERNAL_TABLE** on external location.\n\nThe **columns** field needs to be in a Spark compatible format, so we recommend you use Spark to create these tables.\nThe API itself does not validate the correctness of the column spec. If the spec is not Spark compatible,\nthe tables may not be readable by Databricks Runtime.\n\nNOTE: The Create Table API for external clients only supports creating **external delta tables**. The values shown\nin the respective enums are all values supported by Databricks, however for this specific Create Table API,\nonly **table_type** **EXTERNAL** and **data_source_format** **DELTA** are supported. Additionally, column masks\nare not supported when creating tables through this API.",
+      "summary": "Create a table.",
+      "path": "/api/2.1/unity-catalog/tables",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateTableRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of table, relative to parent schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Name of parent schema relative to its parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TableType",
+              "enum": [
+                {
+                  "content": "EXTERNAL"
+                },
+                {
+                  "content": "EXTERNAL_SHALLOW_CLONE"
+                },
+                {
+                  "content": "FOREIGN"
+                },
+                {
+                  "content": "MANAGED"
+                },
+                {
+                  "content": "MANAGED_SHALLOW_CLONE"
+                },
+                {
+                  "content": "MATERIALIZED_VIEW"
+                },
+                {
+                  "content": "METRIC_VIEW"
+                },
+                {
+                  "content": "STREAMING_TABLE"
+                },
+                {
+                  "content": "VIEW"
+                }
+              ]
+            }
+          },
+          {
+            "name": "data_source_format",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DataSourceFormat",
+              "enum": [
+                {
+                  "content": "AVRO"
+                },
+                {
+                  "content": "BIGQUERY_FORMAT"
+                },
+                {
+                  "content": "CSV"
+                },
+                {
+                  "content": "DATABRICKS_FORMAT"
+                },
+                {
+                  "content": "DATABRICKS_ROW_STORE_FORMAT"
+                },
+                {
+                  "content": "DELTA"
+                },
+                {
+                  "content": "DELTASHARING"
+                },
+                {
+                  "content": "DELTA_UNIFORM_HUDI"
+                },
+                {
+                  "content": "DELTA_UNIFORM_ICEBERG"
+                },
+                {
+                  "content": "HIVE"
+                },
+                {
+                  "content": "ICEBERG"
+                },
+                {
+                  "content": "JSON"
+                },
+                {
+                  "content": "MONGODB_FORMAT"
+                },
+                {
+                  "content": "MYSQL_FORMAT"
+                },
+                {
+                  "content": "NETSUITE_FORMAT"
+                },
+                {
+                  "content": "ORACLE_FORMAT"
+                },
+                {
+                  "content": "ORC"
+                },
+                {
+                  "content": "PARQUET"
+                },
+                {
+                  "content": "POSTGRESQL_FORMAT"
+                },
+                {
+                  "content": "REDSHIFT_FORMAT"
+                },
+                {
+                  "content": "SALESFORCE_DATA_CLOUD_FORMAT"
+                },
+                {
+                  "content": "SALESFORCE_FORMAT"
+                },
+                {
+                  "content": "SNOWFLAKE_FORMAT"
+                },
+                {
+                  "content": "SQLDW_FORMAT"
+                },
+                {
+                  "content": "SQLSERVER_FORMAT"
+                },
+                {
+                  "content": "TERADATA_FORMAT"
+                },
+                {
+                  "content": "TEXT"
+                },
+                {
+                  "content": "UNITY_CATALOG"
+                },
+                {
+                  "content": "VECTOR_INDEX_FORMAT"
+                },
+                {
+                  "content": "WORKDAY_RAAS_FORMAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": "storage_location",
+            "description": "Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of table, relative to parent schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Name of parent schema relative to its parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TableType",
+              "enum": [
+                {
+                  "content": "EXTERNAL"
+                },
+                {
+                  "content": "EXTERNAL_SHALLOW_CLONE"
+                },
+                {
+                  "content": "FOREIGN"
+                },
+                {
+                  "content": "MANAGED"
+                },
+                {
+                  "content": "MANAGED_SHALLOW_CLONE"
+                },
+                {
+                  "content": "MATERIALIZED_VIEW"
+                },
+                {
+                  "content": "METRIC_VIEW"
+                },
+                {
+                  "content": "STREAMING_TABLE"
+                },
+                {
+                  "content": "VIEW"
+                }
+              ]
+            }
+          },
+          {
+            "name": "data_source_format",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DataSourceFormat",
+              "enum": [
+                {
+                  "content": "AVRO"
+                },
+                {
+                  "content": "BIGQUERY_FORMAT"
+                },
+                {
+                  "content": "CSV"
+                },
+                {
+                  "content": "DATABRICKS_FORMAT"
+                },
+                {
+                  "content": "DATABRICKS_ROW_STORE_FORMAT"
+                },
+                {
+                  "content": "DELTA"
+                },
+                {
+                  "content": "DELTASHARING"
+                },
+                {
+                  "content": "DELTA_UNIFORM_HUDI"
+                },
+                {
+                  "content": "DELTA_UNIFORM_ICEBERG"
+                },
+                {
+                  "content": "HIVE"
+                },
+                {
+                  "content": "ICEBERG"
+                },
+                {
+                  "content": "JSON"
+                },
+                {
+                  "content": "MONGODB_FORMAT"
+                },
+                {
+                  "content": "MYSQL_FORMAT"
+                },
+                {
+                  "content": "NETSUITE_FORMAT"
+                },
+                {
+                  "content": "ORACLE_FORMAT"
+                },
+                {
+                  "content": "ORC"
+                },
+                {
+                  "content": "PARQUET"
+                },
+                {
+                  "content": "POSTGRESQL_FORMAT"
+                },
+                {
+                  "content": "REDSHIFT_FORMAT"
+                },
+                {
+                  "content": "SALESFORCE_DATA_CLOUD_FORMAT"
+                },
+                {
+                  "content": "SALESFORCE_FORMAT"
+                },
+                {
+                  "content": "SNOWFLAKE_FORMAT"
+                },
+                {
+                  "content": "SQLDW_FORMAT"
+                },
+                {
+                  "content": "SQLSERVER_FORMAT"
+                },
+                {
+                  "content": "TERADATA_FORMAT"
+                },
+                {
+                  "content": "TEXT"
+                },
+                {
+                  "content": "UNITY_CATALOG"
+                },
+                {
+                  "content": "VECTOR_INDEX_FORMAT"
+                },
+                {
+                  "content": "WORKDAY_RAAS_FORMAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": "storage_location",
+            "description": "Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TableInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "columns",
+          "description": "The array of __ColumnInfo__ definitions of the table's columns.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ColumnInfoList",
+            "array_value": {
+              "pascal_name": "ColumnInfo",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "data_source_format",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DataSourceFormat",
+            "enum": [
+              {
+                "content": "AVRO"
+              },
+              {
+                "content": "BIGQUERY_FORMAT"
+              },
+              {
+                "content": "CSV"
+              },
+              {
+                "content": "DATABRICKS_FORMAT"
+              },
+              {
+                "content": "DATABRICKS_ROW_STORE_FORMAT"
+              },
+              {
+                "content": "DELTA"
+              },
+              {
+                "content": "DELTASHARING"
+              },
+              {
+                "content": "DELTA_UNIFORM_HUDI"
+              },
+              {
+                "content": "DELTA_UNIFORM_ICEBERG"
+              },
+              {
+                "content": "HIVE"
+              },
+              {
+                "content": "ICEBERG"
+              },
+              {
+                "content": "JSON"
+              },
+              {
+                "content": "MONGODB_FORMAT"
+              },
+              {
+                "content": "MYSQL_FORMAT"
+              },
+              {
+                "content": "NETSUITE_FORMAT"
+              },
+              {
+                "content": "ORACLE_FORMAT"
+              },
+              {
+                "content": "ORC"
+              },
+              {
+                "content": "PARQUET"
+              },
+              {
+                "content": "POSTGRESQL_FORMAT"
+              },
+              {
+                "content": "REDSHIFT_FORMAT"
+              },
+              {
+                "content": "SALESFORCE_DATA_CLOUD_FORMAT"
+              },
+              {
+                "content": "SALESFORCE_FORMAT"
+              },
+              {
+                "content": "SNOWFLAKE_FORMAT"
+              },
+              {
+                "content": "SQLDW_FORMAT"
+              },
+              {
+                "content": "SQLSERVER_FORMAT"
+              },
+              {
+                "content": "TERADATA_FORMAT"
+              },
+              {
+                "content": "TEXT"
+              },
+              {
+                "content": "UNITY_CATALOG"
+              },
+              {
+                "content": "VECTOR_INDEX_FORMAT"
+              },
+              {
+                "content": "WORKDAY_RAAS_FORMAT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of table, relative to parent schema.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "A map of key-value properties attached to the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Name of parent schema relative to its parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_location",
+          "description": "Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "table_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TableType",
+            "enum": [
+              {
+                "content": "EXTERNAL"
+              },
+              {
+                "content": "EXTERNAL_SHALLOW_CLONE"
+              },
+              {
+                "content": "FOREIGN"
+              },
+              {
+                "content": "MANAGED"
+              },
+              {
+                "content": "MANAGED_SHALLOW_CLONE"
+              },
+              {
+                "content": "MATERIALIZED_VIEW"
+              },
+              {
+                "content": "METRIC_VIEW"
+              },
+              {
+                "content": "STREAMING_TABLE"
+              },
+              {
+                "content": "VIEW"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of table, relative to parent schema.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Name of parent schema relative to its parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "table_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TableType",
+            "enum": [
+              {
+                "content": "EXTERNAL"
+              },
+              {
+                "content": "EXTERNAL_SHALLOW_CLONE"
+              },
+              {
+                "content": "FOREIGN"
+              },
+              {
+                "content": "MANAGED"
+              },
+              {
+                "content": "MANAGED_SHALLOW_CLONE"
+              },
+              {
+                "content": "MATERIALIZED_VIEW"
+              },
+              {
+                "content": "METRIC_VIEW"
+              },
+              {
+                "content": "STREAMING_TABLE"
+              },
+              {
+                "content": "VIEW"
+              }
+            ]
+          }
+        },
+        {
+          "name": "data_source_format",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DataSourceFormat",
+            "enum": [
+              {
+                "content": "AVRO"
+              },
+              {
+                "content": "BIGQUERY_FORMAT"
+              },
+              {
+                "content": "CSV"
+              },
+              {
+                "content": "DATABRICKS_FORMAT"
+              },
+              {
+                "content": "DATABRICKS_ROW_STORE_FORMAT"
+              },
+              {
+                "content": "DELTA"
+              },
+              {
+                "content": "DELTASHARING"
+              },
+              {
+                "content": "DELTA_UNIFORM_HUDI"
+              },
+              {
+                "content": "DELTA_UNIFORM_ICEBERG"
+              },
+              {
+                "content": "HIVE"
+              },
+              {
+                "content": "ICEBERG"
+              },
+              {
+                "content": "JSON"
+              },
+              {
+                "content": "MONGODB_FORMAT"
+              },
+              {
+                "content": "MYSQL_FORMAT"
+              },
+              {
+                "content": "NETSUITE_FORMAT"
+              },
+              {
+                "content": "ORACLE_FORMAT"
+              },
+              {
+                "content": "ORC"
+              },
+              {
+                "content": "PARQUET"
+              },
+              {
+                "content": "POSTGRESQL_FORMAT"
+              },
+              {
+                "content": "REDSHIFT_FORMAT"
+              },
+              {
+                "content": "SALESFORCE_DATA_CLOUD_FORMAT"
+              },
+              {
+                "content": "SALESFORCE_FORMAT"
+              },
+              {
+                "content": "SNOWFLAKE_FORMAT"
+              },
+              {
+                "content": "SQLDW_FORMAT"
+              },
+              {
+                "content": "SQLSERVER_FORMAT"
+              },
+              {
+                "content": "TERADATA_FORMAT"
+              },
+              {
+                "content": "TEXT"
+              },
+              {
+                "content": "UNITY_CATALOG"
+              },
+              {
+                "content": "VECTOR_INDEX_FORMAT"
+              },
+              {
+                "content": "WORKDAY_RAAS_FORMAT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "storage_location",
+          "description": "Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a table from the specified parent catalog and schema.\nThe caller must be the owner of the parent catalog, have the **USE_CATALOG** privilege on the parent catalog and be the owner of the parent schema,\nor be the owner of the table and have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Delete a table.",
+      "path": "/api/2.1/unity-catalog/tables/{full_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exists",
+      "description": "Gets if a table exists in the metastore for a specific catalog and schema.\nThe caller must satisfy one of the following requirements:\n* Be a metastore admin\n* Be the owner of the parent catalog\n* Be the owner of the parent schema and have the **USE_CATALOG** privilege on the parent catalog\n* Have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema,\nand either be the table owner or have the **SELECT** privilege on the table.\n* Have **BROWSE** privilege on the parent catalog\n* Have **BROWSE** privilege on the parent schema",
+      "summary": "Get boolean reflecting if table exists.",
+      "path": "/api/2.1/unity-catalog/tables/{full_name}/exists",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ExistsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TableExistsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a table from the metastore for a specific catalog and schema.\nThe caller must satisfy one of the following requirements:\n* Be a metastore admin\n* Be the owner of the parent catalog\n* Be the owner of the parent schema and have the **USE_CATALOG** privilege on the parent catalog\n* Have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema,\nand either be the table owner or have the **SELECT** privilege on the table.",
+      "summary": "Get a table.",
+      "path": "/api/2.1/unity-catalog/tables/{full_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TableInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include tables in the response for which the principal can only access selective metadata for.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_delta_metadata",
+          "description": "Whether delta metadata should be included in the response.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_manifest_capabilities",
+          "description": "Whether to include a manifest containing table capabilities in the response.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of all tables for the current metastore under the parent catalog and schema.\nThe caller must be a metastore admin or an owner of (or have the **SELECT** privilege on) the table.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.\nThere is no guarantee of a specific ordering of the elements in the array.\n\nNOTE: **view_dependencies** and **table_constraints** are not returned by ListTables queries.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List tables.",
+      "path": "/api/2.1/unity-catalog/tables",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListTablesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog for tables of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Parent schema of tables.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog for tables of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Parent schema of tables.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListTablesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog for tables of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include tables in the response for which the principal can only access selective metadata for.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_manifest_capabilities",
+          "description": "Whether to include a manifest containing table capabilities in the response.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of tables to return.\nIf not set, all the tables are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "omit_columns",
+          "description": "Whether to omit the columns of the table from the response or not.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "omit_properties",
+          "description": "Whether to omit the properties of the table from the response or not.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "omit_username",
+          "description": "Whether to omit the username of the table (e.g. owner, updated_by, created_by) from the response or not.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque token to send for the next page of results (pagination).",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Parent schema of tables.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog for tables of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Parent schema of tables.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque token to send for the next page of results (pagination).",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of tables to return.\nIf not set, all the tables are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSummaries",
+      "description": "Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:\n\n* summaries for tables (within the current metastore and parent catalog and schema), when the user is a metastore admin, or:\n* summaries for tables and schemas (within the current metastore and parent catalog)\nfor which the user has ownership or the **SELECT** privilege on the table and ownership or **USE_SCHEMA** privilege on the schema,\nprovided that the user also has ownership or the **USE_CATALOG** privilege on the parent catalog.\n\nThere is no guarantee of a specific ordering of the elements in the array.\n\nPAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List table summaries.",
+      "path": "/api/2.1/unity-catalog/table-summaries",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListSummariesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog for tables of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog for tables of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListTableSummariesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog for tables of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_manifest_capabilities",
+          "description": "Whether to include a manifest containing table capabilities in the response.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of summaries for tables to return.\nIf not set, the page length is set to a server configured value (10000, as of 1/5/2024).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value (10000, as of 1/5/2024);\n- when set to 0, the page length is set to a server configured value (10000, as of 1/5/2024) (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name_pattern",
+          "description": "A sql LIKE pattern (% and _) for schema names.\nAll schemas will be returned if not set or empty.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "table_name_pattern",
+          "description": "A sql LIKE pattern (% and _) for table names.\nAll tables will be returned if not set or empty.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog for tables of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Change the owner of the table.\nThe caller must be the owner of the parent catalog, have the **USE_CATALOG** privilege on the parent catalog and be the owner of the parent schema,\nor be the owner of the table and have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Update a table owner.",
+      "path": "/api/2.1/unity-catalog/tables/{full_name}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of current owner of table.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2220 @@
+{
+  "id": "serving.ServingEndpoints",
+  "name": "ServingEndpoints",
+  "description": "The Serving Endpoints API allows you to create, update, and delete model serving endpoints.\n\nYou can use a serving endpoint to serve models from the Databricks Model Registry or from Unity Catalog.\nEndpoints expose the underlying models as scalable REST API endpoints using serverless compute. This means\nthe endpoints and associated compute resources are fully managed by Databricks and will not appear in\nyour cloud account. A serving endpoint can consist of one or more MLflow models from the Databricks\nModel Registry, called served entities. A serving endpoint can have at most ten served entities. You can configure\ntraffic settings to define how requests should be routed to your served entities behind an endpoint.\nAdditionally, you can configure the scale of resources that should be applied to each served entity.",
+  "package": {
+    "name": "serving"
+  },
+  "docs_group": "serving",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "is_legacy_empty_request": true,
+    "request": {
+      "pascal_name": "ListServingEndpointsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "BuildLogs",
+      "description": "Retrieves the build logs associated with the provided served model.",
+      "summary": "Get build logs for a served model.",
+      "path": "/api/2.0/serving-endpoints/{name}/served-models/{served_model_name}/build-logs",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "BuildLogsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "served_model_name",
+            "description": "The name of the served model that build logs will be retrieved for. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "served_model_name",
+            "description": "The name of the served model that build logs will be retrieved for. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "BuildLogsResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "logs",
+            "description": "The logs associated with building the served entity's environment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "logs",
+            "description": "The logs associated with building the served entity's environment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "served_model_name",
+          "description": "The name of the served model that build logs will be retrieved for. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "served_model_name",
+          "description": "The name of the served model that build logs will be retrieved for. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create",
+      "description": "Create a new serving endpoint.",
+      "summary": "Create a new serving endpoint.",
+      "path": "/api/2.0/serving-endpoints",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateServingEndpoint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointDetailed",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "ai_gateway",
+          "description": "The AI Gateway configuration for the serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiGatewayConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "The budget policy to be applied to the serving endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "The core config of the serving endpoint.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointCoreConfigInput",
+            "is_object": true
+          }
+        },
+        {
+          "name": "description",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "email_notifications",
+          "description": "Email notification settings.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EmailNotifications",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rate_limits",
+          "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RateLimitList",
+            "array_value": {
+              "pascal_name": "RateLimit",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "route_optimized",
+          "description": "Enable route optimization for the serving endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointTagList",
+            "array_value": {
+              "pascal_name": "EndpointTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "telemetry_config",
+          "description": "Configuration for persisting endpoint telemetry (logs, traces, and metrics) to Unity Catalog tables.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "TelemetryConfig",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "NOT_UPDATING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ServingEndpointDetailed"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "ConfigUpdate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateProvisionedThroughputEndpoint",
+      "description": "Create a new PT serving endpoint.",
+      "summary": "Create a new PT serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/pt",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreatePtEndpointRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "config",
+            "description": "The core config of the serving endpoint.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PtEndpointCoreConfig",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "config",
+            "description": "The core config of the serving endpoint.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PtEndpointCoreConfig",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointDetailed",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "ai_gateway",
+          "description": "The AI Gateway configuration for the serving endpoint.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiGatewayConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "The budget policy associated with the endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "config",
+          "description": "The core config of the serving endpoint.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PtEndpointCoreConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "email_notifications",
+          "description": "Email notification settings.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EmailNotifications",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointTagList",
+            "array_value": {
+              "pascal_name": "EndpointTag",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "NOT_UPDATING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ServingEndpointDetailed"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "ConfigUpdate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Delete",
+      "description": "Delete a serving endpoint.",
+      "summary": "Delete a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteServingEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ExportMetrics",
+      "description": "Retrieves the metrics associated with the provided serving endpoint in either Prometheus or OpenMetrics exposition format.",
+      "summary": "Get metrics of a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/metrics",
+      "is_crud_read": true,
+      "is_response_byte_stream": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ExportMetricsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint to retrieve metrics for. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint to retrieve metrics for. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExportMetricsResponse",
+        "is_object": true
+      },
+      "response_body_field": {
+        "pascal_name": "Contents"
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint to retrieve metrics for. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint to retrieve metrics for. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Retrieves the details for a single serving endpoint.",
+      "summary": "Get a single serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetServingEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointDetailed",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetOpenApi",
+      "description": "Get the query schema of the serving endpoint in OpenAPI format. The schema contains information for the supported paths, input and output format and datatypes.",
+      "summary": "Get the schema for a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/openapi",
+      "is_crud_read": true,
+      "is_response_byte_stream": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetOpenApiRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetOpenApiResponse",
+        "is_object": true
+      },
+      "response_body_field": {
+        "pascal_name": "Contents"
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get serving endpoint permission levels.",
+      "path": "/api/2.0/permissions/serving-endpoints/{serving_endpoint_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetServingEndpointPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetServingEndpointPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a serving endpoint. Serving endpoints can inherit permissions from their root object.",
+      "summary": "Get serving endpoint permissions.",
+      "path": "/api/2.0/permissions/serving-endpoints/{serving_endpoint_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetServingEndpointPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "HttpRequest",
+      "description": "Make external services call using the credentials stored in UC Connection.",
+      "summary": "Make external services call using the credentials stored in UC Connection.",
+      "path": "/api/2.0/external-function",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "is_response_byte_stream": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ExternalFunctionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "connection_name",
+            "description": "The connection name to use. This is required to identify the external connection.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "method",
+            "description": "The HTTP method to use (e.g., 'GET', 'POST').",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalFunctionRequestHttpMethod",
+              "enum": [
+                {
+                  "content": "DELETE"
+                },
+                {
+                  "content": "GET"
+                },
+                {
+                  "content": "PATCH"
+                },
+                {
+                  "content": "POST"
+                },
+                {
+                  "content": "PUT"
+                }
+              ]
+            }
+          },
+          {
+            "name": "path",
+            "description": "The relative path for the API endpoint. This is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "connection_name",
+            "description": "The connection name to use. This is required to identify the external connection.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "method",
+            "description": "The HTTP method to use (e.g., 'GET', 'POST').",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalFunctionRequestHttpMethod",
+              "enum": [
+                {
+                  "content": "DELETE"
+                },
+                {
+                  "content": "GET"
+                },
+                {
+                  "content": "PATCH"
+                },
+                {
+                  "content": "POST"
+                },
+                {
+                  "content": "PUT"
+                }
+              ]
+            }
+          },
+          {
+            "name": "path",
+            "description": "The relative path for the API endpoint. This is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "HttpRequestResponse",
+        "is_object": true
+      },
+      "response_body_field": {
+        "pascal_name": "Contents"
+      },
+      "all_fields": [
+        {
+          "name": "connection_name",
+          "description": "The connection name to use. This is required to identify the external connection.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "headers",
+          "description": "Additional headers for the request. If not provided, only auth headers from connections would be passed.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "json",
+          "description": "The JSON payload to send in the request body.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "method",
+          "description": "The HTTP method to use (e.g., 'GET', 'POST').",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalFunctionRequestHttpMethod",
+            "enum": [
+              {
+                "content": "DELETE"
+              },
+              {
+                "content": "GET"
+              },
+              {
+                "content": "PATCH"
+              },
+              {
+                "content": "POST"
+              },
+              {
+                "content": "PUT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "params",
+          "description": "Query parameters for the request.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The relative path for the API endpoint. This is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "sub_domain",
+          "description": "Optional subdomain to prepend to the connection URL's host. If provided, this will be\nadded as a prefix to the connection URL's host. For example, if the connection URL is\n`https://api.example.com/v1` and `sub_domain` is `\"custom\"`, the resulting URL will be\n`https://custom.api.example.com/v1`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "connection_name",
+          "description": "The connection name to use. This is required to identify the external connection.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "method",
+          "description": "The HTTP method to use (e.g., 'GET', 'POST').",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalFunctionRequestHttpMethod",
+            "enum": [
+              {
+                "content": "DELETE"
+              },
+              {
+                "content": "GET"
+              },
+              {
+                "content": "PATCH"
+              },
+              {
+                "content": "POST"
+              },
+              {
+                "content": "PUT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "path",
+          "description": "The relative path for the API endpoint. This is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Get all serving endpoints.",
+      "summary": "Get all serving endpoints.",
+      "path": "/api/2.0/serving-endpoints",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListServingEndpointsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListEndpointsResponse",
+        "is_object": true
+      },
+      "pagination": {}
+    },
+    {
+      "name": "Logs",
+      "description": "Retrieves the service logs associated with the provided served model.",
+      "summary": "Get the latest logs for a served model.",
+      "path": "/api/2.0/serving-endpoints/{name}/served-models/{served_model_name}/logs",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "LogsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "served_model_name",
+            "description": "The name of the served model that logs will be retrieved for. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "served_model_name",
+            "description": "The name of the served model that logs will be retrieved for. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServerLogsResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "logs",
+            "description": "The most recent log lines of the model server processing invocation requests.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "logs",
+            "description": "The most recent log lines of the model server processing invocation requests.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "served_model_name",
+          "description": "The name of the served model that logs will be retrieved for. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint that the served model belongs to. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "served_model_name",
+          "description": "The name of the served model that logs will be retrieved for. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patch",
+      "description": "Used to batch add and delete tags from a serving endpoint with a single API call.",
+      "summary": "Update tags of a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/tags",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PatchServingEndpointTags",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint who's tags to patch. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint who's tags to patch. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EndpointTags",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "add_tags",
+          "description": "List of endpoint tags to add",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointTagList",
+            "array_value": {
+              "pascal_name": "EndpointTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "delete_tags",
+          "description": "List of tag keys to delete",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint who's tags to patch. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint who's tags to patch. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "PatchTelemetryConfig",
+      "description": "Updates the telemetry configuration of a serving endpoint.",
+      "summary": "Update the telemetry config of a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/telemetry-config",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PatchTelemetryConfigRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointDetailed",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "telemetry_config",
+          "description": "The telemetry configuration to be applied to the serving endpoint.\nCan specify either a telemetry_profile_id to use an existing profile,\nor table_names to create a new profile with the specified Unity Catalog tables.\nIf not provided, the telemetry configuration will be removed from the endpoint.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "TelemetryConfig",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose telemetry configuration is being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Put",
+      "description": "Deprecated: Please use AI Gateway to manage rate limits instead.",
+      "summary": "Update rate limits of a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/rate-limits",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "PutRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose rate limits are being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose rate limits are being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PutResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose rate limits are being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rate_limits",
+          "description": "The list of endpoint rate limits.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RateLimitList",
+            "array_value": {
+              "pascal_name": "RateLimit",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose rate limits are being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "PutAiGateway",
+      "description": "Used to update the AI Gateway of a serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.",
+      "summary": "Update AI Gateway of a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/ai-gateway",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PutAiGatewayRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose AI Gateway is being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose AI Gateway is being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PutAiGatewayResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "fallback_config",
+          "description": "Configuration for traffic fallback which auto fallbacks to other served entities if the request to a served\nentity fails with certain error codes, to increase availability.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "FallbackConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "guardrails",
+          "description": "Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiGatewayGuardrails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "inference_table_config",
+          "description": "Configuration for payload logging using inference tables.\nUse these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiGatewayInferenceTableConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose AI Gateway is being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rate_limits",
+          "description": "Configuration for rate limits which can be set to limit endpoint traffic.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AiGatewayRateLimitList",
+            "array_value": {
+              "pascal_name": "AiGatewayRateLimit",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "usage_tracking_config",
+          "description": "Configuration to enable usage tracking using system tables.\nThese tables allow you to monitor operational usage on endpoints and their associated costs.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiGatewayUsageTrackingConfig",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose AI Gateway is being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Query",
+      "description": "Query a serving endpoint",
+      "summary": "Query a serving endpoint.",
+      "path": "/serving-endpoints/{name}/invocations",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "QueryEndpointInput",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "QueryEndpointResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "client_request_id",
+          "description": "Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dataframe_records",
+          "description": "Pandas Dataframe input in the records orientation.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_any": true
+            }
+          }
+        },
+        {
+          "name": "dataframe_split",
+          "description": "Pandas Dataframe input in the split orientation.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DataframeSplitInput",
+            "is_object": true
+          }
+        },
+        {
+          "name": "extra_params",
+          "description": "The extra parameters field used ONLY for __completions, chat,__ and __embeddings external \u0026 foundation\nmodel__ serving endpoints. This is a map of strings and should only be used with other external/foundation\nmodel query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "input",
+          "description": "The input string (or array of strings) field used ONLY for __embeddings external \u0026 foundation model__\nserving endpoints and is the only field (along with extra_params if needed) used by embeddings queries.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "inputs",
+          "description": "Tensor-based input in columnar format.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "instances",
+          "description": "Tensor-based input in row format.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_any": true
+            }
+          }
+        },
+        {
+          "name": "max_tokens",
+          "description": "The max tokens field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is an integer and should only be used with other chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "messages",
+          "description": "The messages field used ONLY for __chat external \u0026 foundation model__ serving endpoints.\nThis is an array of ChatMessage objects and should only be used with other chat query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ChatMessageList",
+            "array_value": {
+              "pascal_name": "ChatMessage",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "n",
+          "description": "The n (number of candidates) field used ONLY for __completions__ and __chat external \u0026 foundation model__\nserving endpoints. This is an integer between 1 and 5 with a default of 1 and should only be used with\nother chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "prompt",
+          "description": "The prompt string (or array of strings) field used ONLY for __completions external \u0026 foundation model__\nserving endpoints and should only be used with other completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "stop",
+          "description": "The stop sequences field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is a list of strings and should only be used with other chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "stream",
+          "description": "The stream field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving endpoints.\nThis is a boolean defaulting to false and should only be used with other chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "temperature",
+          "description": "The temperature field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is a float between 0.0 and 2.0 with a default of 1.0 and should only be used with other\nchat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_float64": true
+          }
+        },
+        {
+          "name": "usage_context",
+          "description": "Optional user-provided context that will be recorded in the usage tracking table.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set serving endpoint permissions.",
+      "path": "/api/2.0/permissions/serving-endpoints/{serving_endpoint_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ServingEndpointPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ServingEndpointAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ServingEndpointAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateConfig",
+      "description": "Updates any combination of the serving endpoint's served entities, the compute configuration of those served entities, and the endpoint's traffic config. An endpoint that already has an update in progress can not be updated until the current update completes or fails.",
+      "summary": "Update config of a serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/config",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EndpointCoreConfigInput",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint to update. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint to update. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointDetailed",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "auto_capture_config",
+          "description": "Configuration for legacy Inference Tables which automatically log requests and responses to Unity\nCatalog.\nDeprecated: please use AI Gateway inference tables instead. See\nhttps://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AutoCaptureConfigInput",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint to update. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "served_entities",
+          "description": "The list of served entities under the serving endpoint config.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ServedEntityInputList",
+            "array_value": {
+              "pascal_name": "ServedEntityInput",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "served_models",
+          "description": "(Deprecated, use served_entities instead) The list of served models under the serving endpoint config.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ServedModelInputList",
+            "array_value": {
+              "pascal_name": "ServedModelInput",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "traffic_config",
+          "description": "The traffic configuration associated with the serving endpoint config.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "TrafficConfig",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint to update. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "NOT_UPDATING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ServingEndpointDetailed"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "ConfigUpdate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateNotifications",
+      "description": "Updates the email and webhook notification settings for an endpoint.",
+      "summary": "Update the email and webhook notification settings for an endpoint.",
+      "path": "/api/2.0/serving-endpoints/{name}/notifications",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateInferenceEndpointNotifications",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose notifications are being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint whose notifications are being updated. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateInferenceEndpointNotificationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "email_notifications",
+          "description": "The email notification settings to update. Specify email addresses to notify when endpoint state changes occur.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EmailNotifications",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose notifications are being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint whose notifications are being updated. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a serving endpoint. Serving endpoints can inherit permissions from their root object.",
+      "summary": "Update serving endpoint permissions.",
+      "path": "/api/2.0/permissions/serving-endpoints/{serving_endpoint_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ServingEndpointPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "serving_endpoint_id",
+            "description": "The serving endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ServingEndpointAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ServingEndpointAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "serving_endpoint_id",
+          "description": "The serving endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateProvisionedThroughputEndpointConfig",
+      "description": "Updates any combination of the pt endpoint's served entities, the compute configuration of those served entities, and the endpoint's traffic config. Updates are instantaneous and endpoint should be updated instantly",
+      "summary": "Update config of a PT serving endpoint.",
+      "path": "/api/2.0/serving-endpoints/pt/{name}/config",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateProvisionedThroughputEndpointConfigRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the pt endpoint to update. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "config",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PtEndpointCoreConfig",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the pt endpoint to update. This field is required.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "config",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PtEndpointCoreConfig",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServingEndpointDetailed",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "config",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PtEndpointCoreConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the pt endpoint to update. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the pt endpoint to update. This field is required.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "NOT_UPDATING"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ServingEndpointDetailed"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "ConfigUpdate"
+          }
+        ]
+      }
+    }
+  ]
+}

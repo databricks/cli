@@ -1,0 +1,141 @@
+{
+  "agentbricks.CancelCustomLlmOptimizationRunRequest": {},
+  "agentbricks.CreateCustomLlmRequest": {
+    "fields": {
+      "agent_artifact_path": {
+        "description": "This will soon be deprecated!!\nOptional: UC path for agent artifacts. If you are using a dataset that you only have read permissions,\nplease provide a destination path where you have write permissions. Please provide this in catalog.schema format.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "datasets": {
+        "description": "Datasets used for training and evaluating the model, not for inference.\nCurrently, only 1 dataset is accepted.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "guidelines": {
+        "description": "Guidelines for the custom LLM to adhere to",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "instructions": {
+        "description": "Instructions for the custom LLM to follow",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the custom LLM. Only alphanumeric characters and dashes allowed.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "agentbricks.CustomLlm": {
+    "fields": {
+      "agent_artifact_path": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "creation_time": {
+        "description": "Creation timestamp of the custom LLM",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "creator": {
+        "description": "Creator of the custom LLM",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "datasets": {
+        "description": "Datasets used for training and evaluating the model, not for inference",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "endpoint_name": {
+        "description": "Name of the endpoint that will be used to serve the custom LLM",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "guidelines": {
+        "description": "Guidelines for the custom LLM to adhere to",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "id": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "instructions": {
+        "description": "Instructions for the custom LLM to follow",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the custom LLM",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "optimization_state": {
+        "description": "If optimization is kicked off, tracks the state of the custom LLM",
+        "ref": "agentbricks.State",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentbricks.Dataset": {
+    "fields": {
+      "table": {
+        "ref": "agentbricks.Table",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "agentbricks.DeleteCustomLlmRequest": {},
+  "agentbricks.GetCustomLlmRequest": {},
+  "agentbricks.StartCustomLlmOptimizationRunRequest": {},
+  "agentbricks.State": {
+    "description": "States of Custom LLM optimization lifecycle.",
+    "enum": [
+      "CREATED",
+      "RUNNING",
+      "COMPLETED",
+      "FAILED",
+      "PENDING",
+      "CANCELLED"
+    ],
+    "enum_launch_stages": {
+      "CANCELLED": "PRIVATE_PREVIEW",
+      "COMPLETED": "PRIVATE_PREVIEW",
+      "CREATED": "PRIVATE_PREVIEW",
+      "FAILED": "PRIVATE_PREVIEW",
+      "PENDING": "PRIVATE_PREVIEW",
+      "RUNNING": "PRIVATE_PREVIEW"
+    }
+  },
+  "agentbricks.Table": {
+    "fields": {
+      "request_col": {
+        "description": "Name of the request column",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "response_col": {
+        "description": "Optional: Name of the response column if the data is labeled",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "table_path": {
+        "description": "Full UC table path in catalog.schema.table_name format",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "agentbricks.UpdateCustomLlmRequest": {
+    "fields": {
+      "custom_llm": {
+        "description": "The CustomLlm containing the fields which should be updated.",
+        "ref": "agentbricks.CustomLlm",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The list of the CustomLlm fields to update. These should correspond to the values (or lack thereof) present in `custom_llm`.\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  }
+}

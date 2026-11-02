@@ -1,0 +1,2073 @@
+{
+  "id": "cleanrooms.CleanRoomAssets",
+  "name": "CleanRoomAssets",
+  "description": "Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared\nwith the clean room.",
+  "package": {
+    "name": "cleanrooms"
+  },
+  "docs_group": "cleanrooms",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListCleanRoomAssetsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a clean room asset —share an asset like a notebook or table into the clean room.\nFor each UC asset that is added through this method, the clean room owner must also have\nenough privilege on the asset to consume it.\nThe privilege must be maintained indefinitely for the clean room to be able to access the asset.\nTypically, you should use a group as the clean room owner.",
+      "summary": "Create an asset.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateCleanRoomAssetRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "The name of the clean room this asset belongs to.\nThis field is required for create operations and populated by the server for responses.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAsset",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "The name of the clean room this asset belongs to.\nThis field is required for create operations and populated by the server for responses.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "asset",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAsset",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "asset",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CleanRoomAsset",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "asset_type",
+              "description": "The type of the asset.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CleanRoomAssetAssetType",
+                "enum": [
+                  {
+                    "content": "FOREIGN_TABLE"
+                  },
+                  {
+                    "content": "JAR_ANALYSIS"
+                  },
+                  {
+                    "content": "NOTEBOOK_FILE"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VIEW"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "asset_type",
+              "description": "The type of the asset.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CleanRoomAssetAssetType",
+                "enum": [
+                  {
+                    "content": "FOREIGN_TABLE"
+                  },
+                  {
+                    "content": "JAR_ANALYSIS"
+                  },
+                  {
+                    "content": "NOTEBOOK_FILE"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VIEW"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "CleanRoomAsset",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "asset",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAsset",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "asset_type",
+                "description": "The type of the asset.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CleanRoomAssetAssetType",
+                  "enum": [
+                    {
+                      "content": "FOREIGN_TABLE"
+                    },
+                    {
+                      "content": "JAR_ANALYSIS"
+                    },
+                    {
+                      "content": "NOTEBOOK_FILE"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VIEW"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "asset_type",
+                "description": "The type of the asset.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CleanRoomAssetAssetType",
+                  "enum": [
+                    {
+                      "content": "FOREIGN_TABLE"
+                    },
+                    {
+                      "content": "JAR_ANALYSIS"
+                    },
+                    {
+                      "content": "NOTEBOOK_FILE"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VIEW"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this asset belongs to.\nThis field is required for create operations and populated by the server for responses.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "added_at",
+          "description": "When the asset is added to the clean room, in epoch milliseconds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this asset belongs to.\nThis field is required for create operations and populated by the server for responses.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "foreign_table",
+          "description": "Foreign table details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **FOREIGN_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetForeignTable",
+            "is_object": true
+          }
+        },
+        {
+          "name": "foreign_table_local_details",
+          "description": "Local details for a foreign that are only available to its owner.\nPresent if and only if **asset_type** is **FOREIGN_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetForeignTableLocalDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "jar_analysis",
+          "description": "Jar analysis details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **JAR_ANALYSIS**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetJarAnalysis",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notebook",
+          "description": "Notebook details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **NOTEBOOK_FILE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetNotebook",
+            "is_object": true
+          }
+        },
+        {
+          "name": "owner_collaborator_alias",
+          "description": "The alias of the collaborator who owns this asset",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Status of the asset",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetStatusEnum",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "PENDING"
+              },
+              {
+                "content": "PERMISSION_DENIED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "table",
+          "description": "Table details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **TABLE** or **STREAMING_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetTable",
+            "is_object": true
+          }
+        },
+        {
+          "name": "table_local_details",
+          "description": "Local details for a table that are only available to its owner.\nPresent if and only if **asset_type** is **TABLE** or **STREAMING_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetTableLocalDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "View details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **VIEW** or **METRIC_VIEW**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetView",
+            "is_object": true
+          }
+        },
+        {
+          "name": "view_local_details",
+          "description": "Local details for a view that are only available to its owner.\nPresent if and only if **asset_type** is **VIEW** or **METRIC_VIEW**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetViewLocalDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "volume_local_details",
+          "description": "Local details for a volume that are only available to its owner.\nPresent if and only if **asset_type** is **VOLUME**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetVolumeLocalDetails",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this asset belongs to.\nThis field is required for create operations and populated by the server for responses.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateCleanRoomAssetReview",
+      "description": "Submit an asset review",
+      "summary": "Create a review (e.g. approval) for an asset.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{name}/reviews",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateCleanRoomAssetReviewRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the asset",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the asset",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateCleanRoomAssetReviewResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "asset_type",
+          "description": "Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "jar_analysis_review",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JarAnalysisVersionReview",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the asset",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notebook_review",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "NotebookVersionReview",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the asset",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete a clean room asset - unshare/remove the asset from the clean room",
+      "summary": "Delete an asset.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteCleanRoomAssetRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteCleanRoomAssetResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get the details of a clean room asset by its type and full name.",
+      "summary": "Get an asset.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetCleanRoomAssetRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CleanRoomAsset",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully qualified name of the asset, it is same as the name field in CleanRoomAsset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List assets.",
+      "summary": "List assets.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListCleanRoomAssetsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListCleanRoomAssetsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Update a clean room asset. For example, updating the content of a notebook;\nchanging the shared partitions of a table; etc.",
+      "summary": "Update an asset.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateCleanRoomAssetRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset",
+            "description": "The asset to update.\nThe asset's `name` and `asset_type` fields are used to identify the asset to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAsset",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "asset",
+            "description": "The asset to update.\nThe asset's `name` and `asset_type` fields are used to identify the asset to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAsset",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "asset",
+        "description": "The asset to update.\nThe asset's `name` and `asset_type` fields are used to identify the asset to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CleanRoomAsset",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "asset_type",
+              "description": "The type of the asset.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CleanRoomAssetAssetType",
+                "enum": [
+                  {
+                    "content": "FOREIGN_TABLE"
+                  },
+                  {
+                    "content": "JAR_ANALYSIS"
+                  },
+                  {
+                    "content": "NOTEBOOK_FILE"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VIEW"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "asset_type",
+              "description": "The type of the asset.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CleanRoomAssetAssetType",
+                "enum": [
+                  {
+                    "content": "FOREIGN_TABLE"
+                  },
+                  {
+                    "content": "JAR_ANALYSIS"
+                  },
+                  {
+                    "content": "NOTEBOOK_FILE"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VIEW"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "CleanRoomAsset",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "asset",
+          "description": "The asset to update.\nThe asset's `name` and `asset_type` fields are used to identify the asset to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAsset",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "asset_type",
+                "description": "The type of the asset.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CleanRoomAssetAssetType",
+                  "enum": [
+                    {
+                      "content": "FOREIGN_TABLE"
+                    },
+                    {
+                      "content": "JAR_ANALYSIS"
+                    },
+                    {
+                      "content": "NOTEBOOK_FILE"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VIEW"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "asset_type",
+                "description": "The type of the asset.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CleanRoomAssetAssetType",
+                  "enum": [
+                    {
+                      "content": "FOREIGN_TABLE"
+                    },
+                    {
+                      "content": "JAR_ANALYSIS"
+                    },
+                    {
+                      "content": "NOTEBOOK_FILE"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VIEW"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "added_at",
+          "description": "When the asset is added to the clean room, in epoch milliseconds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this asset belongs to.\nThis field is required for create operations and populated by the server for responses.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "foreign_table",
+          "description": "Foreign table details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **FOREIGN_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetForeignTable",
+            "is_object": true
+          }
+        },
+        {
+          "name": "foreign_table_local_details",
+          "description": "Local details for a foreign that are only available to its owner.\nPresent if and only if **asset_type** is **FOREIGN_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetForeignTableLocalDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "jar_analysis",
+          "description": "Jar analysis details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **JAR_ANALYSIS**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetJarAnalysis",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notebook",
+          "description": "Notebook details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **NOTEBOOK_FILE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetNotebook",
+            "is_object": true
+          }
+        },
+        {
+          "name": "owner_collaborator_alias",
+          "description": "The alias of the collaborator who owns this asset",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Status of the asset",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetStatusEnum",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "PENDING"
+              },
+              {
+                "content": "PERMISSION_DENIED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "table",
+          "description": "Table details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **TABLE** or **STREAMING_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetTable",
+            "is_object": true
+          }
+        },
+        {
+          "name": "table_local_details",
+          "description": "Local details for a table that are only available to its owner.\nPresent if and only if **asset_type** is **TABLE** or **STREAMING_TABLE**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetTableLocalDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "View details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **VIEW** or **METRIC_VIEW**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetView",
+            "is_object": true
+          }
+        },
+        {
+          "name": "view_local_details",
+          "description": "Local details for a view that are only available to its owner.\nPresent if and only if **asset_type** is **VIEW** or **METRIC_VIEW**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetViewLocalDetails",
+            "is_object": true
+          }
+        },
+        {
+          "name": "volume_local_details",
+          "description": "Local details for a volume that are only available to its owner.\nPresent if and only if **asset_type** is **VOLUME**",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetVolumeLocalDetails",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "The type of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

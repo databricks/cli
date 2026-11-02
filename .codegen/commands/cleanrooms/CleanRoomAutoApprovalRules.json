@@ -1,0 +1,596 @@
+{
+  "id": "cleanrooms.CleanRoomAutoApprovalRules",
+  "name": "CleanRoomAutoApprovalRules",
+  "description": "Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g. notebook)\nmeeting specific criteria is shared in a clean room.",
+  "package": {
+    "name": "cleanrooms"
+  },
+  "docs_group": "cleanrooms",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListCleanRoomAutoApprovalRulesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create an auto-approval rule",
+      "summary": "Create an auto-approval rule.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/auto-approval-rules",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateCleanRoomAutoApprovalRuleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "The name of the clean room this auto-approval rule belongs to.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "auto_approval_rule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAutoApprovalRule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "The name of the clean room this auto-approval rule belongs to.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "auto_approval_rule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAutoApprovalRule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CleanRoomAutoApprovalRule",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "auto_approval_rule",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAutoApprovalRule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this auto-approval rule belongs to.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this auto-approval rule belongs to.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete a auto-approval rule by rule ID",
+      "summary": "Delete an auto-approval rule.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/auto-approval-rules/{rule_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteCleanRoomAutoApprovalRuleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "clean_room_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a auto-approval rule by rule ID",
+      "summary": "Get an auto-approval rule.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/auto-approval-rules/{rule_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetCleanRoomAutoApprovalRuleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CleanRoomAutoApprovalRule",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clean_room_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List all auto-approval rules for the caller",
+      "summary": "List auto-approval rules.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/auto-approval-rules",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListCleanRoomAutoApprovalRulesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListCleanRoomAutoApprovalRulesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clean_room_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of auto-approval rules to return. Defaults to 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Update a auto-approval rule by rule ID",
+      "summary": "Update an auto-approval rule.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/auto-approval-rules/{rule_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateCleanRoomAutoApprovalRuleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "The name of the clean room this auto-approval rule belongs to.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_id",
+            "description": "A generated UUID identifying the rule.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "auto_approval_rule",
+            "description": "The auto-approval rule to update. The rule_id field is used to identify the rule to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAutoApprovalRule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "The name of the clean room this auto-approval rule belongs to.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_id",
+            "description": "A generated UUID identifying the rule.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "auto_approval_rule",
+            "description": "The auto-approval rule to update. The rule_id field is used to identify the rule to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAutoApprovalRule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "auto_approval_rule",
+        "description": "The auto-approval rule to update. The rule_id field is used to identify the rule to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CleanRoomAutoApprovalRule",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "CleanRoomAutoApprovalRule",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "auto_approval_rule",
+          "description": "The auto-approval rule to update. The rule_id field is used to identify the rule to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAutoApprovalRule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this auto-approval rule belongs to.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_id",
+          "description": "A generated UUID identifying the rule.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "author_collaborator_alias",
+          "description": "Collaborator alias of the author covered by the rule.\nOnly one of `author_collaborator_alias` and `author_scope` can be set.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "author_scope",
+          "description": "Scope of authors covered by the rule.\nOnly one of `author_collaborator_alias` and `author_scope` can be set.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAutoApprovalRuleAuthorScope",
+            "enum": [
+              {
+                "content": "ANY_AUTHOR"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this auto-approval rule belongs to.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_at",
+          "description": "Timestamp of when the rule was created, in epoch milliseconds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "rule_id",
+          "description": "A generated UUID identifying the rule.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_owner_collaborator_alias",
+          "description": "The owner of the rule to whom the rule applies.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "runner_collaborator_alias",
+          "description": "Collaborator alias of the runner covered by the rule.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "The name of the clean room this auto-approval rule belongs to.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_id",
+          "description": "A generated UUID identifying the rule.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

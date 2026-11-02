@@ -1,0 +1,215 @@
+{
+  "id": "serving.ServingEndpointsDataPlane",
+  "name": "ServingEndpointsDataPlane",
+  "description": "Serving endpoints DataPlane provides a set of operations to interact with data plane endpoints for Serving endpoints service.",
+  "package": {
+    "name": "serving"
+  },
+  "is_data_plane": true,
+  "docs_group": "serving",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Query",
+      "description": "Query a serving endpoint",
+      "summary": "Query a serving endpoint.",
+      "path": "/serving-endpoints/{name}/invocations",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "QueryEndpointInput",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "QueryEndpointResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "client_request_id",
+          "description": "Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dataframe_records",
+          "description": "Pandas Dataframe input in the records orientation.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_any": true
+            }
+          }
+        },
+        {
+          "name": "dataframe_split",
+          "description": "Pandas Dataframe input in the split orientation.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DataframeSplitInput",
+            "is_object": true
+          }
+        },
+        {
+          "name": "extra_params",
+          "description": "The extra parameters field used ONLY for __completions, chat,__ and __embeddings external \u0026 foundation\nmodel__ serving endpoints. This is a map of strings and should only be used with other external/foundation\nmodel query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "input",
+          "description": "The input string (or array of strings) field used ONLY for __embeddings external \u0026 foundation model__\nserving endpoints and is the only field (along with extra_params if needed) used by embeddings queries.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "inputs",
+          "description": "Tensor-based input in columnar format.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "instances",
+          "description": "Tensor-based input in row format.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_any": true
+            }
+          }
+        },
+        {
+          "name": "max_tokens",
+          "description": "The max tokens field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is an integer and should only be used with other chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "messages",
+          "description": "The messages field used ONLY for __chat external \u0026 foundation model__ serving endpoints.\nThis is an array of ChatMessage objects and should only be used with other chat query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ChatMessageList",
+            "array_value": {
+              "pascal_name": "ChatMessage",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "n",
+          "description": "The n (number of candidates) field used ONLY for __completions__ and __chat external \u0026 foundation model__\nserving endpoints. This is an integer between 1 and 5 with a default of 1 and should only be used with\nother chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "prompt",
+          "description": "The prompt string (or array of strings) field used ONLY for __completions external \u0026 foundation model__\nserving endpoints and should only be used with other completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "stop",
+          "description": "The stop sequences field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is a list of strings and should only be used with other chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "stream",
+          "description": "The stream field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving endpoints.\nThis is a boolean defaulting to false and should only be used with other chat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "temperature",
+          "description": "The temperature field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is a float between 0.0 and 2.0 with a default of 1.0 and should only be used with other\nchat/completions query fields.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_float64": true
+          }
+        },
+        {
+          "name": "usage_context",
+          "description": "Optional user-provided context that will be recorded in the usage tracking table.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the serving endpoint. This field is required and is provided via the path parameter.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

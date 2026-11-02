@@ -1,0 +1,1622 @@
+{
+  "id": "catalog.QualityMonitors",
+  "name": "QualityMonitors",
+  "description": "Deprecated: Please use the Data Quality Monitors API instead (REST: /api/data-quality/v1/monitors), which manages both Data Profiling and Anomaly Detection.\n\nA monitor computes and monitors data or model quality metrics for a table over time.\nIt generates metrics tables and a dashboard that you can use to monitor table health and set alerts.\nMost write operations require the user to be the owner of the table (or its parent schema or parent catalog).\nViewing the dashboard, computed metrics, or monitor configuration only requires the user to have **SELECT**\nprivileges on the table (along with **USE_SCHEMA** and **USE_CATALOG**).",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CancelRefresh",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nCancels an already-initiated refresh job.",
+      "summary": "Cancel refresh.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor/refreshes/{refresh_id}/cancel",
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CancelRefreshRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CancelRefreshResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "refresh_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nCreates a new monitor for the specified table.\n\nThe caller must either:\n1. be an owner of the table's parent catalog, have **USE_SCHEMA** on the table's parent schema, and have **SELECT** access on the table\n2. have **USE_CATALOG** on the table's parent catalog, be an owner of the table's parent schema, and have **SELECT** access on the table.\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- be an owner of the table.\n\nWorkspace assets, such as the dashboard, will be created in the workspace where\nthis call was made.",
+      "summary": "Create a table monitor.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateMonitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "assets_dir",
+            "description": "[Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "assets_dir",
+            "description": "[Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MonitorInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_name",
+            "description": "[Create:ERR Update:IGN] UC table to monitor. Format: `catalog.schema.table_name`",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "[Create:ERR Update:IGN] The monitor status.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorInfoStatus",
+              "enum": [
+                {
+                  "content": "MONITOR_STATUS_ACTIVE"
+                },
+                {
+                  "content": "MONITOR_STATUS_DELETE_PENDING"
+                },
+                {
+                  "content": "MONITOR_STATUS_ERROR"
+                },
+                {
+                  "content": "MONITOR_STATUS_FAILED"
+                },
+                {
+                  "content": "MONITOR_STATUS_PENDING"
+                }
+              ]
+            }
+          },
+          {
+            "name": "profile_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores profile metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "drift_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores drift metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "monitor_version",
+            "description": "[Create:ERR Update:IGN] Represents the current monitor configuration version in use. The version will be represented in a\nnumeric fashion (1,2,3...). The field has flexibility to take on negative values, which can indicate corrupted\nmonitor_version numbers.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_name",
+            "description": "[Create:ERR Update:IGN] UC table to monitor. Format: `catalog.schema.table_name`",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "[Create:ERR Update:IGN] The monitor status.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorInfoStatus",
+              "enum": [
+                {
+                  "content": "MONITOR_STATUS_ACTIVE"
+                },
+                {
+                  "content": "MONITOR_STATUS_DELETE_PENDING"
+                },
+                {
+                  "content": "MONITOR_STATUS_ERROR"
+                },
+                {
+                  "content": "MONITOR_STATUS_FAILED"
+                },
+                {
+                  "content": "MONITOR_STATUS_PENDING"
+                }
+              ]
+            }
+          },
+          {
+            "name": "profile_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores profile metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "drift_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores drift metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "monitor_version",
+            "description": "[Create:ERR Update:IGN] Represents the current monitor configuration version in use. The version will be represented in a\nnumeric fashion (1,2,3...). The field has flexibility to take on negative values, which can indicate corrupted\nmonitor_version numbers.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "assets_dir",
+          "description": "[Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "baseline_table_name",
+          "description": "[Create:OPT Update:OPT] Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_metrics",
+          "description": "[Create:OPT Update:OPT] Custom metrics.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "MonitorMetricList",
+            "array_value": {
+              "pascal_name": "MonitorMetric",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "data_classification_config",
+          "description": "[Create:OPT Update:OPT] Data classification related config.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorDataClassificationConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "inference_log",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorInferenceLog",
+            "is_object": true
+          }
+        },
+        {
+          "name": "latest_monitor_failure_msg",
+          "description": "[Create:ERR Update:IGN] The latest error message for a monitor failure.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notifications",
+          "description": "[Create:OPT Update:OPT] Field for specifying notification settings.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorNotifications",
+            "is_object": true
+          }
+        },
+        {
+          "name": "output_schema_name",
+          "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule",
+          "description": "[Create:OPT Update:OPT] The monitor schedule.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorCronSchedule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "skip_builtin_dashboard",
+          "description": "Whether to skip creating a default dashboard summarizing data quality metrics.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "slicing_exprs",
+          "description": "[Create:OPT Update:OPT] List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "snapshot",
+          "description": "Configuration for monitoring snapshot tables.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorSnapshot",
+            "is_object": true
+          }
+        },
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "time_series",
+          "description": "Configuration for monitoring time series tables.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorTimeSeries",
+            "is_object": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "output_schema_name",
+          "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "assets_dir",
+          "description": "[Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nDeletes a monitor for the specified table.\n\nThe caller must either:\n1. be an owner of the table's parent catalog\n2. have **USE_CATALOG** on the table's parent catalog and be an owner of the table's parent schema\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- be an owner of the table.\n\nAdditionally, the call must be made from the workspace where the monitor was created.\n\nNote that the metric tables and dashboard will not be deleted as part of this call; those\nassets must be manually cleaned up (if desired).",
+      "summary": "Delete a table monitor.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteQualityMonitorRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteMonitorResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nGets a monitor for the specified table.\n\nThe caller must either:\n1. be an owner of the table's parent catalog\n2. have **USE_CATALOG** on the table's parent catalog and be an owner of the table's parent schema.\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- **SELECT** privilege on the table.\n\nThe returned information includes configuration values, as well as information on\nassets created by the monitor. Some information (e.g., dashboard) may be filtered out\nif the caller is in a different workspace than where the monitor was created.",
+      "summary": "Get a table monitor.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetQualityMonitorRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MonitorInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_name",
+            "description": "[Create:ERR Update:IGN] UC table to monitor. Format: `catalog.schema.table_name`",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "[Create:ERR Update:IGN] The monitor status.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorInfoStatus",
+              "enum": [
+                {
+                  "content": "MONITOR_STATUS_ACTIVE"
+                },
+                {
+                  "content": "MONITOR_STATUS_DELETE_PENDING"
+                },
+                {
+                  "content": "MONITOR_STATUS_ERROR"
+                },
+                {
+                  "content": "MONITOR_STATUS_FAILED"
+                },
+                {
+                  "content": "MONITOR_STATUS_PENDING"
+                }
+              ]
+            }
+          },
+          {
+            "name": "profile_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores profile metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "drift_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores drift metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "monitor_version",
+            "description": "[Create:ERR Update:IGN] Represents the current monitor configuration version in use. The version will be represented in a\nnumeric fashion (1,2,3...). The field has flexibility to take on negative values, which can indicate corrupted\nmonitor_version numbers.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_name",
+            "description": "[Create:ERR Update:IGN] UC table to monitor. Format: `catalog.schema.table_name`",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "[Create:ERR Update:IGN] The monitor status.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorInfoStatus",
+              "enum": [
+                {
+                  "content": "MONITOR_STATUS_ACTIVE"
+                },
+                {
+                  "content": "MONITOR_STATUS_DELETE_PENDING"
+                },
+                {
+                  "content": "MONITOR_STATUS_ERROR"
+                },
+                {
+                  "content": "MONITOR_STATUS_FAILED"
+                },
+                {
+                  "content": "MONITOR_STATUS_PENDING"
+                }
+              ]
+            }
+          },
+          {
+            "name": "profile_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores profile metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "drift_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores drift metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "monitor_version",
+            "description": "[Create:ERR Update:IGN] Represents the current monitor configuration version in use. The version will be represented in a\nnumeric fashion (1,2,3...). The field has flexibility to take on negative values, which can indicate corrupted\nmonitor_version numbers.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetRefresh",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nGets info about a specific monitor refresh using the given refresh ID.\n\nThe caller must either:\n1. be an owner of the table's parent catalog\n2. have **USE_CATALOG** on the table's parent catalog and be an owner of the table's parent schema\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- **SELECT** privilege on the table.\n\nAdditionally, the call must be made from the workspace where the monitor was created.",
+      "summary": "Get refresh.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor/refreshes/{refresh_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRefreshRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "ID of the refresh.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "Full name of the table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "ID of the refresh.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MonitorRefreshInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "state",
+            "description": "The current state of the refresh.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorRefreshInfoState",
+              "enum": [
+                {
+                  "content": "CANCELED"
+                },
+                {
+                  "content": "FAILED"
+                },
+                {
+                  "content": "PENDING"
+                },
+                {
+                  "content": "RUNNING"
+                },
+                {
+                  "content": "SUCCESS"
+                },
+                {
+                  "content": "UNKNOWN"
+                }
+              ]
+            }
+          },
+          {
+            "name": "start_time_ms",
+            "description": "Time at which refresh operation was initiated (milliseconds since 1/1/1970 UTC).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "state",
+            "description": "The current state of the refresh.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorRefreshInfoState",
+              "enum": [
+                {
+                  "content": "CANCELED"
+                },
+                {
+                  "content": "FAILED"
+                },
+                {
+                  "content": "PENDING"
+                },
+                {
+                  "content": "RUNNING"
+                },
+                {
+                  "content": "SUCCESS"
+                },
+                {
+                  "content": "UNKNOWN"
+                }
+              ]
+            }
+          },
+          {
+            "name": "start_time_ms",
+            "description": "Time at which refresh operation was initiated (milliseconds since 1/1/1970 UTC).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "refresh_id",
+          "description": "ID of the refresh.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "table_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "Full name of the table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "ID of the refresh.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListRefreshes",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nGets an array containing the history of the most recent refreshes (up to 25) for this table.\n\nThe caller must either:\n1. be an owner of the table's parent catalog\n2. have **USE_CATALOG** on the table's parent catalog and be an owner of the table's parent schema\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- **SELECT** privilege on the table.\n\nAdditionally, the call must be made from the workspace where the monitor was created.",
+      "summary": "List refreshes.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor/refreshes",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListRefreshesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MonitorRefreshListResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RegenerateDashboard",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nRegenerates the monitoring dashboard for the specified table.\n\nThe caller must either:\n1. be an owner of the table's parent catalog\n2. have **USE_CATALOG** on the table's parent catalog and be an owner of the table's parent schema\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- be an owner of the table\n\nThe call must be made from the workspace where the monitor was created. The dashboard will be regenerated in\nthe assets directory that was specified when the monitor was created.",
+      "summary": "Regenerate a monitoring dashboard.",
+      "path": "/api/2.1/quality-monitoring/tables/{table_name}/monitor/dashboard",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "RegenerateDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RegenerateDashboardResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "Optional argument to specify the warehouse for dashboard regeneration. If not specified, the first running\nwarehouse will be used.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RunRefresh",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nQueues a metric refresh on the monitor for the specified table.\nThe refresh will execute in the background.\n\nThe caller must either:\n1. be an owner of the table's parent catalog\n2. have **USE_CATALOG** on the table's parent catalog and be an owner of the table's parent schema\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- be an owner of the table\n\nAdditionally, the call must be made from the workspace where the monitor was created.",
+      "summary": "Run refresh.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor/refreshes",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RunRefreshRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MonitorRefreshInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "state",
+            "description": "The current state of the refresh.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorRefreshInfoState",
+              "enum": [
+                {
+                  "content": "CANCELED"
+                },
+                {
+                  "content": "FAILED"
+                },
+                {
+                  "content": "PENDING"
+                },
+                {
+                  "content": "RUNNING"
+                },
+                {
+                  "content": "SUCCESS"
+                },
+                {
+                  "content": "UNKNOWN"
+                }
+              ]
+            }
+          },
+          {
+            "name": "start_time_ms",
+            "description": "Time at which refresh operation was initiated (milliseconds since 1/1/1970 UTC).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "state",
+            "description": "The current state of the refresh.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorRefreshInfoState",
+              "enum": [
+                {
+                  "content": "CANCELED"
+                },
+                {
+                  "content": "FAILED"
+                },
+                {
+                  "content": "PENDING"
+                },
+                {
+                  "content": "RUNNING"
+                },
+                {
+                  "content": "SUCCESS"
+                },
+                {
+                  "content": "UNKNOWN"
+                }
+              ]
+            }
+          },
+          {
+            "name": "start_time_ms",
+            "description": "Time at which refresh operation was initiated (milliseconds since 1/1/1970 UTC).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\ntable_name is case insensitive and spaces are disallowed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Deprecated: Use Data Quality Monitors API instead (/api/data-quality/v1/monitors).\nUpdates a monitor for the specified table.\n\nThe caller must either:\n1. be an owner of the table's parent catalog\n2. have **USE_CATALOG** on the table's parent catalog and be an owner of the table's parent schema\n3. have the following permissions:\n- **USE_CATALOG** on the table's parent catalog\n- **USE_SCHEMA** on the table's parent schema\n- be an owner of the table.\n\nAdditionally, the call must be made from the workspace where the monitor was created, and the caller must be\nthe original creator of the monitor.\n\nCertain configuration fields, such as output asset identifiers, cannot be updated.",
+      "summary": "Update a table monitor.",
+      "path": "/api/2.1/unity-catalog/tables/{table_name}/monitor",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateMonitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "table_name",
+            "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MonitorInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_name",
+            "description": "[Create:ERR Update:IGN] UC table to monitor. Format: `catalog.schema.table_name`",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "[Create:ERR Update:IGN] The monitor status.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorInfoStatus",
+              "enum": [
+                {
+                  "content": "MONITOR_STATUS_ACTIVE"
+                },
+                {
+                  "content": "MONITOR_STATUS_DELETE_PENDING"
+                },
+                {
+                  "content": "MONITOR_STATUS_ERROR"
+                },
+                {
+                  "content": "MONITOR_STATUS_FAILED"
+                },
+                {
+                  "content": "MONITOR_STATUS_PENDING"
+                }
+              ]
+            }
+          },
+          {
+            "name": "profile_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores profile metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "drift_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores drift metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "monitor_version",
+            "description": "[Create:ERR Update:IGN] Represents the current monitor configuration version in use. The version will be represented in a\nnumeric fashion (1,2,3...). The field has flexibility to take on negative values, which can indicate corrupted\nmonitor_version numbers.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "output_schema_name",
+            "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "table_name",
+            "description": "[Create:ERR Update:IGN] UC table to monitor. Format: `catalog.schema.table_name`",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "status",
+            "description": "[Create:ERR Update:IGN] The monitor status.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MonitorInfoStatus",
+              "enum": [
+                {
+                  "content": "MONITOR_STATUS_ACTIVE"
+                },
+                {
+                  "content": "MONITOR_STATUS_DELETE_PENDING"
+                },
+                {
+                  "content": "MONITOR_STATUS_ERROR"
+                },
+                {
+                  "content": "MONITOR_STATUS_FAILED"
+                },
+                {
+                  "content": "MONITOR_STATUS_PENDING"
+                }
+              ]
+            }
+          },
+          {
+            "name": "profile_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores profile metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "drift_metrics_table_name",
+            "description": "[Create:ERR Update:IGN] Table that stores drift metrics data. Format: `catalog.schema.table_name`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "monitor_version",
+            "description": "[Create:ERR Update:IGN] Represents the current monitor configuration version in use. The version will be represented in a\nnumeric fashion (1,2,3...). The field has flexibility to take on negative values, which can indicate corrupted\nmonitor_version numbers.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "baseline_table_name",
+          "description": "[Create:OPT Update:OPT] Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_metrics",
+          "description": "[Create:OPT Update:OPT] Custom metrics.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "MonitorMetricList",
+            "array_value": {
+              "pascal_name": "MonitorMetric",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "dashboard_id",
+          "description": "[Create:ERR Update:OPT] Id of dashboard that visualizes the computed metrics.\nThis can be empty if the monitor is in PENDING state.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "data_classification_config",
+          "description": "[Create:OPT Update:OPT] Data classification related config.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorDataClassificationConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "inference_log",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorInferenceLog",
+            "is_object": true
+          }
+        },
+        {
+          "name": "latest_monitor_failure_msg",
+          "description": "[Create:ERR Update:IGN] The latest error message for a monitor failure.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notifications",
+          "description": "[Create:OPT Update:OPT] Field for specifying notification settings.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorNotifications",
+            "is_object": true
+          }
+        },
+        {
+          "name": "output_schema_name",
+          "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule",
+          "description": "[Create:OPT Update:OPT] The monitor schedule.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorCronSchedule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "slicing_exprs",
+          "description": "[Create:OPT Update:OPT] List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "snapshot",
+          "description": "Configuration for monitoring snapshot tables.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorSnapshot",
+            "is_object": true
+          }
+        },
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "time_series",
+          "description": "Configuration for monitoring time series tables.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "MonitorTimeSeries",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "table_name",
+          "description": "UC table name in format `catalog.schema.table_name`.\nThis field corresponds to the {full_table_name_arg} arg in the endpoint path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "output_schema_name",
+          "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

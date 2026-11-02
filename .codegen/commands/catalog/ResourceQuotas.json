@@ -1,0 +1,199 @@
+{
+  "id": "catalog.ResourceQuotas",
+  "name": "ResourceQuotas",
+  "description": "Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created. Quotas are expressed in terms of a resource type and a parent (for example, tables per metastore or schemas per catalog). The resource quota APIs enable you to monitor your current usage and limits. For more information on resource quotas see the [Unity Catalog documentation](https://docs.databricks.com/en/data-governance/unity-catalog/index.html#resource-quotas).",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListQuotasRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "GetQuota",
+      "description": "The GetQuota API returns usage information for a single resource quota, defined as a\nchild-parent pair. This API also refreshes the quota count if it is out of date.\nRefreshes are triggered asynchronously. The updated count might not be returned in the first call.",
+      "summary": "Get information for a single resource quota.",
+      "path": "/api/2.1/unity-catalog/resource-quotas/{parent_securable_type}/{parent_full_name}/{quota_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetQuotaRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent_securable_type",
+            "description": "Securable type of the quota parent.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "parent_full_name",
+            "description": "Full name of the parent resource. Provide the metastore ID if the parent is a metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "quota_name",
+            "description": "Name of the quota. Follows the pattern of the quota type, with \"-quota\" added as a suffix.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent_securable_type",
+            "description": "Securable type of the quota parent.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "parent_full_name",
+            "description": "Full name of the parent resource. Provide the metastore ID if the parent is a metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "quota_name",
+            "description": "Name of the quota. Follows the pattern of the quota type, with \"-quota\" added as a suffix.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetQuotaResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent_full_name",
+          "description": "Full name of the parent resource. Provide the metastore ID if the parent is a metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_securable_type",
+          "description": "Securable type of the quota parent.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "quota_name",
+          "description": "Name of the quota. Follows the pattern of the quota type, with \"-quota\" added as a suffix.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent_securable_type",
+          "description": "Securable type of the quota parent.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_full_name",
+          "description": "Full name of the parent resource. Provide the metastore ID if the parent is a metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "quota_name",
+          "description": "Name of the quota. Follows the pattern of the quota type, with \"-quota\" added as a suffix.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListQuotas",
+      "description": "ListQuotas returns all quota values under the metastore. There are no SLAs on the freshness of the counts\nreturned. This API does not trigger a refresh of quota counts.\n\nPAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List all resource quotas under a metastore.",
+      "path": "/api/2.1/unity-catalog/resource-quotas/all-resource-quotas",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListQuotasRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListQuotasResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "The number of quotas to return.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque token for the next page of results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque token for the next page of results.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,270 @@
+{
+  "id": "compute.InstanceProfiles",
+  "name": "InstanceProfiles",
+  "description": "The Instance Profiles API allows admins to add, list, and remove instance profiles that users can launch\nclusters with. Regular users can list the instance profiles available to them.\nSee [Secure access to S3 buckets](https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html) using\ninstance profiles for more information.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "is_legacy_empty_request": true,
+    "request": {
+      "pascal_name": "ListInstanceProfilesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Add",
+      "description": "Registers an instance profile in Databricks. In the UI, you can then give users the permission\nto use this instance profile when launching clusters.\n\nThis API is only available to admin users.",
+      "summary": "Register an instance profile.",
+      "path": "/api/2.0/instance-profiles/add",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "AddInstanceProfile",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_profile_arn",
+            "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "instance_profile_arn",
+            "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AddResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "iam_role_arn",
+          "description": "The AWS IAM role ARN of the role associated with the instance profile.\nThis field is required if your role name and instance profile name do\nnot match and you want to use the instance profile with\n[Databricks SQL Serverless](https://docs.databricks.com/sql/admin/serverless.html).\n\nOtherwise, this field is optional.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instance_profile_arn",
+          "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "is_meta_instance_profile",
+          "description": "Boolean flag indicating whether the instance profile should only be used in credential\npassthrough scenarios. If true, it means the instance profile contains an meta IAM role\nwhich could assume a wide range of roles. Therefore it should always be used with\nauthorization.\nThis field is optional, the default value is `false`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "skip_validation",
+          "description": "By default, Databricks validates that it has sufficient permissions to launch\ninstances with the instance profile. This validation uses AWS dry-run mode for\nthe RunInstances API. If validation fails with an error message that does not\nindicate an IAM related permission issue,\n(e.g. “Your requested instance type is not supported in your requested availability zone”),\nyou can pass this flag to skip the validation and forcibly add the instance profile.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_profile_arn",
+          "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edit",
+      "description": "The only supported field to change is the optional IAM role ARN associated with\nthe instance profile. It is required to specify the IAM role ARN if both of\nthe following are true:\n\n* Your role name and instance profile name do not match. The name is the part\nafter the last slash in each ARN.\n* You want to use the instance profile with [Databricks SQL Serverless](https://docs.databricks.com/sql/admin/serverless.html).\n\nTo understand where these fields are in the AWS console, see\n[Enable serverless SQL warehouses](https://docs.databricks.com/sql/admin/serverless.html).\n\nThis API is only available to admin users.",
+      "summary": "Edit an instance profile.",
+      "path": "/api/2.0/instance-profiles/edit",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "InstanceProfile",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_profile_arn",
+            "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "instance_profile_arn",
+            "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EditResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "iam_role_arn",
+          "description": "The AWS IAM role ARN of the role associated with the instance profile.\nThis field is required if your role name and instance profile name do\nnot match and you want to use the instance profile with\n[Databricks SQL Serverless](https://docs.databricks.com/sql/admin/serverless.html).\n\nOtherwise, this field is optional.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instance_profile_arn",
+          "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "is_meta_instance_profile",
+          "description": "Boolean flag indicating whether the instance profile should only be used in credential\npassthrough scenarios. If true, it means the instance profile contains an meta IAM role\nwhich could assume a wide range of roles. Therefore it should always be used with\nauthorization.\nThis field is optional, the default value is `false`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_profile_arn",
+          "description": "The AWS ARN of the instance profile to register with Databricks. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List the instance profiles that the calling user can use to launch a cluster.\n\nThis API is available to all users.",
+      "summary": "List available instance profiles.",
+      "path": "/api/2.0/instance-profiles/list",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListInstanceProfilesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListInstanceProfilesResponse",
+        "is_object": true
+      },
+      "pagination": {}
+    },
+    {
+      "name": "Remove",
+      "description": "Remove the instance profile with the provided ARN.\nExisting clusters with this instance profile will continue to function.\n\nThis API is only accessible to admin users.",
+      "summary": "Remove the instance profile.",
+      "path": "/api/2.0/instance-profiles/remove",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RemoveInstanceProfile",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "instance_profile_arn",
+            "description": "The ARN of the instance profile to remove. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "instance_profile_arn",
+            "description": "The ARN of the instance profile to remove. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RemoveResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "instance_profile_arn",
+          "description": "The ARN of the instance profile to remove. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "instance_profile_arn",
+          "description": "The ARN of the instance profile to remove. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,605 @@
+{
+  "id": "cleanrooms.CleanRooms",
+  "name": "CleanRooms",
+  "description": "A clean room uses Delta Sharing and serverless compute to provide a secure\nand privacy-protecting environment where multiple parties can work together on\nsensitive enterprise data without direct access to each other's data.",
+  "package": {
+    "name": "cleanrooms"
+  },
+  "docs_group": "cleanrooms",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListCleanRoomsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a new clean room with the specified collaborators.\nThis method is asynchronous; the returned name field inside the clean_room field can be used to poll the clean room status,\nusing the [cleanrooms/get](https://docs.databricks.com/api/workspace/cleanrooms/get) method.\nWhen this method returns, the clean room will be in a PROVISIONING state, with only name, owner, comment, created_at and status populated.\nThe clean room will be usable once it enters an ACTIVE state.\n\nThe caller must be a metastore admin or have the **CREATE_CLEAN_ROOM** privilege on the\nmetastore.",
+      "summary": "Create a clean room.",
+      "path": "/api/2.0/clean-rooms",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateCleanRoomRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "clean_room",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoom",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "clean_room",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoom",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "clean_room",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CleanRoom",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "CleanRoom",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clean_room",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoom",
+            "is_object": true
+          }
+        },
+        {
+          "name": "access_restricted",
+          "description": "Whether clean room access is restricted due to [CSP](https://docs.databricks.com/en/security/privacy/security-profile.html)",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomAccessRestricted",
+            "enum": [
+              {
+                "content": "CSP_MISMATCH"
+              },
+              {
+                "content": "NO_RESTRICTION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "comment",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_at",
+          "description": "When the clean room was created, in epoch milliseconds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "enable_shared_output",
+          "description": "Whether allow task to write to shared output schema.\nWhen enabled, clean room task runs triggered by the current collaborator\ncan write to the run-scoped shared output schema which is accessible by all collaborators.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "local_collaborator_alias",
+          "description": "The alias of the collaborator tied to the local clean room.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the clean room.\nIt should follow [UC securable naming requirements](https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "output_catalog",
+          "description": "Output catalog of the clean room. It is an output only field. Output catalog is manipulated\nusing the separate CreateCleanRoomOutputCatalog API.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomOutputCatalog",
+            "is_object": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "This is the Databricks username of the owner of the local clean room securable for permission management.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "remote_detailed_info",
+          "description": "Central clean room details. During creation, users need to specify\ncloud_vendor, region, and collaborators.global_metastore_id.\nThis field will not be filled in the ListCleanRooms call.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoomRemoteDetail",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Clean room status.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomStatusEnum",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DELETED"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "PROVISIONING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "updated_at",
+          "description": "When the clean room was last updated, in epoch milliseconds.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "ACTIVE"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "CleanRoom"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "Status"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateOutputCatalog",
+      "description": "Create the output catalog of the clean room.",
+      "summary": "Create an output catalog.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/output-catalogs",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateCleanRoomOutputCatalogRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "output_catalog",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomOutputCatalog",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "output_catalog",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomOutputCatalog",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "output_catalog",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CleanRoomOutputCatalog",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "CreateCleanRoomOutputCatalogResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "output_catalog",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomOutputCatalog",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "output_catalog",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomOutputCatalog",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "output_catalog",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomOutputCatalog",
+            "is_object": true
+          }
+        },
+        {
+          "name": "catalog_name",
+          "description": "The name of the output catalog in UC.\nIt should follow [UC securable naming requirements](https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements).\nThe field will always exist if status is CREATED.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CleanRoomOutputCatalogOutputCatalogStatus",
+            "enum": [
+              {
+                "content": "CREATED"
+              },
+              {
+                "content": "NOT_CREATED"
+              },
+              {
+                "content": "NOT_ELIGIBLE"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete a clean room. After deletion, the clean room will be removed from the metastore.\nIf the other collaborators have not deleted the clean room, they will still have the clean room\nin their metastore, but it will be in a DELETED state\nand no operations other than deletion can be performed on it.",
+      "summary": "Delete a clean room.",
+      "path": "/api/2.0/clean-rooms/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteCleanRoomRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get the details of a clean room given its name.",
+      "summary": "Get a clean room.",
+      "path": "/api/2.0/clean-rooms/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetCleanRoomRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CleanRoom",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Get a list of all clean rooms of the metastore. Only clean rooms\nthe caller has access to are returned.",
+      "summary": "List clean rooms.",
+      "path": "/api/2.0/clean-rooms",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListCleanRoomsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListCleanRoomsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of clean rooms to return (i.e., the page length). Defaults to 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Update a clean room.\nThe caller must be the owner of the clean room, have **MODIFY_CLEAN_ROOM** privilege, or\nbe metastore admin.\n\nWhen the caller is a metastore admin, only the __owner__ field can be updated.",
+      "summary": "Update a clean room.",
+      "path": "/api/2.0/clean-rooms/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateCleanRoomRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CleanRoom",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clean_room",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CleanRoom",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2157 @@
+{
+  "serving.Ai21LabsConfig": {
+    "fields": {
+      "ai21labs_api_key": {
+        "description": "The Databricks secret key reference for an AI21 Labs API key. If you\nprefer to paste your API key directly, see `ai21labs_api_key_plaintext`.\nYou must provide an API key using one of the following fields:\n`ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "ai21labs_api_key_plaintext": {
+        "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `ai21labs_api_key`. You\nmust provide an API key using one of the following fields:\n`ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "serving.AiGatewayConfig": {
+    "fields": {
+      "fallback_config": {
+        "description": "Configuration for traffic fallback which auto fallbacks to other served entities if the request to a served\nentity fails with certain error codes, to increase availability.",
+        "ref": "serving.FallbackConfig",
+        "launch_stage": "GA"
+      },
+      "guardrails": {
+        "description": "Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.",
+        "ref": "serving.AiGatewayGuardrails",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "inference_table_config": {
+        "description": "Configuration for payload logging using inference tables.\nUse these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
+        "ref": "serving.AiGatewayInferenceTableConfig",
+        "launch_stage": "GA"
+      },
+      "rate_limits": {
+        "description": "Configuration for rate limits which can be set to limit endpoint traffic.",
+        "launch_stage": "GA"
+      },
+      "usage_tracking_config": {
+        "description": "Configuration to enable usage tracking using system tables.\nThese tables allow you to monitor operational usage on endpoints and their associated costs.",
+        "ref": "serving.AiGatewayUsageTrackingConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.AiGatewayGuardrailParameters": {
+    "fields": {
+      "invalid_keywords": {
+        "description": "List of invalid keywords.\nAI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "pii": {
+        "description": "Configuration for guardrail PII filter.",
+        "ref": "serving.AiGatewayGuardrailPiiBehavior",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "safety": {
+        "description": "Indicates whether the safety filter is enabled.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "valid_topics": {
+        "description": "The list of allowed topics.\nGiven a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.AiGatewayGuardrailPiiBehavior": {
+    "fields": {
+      "behavior": {
+        "description": "Configuration for input guardrail filters.",
+        "ref": "serving.AiGatewayGuardrailPiiBehaviorBehavior",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.AiGatewayGuardrailPiiBehaviorBehavior": {
+    "enum": [
+      "NONE",
+      "BLOCK",
+      "MASK"
+    ],
+    "enum_launch_stages": {
+      "BLOCK": "PUBLIC_PREVIEW",
+      "MASK": "PUBLIC_PREVIEW",
+      "NONE": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.AiGatewayGuardrails": {
+    "fields": {
+      "input": {
+        "description": "Configuration for input guardrail filters.",
+        "ref": "serving.AiGatewayGuardrailParameters",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "output": {
+        "description": "Configuration for output guardrail filters.",
+        "ref": "serving.AiGatewayGuardrailParameters",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.AiGatewayInferenceTableConfig": {
+    "fields": {
+      "catalog_name": {
+        "description": "The name of the catalog in Unity Catalog. Required when enabling inference tables.\nNOTE: On update, you have to disable inference table first in order to change the catalog name.",
+        "launch_stage": "GA"
+      },
+      "enabled": {
+        "description": "Indicates whether the inference table is enabled.",
+        "launch_stage": "GA"
+      },
+      "schema_name": {
+        "description": "The name of the schema in Unity Catalog. Required when enabling inference tables.\nNOTE: On update, you have to disable inference table first in order to change the schema name.",
+        "launch_stage": "GA"
+      },
+      "table_name_prefix": {
+        "description": "The prefix of the table in Unity Catalog.\nNOTE: On update, you have to disable inference table first in order to change the prefix name.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.AiGatewayRateLimit": {
+    "fields": {
+      "calls": {
+        "description": "Used to specify how many calls are allowed for a key within the renewal_period.",
+        "launch_stage": "GA"
+      },
+      "key": {
+        "description": "Key field for a rate limit. Currently, 'user', 'user_group, 'service_principal', and 'endpoint' are supported,\nwith 'endpoint' being the default if not specified.",
+        "ref": "serving.AiGatewayRateLimitKey",
+        "launch_stage": "GA"
+      },
+      "principal": {
+        "description": "Principal field for a user, user group, or service principal to apply rate limiting to. Accepts a user email, group name, or service principal application ID.",
+        "launch_stage": "GA"
+      },
+      "renewal_period": {
+        "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
+        "ref": "serving.AiGatewayRateLimitRenewalPeriod",
+        "launch_stage": "GA"
+      },
+      "tokens": {
+        "description": "Used to specify how many tokens are allowed for a key within the renewal_period.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.AiGatewayRateLimitKey": {
+    "enum": [
+      "user",
+      "endpoint",
+      "user_group",
+      "service_principal"
+    ],
+    "enum_launch_stages": {
+      "endpoint": "PUBLIC_PREVIEW",
+      "service_principal": "PUBLIC_PREVIEW",
+      "user": "PUBLIC_PREVIEW",
+      "user_group": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.AiGatewayRateLimitRenewalPeriod": {
+    "enum": [
+      "minute"
+    ],
+    "enum_launch_stages": {
+      "minute": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.AiGatewayUsageTrackingConfig": {
+    "fields": {
+      "enabled": {
+        "description": "Whether to enable usage tracking.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.AmazonBedrockConfig": {
+    "fields": {
+      "aws_access_key_id": {
+        "description": "The Databricks secret key reference for an AWS access key ID with\npermissions to interact with Bedrock services. If you prefer to paste\nyour API key directly, see `aws_access_key_id_plaintext`. You must provide an API\nkey using one of the following fields: `aws_access_key_id` or\n`aws_access_key_id_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "aws_access_key_id_plaintext": {
+        "description": "An AWS access key ID with permissions to interact with Bedrock services\nprovided as a plaintext string. If you prefer to reference your key using\nDatabricks Secrets, see `aws_access_key_id`. You must provide an API key\nusing one of the following fields: `aws_access_key_id` or\n`aws_access_key_id_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "aws_region": {
+        "description": "The AWS region to use. Bedrock has to be enabled there.",
+        "launch_stage": "GA"
+      },
+      "aws_secret_access_key": {
+        "description": "The Databricks secret key reference for an AWS secret access key paired\nwith the access key ID, with permissions to interact with Bedrock\nservices. If you prefer to paste your API key directly, see\n`aws_secret_access_key_plaintext`. You must provide an API key using one\nof the following fields: `aws_secret_access_key` or\n`aws_secret_access_key_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "aws_secret_access_key_plaintext": {
+        "description": "An AWS secret access key paired with the access key ID, with permissions\nto interact with Bedrock services provided as a plaintext string. If you\nprefer to reference your key using Databricks Secrets, see\n`aws_secret_access_key`. You must provide an API key using one of the\nfollowing fields: `aws_secret_access_key` or\n`aws_secret_access_key_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "bedrock_provider": {
+        "description": "The underlying provider in Amazon Bedrock. Supported values (case\ninsensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
+        "ref": "serving.AmazonBedrockConfigBedrockProvider",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "ARN of the instance profile that the external model will use to access AWS resources.\nYou must authenticate using an instance profile or access keys.\nIf you prefer to authenticate using access keys, see `aws_access_key_id`,\n`aws_access_key_id_plaintext`, `aws_secret_access_key` and `aws_secret_access_key_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "uc_service_credential_name": {
+        "description": "The name of the Unity Catalog service credential that the external model uses to access AWS\nresources.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.AmazonBedrockConfigBedrockProvider": {
+    "enum": [
+      "anthropic",
+      "cohere",
+      "ai21labs",
+      "amazon"
+    ],
+    "enum_launch_stages": {
+      "ai21labs": "PUBLIC_PREVIEW",
+      "amazon": "PUBLIC_PREVIEW",
+      "anthropic": "PUBLIC_PREVIEW",
+      "cohere": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.AnthropicConfig": {
+    "fields": {
+      "anthropic_api_key": {
+        "description": "The Databricks secret key reference for an Anthropic API key. If you\nprefer to paste your API key directly, see `anthropic_api_key_plaintext`.\nYou must provide an API key using one of the following fields:\n`anthropic_api_key` or `anthropic_api_key_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "anthropic_api_key_plaintext": {
+        "description": "The Anthropic API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `anthropic_api_key`. You\nmust provide an API key using one of the following fields:\n`anthropic_api_key` or `anthropic_api_key_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "serving.ApiKeyAuth": {
+    "fields": {
+      "key": {
+        "description": "The name of the API key parameter used for authentication.",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "The Databricks secret key reference for an API Key.\nIf you prefer to paste your token directly, see `value_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "value_plaintext": {
+        "description": "The API Key provided as a plaintext string. If you prefer to reference your\ntoken using Databricks Secrets, see `value`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "serving.AutoCaptureConfigInput": {
+    "description": "Deprecated: legacy inference table configuration. Please use AI Gateway inference tables instead.\nSee https://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
+    "fields": {
+      "catalog_name": {
+        "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled.",
+        "launch_stage": "GA"
+      },
+      "enabled": {
+        "description": "Indicates whether the inference table is enabled.",
+        "launch_stage": "GA"
+      },
+      "schema_name": {
+        "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if the inference table is already enabled.",
+        "launch_stage": "GA"
+      },
+      "table_name_prefix": {
+        "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.AutoCaptureConfigOutput": {
+    "description": "Deprecated: legacy inference table configuration. Please use AI Gateway inference tables instead.\nSee https://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
+    "fields": {
+      "catalog_name": {
+        "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled.",
+        "launch_stage": "GA"
+      },
+      "enabled": {
+        "description": "Indicates whether the inference table is enabled.",
+        "launch_stage": "GA"
+      },
+      "schema_name": {
+        "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if the inference table is already enabled.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "ref": "serving.AutoCaptureState",
+        "launch_stage": "GA"
+      },
+      "table_name_prefix": {
+        "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.AutoCaptureState": {
+    "fields": {
+      "payload_table": {
+        "ref": "serving.PayloadTable",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.BearerTokenAuth": {
+    "fields": {
+      "token": {
+        "description": "The Databricks secret key reference for a token.\nIf you prefer to paste your token directly, see `token_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "token_plaintext": {
+        "description": "The token provided as a plaintext string. If you prefer to reference your\ntoken using Databricks Secrets, see `token`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "serving.BuildLogsRequest": {},
+  "serving.BuildLogsResponse": {
+    "fields": {
+      "logs": {
+        "description": "The logs associated with building the served entity's environment.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ChatMessage": {
+    "fields": {
+      "content": {
+        "description": "The content of the message.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "role": {
+        "description": "The role of the message. One of [system, user, assistant].",
+        "ref": "serving.ChatMessageRole",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.ChatMessageRole": {
+    "description": "The role of the message. One of [system, user, assistant].",
+    "enum": [
+      "system",
+      "user",
+      "assistant"
+    ],
+    "enum_launch_stages": {
+      "assistant": "PUBLIC_PREVIEW",
+      "system": "PUBLIC_PREVIEW",
+      "user": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.CohereConfig": {
+    "fields": {
+      "cohere_api_base": {
+        "description": "This is an optional field to provide a customized base URL for the Cohere\nAPI. If left unspecified, the standard Cohere base URL is used.",
+        "launch_stage": "GA"
+      },
+      "cohere_api_key": {
+        "description": "The Databricks secret key reference for a Cohere API key. If you prefer\nto paste your API key directly, see `cohere_api_key_plaintext`. You must\nprovide an API key using one of the following fields: `cohere_api_key` or\n`cohere_api_key_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "cohere_api_key_plaintext": {
+        "description": "The Cohere API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `cohere_api_key`. You\nmust provide an API key using one of the following fields:\n`cohere_api_key` or `cohere_api_key_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "serving.CreatePtEndpointRequest": {
+    "fields": {
+      "ai_gateway": {
+        "description": "The AI Gateway configuration for the serving endpoint.",
+        "ref": "serving.AiGatewayConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "budget_policy_id": {
+        "description": "The budget policy associated with the endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "config": {
+        "description": "The core config of the serving endpoint.",
+        "ref": "serving.PtEndpointCoreConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "email_notifications": {
+        "description": "Email notification settings.",
+        "ref": "serving.EmailNotifications",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "tags": {
+        "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.CreateServingEndpoint": {
+    "fields": {
+      "ai_gateway": {
+        "description": "The AI Gateway configuration for the serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.",
+        "ref": "serving.AiGatewayConfig",
+        "launch_stage": "GA"
+      },
+      "budget_policy_id": {
+        "description": "The budget policy to be applied to the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "config": {
+        "description": "The core config of the serving endpoint.",
+        "ref": "serving.EndpointCoreConfigInput",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "launch_stage": "GA"
+      },
+      "email_notifications": {
+        "description": "Email notification settings.",
+        "ref": "serving.EmailNotifications",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
+        "launch_stage": "GA"
+      },
+      "rate_limits": {
+        "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "route_optimized": {
+        "description": "Enable route optimization for the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
+        "launch_stage": "GA"
+      },
+      "telemetry_config": {
+        "description": "Configuration for persisting endpoint telemetry (logs, traces, and metrics) to Unity Catalog tables.",
+        "ref": "serving.TelemetryConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.CustomProviderConfig": {
+    "description": "Configs needed to create a custom provider model route.",
+    "fields": {
+      "api_key_auth": {
+        "description": "This is a field to provide API key authentication for the custom provider API.\nYou can only specify one authentication method.",
+        "ref": "serving.ApiKeyAuth",
+        "launch_stage": "GA"
+      },
+      "bearer_token_auth": {
+        "description": "This is a field to provide bearer token authentication for the custom provider API.\nYou can only specify one authentication method.",
+        "ref": "serving.BearerTokenAuth",
+        "launch_stage": "GA"
+      },
+      "custom_provider_url": {
+        "description": "This is a field to provide the URL of the custom provider API.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.DataPlaneInfo": {
+    "description": "Details necessary to query this object's API through the DataPlane APIs.",
+    "fields": {
+      "authorization_details": {
+        "description": "Authorization details as a string.",
+        "launch_stage": "GA"
+      },
+      "endpoint_url": {
+        "description": "The URL of the endpoint for this operation in the dataplane.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.DatabricksModelServingConfig": {
+    "fields": {
+      "databricks_api_token": {
+        "description": "The Databricks secret key reference for a Databricks API token that\ncorresponds to a user or service principal with Can Query access to the\nmodel serving endpoint pointed to by this external model. If you prefer\nto paste your API key directly, see `databricks_api_token_plaintext`. You\nmust provide an API key using one of the following fields:\n`databricks_api_token` or `databricks_api_token_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "databricks_api_token_plaintext": {
+        "description": "The Databricks API token that corresponds to a user or service principal\nwith Can Query access to the model serving endpoint pointed to by this\nexternal model provided as a plaintext string. If you prefer to reference\nyour key using Databricks Secrets, see `databricks_api_token`. You must\nprovide an API key using one of the following fields:\n`databricks_api_token` or `databricks_api_token_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "databricks_workspace_url": {
+        "description": "The URL of the Databricks workspace containing the model serving endpoint\npointed to by this external model.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.DataframeSplitInput": {
+    "fields": {
+      "columns": {
+        "description": "Columns array for the dataframe",
+        "launch_stage": "GA"
+      },
+      "data": {
+        "description": "Data array for the dataframe",
+        "launch_stage": "GA"
+      },
+      "index": {
+        "description": "Index array for the dataframe",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.DeleteServingEndpointRequest": {},
+  "serving.EmailNotifications": {
+    "fields": {
+      "on_update_failure": {
+        "description": "A list of email addresses to be notified when an endpoint fails to update its configuration or state.",
+        "launch_stage": "GA"
+      },
+      "on_update_success": {
+        "description": "A list of email addresses to be notified when an endpoint successfully updates its configuration or state.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.EmbeddingsV1ResponseEmbeddingElement": {
+    "fields": {
+      "embedding": {
+        "description": "The embedding vector",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "index": {
+        "description": "The index of the embedding in the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "object": {
+        "description": "This will always be 'embedding'.",
+        "ref": "serving.EmbeddingsV1ResponseEmbeddingElementObject",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.EmbeddingsV1ResponseEmbeddingElementObject": {
+    "description": "This will always be 'embedding'.",
+    "enum": [
+      "embedding"
+    ],
+    "enum_launch_stages": {
+      "embedding": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.EndpointCoreConfigInput": {
+    "fields": {
+      "auto_capture_config": {
+        "description": "Configuration for legacy Inference Tables which automatically log requests and responses to Unity\nCatalog.\nDeprecated: please use AI Gateway inference tables instead. See\nhttps://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
+        "ref": "serving.AutoCaptureConfigInput",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "served_entities": {
+        "description": "The list of served entities under the serving endpoint config.",
+        "launch_stage": "GA"
+      },
+      "served_models": {
+        "description": "(Deprecated, use served_entities instead) The list of served models under the serving endpoint config.",
+        "launch_stage": "GA"
+      },
+      "traffic_config": {
+        "description": "The traffic configuration associated with the serving endpoint config.",
+        "ref": "serving.TrafficConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.EndpointCoreConfigOutput": {
+    "fields": {
+      "auto_capture_config": {
+        "description": "Configuration for legacy Inference Tables which automatically log requests and responses to Unity\nCatalog.\nDeprecated: please use AI Gateway inference tables instead. See\nhttps://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
+        "ref": "serving.AutoCaptureConfigOutput",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "config_version": {
+        "description": "The config version that the serving endpoint is currently serving.",
+        "launch_stage": "GA"
+      },
+      "served_entities": {
+        "description": "The list of served entities under the serving endpoint config.",
+        "launch_stage": "GA"
+      },
+      "served_models": {
+        "description": "(Deprecated, use served_entities instead) The list of served models under the serving endpoint config.",
+        "launch_stage": "GA"
+      },
+      "traffic_config": {
+        "description": "The traffic configuration associated with the serving endpoint config.",
+        "ref": "serving.TrafficConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.EndpointCoreConfigSummary": {
+    "fields": {
+      "served_entities": {
+        "description": "The list of served entities under the serving endpoint config.",
+        "launch_stage": "GA"
+      },
+      "served_models": {
+        "description": "(Deprecated, use served_entities instead) The list of served models under the serving endpoint config.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.EndpointPendingConfig": {
+    "fields": {
+      "auto_capture_config": {
+        "description": "Configuration for legacy Inference Tables which automatically log requests and responses to Unity\nCatalog.\nDeprecated: please use AI Gateway inference tables instead. See\nhttps://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
+        "ref": "serving.AutoCaptureConfigOutput",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "config_version": {
+        "description": "The config version that the serving endpoint is currently serving.",
+        "launch_stage": "GA"
+      },
+      "served_entities": {
+        "description": "The list of served entities belonging to the last issued update to the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "served_models": {
+        "description": "(Deprecated, use served_entities instead) The list of served models belonging to the last issued update to the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "start_time": {
+        "description": "The timestamp when the update to the pending config started.",
+        "launch_stage": "GA"
+      },
+      "traffic_config": {
+        "description": "The traffic config defining how invocations to the serving endpoint should be routed.",
+        "ref": "serving.TrafficConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.EndpointState": {
+    "fields": {
+      "config_update": {
+        "description": "The state of an endpoint's config update. This informs the user if the pending_config is in progress, if the\nupdate failed, or if there is no update in progress. Note that if the endpoint's config_update state value is\nIN_PROGRESS, another update can not be made until the update completes or fails.",
+        "ref": "serving.EndpointStateConfigUpdate",
+        "launch_stage": "GA"
+      },
+      "ready": {
+        "description": "The state of an endpoint, indicating whether or not the endpoint is queryable. An endpoint is READY if all of\nthe served entities in its active configuration are ready. If any of the actively served entities are in a\nnon-ready state, the endpoint state will be NOT_READY.",
+        "ref": "serving.EndpointStateReady",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.EndpointStateConfigUpdate": {
+    "enum": [
+      "NOT_UPDATING",
+      "IN_PROGRESS",
+      "UPDATE_FAILED",
+      "UPDATE_CANCELED"
+    ],
+    "enum_launch_stages": {
+      "IN_PROGRESS": "GA",
+      "NOT_UPDATING": "GA",
+      "UPDATE_CANCELED": "GA",
+      "UPDATE_FAILED": "GA"
+    }
+  },
+  "serving.EndpointStateReady": {
+    "enum": [
+      "READY",
+      "NOT_READY"
+    ],
+    "enum_launch_stages": {
+      "NOT_READY": "GA",
+      "READY": "GA"
+    }
+  },
+  "serving.EndpointTag": {
+    "fields": {
+      "key": {
+        "description": "Key field for a serving endpoint tag.",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "Optional value field for a serving endpoint tag.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.EndpointTags": {
+    "fields": {
+      "tags": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ExportMetricsRequest": {},
+  "serving.ExportMetricsResponse": {
+    "fields": {
+      "contents": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ExternalFunctionRequest": {
+    "description": "Simple Proto message for testing",
+    "fields": {
+      "connection_name": {
+        "description": "The connection name to use. This is required to identify the external connection.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "headers": {
+        "description": "Additional headers for the request. If not provided, only auth headers from connections would be passed.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "json": {
+        "description": "The JSON payload to send in the request body.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "method": {
+        "description": "The HTTP method to use (e.g., 'GET', 'POST').",
+        "ref": "serving.ExternalFunctionRequestHttpMethod",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "params": {
+        "description": "Query parameters for the request.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "path": {
+        "description": "The relative path for the API endpoint. This is required.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "sub_domain": {
+        "description": "Optional subdomain to prepend to the connection URL's host. If provided, this will be\nadded as a prefix to the connection URL's host. For example, if the connection URL is\n`https://api.example.com/v1` and `sub_domain` is `\"custom\"`, the resulting URL will be\n`https://custom.api.example.com/v1`.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "serving.ExternalFunctionRequestHttpMethod": {
+    "enum": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "PATCH"
+    ],
+    "enum_launch_stages": {
+      "DELETE": "PRIVATE_PREVIEW",
+      "GET": "PRIVATE_PREVIEW",
+      "PATCH": "PRIVATE_PREVIEW",
+      "POST": "PRIVATE_PREVIEW",
+      "PUT": "PRIVATE_PREVIEW"
+    }
+  },
+  "serving.ExternalModel": {
+    "fields": {
+      "ai21labs_config": {
+        "description": "AI21Labs Config. Only required if the provider is 'ai21labs'.",
+        "ref": "serving.Ai21LabsConfig",
+        "launch_stage": "GA"
+      },
+      "amazon_bedrock_config": {
+        "description": "Amazon Bedrock Config. Only required if the provider is 'amazon-bedrock'.",
+        "ref": "serving.AmazonBedrockConfig",
+        "launch_stage": "GA"
+      },
+      "anthropic_config": {
+        "description": "Anthropic Config. Only required if the provider is 'anthropic'.",
+        "ref": "serving.AnthropicConfig",
+        "launch_stage": "GA"
+      },
+      "cohere_config": {
+        "description": "Cohere Config. Only required if the provider is 'cohere'.",
+        "ref": "serving.CohereConfig",
+        "launch_stage": "GA"
+      },
+      "custom_provider_config": {
+        "description": "Custom Provider Config. Only required if the provider is 'custom'.",
+        "ref": "serving.CustomProviderConfig",
+        "launch_stage": "GA"
+      },
+      "databricks_model_serving_config": {
+        "description": "Databricks Model Serving Config. Only required if the provider is 'databricks-model-serving'.",
+        "ref": "serving.DatabricksModelServingConfig",
+        "launch_stage": "GA"
+      },
+      "google_cloud_vertex_ai_config": {
+        "description": "Google Cloud Vertex AI Config. Only required if the provider is 'google-cloud-vertex-ai'.",
+        "ref": "serving.GoogleCloudVertexAiConfig",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of the external model.",
+        "launch_stage": "GA"
+      },
+      "openai_config": {
+        "description": "OpenAI Config. Only required if the provider is 'openai'.",
+        "ref": "serving.OpenAiConfig",
+        "launch_stage": "GA"
+      },
+      "palm_config": {
+        "description": "PaLM Config. Only required if the provider is 'palm'.",
+        "ref": "serving.PaLmConfig",
+        "launch_stage": "GA"
+      },
+      "provider": {
+        "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', 'palm', and 'custom'.",
+        "ref": "serving.ExternalModelProvider",
+        "launch_stage": "GA"
+      },
+      "task": {
+        "description": "The task type of the external model.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ExternalModelProvider": {
+    "enum": [
+      "ai21labs",
+      "anthropic",
+      "amazon-bedrock",
+      "cohere",
+      "databricks-model-serving",
+      "google-cloud-vertex-ai",
+      "openai",
+      "palm",
+      "custom"
+    ],
+    "enum_launch_stages": {
+      "ai21labs": "PUBLIC_PREVIEW",
+      "amazon-bedrock": "PUBLIC_PREVIEW",
+      "anthropic": "PUBLIC_PREVIEW",
+      "cohere": "PUBLIC_PREVIEW",
+      "custom": "PUBLIC_PREVIEW",
+      "databricks-model-serving": "PUBLIC_PREVIEW",
+      "google-cloud-vertex-ai": "PUBLIC_PREVIEW",
+      "openai": "PUBLIC_PREVIEW",
+      "palm": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.ExternalModelUsageElement": {
+    "fields": {
+      "completion_tokens": {
+        "description": "The number of tokens in the chat/completions response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "prompt_tokens": {
+        "description": "The number of tokens in the prompt.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "total_tokens": {
+        "description": "The total number of tokens in the prompt and response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.FallbackConfig": {
+    "fields": {
+      "enabled": {
+        "description": "Whether to enable traffic fallback. When a served entity in the serving endpoint returns specific error\ncodes (e.g. 500), the request will automatically be round-robin attempted with other served entities in the same\nendpoint, following the order of served entity list, until a successful response is returned.\nIf all attempts fail, return the last response with the error code.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.FoundationModel": {
+    "description": "All fields are not sensitive as they are hard-coded in the system and made available to customers.",
+    "fields": {
+      "description": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "display_name": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "docs": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.GetOpenApiRequest": {},
+  "serving.GetOpenApiResponse": {
+    "fields": {
+      "contents": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.GetServingEndpointPermissionLevelsRequest": {},
+  "serving.GetServingEndpointPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.GetServingEndpointPermissionsRequest": {},
+  "serving.GetServingEndpointRequest": {},
+  "serving.GoogleCloudVertexAiConfig": {
+    "fields": {
+      "private_key": {
+        "description": "The Databricks secret key reference for a private key for the service\naccount which has access to the Google Cloud Vertex AI Service. See [Best\npractices for managing service account keys]. If you prefer to paste your\nAPI key directly, see `private_key_plaintext`. You must provide an API\nkey using one of the following fields: `private_key` or\n`private_key_plaintext`\n\n[Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys",
+        "launch_stage": "GA"
+      },
+      "private_key_plaintext": {
+        "description": "The private key for the service account which has access to the Google\nCloud Vertex AI Service provided as a plaintext secret. See [Best\npractices for managing service account keys]. If you prefer to reference\nyour key using Databricks Secrets, see `private_key`. You must provide an\nAPI key using one of the following fields: `private_key` or\n`private_key_plaintext`.\n\n[Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "project_id": {
+        "description": "This is the Google Cloud project id that the service account is\nassociated with.",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "This is the region for the Google Cloud Vertex AI Service. See [supported\nregions] for more details. Some models are only available in specific\nregions.\n\n[supported regions]: https://cloud.google.com/vertex-ai/docs/general/locations",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.HttpRequestResponse": {
+    "fields": {
+      "contents": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "serving.ListEndpointsResponse": {
+    "fields": {
+      "endpoints": {
+        "description": "The list of endpoints.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ListServingEndpointsRequest": {},
+  "serving.LogsRequest": {},
+  "serving.ModelDataPlaneInfo": {
+    "description": "A representation of all DataPlaneInfo for operations that can be done on a model through Data Plane APIs.",
+    "fields": {
+      "query_info": {
+        "description": "Information required to query DataPlane API 'query' endpoint.",
+        "ref": "serving.DataPlaneInfo",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.OpenAiConfig": {
+    "description": "Configs needed to create an OpenAI model route.",
+    "fields": {
+      "microsoft_entra_client_id": {
+        "description": "This field is only required for Azure AD OpenAI and is the Microsoft\nEntra Client ID.",
+        "launch_stage": "GA"
+      },
+      "microsoft_entra_client_secret": {
+        "description": "The Databricks secret key reference for a client secret used for\nMicrosoft Entra ID authentication. If you prefer to paste your client\nsecret directly, see `microsoft_entra_client_secret_plaintext`. You must\nprovide an API key using one of the following fields:\n`microsoft_entra_client_secret` or\n`microsoft_entra_client_secret_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "microsoft_entra_client_secret_plaintext": {
+        "description": "The client secret used for Microsoft Entra ID authentication provided as\na plaintext string. If you prefer to reference your key using Databricks\nSecrets, see `microsoft_entra_client_secret`. You must provide an API key\nusing one of the following fields: `microsoft_entra_client_secret` or\n`microsoft_entra_client_secret_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "microsoft_entra_tenant_id": {
+        "description": "This field is only required for Azure AD OpenAI and is the Microsoft\nEntra Tenant ID.",
+        "launch_stage": "GA"
+      },
+      "openai_api_base": {
+        "description": "This is a field to provide a customized base URl for the OpenAI API. For\nAzure OpenAI, this field is required, and is the base URL for the Azure\nOpenAI API service provided by Azure. For other OpenAI API types, this\nfield is optional, and if left unspecified, the standard OpenAI base URL\nis used.",
+        "launch_stage": "GA"
+      },
+      "openai_api_key": {
+        "description": "The Databricks secret key reference for an OpenAI API key using the\nOpenAI or Azure service. If you prefer to paste your API key directly,\nsee `openai_api_key_plaintext`. You must provide an API key using one of\nthe following fields: `openai_api_key` or `openai_api_key_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "openai_api_key_plaintext": {
+        "description": "The OpenAI API key using the OpenAI or Azure service provided as a\nplaintext string. If you prefer to reference your key using Databricks\nSecrets, see `openai_api_key`. You must provide an API key using one of\nthe following fields: `openai_api_key` or `openai_api_key_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "openai_api_type": {
+        "description": "This is an optional field to specify the type of OpenAI API to use. For\nAzure OpenAI, this field is required, and adjust this parameter to\nrepresent the preferred security access validation protocol. For access\ntoken validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.",
+        "launch_stage": "GA"
+      },
+      "openai_api_version": {
+        "description": "This is an optional field to specify the OpenAI API version. For Azure\nOpenAI, this field is required, and is the version of the Azure OpenAI\nservice to utilize, specified by a date.",
+        "launch_stage": "GA"
+      },
+      "openai_deployment_name": {
+        "description": "This field is only required for Azure OpenAI and is the name of the\ndeployment resource for the Azure OpenAI service.",
+        "launch_stage": "GA"
+      },
+      "openai_organization": {
+        "description": "This is an optional field to specify the organization in OpenAI or Azure\nOpenAI.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.PaLmConfig": {
+    "fields": {
+      "palm_api_key": {
+        "description": "The Databricks secret key reference for a PaLM API key. If you prefer to\npaste your API key directly, see `palm_api_key_plaintext`. You must\nprovide an API key using one of the following fields: `palm_api_key` or\n`palm_api_key_plaintext`.",
+        "launch_stage": "GA"
+      },
+      "palm_api_key_plaintext": {
+        "description": "The PaLM API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `palm_api_key`. You must\nprovide an API key using one of the following fields: `palm_api_key` or\n`palm_api_key_plaintext`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "serving.PatchServingEndpointTags": {
+    "fields": {
+      "add_tags": {
+        "description": "List of endpoint tags to add",
+        "launch_stage": "GA"
+      },
+      "delete_tags": {
+        "description": "List of tag keys to delete",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.PatchTelemetryConfigRequest": {
+    "description": "Updates the telemetry configuration of a serving endpoint.",
+    "fields": {
+      "telemetry_config": {
+        "description": "The telemetry configuration to be applied to the serving endpoint.\nCan specify either a telemetry_profile_id to use an existing profile,\nor table_names to create a new profile with the specified Unity Catalog tables.\nIf not provided, the telemetry configuration will be removed from the endpoint.",
+        "ref": "serving.TelemetryConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.PayloadTable": {
+    "fields": {
+      "name": {
+        "launch_stage": "GA"
+      },
+      "status": {
+        "launch_stage": "GA"
+      },
+      "status_message": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.PtEndpointCoreConfig": {
+    "fields": {
+      "served_entities": {
+        "description": "The list of served entities under the serving endpoint config.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "traffic_config": {
+        "ref": "serving.TrafficConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.PtServedModel": {
+    "fields": {
+      "burst_scaling_enabled": {
+        "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entity_name": {
+        "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "entity_version": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "provisioned_model_units": {
+        "description": "The number of model units to be provisioned.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.PutAiGatewayRequest": {
+    "fields": {
+      "fallback_config": {
+        "description": "Configuration for traffic fallback which auto fallbacks to other served entities if the request to a served\nentity fails with certain error codes, to increase availability.",
+        "ref": "serving.FallbackConfig",
+        "launch_stage": "GA"
+      },
+      "guardrails": {
+        "description": "Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.",
+        "ref": "serving.AiGatewayGuardrails",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "inference_table_config": {
+        "description": "Configuration for payload logging using inference tables.\nUse these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
+        "ref": "serving.AiGatewayInferenceTableConfig",
+        "launch_stage": "GA"
+      },
+      "rate_limits": {
+        "description": "Configuration for rate limits which can be set to limit endpoint traffic.",
+        "launch_stage": "GA"
+      },
+      "usage_tracking_config": {
+        "description": "Configuration to enable usage tracking using system tables.\nThese tables allow you to monitor operational usage on endpoints and their associated costs.",
+        "ref": "serving.AiGatewayUsageTrackingConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.PutAiGatewayResponse": {
+    "fields": {
+      "fallback_config": {
+        "description": "Configuration for traffic fallback which auto fallbacks to other served entities if the request to a served\nentity fails with certain error codes, to increase availability.",
+        "ref": "serving.FallbackConfig",
+        "launch_stage": "GA"
+      },
+      "guardrails": {
+        "description": "Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.",
+        "ref": "serving.AiGatewayGuardrails",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "inference_table_config": {
+        "description": "Configuration for payload logging using inference tables.\nUse these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
+        "ref": "serving.AiGatewayInferenceTableConfig",
+        "launch_stage": "GA"
+      },
+      "rate_limits": {
+        "description": "Configuration for rate limits which can be set to limit endpoint traffic.",
+        "launch_stage": "GA"
+      },
+      "usage_tracking_config": {
+        "description": "Configuration to enable usage tracking using system tables.\nThese tables allow you to monitor operational usage on endpoints and their associated costs.",
+        "ref": "serving.AiGatewayUsageTrackingConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.PutRequest": {
+    "fields": {
+      "rate_limits": {
+        "description": "The list of endpoint rate limits.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.PutResponse": {
+    "fields": {
+      "rate_limits": {
+        "description": "The list of endpoint rate limits.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.QueryEndpointInput": {
+    "fields": {
+      "client_request_id": {
+        "description": "Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.",
+        "launch_stage": "GA"
+      },
+      "dataframe_records": {
+        "description": "Pandas Dataframe input in the records orientation.",
+        "launch_stage": "GA"
+      },
+      "dataframe_split": {
+        "description": "Pandas Dataframe input in the split orientation.",
+        "ref": "serving.DataframeSplitInput",
+        "launch_stage": "GA"
+      },
+      "extra_params": {
+        "description": "The extra parameters field used ONLY for __completions, chat,__ and __embeddings external \u0026 foundation\nmodel__ serving endpoints. This is a map of strings and should only be used with other external/foundation\nmodel query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "input": {
+        "description": "The input string (or array of strings) field used ONLY for __embeddings external \u0026 foundation model__\nserving endpoints and is the only field (along with extra_params if needed) used by embeddings queries.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "inputs": {
+        "description": "Tensor-based input in columnar format.",
+        "launch_stage": "GA"
+      },
+      "instances": {
+        "description": "Tensor-based input in row format.",
+        "launch_stage": "GA"
+      },
+      "max_tokens": {
+        "description": "The max tokens field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is an integer and should only be used with other chat/completions query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "messages": {
+        "description": "The messages field used ONLY for __chat external \u0026 foundation model__ serving endpoints.\nThis is an array of ChatMessage objects and should only be used with other chat query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "n": {
+        "description": "The n (number of candidates) field used ONLY for __completions__ and __chat external \u0026 foundation model__\nserving endpoints. This is an integer between 1 and 5 with a default of 1 and should only be used with\nother chat/completions query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "prompt": {
+        "description": "The prompt string (or array of strings) field used ONLY for __completions external \u0026 foundation model__\nserving endpoints and should only be used with other completions query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "stop": {
+        "description": "The stop sequences field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is a list of strings and should only be used with other chat/completions query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "stream": {
+        "description": "The stream field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving endpoints.\nThis is a boolean defaulting to false and should only be used with other chat/completions query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "temperature": {
+        "description": "The temperature field used ONLY for __completions__ and __chat external \u0026 foundation model__ serving\nendpoints. This is a float between 0.0 and 2.0 with a default of 1.0 and should only be used with other\nchat/completions query fields.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "usage_context": {
+        "description": "Optional user-provided context that will be recorded in the usage tracking table.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.QueryEndpointResponse": {
+    "fields": {
+      "choices": {
+        "description": "The list of choices returned by the __chat or completions external/foundation model__ serving endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "created": {
+        "description": "The timestamp in seconds when the query was created in Unix time returned by a __completions or chat external/foundation model__ serving endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "data": {
+        "description": "The list of the embeddings returned by the __embeddings external/foundation model__ serving endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "The ID of the query that may be returned by a __completions or chat external/foundation model__ serving endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "model": {
+        "description": "The name of the __external/foundation model__ used for querying. This is the name of the model that was\nspecified in the endpoint config.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "object": {
+        "description": "The type of object returned by the __external/foundation model__ serving endpoint, one of\n[text_completion, chat.completion, list (of embeddings)].",
+        "ref": "serving.QueryEndpointResponseObject",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "outputs": {
+        "description": "The outputs of the feature serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "predictions": {
+        "description": "The predictions returned by the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "usage": {
+        "description": "The usage object that may be returned by the __external/foundation model__ serving endpoint. This\ncontains information about the number of tokens used in the prompt and response.",
+        "ref": "serving.ExternalModelUsageElement",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.QueryEndpointResponseObject": {
+    "description": "The type of object returned by the __external/foundation model__ serving endpoint, one of\n[text_completion, chat.completion, list (of embeddings)].",
+    "enum": [
+      "text_completion",
+      "chat.completion",
+      "list"
+    ],
+    "enum_launch_stages": {
+      "chat.completion": "PUBLIC_PREVIEW",
+      "list": "PUBLIC_PREVIEW",
+      "text_completion": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.RateLimit": {
+    "fields": {
+      "calls": {
+        "description": "Used to specify how many calls are allowed for a key within the renewal_period.",
+        "launch_stage": "GA"
+      },
+      "key": {
+        "description": "Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
+        "ref": "serving.RateLimitKey",
+        "launch_stage": "GA"
+      },
+      "renewal_period": {
+        "description": "Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.",
+        "ref": "serving.RateLimitRenewalPeriod",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.RateLimitKey": {
+    "enum": [
+      "user",
+      "endpoint"
+    ],
+    "enum_launch_stages": {
+      "endpoint": "PUBLIC_PREVIEW",
+      "user": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.RateLimitRenewalPeriod": {
+    "enum": [
+      "minute"
+    ],
+    "enum_launch_stages": {
+      "minute": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.Route": {
+    "fields": {
+      "served_entity_name": {
+        "launch_stage": "GA"
+      },
+      "served_model_name": {
+        "description": "The name of the served model this route configures traffic for.",
+        "launch_stage": "GA"
+      },
+      "traffic_percentage": {
+        "description": "The percentage of endpoint traffic to send to this route. It must be an integer between 0 and 100 inclusive.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedEntityInput": {
+    "fields": {
+      "burst_scaling_enabled": {
+        "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "entity_name": {
+        "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.",
+        "launch_stage": "GA"
+      },
+      "entity_version": {
+        "launch_stage": "GA"
+      },
+      "environment_vars": {
+        "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+        "launch_stage": "GA"
+      },
+      "external_model": {
+        "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same.",
+        "ref": "serving.ExternalModel",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "ARN of the instance profile that the served entity uses to access AWS resources.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "max_provisioned_concurrency": {
+        "description": "The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "max_provisioned_throughput": {
+        "description": "The maximum tokens per second that the endpoint can scale up to.",
+        "launch_stage": "GA"
+      },
+      "min_provisioned_concurrency": {
+        "description": "The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "min_provisioned_throughput": {
+        "description": "The minimum tokens per second that the endpoint can scale down to.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
+        "launch_stage": "GA"
+      },
+      "provisioned_model_units": {
+        "description": "The number of model units provisioned.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "scale_to_zero_enabled": {
+        "description": "Whether the compute resources for the served entity should scale down to zero.",
+        "launch_stage": "GA"
+      },
+      "workload_size": {
+        "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
+        "launch_stage": "GA"
+      },
+      "workload_type": {
+        "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
+        "ref": "serving.ServingModelWorkloadType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedEntityOutput": {
+    "fields": {
+      "burst_scaling_enabled": {
+        "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "creation_timestamp": {
+        "launch_stage": "GA"
+      },
+      "creator": {
+        "launch_stage": "GA"
+      },
+      "entity_name": {
+        "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.",
+        "launch_stage": "GA"
+      },
+      "entity_version": {
+        "launch_stage": "GA"
+      },
+      "environment_vars": {
+        "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+        "launch_stage": "GA"
+      },
+      "external_model": {
+        "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same.",
+        "ref": "serving.ExternalModel",
+        "launch_stage": "GA"
+      },
+      "foundation_model": {
+        "ref": "serving.FoundationModel",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "instance_profile_arn": {
+        "description": "ARN of the instance profile that the served entity uses to access AWS resources.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "max_provisioned_concurrency": {
+        "description": "The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "max_provisioned_throughput": {
+        "description": "The maximum tokens per second that the endpoint can scale up to.",
+        "launch_stage": "GA"
+      },
+      "min_provisioned_concurrency": {
+        "description": "The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "min_provisioned_throughput": {
+        "description": "The minimum tokens per second that the endpoint can scale down to.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
+        "launch_stage": "GA"
+      },
+      "provisioned_model_units": {
+        "description": "The number of model units provisioned.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "scale_to_zero_enabled": {
+        "description": "Whether the compute resources for the served entity should scale down to zero.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "ref": "serving.ServedModelState",
+        "launch_stage": "GA"
+      },
+      "workload_size": {
+        "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
+        "launch_stage": "GA"
+      },
+      "workload_type": {
+        "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
+        "ref": "serving.ServingModelWorkloadType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedEntitySpec": {
+    "fields": {
+      "entity_name": {
+        "launch_stage": "GA"
+      },
+      "entity_version": {
+        "launch_stage": "GA"
+      },
+      "external_model": {
+        "ref": "serving.ExternalModel",
+        "launch_stage": "GA"
+      },
+      "foundation_model": {
+        "ref": "serving.FoundationModel",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedModelInput": {
+    "fields": {
+      "burst_scaling_enabled": {
+        "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "environment_vars": {
+        "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "ARN of the instance profile that the served entity uses to access AWS resources.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "max_provisioned_concurrency": {
+        "description": "The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "max_provisioned_throughput": {
+        "description": "The maximum tokens per second that the endpoint can scale up to.",
+        "launch_stage": "GA"
+      },
+      "min_provisioned_concurrency": {
+        "description": "The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "min_provisioned_throughput": {
+        "description": "The minimum tokens per second that the endpoint can scale down to.",
+        "launch_stage": "GA"
+      },
+      "model_name": {
+        "launch_stage": "GA"
+      },
+      "model_version": {
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
+        "launch_stage": "GA"
+      },
+      "provisioned_model_units": {
+        "description": "The number of model units provisioned.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "scale_to_zero_enabled": {
+        "description": "Whether the compute resources for the served entity should scale down to zero.",
+        "launch_stage": "GA"
+      },
+      "workload_size": {
+        "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
+        "launch_stage": "GA"
+      },
+      "workload_type": {
+        "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
+        "ref": "serving.ServedModelInputWorkloadType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedModelInputWorkloadType": {
+    "description": "Please keep this in sync with workload types in InferenceEndpointEntities.scala.",
+    "enum": [
+      "CPU",
+      "GPU_MEDIUM",
+      "GPU_SMALL",
+      "GPU_LARGE",
+      "MULTIGPU_MEDIUM",
+      "CPU_LARGE",
+      "GPU_XLARGE_8",
+      "GPU_XLARGE",
+      "CPU_MEDIUM"
+    ],
+    "enum_launch_stages": {
+      "CPU": "GA",
+      "CPU_LARGE": "PUBLIC_BETA",
+      "CPU_MEDIUM": "PUBLIC_BETA",
+      "GPU_LARGE": "GA",
+      "GPU_MEDIUM": "GA",
+      "GPU_SMALL": "GA",
+      "GPU_XLARGE": "PUBLIC_BETA",
+      "GPU_XLARGE_8": "PUBLIC_BETA",
+      "MULTIGPU_MEDIUM": "GA"
+    }
+  },
+  "serving.ServedModelOutput": {
+    "fields": {
+      "burst_scaling_enabled": {
+        "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "creation_timestamp": {
+        "launch_stage": "GA"
+      },
+      "creator": {
+        "launch_stage": "GA"
+      },
+      "environment_vars": {
+        "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "ARN of the instance profile that the served entity uses to access AWS resources.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "max_provisioned_concurrency": {
+        "description": "The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "min_provisioned_concurrency": {
+        "description": "The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.",
+        "launch_stage": "GA"
+      },
+      "model_name": {
+        "launch_stage": "GA"
+      },
+      "model_version": {
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
+        "launch_stage": "GA"
+      },
+      "provisioned_model_units": {
+        "description": "The number of model units provisioned.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "scale_to_zero_enabled": {
+        "description": "Whether the compute resources for the served entity should scale down to zero.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "ref": "serving.ServedModelState",
+        "launch_stage": "GA"
+      },
+      "workload_size": {
+        "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
+        "launch_stage": "GA"
+      },
+      "workload_type": {
+        "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
+        "ref": "serving.ServingModelWorkloadType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedModelSpec": {
+    "fields": {
+      "model_name": {
+        "description": "Only one of model_name and entity_name should be populated",
+        "launch_stage": "GA"
+      },
+      "model_version": {
+        "description": "Only one of model_version and entity_version should be populated",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedModelState": {
+    "fields": {
+      "deployment": {
+        "ref": "serving.ServedModelStateDeployment",
+        "launch_stage": "GA"
+      },
+      "deployment_state_message": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServedModelStateDeployment": {
+    "enum": [
+      "DEPLOYMENT_CREATING",
+      "DEPLOYMENT_RECOVERING",
+      "DEPLOYMENT_READY",
+      "DEPLOYMENT_FAILED",
+      "DEPLOYMENT_ABORTED"
+    ],
+    "enum_launch_stages": {
+      "DEPLOYMENT_ABORTED": "PUBLIC_PREVIEW",
+      "DEPLOYMENT_CREATING": "PUBLIC_PREVIEW",
+      "DEPLOYMENT_FAILED": "PUBLIC_PREVIEW",
+      "DEPLOYMENT_READY": "PUBLIC_PREVIEW",
+      "DEPLOYMENT_RECOVERING": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.ServerLogsResponse": {
+    "fields": {
+      "logs": {
+        "description": "The most recent log lines of the model server processing invocation requests.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingEndpoint": {
+    "fields": {
+      "ai_gateway": {
+        "description": "The AI Gateway configuration for the serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.",
+        "ref": "serving.AiGatewayConfig",
+        "launch_stage": "GA"
+      },
+      "budget_policy_id": {
+        "description": "The budget policy associated with the endpoint.",
+        "launch_stage": "GA"
+      },
+      "config": {
+        "description": "The config that is currently being served by the endpoint.",
+        "ref": "serving.EndpointCoreConfigSummary",
+        "launch_stage": "GA"
+      },
+      "creation_timestamp": {
+        "description": "The timestamp when the endpoint was created in Unix time.",
+        "launch_stage": "GA"
+      },
+      "creator": {
+        "description": "The email of the user who created the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "Description of the endpoint",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "System-generated ID of the endpoint, included to be used by the Permissions API.",
+        "launch_stage": "GA"
+      },
+      "last_updated_timestamp": {
+        "description": "The timestamp when the endpoint was last updated by a user in Unix time.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "Information corresponding to the state of the serving endpoint.",
+        "ref": "serving.EndpointState",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "description": "Tags attached to the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "task": {
+        "description": "The task type of the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "telemetry_config": {
+        "description": "Telemetry configuration for the endpoint, including inference-table payload logging.",
+        "ref": "serving.TelemetryConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "usage_policy_id": {
+        "description": "The usage policy associated with serving endpoint.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingEndpointAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "serving.ServingEndpointPermissionLevel",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingEndpointAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingEndpointDetailed": {
+    "fields": {
+      "ai_gateway": {
+        "description": "The AI Gateway configuration for the serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.",
+        "ref": "serving.AiGatewayConfig",
+        "launch_stage": "GA"
+      },
+      "budget_policy_id": {
+        "description": "The budget policy associated with the endpoint.",
+        "launch_stage": "GA"
+      },
+      "config": {
+        "description": "The config that is currently being served by the endpoint.",
+        "ref": "serving.EndpointCoreConfigOutput",
+        "launch_stage": "GA"
+      },
+      "creation_timestamp": {
+        "description": "The timestamp when the endpoint was created in Unix time.",
+        "launch_stage": "GA"
+      },
+      "creator": {
+        "description": "The email of the user who created the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "data_plane_info": {
+        "description": "Information required to query DataPlane APIs.",
+        "ref": "serving.ModelDataPlaneInfo",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "Description of the serving model",
+        "launch_stage": "GA"
+      },
+      "email_notifications": {
+        "description": "Email notification settings.",
+        "ref": "serving.EmailNotifications",
+        "launch_stage": "GA"
+      },
+      "endpoint_url": {
+        "description": "Endpoint invocation url if route optimization is enabled for endpoint",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "System-generated ID of the endpoint. This is used to refer to the endpoint in the Permissions API",
+        "launch_stage": "GA"
+      },
+      "last_updated_timestamp": {
+        "description": "The timestamp when the endpoint was last updated by a user in Unix time.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "pending_config": {
+        "description": "The config that the endpoint is attempting to update to.",
+        "ref": "serving.EndpointPendingConfig",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "description": "The permission level of the principal making the request.",
+        "ref": "serving.ServingEndpointDetailedPermissionLevel",
+        "launch_stage": "GA"
+      },
+      "route_optimized": {
+        "description": "Boolean representing if route optimization has been enabled for the endpoint",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "Information corresponding to the state of the serving endpoint.",
+        "ref": "serving.EndpointState",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "description": "Tags attached to the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "task": {
+        "description": "The task type of the serving endpoint.",
+        "launch_stage": "GA"
+      },
+      "telemetry_config": {
+        "description": "Telemetry configuration for the endpoint, including inference-table payload logging.",
+        "ref": "serving.TelemetryConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.ServingEndpointDetailedPermissionLevel": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_QUERY",
+      "CAN_VIEW"
+    ],
+    "enum_launch_stages": {
+      "CAN_MANAGE": "GA",
+      "CAN_QUERY": "GA",
+      "CAN_VIEW": "GA"
+    }
+  },
+  "serving.ServingEndpointPermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "GA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "serving.ServingEndpointPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingEndpointPermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_QUERY",
+      "CAN_VIEW"
+    ]
+  },
+  "serving.ServingEndpointPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingEndpointPermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "serving.ServingEndpointPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingEndpointPermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.ServingModelWorkloadType": {
+    "description": "Please keep this in sync with workload types in InferenceEndpointEntities.scala.",
+    "enum": [
+      "CPU",
+      "GPU_MEDIUM",
+      "GPU_SMALL",
+      "GPU_LARGE",
+      "MULTIGPU_MEDIUM",
+      "CPU_LARGE",
+      "GPU_XLARGE_8",
+      "GPU_XLARGE",
+      "CPU_MEDIUM"
+    ],
+    "enum_launch_stages": {
+      "CPU": "GA",
+      "CPU_LARGE": "PUBLIC_BETA",
+      "CPU_MEDIUM": "PUBLIC_BETA",
+      "GPU_LARGE": "GA",
+      "GPU_MEDIUM": "GA",
+      "GPU_SMALL": "GA",
+      "GPU_XLARGE": "PUBLIC_BETA",
+      "GPU_XLARGE_8": "PUBLIC_BETA",
+      "MULTIGPU_MEDIUM": "GA"
+    }
+  },
+  "serving.TelemetryConfig": {
+    "fields": {
+      "enabled_telemetry_features": {
+        "description": "The telemetry signals to enable for this endpoint. If empty or omitted, all signals are\nenabled; otherwise only the listed signals are enabled.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "inference_table_config": {
+        "description": "Configuration for inference table payload logging, including sampling.",
+        "ref": "serving.TelemetryInferenceTableConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "table_names": {
+        "description": "The Unity Catalog tables to which endpoint telemetry (logs, traces, and metrics) is exported.\nProvide this to create a new telemetry profile for the endpoint from the given tables.",
+        "ref": "serving.UnityCatalogTableNames",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "telemetry_profile_id": {
+        "description": "The ID of an existing telemetry profile to apply to this endpoint. Provide this to reuse a\ntelemetry profile that has already been created, instead of specifying table_names.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.TelemetryFeature": {
+    "description": "A telemetry signal that a serving endpoint can export to Unity Catalog. Use these values to\nselect which signals the endpoint exports.",
+    "enum": [
+      "TELEMETRY_FEATURE_LOGS",
+      "TELEMETRY_FEATURE_TRACES",
+      "TELEMETRY_FEATURE_METRICS",
+      "TELEMETRY_FEATURE_INFERENCE_TABLE"
+    ],
+    "enum_launch_stages": {
+      "TELEMETRY_FEATURE_INFERENCE_TABLE": "PUBLIC_PREVIEW",
+      "TELEMETRY_FEATURE_LOGS": "PUBLIC_PREVIEW",
+      "TELEMETRY_FEATURE_METRICS": "PUBLIC_PREVIEW",
+      "TELEMETRY_FEATURE_TRACES": "PUBLIC_PREVIEW"
+    }
+  },
+  "serving.TelemetryInferenceTableConfig": {
+    "description": "Inference table payload logging configuration",
+    "fields": {
+      "name": {
+        "description": "The full name of the inference table created for this endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sampling_fraction": {
+        "description": "Fraction of requests sampled for payload logging, in the range [0.0, 1.0], where 1.0 logs all requests.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.TrafficConfig": {
+    "fields": {
+      "routes": {
+        "description": "The list of routes that define traffic to each served entity.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.UnityCatalogTableNames": {
+    "fields": {
+      "annotations_table": {
+        "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported annotations.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "logs_table": {
+        "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported logs.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "metrics_table": {
+        "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported metrics.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "traces_table": {
+        "description": "The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported traces (spans).",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.UpdateInferenceEndpointNotifications": {
+    "fields": {
+      "email_notifications": {
+        "description": "The email notification settings to update. Specify email addresses to notify when endpoint state changes occur.",
+        "ref": "serving.EmailNotifications",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.UpdateInferenceEndpointNotificationsResponse": {
+    "fields": {
+      "email_notifications": {
+        "ref": "serving.EmailNotifications",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "serving.UpdateProvisionedThroughputEndpointConfigRequest": {
+    "fields": {
+      "config": {
+        "ref": "serving.PtEndpointCoreConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "serving.V1ResponseChoiceElement": {
+    "fields": {
+      "finishReason": {
+        "description": "The finish reason returned by the endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "index": {
+        "description": "The index of the choice in the __chat or completions__ response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "logprobs": {
+        "description": "The logprobs returned only by the __completions__ endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "message": {
+        "description": "The message response from the __chat__ endpoint.",
+        "ref": "serving.ChatMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "text": {
+        "description": "The text response from the __completions__ endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  }
+}

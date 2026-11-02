@@ -1,0 +1,493 @@
+{
+  "id": "settings.TokenManagement",
+  "name": "TokenManagement",
+  "description": "Enables administrators to get all tokens and delete tokens for other users. Admins can\neither get every token, get a specific token by ID, or get all tokens for a particular user.",
+  "package": {
+    "name": "settings"
+  },
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "TokenInfoCommentToTokenIdMap"
+    },
+    "request": {
+      "pascal_name": "ListTokenManagementRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateOboToken",
+      "description": "Creates a token on behalf of a service principal.",
+      "summary": "Create on-behalf token.",
+      "path": "/api/2.0/token-management/on-behalf-of/tokens",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateOboTokenRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "application_id",
+            "description": "Application ID of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "application_id",
+            "description": "Application ID of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateOboTokenResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "application_id",
+          "description": "Application ID of the service principal.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "autoscope_enabled",
+          "description": "Whether to enable autoscoping for this token.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "Comment that describes the purpose of the token.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "lifetime_seconds",
+          "description": "The number of seconds before the token expires.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "scopes",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "application_id",
+          "description": "Application ID of the service principal.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a token, specified by its ID.",
+      "summary": "Delete a token.",
+      "path": "/api/2.0/token-management/tokens/{token_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteTokenManagementRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "token_id",
+            "description": "The ID of the token to revoke.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "token_id",
+            "description": "The ID of the token to revoke.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "token_id",
+          "description": "The ID of the token to revoke.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "token_id",
+          "description": "The ID of the token to revoke.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets information about a token, specified by its ID.",
+      "summary": "Get token info.",
+      "path": "/api/2.0/token-management/tokens/{token_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetTokenManagementRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "token_id",
+            "description": "The ID of the token to get.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "token_id",
+            "description": "The ID of the token to get.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetTokenResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "token_id",
+          "description": "The ID of the token to get.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "token_id",
+          "description": "The ID of the token to get.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get token permission levels.",
+      "path": "/api/2.0/permissions/authorization/tokens/permissionLevels",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetTokenPermissionLevelsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetTokenPermissionLevelsResponse",
+        "is_object": true
+      }
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of all tokens. Tokens can inherit permissions from their root object.",
+      "summary": "Get token permissions.",
+      "path": "/api/2.0/permissions/authorization/tokens",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetTokenPermissionsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "TokenPermissions",
+        "is_object": true
+      }
+    },
+    {
+      "name": "List",
+      "description": "Lists all tokens associated with the specified workspace or user.",
+      "summary": "List all tokens.",
+      "path": "/api/2.0/token-management/tokens",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListTokenManagementRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListTokensResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "created_by_id",
+          "description": "User ID of the user that created the token.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "created_by_username",
+          "description": "Username of the user that created the token.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {}
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set token permissions.",
+      "path": "/api/2.0/permissions/authorization/tokens",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TokenPermissionsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "TokenPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TokenAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "TokenAccessControlRequest",
+              "is_object": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on all tokens. Tokens can inherit permissions from their root object.",
+      "summary": "Update token permissions.",
+      "path": "/api/2.0/permissions/authorization/tokens",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TokenPermissionsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "TokenPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TokenAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "TokenAccessControlRequest",
+              "is_object": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateTokenManagement",
+      "description": "Updates a token, specified by its ID.",
+      "summary": "Update an on-behalf token.",
+      "path": "/api/2.0/token-management/tokens/{token_id}",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateTokenManagementRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "token_id",
+            "description": "ID of the token.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TokenInfo",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "A list of field name under token, For example, {\"update_mask\": \"comment,scopes\"}\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "token_id",
+            "description": "ID of the token.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "token",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TokenInfo",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "A list of field name under token, For example, {\"update_mask\": \"comment,scopes\"}\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TokenInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "token",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TokenInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "token_id",
+          "description": "ID of the token.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "A list of field name under token, For example, {\"update_mask\": \"comment,scopes\"}\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "token_id",
+          "description": "ID of the token.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

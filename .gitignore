@@ -74,6 +74,8 @@ go.work.sum
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .cursor/cli.json
+# genkit's unsharded output; generate-clijson-post splits it and removes it
+/.codegen/cli.json
 tools/gofumpt
 .claude/worktrees/
 .worktrees/

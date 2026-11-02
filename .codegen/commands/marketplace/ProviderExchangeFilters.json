@@ -1,0 +1,313 @@
+{
+  "id": "marketplace.ProviderExchangeFilters",
+  "name": "ProviderExchangeFilters",
+  "description": "Marketplace exchanges filters curate which groups can access an exchange.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "ExchangeFilterNameToIdMap"
+    },
+    "request": {
+      "pascal_name": "ListExchangeFiltersRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Add an exchange filter.",
+      "summary": "Create a new exchange filter.",
+      "path": "/api/2.0/marketplace-exchange/filters",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateExchangeFilterRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "filter",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExchangeFilter",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "filter",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExchangeFilter",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateExchangeFilterResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExchangeFilter",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete an exchange filter",
+      "summary": "Delete an exchange filter.",
+      "path": "/api/2.0/marketplace-exchange/filters/{id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteExchangeFilterRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteExchangeFilterResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List exchange filter",
+      "summary": "List exchange filters.",
+      "path": "/api/2.0/marketplace-exchange/filters",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListExchangeFiltersRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "exchange_id",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "exchange_id",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListExchangeFiltersResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "exchange_id",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "exchange_id",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Update an exchange filter.",
+      "summary": "Update exchange filter.",
+      "path": "/api/2.0/marketplace-exchange/filters/{id}",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateExchangeFilterRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "filter",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExchangeFilter",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "filter",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExchangeFilter",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateExchangeFilterResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExchangeFilter",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

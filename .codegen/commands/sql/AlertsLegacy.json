@@ -1,0 +1,440 @@
+{
+  "id": "sql.AlertsLegacy",
+  "name": "AlertsLegacy",
+  "description": "The alerts API can be used to perform CRUD operations on alerts. An alert is a Databricks SQL\nobject that periodically runs a query, evaluates a condition of its result, and notifies one\nor more users and/or notification destinations if the condition was met.\nAlerts can be scheduled using the `sql_task` type of the Jobs API, e.g. :method:jobs/create.\n\n**Warning**: This API is deprecated. Please see the latest version of the Databricks SQL API. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates an alert.\nAn alert is a Databricks SQL object that periodically runs a query, evaluates a condition of its result,\nand notifies users or notification destinations if the condition was met.\n\n**Warning**: This API is deprecated. Please use :method:alerts/create instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Create an alert.",
+      "path": "/api/2.0/preview/sql/alerts",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateAlert",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "description": "Alert configuration options.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "query_id",
+            "description": "Query ID.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "description": "Alert configuration options.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "query_id",
+            "description": "Query ID.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LegacyAlert",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "Alert configuration options.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The identifier of the workspace folder containing the object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_id",
+          "description": "Query ID.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rearm",
+          "description": "Number of seconds after being triggered before the alert rearms itself and can be triggered again. If `null`, alert will never be triggered again.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes an alert. Deleted alerts are no longer accessible and cannot be restored.\n**Note**: Unlike queries and dashboards, alerts cannot be moved to the trash.\n\n**Warning**: This API is deprecated. Please use :method:alerts/delete instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Delete an alert.",
+      "path": "/api/2.0/preview/sql/alerts/{alert_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteAlertsLegacyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "alert_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "alert_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "alert_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "alert_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets an alert.\n\n**Warning**: This API is deprecated. Please use :method:alerts/get instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Get an alert.",
+      "path": "/api/2.0/preview/sql/alerts/{alert_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetAlertsLegacyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "alert_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "alert_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LegacyAlert",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "alert_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "alert_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets a list of alerts.\n\n**Warning**: This API is deprecated. Please use :method:alerts/list instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Get alerts.",
+      "path": "/api/2.0/preview/sql/alerts",
+      "is_legacy_empty_request": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "LegacyAlertList",
+        "array_value": {
+          "pascal_name": "LegacyAlert",
+          "is_object": true
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates an alert.\n\n**Warning**: This API is deprecated. Please use :method:alerts/update instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Update an alert.",
+      "path": "/api/2.0/preview/sql/alerts/{alert_id}",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "EditAlert",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "alert_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "description": "Alert configuration options.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "query_id",
+            "description": "Query ID.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "alert_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "description": "Alert configuration options.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "query_id",
+            "description": "Query ID.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "alert_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "Alert configuration options.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "query_id",
+          "description": "Query ID.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rearm",
+          "description": "Number of seconds after being triggered before the alert rearms itself and can be triggered again. If `null`, alert will never be triggered again.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "alert_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "id": "iam.CurrentUser",
+  "name": "CurrentUser",
+  "description": "This API allows retrieving information about currently authenticated user or\nservice principal.",
+  "package": {
+    "name": "iam"
+  },
+  "docs_group": "iam",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "methods": [
+    {
+      "name": "Me",
+      "description": "Get details about the current method caller's identity.",
+      "summary": "Get current user info.",
+      "path": "/api/2.0/preview/scim/v2/Me",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "MeRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "User",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "attributes",
+          "description": "Comma-separated list of attributes to return in response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "excludedAttributes",
+          "description": "Comma-separated list of attributes to exclude in response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

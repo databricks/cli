@@ -1,0 +1,1012 @@
+{
+  "id": "settings.NetworkConnectivity",
+  "name": "NetworkConnectivity",
+  "description": "These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources. This API provides stable subnets for your workspace so that you can configure your firewalls on your Azure Storage accounts to allow access from Databricks. You can also use the API to provision private endpoints for Databricks to privately connect serverless compute resources to your Azure resources using Azure Private Link. See [configure serverless secure connectivity](https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security).",
+  "package": {
+    "name": "settings"
+  },
+  "is_accounts": true,
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CreateNetworkConnectivityConfiguration",
+      "description": "Creates a network connectivity configuration (NCC), which provides stable Azure service\nsubnets when accessing your Azure Storage accounts. You can also use a network connectivity configuration to create\nDatabricks managed private endpoints so that Databricks serverless compute resources privately access your\nresources.\n\n**IMPORTANT**: After you create the network connectivity configuration, you must assign one or more workspaces to the new network connectivity configuration.\nYou can share one network connectivity configuration with multiple workspaces from the same Azure region within\nthe same Databricks account.\nSee [configure serverless secure connectivity](https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security).",
+      "summary": "Create a network connectivity configuration.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateNetworkConnectivityConfigRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateNetworkConnectivityConfiguration",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "network_connectivity_config",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateNetworkConnectivityConfiguration",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "network_connectivity_config",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CreateNetworkConnectivityConfiguration",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "region",
+              "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "region",
+              "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "NetworkConnectivityConfiguration",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreateNetworkConnectivityConfiguration",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "region",
+                "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "region",
+                "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreatePrivateEndpointRule",
+      "description": "Create a private endpoint rule for the specified network connectivity config object.\nOnce the object is created, Databricks asynchronously provisions a new Azure private endpoint to your\nspecified Azure resource.\n\n**IMPORTANT**: You must use Azure portal or other Azure tools to approve the private endpoint to complete the\nconnection. To get the information of the private endpoint created, make a `GET` request on the new private\nendpoint rule. See [serverless private link](https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-private-link).",
+      "summary": "Create a private endpoint rule.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs/{network_connectivity_config_id}/private-endpoint-rules",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreatePrivateEndpointRuleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectivity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreatePrivateEndpointRule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectivity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "private_endpoint_rule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreatePrivateEndpointRule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "private_endpoint_rule",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CreatePrivateEndpointRule",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "NccPrivateEndpointRule",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectivity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreatePrivateEndpointRule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "domain_names",
+          "description": "Only used by private endpoints to customer-managed private endpoint services.\n\nDomain names of target private link service.\nWhen updating this field, the full list of target domain_names must be specified.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "endpoint_service",
+          "description": "The full target AWS endpoint service name that connects to the destination resources of the private endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "error_message",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "gcp_endpoint",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpEndpoint",
+            "is_object": true
+          }
+        },
+        {
+          "name": "group_id",
+          "description": "Not used by customer-managed private endpoint services.\n\nThe sub-resource type (group ID) of the target resource.\nNote that to connect to workspace root storage (root DBFS), you need two endpoints, one for blob and one for dfs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "resource_id",
+          "description": "The Azure resource ID of the target resource.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "resource_names",
+          "description": "Only used by private endpoints towards AWS S3 service.\n\nThe globally unique S3 bucket names that will be accessed via the VPC endpoint.\nThe bucket names must be in the same region as the NCC/endpoint service.\nWhen updating this field, we perform full update on this field. Please ensure a full list of desired\nresource_names is provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectivity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteNetworkConnectivityConfiguration",
+      "description": "Deletes a network connectivity configuration.",
+      "summary": "Delete a network connectivity configuration.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs/{network_connectivity_config_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteNetworkConnectivityConfigurationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectivity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectivity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectivity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectivity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeletePrivateEndpointRule",
+      "description": "Initiates deleting a private endpoint rule. If the connection state is PENDING or EXPIRED,\nthe private endpoint is immediately deleted. Otherwise, the private endpoint is deactivated\nand will be deleted after one day of deactivation. When a private endpoint is deactivated,\nthe `deactivated` field is set to `true` and the private endpoint is not\navailable to your serverless compute resources.",
+      "summary": "Delete a private endpoint rule.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs/{network_connectivity_config_id}/private-endpoint-rules/{private_endpoint_rule_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeletePrivateEndpointRuleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectvity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule_id",
+            "description": "Your private endpoint rule ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectvity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule_id",
+            "description": "Your private endpoint rule ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "NccPrivateEndpointRule",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectvity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule_id",
+          "description": "Your private endpoint rule ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectvity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule_id",
+          "description": "Your private endpoint rule ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetNetworkConnectivityConfiguration",
+      "description": "Gets a network connectivity configuration.",
+      "summary": "Get a network connectivity configuration.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs/{network_connectivity_config_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetNetworkConnectivityConfigurationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectivity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectivity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "NetworkConnectivityConfiguration",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectivity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectivity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPrivateEndpointRule",
+      "description": "Gets the private endpoint rule.",
+      "summary": "Gets a private endpoint rule.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs/{network_connectivity_config_id}/private-endpoint-rules/{private_endpoint_rule_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPrivateEndpointRuleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectvity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule_id",
+            "description": "Your private endpoint rule ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectvity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule_id",
+            "description": "Your private endpoint rule ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "NccPrivateEndpointRule",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectvity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule_id",
+          "description": "Your private endpoint rule ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectvity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule_id",
+          "description": "Your private endpoint rule ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListNetworkConnectivityConfigurations",
+      "description": "Gets an array of network connectivity configurations.",
+      "summary": "List network connectivity configurations.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListNetworkConnectivityConfigurationsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListNetworkConnectivityConfigurationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListPrivateEndpointRules",
+      "description": "Gets an array of private endpoint rules.",
+      "summary": "List private endpoint rules.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs/{network_connectivity_config_id}/private-endpoint-rules",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPrivateEndpointRulesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectvity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "Your Network Connectvity Configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListPrivateEndpointRulesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectvity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "Your Network Connectvity Configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdatePrivateEndpointRule",
+      "description": "Updates a private endpoint rule. Currently only a private endpoint rule to customer-managed resources is allowed to be updated.",
+      "summary": "Update a private endpoint rule.",
+      "path": "/api/2.0/accounts/{account_id}/network-connectivity-configs/{network_connectivity_config_id}/private-endpoint-rules/{private_endpoint_rule_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateNccPrivateEndpointRuleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "The ID of a network connectivity configuration, which is the parent resource of this private endpoint rule object.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule_id",
+            "description": "Your private endpoint rule ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UpdatePrivateEndpointRule",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "network_connectivity_config_id",
+            "description": "The ID of a network connectivity configuration, which is the parent resource of this private endpoint rule object.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_endpoint_rule_id",
+            "description": "Your private endpoint rule ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "private_endpoint_rule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UpdatePrivateEndpointRule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "private_endpoint_rule",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "UpdatePrivateEndpointRule",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "NccPrivateEndpointRule",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "The ID of a network connectivity configuration, which is the parent resource of this private endpoint rule object.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UpdatePrivateEndpointRule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule_id",
+          "description": "Your private endpoint rule ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "domain_names",
+          "description": "Only used by private endpoints to customer-managed private endpoint services.\n\nDomain names of target private link service.\nWhen updating this field, the full list of target domain_names must be specified.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "enabled",
+          "description": "Update this field to activate/deactivate this private endpoint to allow egress access from\nserverless compute resources. Only honored for first-party services on each cloud (e.g. AWS S3).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "error_message",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "gcp_endpoint",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpEndpoint",
+            "is_object": true
+          }
+        },
+        {
+          "name": "resource_names",
+          "description": "Only used by private endpoints towards AWS S3 service.\n\nThe globally unique S3 bucket names that will be accessed via the VPC endpoint.\nThe bucket names must be in the same region as the NCC/endpoint service.\nWhen updating this field, we perform full update on this field. Please ensure a full list of desired\nresource_names is provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "network_connectivity_config_id",
+          "description": "The ID of a network connectivity configuration, which is the parent resource of this private endpoint rule object.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_endpoint_rule_id",
+          "description": "Your private endpoint rule ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

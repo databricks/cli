@@ -1,0 +1,1150 @@
+{
+  "id": "vectorsearch.VectorSearchEndpoints",
+  "name": "VectorSearchEndpoints",
+  "description": "**Endpoint**: Represents the compute resources to host AI Search indexes.",
+  "package": {
+    "name": "vectorsearch"
+  },
+  "docs_group": "vectorsearch",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListEndpointsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateEndpoint",
+      "description": "Create a new endpoint.",
+      "summary": "Create an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateEndpoint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EndpointInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "budget_policy_id",
+          "description": "The budget policy id to be applied",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_type",
+          "description": "Type of endpoint",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointType",
+            "enum": [
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "STORAGE_OPTIMIZED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "target_qps",
+          "description": "Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The usage policy id to be applied once we've migrated to usage policies",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_type",
+          "description": "Type of endpoint",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointType",
+            "enum": [
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "STORAGE_OPTIMIZED"
+              }
+            ]
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "ONLINE"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "EndpointInfo"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "EndpointStatus"
+          },
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "EndpointStatus"
+          },
+          {
+            "pascal_name": "Message"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "EndpointStatus"
+        }
+      }
+    },
+    {
+      "name": "DeleteEndpoint",
+      "description": "Delete an AI Search endpoint.",
+      "summary": "Delete an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{endpoint_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteEndpointResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetEndpoint",
+      "description": "Get details for a single AI Search endpoint.",
+      "summary": "Get an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{endpoint_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EndpointInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get vector search endpoint permission levels.",
+      "path": "/api/2.0/permissions/vector-search-endpoints/{endpoint_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetVectorSearchEndpointPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetVectorSearchEndpointPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a vector search endpoint. Vector search endpoints can inherit permissions from their root object.",
+      "summary": "Get vector search endpoint permissions.",
+      "path": "/api/2.0/permissions/vector-search-endpoints/{endpoint_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetVectorSearchEndpointPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VectorSearchEndpointPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListEndpoints",
+      "description": "List all AI Search endpoints in the workspace.",
+      "summary": "List all endpoints.",
+      "path": "/api/2.0/vector-search/endpoints",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListEndpointsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListEndpointResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_token",
+          "description": "Token for pagination",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token for pagination",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PatchEndpoint",
+      "description": "Update an endpoint",
+      "summary": "Update an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{endpoint_name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "PatchEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EndpointInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "target_qps",
+          "description": "Target QPS for the endpoint. Best-effort; the system does not guarantee this QPS\nwill be achieved.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RetrieveUserVisibleMetrics",
+      "description": "Retrieve user-visible metrics for an endpoint",
+      "summary": "Retrieve user-visible metrics for an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{name}/metrics",
+      "can_use_json": true,
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RetrieveUserVisibleMetricsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "AI Search endpoint name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "AI Search endpoint name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RetrieveUserVisibleMetricsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "end_time",
+          "description": "End time for metrics query",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "granularity_in_seconds",
+          "description": "Granularity in seconds",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "metrics",
+          "description": "List of metrics to retrieve",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "MetricList",
+            "array_value": {
+              "pascal_name": "Metric",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "AI Search endpoint name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token for pagination",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "start_time",
+          "description": "Start time for metrics query",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "AI Search endpoint name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set vector search endpoint permissions.",
+      "path": "/api/2.0/permissions/vector-search-endpoints/{endpoint_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "VectorSearchEndpointPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VectorSearchEndpointPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "VectorSearchEndpointAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "VectorSearchEndpointAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "StartEndpoint",
+      "description": "Start a stopped endpoint. The endpoint serves the same indexes it had when it stopped.",
+      "summary": "Start an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{endpoint_name}/start",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "StartEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EndpointInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "StopEndpoint",
+      "description": "Stop an endpoint. Stopping removes the endpoint's serving compute and retains its indexes.\nA stopped endpoint can't serve queries or sync indexes until it is started.",
+      "summary": "Stop an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{endpoint_name}/stop",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "StopEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EndpointInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateEndpointBudgetPolicy",
+      "description": "Update the budget policy of an endpoint",
+      "summary": "Update the budget policy of an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{endpoint_name}/budget-policy",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "PatchEndpointBudgetPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "budget_policy_id",
+            "description": "The budget policy id to be applied",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "budget_policy_id",
+            "description": "The budget policy id to be applied",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PatchEndpointBudgetPolicyResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "budget_policy_id",
+          "description": "The budget policy id to be applied",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "The budget policy id to be applied",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateEndpointCustomTags",
+      "description": "Update the custom tags of an endpoint.",
+      "summary": "Update the custom tags of an endpoint.",
+      "path": "/api/2.0/vector-search/endpoints/{endpoint_name}/tags",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateEndpointCustomTagsRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "custom_tags",
+            "description": "The new custom tags for the AI Search endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomTagList",
+              "array_value": {
+                "pascal_name": "CustomTag",
+                "is_object": true
+              }
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_name",
+            "description": "Name of the AI Search endpoint",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "custom_tags",
+            "description": "The new custom tags for the AI Search endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CustomTagList",
+              "array_value": {
+                "pascal_name": "CustomTag",
+                "is_object": true
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateEndpointCustomTagsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "custom_tags",
+          "description": "The new custom tags for the AI Search endpoint",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTagList",
+            "array_value": {
+              "pascal_name": "CustomTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_name",
+          "description": "Name of the AI Search endpoint",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a vector search endpoint. Vector search endpoints can inherit permissions from their root object.",
+      "summary": "Update vector search endpoint permissions.",
+      "path": "/api/2.0/permissions/vector-search-endpoints/{endpoint_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "VectorSearchEndpointPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "endpoint_id",
+            "description": "The vector search endpoint for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VectorSearchEndpointPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "VectorSearchEndpointAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "VectorSearchEndpointAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "endpoint_id",
+          "description": "The vector search endpoint for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

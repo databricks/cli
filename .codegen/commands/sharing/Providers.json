@@ -1,0 +1,694 @@
+{
+  "id": "sharing.Providers",
+  "name": "Providers",
+  "description": "A data provider is an object representing the organization in the real world who shares the\ndata. A provider contains shares which further contain the shared data.",
+  "package": {
+    "name": "sharing"
+  },
+  "docs_group": "sharing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "ProviderInfoNameToMetastoreIdMap"
+    },
+    "request": {
+      "pascal_name": "ListProvidersRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new authentication provider minimally based on a name and authentication type.\nThe caller must be an admin on the metastore.",
+      "summary": "Create an auth provider.",
+      "path": "/api/2.1/unity-catalog/providers",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateProvider",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Provider.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "authentication_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AuthenticationType",
+              "enum": [
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "OAUTH_CLIENT_CREDENTIALS"
+                },
+                {
+                  "content": "OIDC_FEDERATION"
+                },
+                {
+                  "content": "TOKEN"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Provider.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "authentication_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AuthenticationType",
+              "enum": [
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "OAUTH_CLIENT_CREDENTIALS"
+                },
+                {
+                  "content": "OIDC_FEDERATION"
+                },
+                {
+                  "content": "TOKEN"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ProviderInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "authentication_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AuthenticationType",
+            "enum": [
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "OAUTH_CLIENT_CREDENTIALS"
+              },
+              {
+                "content": "OIDC_FEDERATION"
+              },
+              {
+                "content": "TOKEN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "comment",
+          "description": "Description about the provider.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the Provider.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recipient_profile_str",
+          "description": "This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the Provider.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "authentication_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AuthenticationType",
+            "enum": [
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "OAUTH_CLIENT_CREDENTIALS"
+              },
+              {
+                "content": "OIDC_FEDERATION"
+              },
+              {
+                "content": "TOKEN"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes an authentication provider, if the caller is a metastore admin or is the owner of the provider.",
+      "summary": "Delete a provider.",
+      "path": "/api/2.1/unity-catalog/providers/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteProviderRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the provider.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the provider.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a specific authentication provider.\nThe caller must supply the name of the provider, and must either be a metastore admin or the owner of the provider.",
+      "summary": "Get a provider.",
+      "path": "/api/2.1/unity-catalog/providers/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetProviderRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ProviderInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the provider.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the provider.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of available authentication providers.\nThe caller must either be a metastore admin, have the **USE_PROVIDER** privilege on the providers,\nor be the owner of the providers. Providers not owned by the caller and for which the caller does\nnot have the **USE_PROVIDER** privilege are not included in the response.\nThere is no guarantee of a specific ordering of the elements in the array.",
+      "summary": "List providers.",
+      "path": "/api/2.1/unity-catalog/providers",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListProvidersRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListProvidersResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "data_provider_global_metastore_id",
+          "description": "If not provided, all providers will be returned.\nIf no providers exist with this ID, no results will be returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of providers to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid providers are returned (not recommended).\n- Note: The number of returned providers might be less than the specified max_results size, even zero.\nThe only definitive indication that no further providers can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of providers to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid providers are returned (not recommended).\n- Note: The number of returned providers might be less than the specified max_results size, even zero.\nThe only definitive indication that no further providers can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "ListProviderShareAssets",
+      "description": "Get arrays of assets associated with a specified provider's share.\nThe caller is the recipient of the share.",
+      "summary": "List assets by provider share.",
+      "path": "/api/2.1/data-sharing/providers/{provider_name}/shares/{share_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListProviderShareAssetsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "provider_name",
+            "description": "The name of the provider who owns the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "share_name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "provider_name",
+            "description": "The name of the provider who owns the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "share_name",
+            "description": "The name of the share.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListProviderShareAssetsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "function_max_results",
+          "description": "Maximum number of functions to return.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "notebook_max_results",
+          "description": "Maximum number of notebooks to return.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "provider_name",
+          "description": "The name of the provider who owns the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "share_name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "table_max_results",
+          "description": "Maximum number of tables to return.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "volume_max_results",
+          "description": "Maximum number of volumes to return.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "provider_name",
+          "description": "The name of the provider who owns the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "share_name",
+          "description": "The name of the share.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListShares",
+      "description": "Gets an array of a specified provider's shares within the metastore where:\n\n* the caller is a metastore admin, or\n* the caller is the owner.",
+      "summary": "List shares by Provider.",
+      "path": "/api/2.1/unity-catalog/providers/{name}/shares",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListSharesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider in which to list shares.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider in which to list shares.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListProviderSharesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of shares to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid shares are returned (not recommended).\n- Note: The number of returned shares might be less than the specified max_results size, even zero.\nThe only definitive indication that no further shares can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the provider in which to list shares.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the provider in which to list shares.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of shares to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid shares are returned (not recommended).\n- Note: The number of returned shares might be less than the specified max_results size, even zero.\nThe only definitive indication that no further shares can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates the information for an authentication provider, if the caller is a metastore admin or is the owner of the provider.\nIf the update changes the provider name, the caller must be both a metastore admin and the owner of the provider.",
+      "summary": "Update a provider.",
+      "path": "/api/2.1/unity-catalog/providers/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateProvider",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the provider.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ProviderInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "Description about the provider.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the provider.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the provider.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of Provider owner.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recipient_profile_str",
+          "description": "This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the provider.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

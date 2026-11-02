@@ -1,0 +1,2180 @@
+{
+  "id": "disasterrecovery.DisasterRecovery",
+  "name": "DisasterRecovery",
+  "description": "Manage disaster recovery configurations and execute failover operations.",
+  "package": {
+    "name": "disasterrecovery"
+  },
+  "is_accounts": true,
+  "docs_group": "disasterrecovery",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListFailoverGroupsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateFailoverGroup",
+      "description": "Create a new failover group.",
+      "summary": "Create a Failover Group.",
+      "path": "/api/disaster-recovery/v1/{parent=accounts/*}/failover-groups",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateFailoverGroupRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "failover_group",
+            "description": "The failover group to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FailoverGroup",
+              "is_object": true
+            }
+          },
+          {
+            "name": "failover_group_id",
+            "description": "Client-provided identifier for the failover group. Used to construct the\nresource name as {parent}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "failover_group_id",
+            "description": "Client-provided identifier for the failover group. Used to construct the\nresource name as {parent}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "failover_group",
+            "description": "The failover group to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FailoverGroup",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "failover_group",
+        "description": "The failover group to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "FailoverGroup",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "regions",
+              "description": "List of all regions participating in this failover group.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "workspace_sets",
+              "description": "Workspace sets, each containing workspaces that replicate to each other.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "WorkspaceSetList",
+                "array_value": {
+                  "pascal_name": "WorkspaceSet",
+                  "is_object": true
+                }
+              }
+            },
+            {
+              "name": "initial_primary_region",
+              "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "regions",
+              "description": "List of all regions participating in this failover group.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "workspace_sets",
+              "description": "Workspace sets, each containing workspaces that replicate to each other.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "WorkspaceSetList",
+                "array_value": {
+                  "pascal_name": "WorkspaceSet",
+                  "is_object": true
+                }
+              }
+            },
+            {
+              "name": "initial_primary_region",
+              "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "FailoverGroup",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "failover_group",
+          "description": "The failover group to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FailoverGroup",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "regions",
+                "description": "List of all regions participating in this failover group.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "workspace_sets",
+                "description": "Workspace sets, each containing workspaces that replicate to each other.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "WorkspaceSetList",
+                  "array_value": {
+                    "pascal_name": "WorkspaceSet",
+                    "is_object": true
+                  }
+                }
+              },
+              {
+                "name": "initial_primary_region",
+                "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "regions",
+                "description": "List of all regions participating in this failover group.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "workspace_sets",
+                "description": "Workspace sets, each containing workspaces that replicate to each other.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "WorkspaceSetList",
+                  "array_value": {
+                    "pascal_name": "WorkspaceSet",
+                    "is_object": true
+                  }
+                }
+              },
+              {
+                "name": "initial_primary_region",
+                "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "failover_group_id",
+          "description": "Client-provided identifier for the failover group. Used to construct the\nresource name as {parent}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "validate_only",
+          "description": "When true, validates the request without creating the failover group.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time at which this failover group was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "effective_primary_region",
+          "description": "Current effective primary region. Replication flows FROM workspaces in this region.\nChanges after a successful failover.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Opaque version string for optimistic locking. Server-generated and returned in responses.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "has_replication_point_blocking_errors",
+          "description": "True if errors currently block the replication point.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "initial_primary_region",
+          "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "initial_replication_progress",
+          "description": "Initial replication progress of all in-scope assets. Set only when the FailoverGroup is in INITIAL_REPLICATION state.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "InitialReplicationProgress",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Fully qualified resource name in the format\naccounts/{account_id}/failover-groups/{failover_group_id}.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "regions",
+          "description": "List of all regions participating in this failover group.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "replication_point",
+          "description": "The latest point in time to which data has been replicated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "Aggregate state of the failover group.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FailoverGroupState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "CREATING"
+              },
+              {
+                "content": "CREATION_FAILED"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "DELETION_FAILED"
+              },
+              {
+                "content": "FAILING_OVER"
+              },
+              {
+                "content": "FAILOVER_FAILED"
+              },
+              {
+                "content": "INITIAL_REPLICATION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unity_catalog_assets",
+          "description": "Unity Catalog replication configuration.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UcReplicationConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time at which this failover group was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "workspace_sets",
+          "description": "Workspace sets, each containing workspaces that replicate to each other.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceSetList",
+            "array_value": {
+              "pascal_name": "WorkspaceSet",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "failover_group_id",
+          "description": "Client-provided identifier for the failover group. Used to construct the\nresource name as {parent}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "regions",
+          "description": "List of all regions participating in this failover group.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "workspace_sets",
+          "description": "Workspace sets, each containing workspaces that replicate to each other.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceSetList",
+            "array_value": {
+              "pascal_name": "WorkspaceSet",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "initial_primary_region",
+          "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateStableUrl",
+      "description": "Create a new stable URL.",
+      "summary": "Create a Stable URL.",
+      "path": "/api/disaster-recovery/v1/{parent=accounts/*}/stable-urls",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateStableUrlRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stable_url",
+            "description": "The stable URL to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StableUrl",
+              "is_object": true
+            }
+          },
+          {
+            "name": "stable_url_id",
+            "description": "Client-provided identifier for the stable URL. Used to construct the\nresource name as {parent}/stable-urls/{stable_url_id}.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stable_url_id",
+            "description": "Client-provided identifier for the stable URL. Used to construct the\nresource name as {parent}/stable-urls/{stable_url_id}.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "stable_url",
+            "description": "The stable URL to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StableUrl",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "stable_url",
+        "description": "The stable URL to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "StableUrl",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "initial_workspace_id",
+              "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "initial_workspace_id",
+              "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "StableUrl",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "initial_workspace_id",
+            "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "initial_workspace_id",
+            "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stable_url",
+          "description": "The stable URL to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "StableUrl",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "initial_workspace_id",
+                "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "initial_workspace_id",
+                "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "stable_url_id",
+          "description": "Client-provided identifier for the stable URL. Used to construct the\nresource name as {parent}/stable-urls/{stable_url_id}.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "validate_only",
+          "description": "When true, validates the request without creating the stable URL.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_workspace_id",
+          "description": "The workspace this stable URL currently routes to. Set to\n`initial_workspace_id` at creation, advanced to the failover group's primary\nwhile attached (including across a failover), and preserved when the stable\nURL is detached from its failover group. Read this to see where an unattached\nstable URL points: after a failover followed by a detach it reflects the\npost-failover primary, not `initial_workspace_id`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "failover_group_name",
+          "description": "Fully qualified resource name of the FailoverGroup this stable URL is\ncurrently linked to, in the format\n`accounts/{account_id}/failover-groups/{failover_group_id}`. Empty when\nthe stable URL is not attached to any failover group.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "initial_workspace_id",
+          "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stable_workspace_id",
+          "description": "The stable workspace ID for this stable URL. Generated on creation and\nimmutable thereafter; identifies the URL across failovers and is the same\nvalue embedded in the `url` (as the `w=` query parameter for SPOG URLs,\nor in the `conn-\u003cid\u003e` hostname for Private-Link URLs).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "url",
+          "description": "The stable URL endpoint. Generated on creation and\nimmutable thereafter. For non-Private-Link workspaces this is\n`https://\u003cspog_host\u003e/?w=\u003cconnection_id\u003e`. For Private-Link workspaces\nthis is the per-connection hostname.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stable_url_id",
+          "description": "Client-provided identifier for the stable URL. Used to construct the\nresource name as {parent}/stable-urls/{stable_url_id}.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "initial_workspace_id",
+          "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteFailoverGroup",
+      "description": "Delete a failover group.",
+      "summary": "Delete a Failover Group.",
+      "path": "/api/disaster-recovery/v1/{name=accounts/*/failover-groups/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteFailoverGroupRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name of the failover group to delete.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name of the failover group to delete.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Opaque version string for optimistic locking. If provided, must match the\ncurrent etag. If omitted, the delete proceeds without an etag check.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully qualified resource name of the failover group to delete.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name of the failover group to delete.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteStableUrl",
+      "description": "Delete a stable URL.",
+      "summary": "Delete a Stable URL.",
+      "path": "/api/disaster-recovery/v1/{name=accounts/*/stable-urls/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteStableUrlRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "FailoverFailoverGroup",
+      "description": "Initiate a failover to a new primary region.",
+      "summary": "Failover a Failover Group to a new primary region.",
+      "path": "/api/disaster-recovery/v1/{name=accounts/*/failover-groups/*}/failover",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "FailoverFailoverGroupRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name of the failover group to failover.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "target_primary_region",
+            "description": "The target primary region. Must be one of the participating regions and different\nfrom the current effective_primary_region. Serves as an idempotency check.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "failover_type",
+            "description": "The type of failover to perform.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FailoverFailoverGroupRequestFailoverType",
+              "enum": [
+                {
+                  "content": "FORCED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name of the failover group to failover.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "target_primary_region",
+            "description": "The target primary region. Must be one of the participating regions and different\nfrom the current effective_primary_region. Serves as an idempotency check.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "failover_type",
+            "description": "The type of failover to perform.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FailoverFailoverGroupRequestFailoverType",
+              "enum": [
+                {
+                  "content": "FORCED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FailoverGroup",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Opaque version string for optimistic locking. If provided, must match the\ncurrent etag. If omitted, the failover proceeds regardless of current state.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "failover_type",
+          "description": "The type of failover to perform.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FailoverFailoverGroupRequestFailoverType",
+            "enum": [
+              {
+                "content": "FORCED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully qualified resource name of the failover group to failover.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "target_primary_region",
+          "description": "The target primary region. Must be one of the participating regions and different\nfrom the current effective_primary_region. Serves as an idempotency check.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name of the failover group to failover.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "target_primary_region",
+          "description": "The target primary region. Must be one of the participating regions and different\nfrom the current effective_primary_region. Serves as an idempotency check.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "failover_type",
+          "description": "The type of failover to perform.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FailoverFailoverGroupRequestFailoverType",
+            "enum": [
+              {
+                "content": "FORCED"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetFailoverGroup",
+      "description": "Get a failover group.",
+      "summary": "Get a Failover Group.",
+      "path": "/api/disaster-recovery/v1/{name=accounts/*/failover-groups/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetFailoverGroupRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name of the failover group.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name of the failover group.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FailoverGroup",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name of the failover group.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name of the failover group.\nFormat: accounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetStableUrl",
+      "description": "Get a stable URL.",
+      "summary": "Get a Stable URL.",
+      "path": "/api/disaster-recovery/v1/{name=accounts/*/stable-urls/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetStableUrlRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StableUrl",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "initial_workspace_id",
+            "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "initial_workspace_id",
+            "description": "The workspace this stable URL is initially bound to. Used only in Create\nrequests to associate the stable URL with a workspace. Not returned in\nresponses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully qualified resource name.\nFormat: accounts/{account_id}/stable-urls/{stable_url_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListFailoverGroups",
+      "description": "List failover groups.\n\nList entries are abbreviated: `state` and `replication_point` are not\npopulated. Call GetFailoverGroup to retrieve the full resource.",
+      "summary": "List Failover Groups.",
+      "path": "/api/disaster-recovery/v1/{parent=accounts/*}/failover-groups",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListFailoverGroupsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListFailoverGroupsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of failover groups to return per page:\n- when set to a value greater than 0, the page length is the minimum of this value\nand a server configured value;\n- when set to 0 or unset, the page length is set to a server configured value\n(recommended);\n- when set to a value less than 0, an invalid parameter error is returned.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token received from a previous ListFailoverGroups call.\nProvide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Page token received from a previous ListFailoverGroups call.\nProvide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListStableUrls",
+      "description": "List stable URLs for an account.",
+      "summary": "List Stable URLs.",
+      "path": "/api/disaster-recovery/v1/{parent=accounts/*}/stable-urls",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListStableUrlsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource. Format: accounts/{account_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListStableUrlsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of stable URLs to return per page:\n- when set to a value greater than 0, the page length is the minimum of this value\nand a server configured value;\n- when set to 0 or unset, the page length is set to a server configured value\n(recommended);\n- when set to a value less than 0, an invalid parameter error is returned.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token received from a previous ListStableUrls call.\nProvide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The parent resource. Format: accounts/{account_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Page token received from a previous ListStableUrls call.\nProvide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateFailoverGroup",
+      "description": "Update a failover group.",
+      "summary": "Update a Failover Group.",
+      "path": "/api/disaster-recovery/v1/{name=accounts/*/failover-groups/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateFailoverGroupRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Fully qualified resource name in the format\naccounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "failover_group",
+            "description": "The failover group with updated fields. The name field identifies the resource\nand is populated from the URL path.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FailoverGroup",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-separated list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Fully qualified resource name in the format\naccounts/{account_id}/failover-groups/{failover_group_id}.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-separated list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "failover_group",
+            "description": "The failover group with updated fields. The name field identifies the resource\nand is populated from the URL path.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FailoverGroup",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "failover_group",
+        "description": "The failover group with updated fields. The name field identifies the resource\nand is populated from the URL path.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "FailoverGroup",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "regions",
+              "description": "List of all regions participating in this failover group.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "workspace_sets",
+              "description": "Workspace sets, each containing workspaces that replicate to each other.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "WorkspaceSetList",
+                "array_value": {
+                  "pascal_name": "WorkspaceSet",
+                  "is_object": true
+                }
+              }
+            },
+            {
+              "name": "initial_primary_region",
+              "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "regions",
+              "description": "List of all regions participating in this failover group.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "workspace_sets",
+              "description": "Workspace sets, each containing workspaces that replicate to each other.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "WorkspaceSetList",
+                "array_value": {
+                  "pascal_name": "WorkspaceSet",
+                  "is_object": true
+                }
+              }
+            },
+            {
+              "name": "initial_primary_region",
+              "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "FailoverGroup",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "regions",
+            "description": "List of all regions participating in this failover group.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "workspace_sets",
+            "description": "Workspace sets, each containing workspaces that replicate to each other.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceSetList",
+              "array_value": {
+                "pascal_name": "WorkspaceSet",
+                "is_object": true
+              }
+            }
+          },
+          {
+            "name": "initial_primary_region",
+            "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Optional opaque version string for optimistic locking, obtained from a prior read of\nthe failover group. If provided, the update is rejected unless it matches the failover\ngroup's current etag. If omitted, the update proceeds without an optimistic-lock check.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "failover_group",
+          "description": "The failover group with updated fields. The name field identifies the resource\nand is populated from the URL path.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FailoverGroup",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "regions",
+                "description": "List of all regions participating in this failover group.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "workspace_sets",
+                "description": "Workspace sets, each containing workspaces that replicate to each other.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "WorkspaceSetList",
+                  "array_value": {
+                    "pascal_name": "WorkspaceSet",
+                    "is_object": true
+                  }
+                }
+              },
+              {
+                "name": "initial_primary_region",
+                "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "regions",
+                "description": "List of all regions participating in this failover group.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "workspace_sets",
+                "description": "Workspace sets, each containing workspaces that replicate to each other.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "WorkspaceSetList",
+                  "array_value": {
+                    "pascal_name": "WorkspaceSet",
+                    "is_object": true
+                  }
+                }
+              },
+              {
+                "name": "initial_primary_region",
+                "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Fully qualified resource name in the format\naccounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-separated list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time at which this failover group was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "effective_primary_region",
+          "description": "Current effective primary region. Replication flows FROM workspaces in this region.\nChanges after a successful failover.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Opaque version string for optimistic locking. Server-generated and returned in responses.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "has_replication_point_blocking_errors",
+          "description": "True if errors currently block the replication point.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "initial_primary_region",
+          "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "initial_replication_progress",
+          "description": "Initial replication progress of all in-scope assets. Set only when the FailoverGroup is in INITIAL_REPLICATION state.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "InitialReplicationProgress",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Fully qualified resource name in the format\naccounts/{account_id}/failover-groups/{failover_group_id}.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "regions",
+          "description": "List of all regions participating in this failover group.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "replication_point",
+          "description": "The latest point in time to which data has been replicated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "Aggregate state of the failover group.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FailoverGroupState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "CREATING"
+              },
+              {
+                "content": "CREATION_FAILED"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "DELETION_FAILED"
+              },
+              {
+                "content": "FAILING_OVER"
+              },
+              {
+                "content": "FAILOVER_FAILED"
+              },
+              {
+                "content": "INITIAL_REPLICATION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "unity_catalog_assets",
+          "description": "Unity Catalog replication configuration.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UcReplicationConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time at which this failover group was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "workspace_sets",
+          "description": "Workspace sets, each containing workspaces that replicate to each other.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceSetList",
+            "array_value": {
+              "pascal_name": "WorkspaceSet",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Fully qualified resource name in the format\naccounts/{account_id}/failover-groups/{failover_group_id}.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-separated list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "regions",
+          "description": "List of all regions participating in this failover group.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "workspace_sets",
+          "description": "Workspace sets, each containing workspaces that replicate to each other.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceSetList",
+            "array_value": {
+              "pascal_name": "WorkspaceSet",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "initial_primary_region",
+          "description": "Initial primary region. Used only in Create requests to set the starting\nprimary region. Not returned in responses.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

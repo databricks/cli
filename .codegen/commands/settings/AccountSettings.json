@@ -1,0 +1,22 @@
+{
+  "id": "settings.AccountSettings",
+  "name": "AccountSettings",
+  "description": "Accounts Settings API allows users to manage settings at the account level.",
+  "package": {
+    "name": "settings"
+  },
+  "is_accounts": true,
+  "has_subservices": true,
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "subservice_ids": [
+    "settings.CspEnablementAccount",
+    "settings.DisableLegacyFeatures",
+    "settings.EnableIpAccessLists",
+    "settings.EsmEnablementAccount",
+    "settings.LlmProxyPartnerPoweredAccount",
+    "settings.LlmProxyPartnerPoweredEnforce",
+    "settings.PersonalCompute"
+  ]
+}

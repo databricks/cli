@@ -1,0 +1,117 @@
+{
+  "id": "billing.UsageDashboards",
+  "name": "UsageDashboards",
+  "description": "These APIs manage usage dashboards for this account. Usage dashboards enable you to gain insights into your usage with pre-built dashboards: visualize breakdowns, analyze tag attributions, and identify cost drivers.",
+  "package": {
+    "name": "billing"
+  },
+  "is_accounts": true,
+  "docs_group": "billing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a usage dashboard specified by workspaceId, accountId, and dashboard type.",
+      "summary": "Create new usage dashboard.",
+      "path": "/api/2.0/accounts/{account_id}/dashboard",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateBillingUsageDashboardRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CreateBillingUsageDashboardResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_type",
+          "description": "Workspace level usage dashboard shows usage data for the specified workspace ID. Global level usage dashboard shows usage data for all workspaces in the account.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UsageDashboardType",
+            "enum": [
+              {
+                "content": "USAGE_DASHBOARD_TYPE_GLOBAL"
+              },
+              {
+                "content": "USAGE_DASHBOARD_TYPE_WORKSPACE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "major_version",
+          "description": "The major version of the usage dashboard template to use. Defaults to VERSION_1.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UsageDashboardMajorVersion",
+            "enum": [
+              {
+                "content": "USAGE_DASHBOARD_MAJOR_VERSION_1"
+              },
+              {
+                "content": "USAGE_DASHBOARD_MAJOR_VERSION_2"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID of the workspace in which the usage dashboard is created.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a usage dashboard specified by workspaceId, accountId, and dashboard type.",
+      "summary": "Get usage dashboard.",
+      "path": "/api/2.0/accounts/{account_id}/dashboard",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetBillingUsageDashboardRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetBillingUsageDashboardResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_type",
+          "description": "Workspace level usage dashboard shows usage data for the specified workspace ID. Global level usage dashboard shows usage data for all workspaces in the account.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "UsageDashboardType",
+            "enum": [
+              {
+                "content": "USAGE_DASHBOARD_TYPE_GLOBAL"
+              },
+              {
+                "content": "USAGE_DASHBOARD_TYPE_WORKSPACE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID of the workspace in which the usage dashboard is created.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    }
+  ]
+}

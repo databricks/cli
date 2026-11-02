@@ -1,0 +1,635 @@
+{
+  "id": "tags.TagPolicies",
+  "name": "TagPolicies",
+  "description": "The Tag Policy API allows you to manage policies for governed tags in Databricks. For Terraform usage, see the [Tag Policy Terraform documentation](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy). Permissions for tag policies can be managed using the [Account Access Control Proxy API](https://docs.databricks.com/api/workspace/accountaccesscontrolproxy).",
+  "package": {
+    "name": "tags"
+  },
+  "docs_group": "tags",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListTagPoliciesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateTagPolicy",
+      "description": "Creates a new tag policy, making the associated tag key governed. For Terraform usage, see the [Tag Policy Terraform documentation](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy). To manage permissions for tag policies, use the [Account Access Control Proxy API](https://docs.databricks.com/api/workspace/accountaccesscontrolproxy).",
+      "summary": "Create a new tag policy.",
+      "path": "/api/2.1/tag-policies",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateTagPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tag_policy",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "TagPolicy",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "tag_key",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "tag_key",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "TagPolicy",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "tag_policy",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TagPolicy",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "tag_key",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "tag_key",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when the tag policy was created",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when the tag policy was last updated",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "values",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ValueList",
+            "array_value": {
+              "pascal_name": "Value",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteTagPolicy",
+      "description": "Deletes a tag policy by its associated governed tag's key, leaving that tag key ungoverned. For Terraform usage, see the [Tag Policy Terraform documentation](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy).",
+      "summary": "Delete a tag policy.",
+      "path": "/api/2.1/tag-policies/{tag_key}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteTagPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetTagPolicy",
+      "description": "Gets a single tag policy by its associated governed tag's key. For Terraform usage, see the [Tag Policy Terraform documentation](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/tag_policy). To list granted permissions for tag policies, use the [Account Access Control Proxy API](https://docs.databricks.com/api/workspace/accountaccesscontrolproxy).",
+      "summary": "Get a tag policy.",
+      "path": "/api/2.1/tag-policies/{tag_key}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetTagPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TagPolicy",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListTagPolicies",
+      "description": "Lists the tag policies for all governed tags in the account. For Terraform usage, see the [Tag Policy Terraform documentation](https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/tag_policies). To list granted permissions for tag policies, use the [Account Access Control Proxy API](https://docs.databricks.com/api/workspace/accountaccesscontrolproxy).",
+      "summary": "List tag policies.",
+      "path": "/api/2.1/tag-policies",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListTagPoliciesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListTagPoliciesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of results to return in this request. Fewer results may be returned than requested. If\nunspecified or set to 0, this defaults to 1000. The maximum value is 1000; values above 1000 will be coerced down\nto 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "An optional page token received from a previous list tag policies call.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "An optional page token received from a previous list tag policies call.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateTagPolicy",
+      "description": "Updates an existing tag policy for a single governed tag. For Terraform usage, see the [Tag Policy Terraform documentation](https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy). To manage permissions for tag policies, use the [Account Access Control Proxy API](https://docs.databricks.com/api/workspace/accountaccesscontrolproxy).",
+      "summary": "Update an existing tag policy.",
+      "path": "/api/2.1/tag-policies/{tag_key}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateTagPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagPolicy",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tag_policy",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "TagPolicy",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "tag_key",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "tag_key",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "TagPolicy",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_key",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_policy",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TagPolicy",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "tag_key",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "tag_key",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when the tag policy was created",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when the tag policy was last updated",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "values",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ValueList",
+            "array_value": {
+              "pascal_name": "Value",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "tag_key",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

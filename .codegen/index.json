@@ -1,0 +1,350 @@
+{
+  "account_docs_groups": [
+    {
+      "key": "iam",
+      "display_name": "Identity and Access Management"
+    },
+    {
+      "key": "catalog",
+      "display_name": "Unity Catalog"
+    },
+    {
+      "key": "settings",
+      "display_name": "Settings"
+    },
+    {
+      "key": "provisioning",
+      "display_name": "Provisioning"
+    },
+    {
+      "key": "billing",
+      "display_name": "Billing"
+    },
+    {
+      "key": "oauth2",
+      "display_name": "OAuth"
+    },
+    {
+      "key": "disasterrecovery",
+      "display_name": "Disaster Recovery"
+    }
+  ],
+  "services": [
+    "iam.AccessControl",
+    "iam.AccountAccessControl",
+    "iam.AccountAccessControlProxy",
+    "agentbricks.AgentBricks",
+    "agentkit.AgentKit",
+    "aifunctions.AiFunctions",
+    "catalog.AiGateway",
+    "aisearch.AiSearch",
+    "settings.AibiDashboardEmbeddingAccessPolicy",
+    "settings.AibiDashboardEmbeddingApprovedDomains",
+    "sql.Alerts",
+    "sql.AlertsLegacy",
+    "sql.AlertsV2",
+    "apps.Apps",
+    "apps.AppsSettings",
+    "catalog.ArtifactAllowlists",
+    "settings.AutomaticClusterUpdate",
+    "billing.BillableUsage",
+    "billing.BudgetPolicy",
+    "billing.Budgets",
+    "bundledeployments.BundleDeployments",
+    "catalog.Catalogs",
+    "cleanrooms.CleanRoomAssetRevisions",
+    "cleanrooms.CleanRoomAssets",
+    "cleanrooms.CleanRoomAutoApprovalRules",
+    "cleanrooms.CleanRoomTaskRuns",
+    "cleanrooms.CleanRooms",
+    "compute.ClusterPolicies",
+    "compute.Clusters",
+    "compute.CommandExecution",
+    "settings.ComplianceSecurityProfile",
+    "catalog.Connections",
+    "marketplace.ConsumerFulfillments",
+    "marketplace.ConsumerInstallations",
+    "marketplace.ConsumerListings",
+    "marketplace.ConsumerPersonalizationRequests",
+    "marketplace.ConsumerProviders",
+    "catalog.Credentials",
+    "provisioning.Credentials",
+    "settings.CredentialsManager",
+    "settings.CspEnablementAccount",
+    "iam.CurrentUser",
+    "oauth2.CustomAppIntegration",
+    "settings.DashboardEmailSubscriptions",
+    "sql.DashboardWidgets",
+    "sql.Dashboards",
+    "dataclassification.DataClassification",
+    "dataquality.DataQuality",
+    "sql.DataSources",
+    "database.Database",
+    "files.Dbfs",
+    "sql.DbsqlPermissions",
+    "settings.DefaultNamespace",
+    "settings.DefaultWarehouseId",
+    "settings.DisableLegacyAccess",
+    "settings.DisableLegacyDbfs",
+    "settings.DisableLegacyFeatures",
+    "disasterrecovery.DisasterRecovery",
+    "domains.Domains",
+    "settings.EnableExportNotebook",
+    "settings.EnableIpAccessLists",
+    "settings.EnableNotebookTableClipboard",
+    "settings.EnableResultsDownloading",
+    "provisioning.EncryptionKeys",
+    "networking.Endpoints",
+    "settings.EnhancedSecurityMonitoring",
+    "catalog.EntityTagAssignments",
+    "environments.Environments",
+    "settings.EsmEnablementAccount",
+    "ml.Experiments",
+    "catalog.ExternalLineage",
+    "catalog.ExternalLocations",
+    "catalog.ExternalMetadata",
+    "ml.FeatureEngineering",
+    "ml.FeatureStore",
+    "oauth2.AccountFederationPolicy",
+    "files.Files",
+    "ml.Forecasting",
+    "catalog.Functions",
+    "dashboards.Genie",
+    "workspace.GitCredentials",
+    "compute.GlobalInitScripts",
+    "catalog.Grants",
+    "iam.GroupsV2",
+    "iam.AccountGroupsV2",
+    "iamv2.AccountIamV2",
+    "compute.InstancePools",
+    "compute.InstanceProfiles",
+    "settings.IpAccessLists",
+    "settings.AccountIpAccessLists",
+    "jobs.Jobs",
+    "knowledgeassistants.KnowledgeAssistants",
+    "dashboards.Lakeview",
+    "dashboards.LakeviewEmbedded",
+    "compute.Libraries",
+    "settings.LlmProxyPartnerPoweredAccount",
+    "settings.LlmProxyPartnerPoweredEnforce",
+    "settings.LlmProxyPartnerPoweredWorkspace",
+    "billing.LogDelivery",
+    "ml.MaterializedFeatures",
+    "catalog.AccountMetastoreAssignments",
+    "catalog.Metastores",
+    "catalog.AccountMetastores",
+    "ml.ModelRegistry",
+    "catalog.ModelVersions",
+    "settings.NetworkConnectivity",
+    "settings.NetworkPolicies",
+    "provisioning.Networks",
+    "settings.NotificationDestinations",
+    "oauth2.OAuthPublishedApps",
+    "catalog.OnlineTables",
+    "iam.PermissionMigration",
+    "iam.Permissions",
+    "settings.PersonalCompute",
+    "pipelines.Pipelines",
+    "catalog.Policies",
+    "compute.PolicyComplianceForClusters",
+    "jobs.PolicyComplianceForJobs",
+    "compute.PolicyFamilies",
+    "postgres.Postgres",
+    "provisioning.PrivateAccess",
+    "networking.PrivateNetworkGateways",
+    "marketplace.ProviderExchangeFilters",
+    "marketplace.ProviderExchanges",
+    "marketplace.ProviderFiles",
+    "marketplace.ProviderListings",
+    "marketplace.ProviderPersonalizationRequests",
+    "marketplace.ProviderProviderAnalyticsDashboards",
+    "marketplace.ProviderProviders",
+    "sharing.Providers",
+    "oauth2.PublishedAppIntegration",
+    "qualitymonitorv2.QualityMonitorV2",
+    "catalog.QualityMonitors",
+    "sql.Queries",
+    "sql.QueriesLegacy",
+    "sql.QueryHistory",
+    "sql.QueryVisualizations",
+    "sql.QueryVisualizationsLegacy",
+    "sharing.RecipientActivation",
+    "sharing.RecipientFederationPolicies",
+    "sharing.Recipients",
+    "sql.RedashConfig",
+    "catalog.RegisteredModels",
+    "workspace.Repos",
+    "catalog.ResourceQuotas",
+    "settings.RestrictWorkspaceAdmins",
+    "catalog.Rfa",
+    "sandbox.Sandbox",
+    "catalog.Schemas",
+    "workspace.Secrets",
+    "catalog.SecretsUc",
+    "oauth2.ServicePrincipalFederationPolicy",
+    "oauth2.ServicePrincipalSecrets",
+    "oauth2.ServicePrincipalSecretsProxy",
+    "iam.ServicePrincipalsV2",
+    "iam.AccountServicePrincipalsV2",
+    "serving.ServingEndpoints",
+    "serving.ServingEndpointsDataPlane",
+    "settings.Settings",
+    "settings.AccountSettings",
+    "settingsv2.AccountSettingsV2",
+    "sharing.Shares",
+    "settings.SqlResultsDownload",
+    "sql.StatementExecution",
+    "provisioning.Storage",
+    "catalog.StorageCredentials",
+    "catalog.AccountStorageCredentials",
+    "supervisoragents.SupervisorAgents",
+    "catalog.SystemSchemas",
+    "catalog.TableConstraints",
+    "catalog.Tables",
+    "tags.TagPolicies",
+    "catalog.TemporaryPathCredentials",
+    "catalog.TemporaryTableCredentials",
+    "catalog.TemporaryVolumeCredentials",
+    "settings.TokenManagement",
+    "settings.Tokens",
+    "billing.UsageDashboards",
+    "iam.UsersV2",
+    "iam.AccountUsersV2",
+    "vectorsearch.VectorSearchEndpoints",
+    "vectorsearch.VectorSearchIndexes",
+    "catalog.Volumes",
+    "provisioning.VpcEndpoints",
+    "sql.Warehouses",
+    "workspace.Workspace",
+    "iam.WorkspaceAssignment",
+    "catalog.WorkspaceBindings",
+    "settings.WorkspaceConf",
+    "tags.WorkspaceEntityTagAssignments",
+    "iamv2.WorkspaceIamV2",
+    "settings.WorkspaceNetworkConfiguration",
+    "settingsv2.WorkspaceSettingsV2",
+    "provisioning.Workspaces"
+  ],
+  "workspace_docs_groups": [
+    {
+      "key": "workspace",
+      "display_name": "Databricks Workspace"
+    },
+    {
+      "key": "compute",
+      "display_name": "Compute"
+    },
+    {
+      "key": "sandbox",
+      "display_name": "Sandbox"
+    },
+    {
+      "key": "lakeflow",
+      "display_name": "Lakeflow"
+    },
+    {
+      "key": "files",
+      "display_name": "File Management"
+    },
+    {
+      "key": "ml",
+      "display_name": "Machine Learning"
+    },
+    {
+      "key": "serving",
+      "display_name": "Real-time Serving"
+    },
+    {
+      "key": "apps",
+      "display_name": "Apps"
+    },
+    {
+      "key": "vectorsearch",
+      "display_name": "Vector Search"
+    },
+    {
+      "key": "aisearch",
+      "display_name": "AI Search"
+    },
+    {
+      "key": "iam",
+      "display_name": "Identity and Access Management"
+    },
+    {
+      "key": "sql",
+      "display_name": "Databricks SQL"
+    },
+    {
+      "key": "dashboards",
+      "display_name": "AI/BI"
+    },
+    {
+      "key": "catalog",
+      "display_name": "Unity Catalog"
+    },
+    {
+      "key": "sharing",
+      "display_name": "Open Sharing"
+    },
+    {
+      "key": "settings",
+      "display_name": "Settings"
+    },
+    {
+      "key": "oauth2",
+      "display_name": "OAuth"
+    },
+    {
+      "key": "marketplace",
+      "display_name": "Marketplace"
+    },
+    {
+      "key": "cleanrooms",
+      "display_name": "Clean Rooms"
+    },
+    {
+      "key": "qualitymonitor",
+      "display_name": "Quality Monitor"
+    },
+    {
+      "key": "dataclassification",
+      "display_name": "Data Classification"
+    },
+    {
+      "key": "dataquality",
+      "display_name": "Data Quality Monitoring"
+    },
+    {
+      "key": "database",
+      "display_name": "Database Instances"
+    },
+    {
+      "key": "agentbricks",
+      "display_name": "Agent Bricks"
+    },
+    {
+      "key": "aifunctions",
+      "display_name": "AI Functions"
+    },
+    {
+      "key": "tags",
+      "display_name": "Tags"
+    },
+    {
+      "key": "postgres",
+      "display_name": "Postgres"
+    },
+    {
+      "key": "environments",
+      "display_name": "Environments"
+    },
+    {
+      "key": "bundledeployments",
+      "display_name": "Bundle Deployments"
+    },
+    {
+      "key": "domains",
+      "display_name": "Domains"
+    }
+  ]
+}

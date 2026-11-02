@@ -1,0 +1,872 @@
+{
+  "id": "qualitymonitorv2.QualityMonitorV2",
+  "name": "QualityMonitorV2",
+  "description": "Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors). Manage data quality of UC objects (currently support `schema`).",
+  "package": {
+    "name": "qualitymonitorv2"
+  },
+  "docs_group": "qualitymonitor",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListQualityMonitorRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateQualityMonitor",
+      "description": "Deprecated: Use Data Quality Monitoring API instead (/api/data-quality/v1/monitors).\nCreate a quality monitor on UC object.",
+      "summary": "Create a quality monitor.",
+      "path": "/api/2.0/quality-monitors",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateQualityMonitorRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "quality_monitor",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "QualityMonitor",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "quality_monitor",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "QualityMonitor",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "quality_monitor",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "QualityMonitor",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: schema.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The uuid of the request object. For example, schema id.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: schema.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The uuid of the request object. For example, schema id.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "QualityMonitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "quality_monitor",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "QualityMonitor",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: schema.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The uuid of the request object. For example, schema id.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: schema.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The uuid of the request object. For example, schema id.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "anomaly_detection_config",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AnomalyDetectionConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "validity_check_configurations",
+          "description": "Validity check configurations for anomaly detection.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ValidityCheckConfigurationList",
+            "array_value": {
+              "pascal_name": "ValidityCheckConfiguration",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteQualityMonitor",
+      "description": "Deprecated: Use Data Quality Monitoring API instead (/api/data-quality/v1/monitors).\nDelete a quality monitor on UC object.",
+      "summary": "Delete a quality monitor.",
+      "path": "/api/2.0/quality-monitors/{object_type}/{object_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteQualityMonitorRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetQualityMonitor",
+      "description": "Deprecated: Use Data Quality Monitoring API instead (/api/data-quality/v1/monitors).\nRead a quality monitor on UC object.",
+      "summary": "Read a quality monitor.",
+      "path": "/api/2.0/quality-monitors/{object_type}/{object_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetQualityMonitorRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "QualityMonitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListQualityMonitor",
+      "description": "Deprecated: Use Data Quality Monitoring API instead (/api/data-quality/v1/monitors).\n(Unimplemented) List quality monitors.",
+      "summary": "List quality monitors.",
+      "path": "/api/2.0/quality-monitors",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListQualityMonitorRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListQualityMonitorResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateQualityMonitor",
+      "description": "Deprecated: Use Data Quality Monitoring API instead (/api/data-quality/v1/monitors).\n(Unimplemented) Update a quality monitor on UC object.",
+      "summary": "Update a quality monitor.",
+      "path": "/api/2.0/quality-monitors/{object_type}/{object_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateQualityMonitorRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "quality_monitor",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "QualityMonitor",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "quality_monitor",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "QualityMonitor",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "quality_monitor",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "QualityMonitor",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: schema.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The uuid of the request object. For example, schema id.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: schema.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The uuid of the request object. For example, schema id.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "QualityMonitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: schema.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The uuid of the request object. For example, schema id.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "quality_monitor",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "QualityMonitor",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: schema.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The uuid of the request object. For example, schema id.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: schema.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The uuid of the request object. For example, schema id.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "anomaly_detection_config",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AnomalyDetectionConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "validity_check_configurations",
+          "description": "Validity check configurations for anomaly detection.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ValidityCheckConfigurationList",
+            "array_value": {
+              "pascal_name": "ValidityCheckConfiguration",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: schema.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The uuid of the request object. For example, schema id.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

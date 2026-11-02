@@ -1,0 +1,364 @@
+{
+  "id": "sql.DashboardWidgets",
+  "name": "DashboardWidgets",
+  "description": "This is an evolving API that facilitates the addition and removal of widgets from existing\ndashboards within the Databricks Workspace. Data structures may change over time.",
+  "package": {
+    "name": "sql"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "sql",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Adds a widget to a dashboard",
+      "summary": "Add widget to a dashboard.",
+      "path": "/api/2.0/preview/sql/widgets",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateWidget",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "Dashboard ID returned by :method:dashboards/create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WidgetOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "width",
+            "description": "Width of a widget",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "Dashboard ID returned by :method:dashboards/create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WidgetOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "width",
+            "description": "Width of a widget",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Widget",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "Dashboard ID returned by :method:dashboards/create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WidgetOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "text",
+          "description": "If this is a textbox widget, the application displays this text. This field is ignored if the widget contains a visualization in the `visualization` field.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "visualization_id",
+          "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "width",
+          "description": "Width of a widget",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Removes a widget from a dashboard",
+      "summary": "Remove widget.",
+      "path": "/api/2.0/preview/sql/widgets/{id}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteDashboardWidgetRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Widget ID returned by :method:dashboardwidgets/create",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Widget ID returned by :method:dashboardwidgets/create",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Widget ID returned by :method:dashboardwidgets/create",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Widget ID returned by :method:dashboardwidgets/create",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates an existing widget",
+      "summary": "Update existing widget.",
+      "path": "/api/2.0/preview/sql/widgets/{id}",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateWidgetRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Widget ID returned by :method:dashboardwidgets/create",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "dashboard_id",
+            "description": "Dashboard ID returned by :method:dashboards/create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WidgetOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "width",
+            "description": "Width of a widget",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Widget ID returned by :method:dashboardwidgets/create",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "Dashboard ID returned by :method:dashboards/create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "options",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WidgetOptions",
+              "is_object": true
+            }
+          },
+          {
+            "name": "width",
+            "description": "Width of a widget",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Widget",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "Dashboard ID returned by :method:dashboards/create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Widget ID returned by :method:dashboardwidgets/create",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WidgetOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "text",
+          "description": "If this is a textbox widget, the application displays this text. This field is ignored if the widget contains a visualization in the `visualization` field.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "visualization_id",
+          "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "width",
+          "description": "Width of a widget",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Widget ID returned by :method:dashboardwidgets/create",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

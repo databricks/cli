@@ -1,0 +1,297 @@
+{
+  "id": "settings.NotificationDestinations",
+  "name": "NotificationDestinations",
+  "description": "The notification destinations API lets you programmatically manage a workspace's notification destinations.\nNotification destinations are used to send notifications for query alerts and jobs to destinations outside of Databricks.\nOnly workspace admins can create, update, and delete notification destinations.",
+  "package": {
+    "name": "settings"
+  },
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListNotificationDestinationsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a notification destination. Requires workspace admin permissions.",
+      "summary": "Create a notification destination.",
+      "path": "/api/2.0/notification-destinations",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateNotificationDestinationRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "NotificationDestination",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "config",
+          "description": "The configuration for the notification destination. Must wrap EXACTLY one of the nested configs.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Config",
+            "is_object": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name for the notification destination.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a notification destination. Requires workspace admin permissions.",
+      "summary": "Delete a notification destination.",
+      "path": "/api/2.0/notification-destinations/{id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteNotificationDestinationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Empty",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a notification destination.",
+      "summary": "Get a notification destination.",
+      "path": "/api/2.0/notification-destinations/{id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetNotificationDestinationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "NotificationDestination",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists notification destinations.",
+      "summary": "List notification destinations.",
+      "path": "/api/2.0/notification-destinations",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListNotificationDestinationsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListNotificationDestinationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates a notification destination. Requires workspace admin permissions. At least one field is required in the request body.",
+      "summary": "Update a notification destination.",
+      "path": "/api/2.0/notification-destinations/{id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateNotificationDestinationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "UUID identifying notification destination.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "UUID identifying notification destination.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "NotificationDestination",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "config",
+          "description": "The configuration for the notification destination. Must wrap EXACTLY one of the nested configs.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Config",
+            "is_object": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name for the notification destination.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "UUID identifying notification destination.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "UUID identifying notification destination.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

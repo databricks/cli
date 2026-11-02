@@ -1,0 +1,2015 @@
+{
+  "dashboards.AuthorizationDetails": {
+    "fields": {
+      "grant_rules": {
+        "description": "Represents downscoped permission rules with specific access rights.\nThis field is specific to `workspace_rule_set` constraint.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "resource_legacy_acl_path": {
+        "description": "The acl path of the tree store resource resource.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "resource_name": {
+        "description": "The resource name to which the authorization rule applies.\nThis field is specific to `workspace_rule_set` constraint.\nFormat: `workspaces/{workspace_id}/dashboards/{dashboard_id}`",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "type": {
+        "description": "The type of authorization downscoping policy.\nEx: `workspace_rule_set` defines access rules for a specific workspace resource",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dashboards.AuthorizationDetailsGrantRule": {
+    "fields": {
+      "permission_set": {
+        "description": "Permission sets for dashboard are defined in\niam-common/rbac-common/permission-sets/definitions/TreeStoreBasePermissionSets\nEx: `permissionSets/dashboard.runner`",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dashboards.CreateDashboardRequest": {
+    "fields": {
+      "dashboard": {
+        "ref": "dashboards.Dashboard",
+        "launch_stage": "GA"
+      },
+      "dataset_catalog": {
+        "description": "Sets the default catalog for all datasets in this dashboard.\nDoes not impact table references that use fully qualified catalog names (ex: samples.nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+        "launch_stage": "GA"
+      },
+      "dataset_schema": {
+        "description": "Sets the default schema for all datasets in this dashboard.\nDoes not impact table references that use fully qualified schema names (ex: nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.CreateScheduleRequest": {
+    "fields": {
+      "schedule": {
+        "description": "The schedule to create. A dashboard is limited to 10 schedules.",
+        "ref": "dashboards.Schedule",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.CreateSubscriptionRequest": {
+    "fields": {
+      "subscription": {
+        "description": "The subscription to create. A schedule is limited to 100 subscriptions.",
+        "ref": "dashboards.Subscription",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.CronSchedule": {
+    "fields": {
+      "quartz_cron_expression": {
+        "description": "A cron expression using quartz syntax. EX: `0 0 8 * * ?` represents everyday at 8am.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details.",
+        "launch_stage": "GA"
+      },
+      "timezone_id": {
+        "description": "A Java timezone id. The schedule will be resolved with respect to this timezone.\nSee [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.Dashboard": {
+    "fields": {
+      "create_time": {
+        "description": "The timestamp of when the dashboard was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "dashboard_id": {
+        "description": "UUID identifying the dashboard.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "The display name of the dashboard.",
+        "launch_stage": "GA"
+      },
+      "etag": {
+        "description": "The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard\nhas not been modified since the last read.\nThis field is excluded in List Dashboards responses.",
+        "launch_stage": "GA"
+      },
+      "lifecycle_state": {
+        "description": "The state of the dashboard resource. Used for tracking trashed status.",
+        "ref": "dashboards.LifecycleState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "parent_path": {
+        "description": "The workspace path of the folder containing the dashboard. Includes leading slash and no\ntrailing slash.\nThis field is excluded in List Dashboards responses.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "path": {
+        "description": "The workspace path of the dashboard asset, including the file name.\nExported dashboards always have the file extension `.lvdash.json`.\nThis field is excluded in List Dashboards responses.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "serialized_dashboard": {
+        "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "The timestamp of when the dashboard was last updated by the user.\nThis field is excluded in List Dashboards responses.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "warehouse_id": {
+        "description": "The warehouse ID used to run the dashboard.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.DashboardView": {
+    "enum": [
+      "DASHBOARD_VIEW_BASIC"
+    ],
+    "enum_launch_stages": {
+      "DASHBOARD_VIEW_BASIC": "GA"
+    }
+  },
+  "dashboards.DeleteScheduleRequest": {
+    "fields": {
+      "etag": {
+        "description": "The etag for the schedule. Optionally, it can be provided to verify that the schedule has not\nbeen modified from its last retrieval.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.DeleteSubscriptionRequest": {
+    "fields": {
+      "etag": {
+        "description": "The etag for the subscription. Can be optionally provided to ensure that the subscription has not been\nmodified since the last read.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.DownloadMessageAttachmentVisualizationRequest": {},
+  "dashboards.DownloadMessageAttachmentVisualizationResponse": {
+    "fields": {
+      "contents": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.EvaluationStatusType": {
+    "enum": [
+      "RUNNING",
+      "DONE",
+      "NOT_STARTED",
+      "EVALUATION_FAILED",
+      "EVALUATION_CANCELLED",
+      "EVALUATION_TIMEOUT"
+    ],
+    "enum_launch_stages": {
+      "DONE": "PUBLIC_BETA",
+      "EVALUATION_CANCELLED": "PUBLIC_BETA",
+      "EVALUATION_FAILED": "PUBLIC_BETA",
+      "EVALUATION_TIMEOUT": "PUBLIC_BETA",
+      "NOT_STARTED": "PUBLIC_BETA",
+      "RUNNING": "PUBLIC_BETA"
+    }
+  },
+  "dashboards.GenieAttachment": {
+    "description": "Genie AI Response",
+    "fields": {
+      "attachment_id": {
+        "description": "Attachment ID",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "query": {
+        "description": "Query Attachment if Genie responds with a SQL query",
+        "ref": "dashboards.GenieQueryAttachment",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "suggested_questions": {
+        "description": "Follow-up questions suggested by Genie",
+        "ref": "dashboards.GenieSuggestedQuestionsAttachment",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "text": {
+        "description": "Text Attachment if Genie responds with text\nThis also contains the final summary when available.",
+        "ref": "dashboards.TextAttachment",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "viz": {
+        "description": "Visualization generated by Genie, if requested via `enable_visualization`",
+        "ref": "dashboards.GenieVizAttachment",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieCancelResponseRequest": {
+    "description": "Request to cancel an in-flight agent-mode response."
+  },
+  "dashboards.GenieConversation": {
+    "description": "A Genie conversation. Use chat-mode message endpoints for classic chats and agent-mode\nresponse and item endpoints for agent conversations. Conversation management, feedback,\ncomments, and attachment operations support both modes.",
+    "fields": {
+      "conversation_id": {
+        "description": "Conversation ID",
+        "launch_stage": "GA"
+      },
+      "created_timestamp": {
+        "description": "Timestamp when the message was created",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "Conversation ID.\nLegacy identifier, use conversation_id instead",
+        "deprecated": true,
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_updated_timestamp": {
+        "description": "Timestamp when the message was last updated",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "space_id": {
+        "description": "Genie space ID",
+        "launch_stage": "GA"
+      },
+      "title": {
+        "description": "Conversation title",
+        "launch_stage": "GA"
+      },
+      "user_id": {
+        "description": "ID of the user who created the conversation",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieConversationSummary": {
+    "fields": {
+      "agent_type": {
+        "description": "Whether this is a classic chat or an agent-mode conversation. Allows callers to\nroute message retrieval (chat vs. agent endpoint) without an extra lookup.",
+        "ref": "dashboards.GenieConversationType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "conversation_id": {
+        "launch_stage": "GA"
+      },
+      "created_timestamp": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "title": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieConversationType": {
+    "description": "The type of a Genie conversation. Distinguishes an agent-mode conversation from\na classic chat conversation so callers can route message retrieval accordingly\nwithout a per-conversation lookup.",
+    "enum": [
+      "GENIE_CONVERSATION_TYPE_CHAT",
+      "GENIE_CONVERSATION_TYPE_AGENT"
+    ],
+    "enum_launch_stages": {
+      "GENIE_CONVERSATION_TYPE_AGENT": "GA",
+      "GENIE_CONVERSATION_TYPE_CHAT": "GA"
+    }
+  },
+  "dashboards.GenieCreateConversationMessageRequest": {
+    "fields": {
+      "content": {
+        "description": "User message content.",
+        "launch_stage": "GA"
+      },
+      "enable_visualization": {
+        "description": "Enable visualization generation.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieCreateEvalRunRequest": {
+    "fields": {
+      "benchmark_question_ids": {
+        "description": "List of benchmark question IDs to evaluate. These questions must exist in the specified Genie space. If none are specified, then all benchmark questions are evaluated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieCreateMessageCommentRequest": {
+    "fields": {
+      "content": {
+        "description": "Comment text content.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dashboards.GenieCreateSpaceRequest": {
+    "fields": {
+      "description": {
+        "description": "Optional description",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "parent_path": {
+        "description": "Parent folder path where the space will be registered",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "serialized_space": {
+        "description": "The contents of the Genie Space in serialized string form.\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+        "launch_stage": "GA"
+      },
+      "title": {
+        "description": "Optional title override",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "warehouse_id": {
+        "description": "Warehouse to associate with the new space",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieDeleteConversationMessageRequest": {},
+  "dashboards.GenieDeleteConversationRequest": {},
+  "dashboards.GenieEvalAssessment": {
+    "enum": [
+      "GOOD",
+      "BAD",
+      "NEEDS_REVIEW"
+    ],
+    "enum_launch_stages": {
+      "BAD": "PUBLIC_BETA",
+      "GOOD": "PUBLIC_BETA",
+      "NEEDS_REVIEW": "PUBLIC_BETA"
+    }
+  },
+  "dashboards.GenieEvalResponse": {
+    "fields": {
+      "response": {
+        "description": "The response content (either text or SQL query).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "response_type": {
+        "description": "Type of response",
+        "ref": "dashboards.GenieEvalResponseType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sql_execution_result": {
+        "description": "SQL Statement Execution response.",
+        "ref": "sql.StatementResponse",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieEvalResponseType": {
+    "enum": [
+      "TEXT",
+      "SQL"
+    ],
+    "enum_launch_stages": {
+      "SQL": "PUBLIC_BETA",
+      "TEXT": "PUBLIC_BETA"
+    }
+  },
+  "dashboards.GenieEvalResult": {
+    "description": "Shows summary information for an evaluation result.\nFor detailed information including SQL execution results, actual/expected responses, and assessment scores, use GenieGetEvalResultDetails.",
+    "fields": {
+      "benchmark_answer": {
+        "description": "Stored snapshot of original benchmark answer text.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "benchmark_question_id": {
+        "description": "The ID of the benchmark question that was evaluated.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "created_by_user": {
+        "description": "User ID who created evaluation result.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "question": {
+        "description": "Stored snapshot of original benchmark question text.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "result_id": {
+        "description": "Unique identifier for this evaluation result.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "space_id": {
+        "description": "The ID of the space the evaluation result belongs to.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "status": {
+        "description": "Current status of this evaluation result.",
+        "ref": "dashboards.EvaluationStatusType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieEvalResultDetails": {
+    "description": "Shows detailed information for an evaluation result.",
+    "fields": {
+      "actual_response": {
+        "description": "The actual response generated by Genie.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "assessment": {
+        "description": "Assessment of the evaluation result: good, bad, or needs review",
+        "ref": "dashboards.GenieEvalAssessment",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "assessment_reasons": {
+        "description": "Reasons for the assessment score.\n\nAssessment reasons describe why a Genie response was scored as BAD.\n\nDeterministic values (compared against the ground truth result):\n- EMPTY_RESULT: Genie's generated SQL results were empty for this benchmark question.\n- RESULT_MISSING_ROWS: Genie's generated SQL response is missing rows from the provided ground truth SQL.\n- RESULT_EXTRA_ROWS: Genie's generated SQL response has more rows than the provided ground truth SQL.\n- RESULT_MISSING_COLUMNS: Genie's generated SQL response is missing columns from the provided ground truth SQL.\n- RESULT_EXTRA_COLUMNS: Genie's generated SQL response has more columns than the provided ground truth SQL.\n- SINGLE_CELL_DIFFERENCE: Single value result was produced but differs from ground truth result.\n- EMPTY_GOOD_SQL: The benchmark SQL returned an empty result.\n- COLUMN_TYPE_DIFFERENCE: The values between the results match but the column type is different.\n\nLLM judge ratings explain the factors driving BAD results:\n- LLM_JUDGE_MISSING_OR_INCORRECT_FILTER: Genie's generated SQL is missing a WHERE clause condition or has incorrect filter logic that excludes/includes wrong data.\n- LLM_JUDGE_INCOMPLETE_OR_PARTIAL_OUTPUT: Genie's generated SQL returns only some of the requested data or columns, missing parts of what the ground truth SQL returns.\n- LLM_JUDGE_MISINTERPRETATION_OF_USER_REQUEST: Genie's generated SQL fundamentally misunderstands what the user is asking for, addressing the wrong question or goal.\n- LLM_JUDGE_INSTRUCTION_COMPLIANCE_OR_MISSING_BUSINESS_LOGIC: Genie's generated SQL fails to apply specified instructions or business logic that should be followed.\n- LLM_JUDGE_INCORRECT_METRIC_CALCULATION: Genie's generated SQL uses incorrect logic or makes wrong assumptions when calculating metrics.\n- LLM_JUDGE_INCORRECT_TABLE_OR_FIELD_USAGE: Genie's generated SQL references wrong tables, columns, or uses fields that don't match the ground truth SQL's intent.\n- LLM_JUDGE_INCORRECT_FUNCTION_USAGE: Genie's generated SQL uses SQL functions incorrectly or inappropriately (wrong parameters, wrong function for the task, etc.).\n- LLM_JUDGE_MISSING_OR_INCORRECT_JOIN: Genie's generated SQL is missing necessary joins between tables or has incorrect join conditions/types that produce wrong results.\n- LLM_JUDGE_MISSING_OR_INCORRECT_AGGREGATION: Genie's generated SQL is missing GROUP BY clauses or has incorrect grouping that doesn't match the requested aggregation level.\n- LLM_JUDGE_FORMATTING_ERROR: Genie's generated SQL output has incorrect formatting, ordering (ORDER BY), or presentation issues that don't match expectations.\n- LLM_JUDGE_OTHER: LLM judge identified an error that doesn't fall into other categories.\n\nDeprecated LLM judge values (kept for backward compatibility, do not use):\n- LLM_JUDGE_MISSING_JOIN (deprecated)\n- LLM_JUDGE_WRONG_FILTER (deprecated)\n- LLM_JUDGE_WRONG_AGGREGATION (deprecated)\n- LLM_JUDGE_WRONG_COLUMNS (deprecated)\n- LLM_JUDGE_SYNTAX_ERROR (deprecated)\n- LLM_JUDGE_SEMANTIC_ERROR (deprecated)",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "benchmark_question_id": {
+        "description": "The ID of the benchmark question that was evaluated.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "eval_run_status": {
+        "description": "Current status of the evaluation run.",
+        "ref": "dashboards.EvaluationStatusType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "expected_response": {
+        "description": "The expected responses from the benchmark.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "manual_assessment": {
+        "description": "Whether this evaluation was manually assessed.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "result_id": {
+        "description": "The unique identifier for the evaluation result.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "space_id": {
+        "description": "The ID of the space the evaluation result belongs to.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "dashboards.GenieEvalRunResponse": {
+    "description": "A benchmark evaluation run. The public benchmark API currently evaluates chat-mode responses.",
+    "fields": {
+      "created_timestamp": {
+        "description": "Timestamp when the evaluation run was created (milliseconds since epoch).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "eval_run_id": {
+        "description": "The unique identifier for the evaluation run.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "eval_run_status": {
+        "description": "Current status of the evaluation run.",
+        "ref": "dashboards.EvaluationStatusType",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "last_updated_timestamp": {
+        "description": "Timestamp when the evaluation run was last updated (milliseconds since epoch).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "num_correct": {
+        "description": "Number of questions answered correctly.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "num_done": {
+        "description": "Number of questions that have been completed.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "num_needs_review": {
+        "description": "Number of questions that need manual review.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "num_questions": {
+        "description": "Total number of questions in the evaluation run.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "run_by_user": {
+        "description": "User ID who initiated the evaluation run.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "dashboards.GenieExecuteMessageAttachmentQueryRequest": {},
+  "dashboards.GenieExecuteMessageQueryRequest": {},
+  "dashboards.GenieFeedback": {
+    "description": "Feedback containing rating and optional comment",
+    "fields": {
+      "comment": {
+        "description": "Optional feedback comment text",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "rating": {
+        "description": "The feedback rating",
+        "ref": "dashboards.GenieFeedbackRating",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieFeedbackRating": {
+    "description": "Feedback rating for Genie messages",
+    "enum": [
+      "POSITIVE",
+      "NEGATIVE",
+      "NONE"
+    ],
+    "enum_launch_stages": {
+      "NEGATIVE": "GA",
+      "NONE": "GA",
+      "POSITIVE": "GA"
+    }
+  },
+  "dashboards.GenieGenerateDownloadFullQueryResultRequest": {},
+  "dashboards.GenieGenerateDownloadFullQueryResultResponse": {
+    "fields": {
+      "download_id": {
+        "description": "Download ID. Use this ID to track the download request in subsequent polling calls",
+        "launch_stage": "GA"
+      },
+      "download_id_signature": {
+        "description": "JWT signature for the download_id to ensure secure access to query results",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieGetConversationMessageRequest": {},
+  "dashboards.GenieGetDownloadFullQueryResultRequest": {
+    "fields": {
+      "download_id_signature": {
+        "description": "JWT signature for the download_id to ensure secure access to query results",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieGetDownloadFullQueryResultResponse": {
+    "fields": {
+      "statement_response": {
+        "description": "SQL Statement Execution response. See [Get status, manifest, and result first chunk](:method:statementexecution/getstatement) for more details.",
+        "ref": "sql.StatementResponse",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieGetEvalResultDetailsRequest": {},
+  "dashboards.GenieGetEvalRunRequest": {},
+  "dashboards.GenieGetMessageAttachmentQueryResultRequest": {},
+  "dashboards.GenieGetMessageQueryResultRequest": {},
+  "dashboards.GenieGetMessageQueryResultResponse": {
+    "fields": {
+      "statement_response": {
+        "description": "SQL Statement Execution response. See [Get status, manifest, and result first chunk](:method:statementexecution/getstatement) for more details.",
+        "ref": "sql.StatementResponse",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieGetQueryResultByAttachmentRequest": {},
+  "dashboards.GenieGetSpaceRequest": {
+    "fields": {
+      "include_serialized_space": {
+        "description": "Whether to include the serialized space export in the response.\nRequires at least CAN EDIT permission on the space.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListConversationCommentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of comments to return per page.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token for getting the next page of results.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListConversationCommentsResponse": {
+    "fields": {
+      "comments": {
+        "description": "List of comments in the conversation.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "next_page_token": {
+        "description": "Token to get the next page of results.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dashboards.GenieListConversationMessagesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of messages to return per page",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Token to get the next page of results",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListConversationMessagesResponse": {
+    "fields": {
+      "messages": {
+        "description": "List of messages in the conversation.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "The token to use for retrieving the next page of results.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieListConversationsRequest": {
+    "fields": {
+      "include_all": {
+        "description": "Include all conversations in the space across all users.\nRequires at least CAN MANAGE permission on the space.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "Maximum number of conversations to return per page",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Token to get the next page of results",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListConversationsResponse": {
+    "fields": {
+      "conversations": {
+        "description": "List of conversations in the Genie space",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Token to get the next page of results",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieListEvalResultsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of eval results to return per page.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Opaque token to retrieve the next page of results.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListEvalResultsResponse": {
+    "fields": {
+      "eval_results": {
+        "description": "List of evaluation results for the specified run.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "The token to use for retrieving the next page of results.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "dashboards.GenieListEvalRunsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of evaluation runs to return per page",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Token to get the next page of results",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListEvalRunsResponse": {
+    "fields": {
+      "eval_runs": {
+        "description": "List of evaluation runs for a space on provided page token and page size",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "The token to use for retrieving the next page of results.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "dashboards.GenieListMessageCommentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of comments to return per page.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token for getting the next page of results.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListMessageCommentsResponse": {
+    "fields": {
+      "comments": {
+        "description": "List of comments on the message.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "next_page_token": {
+        "description": "Token to get the next page of results.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dashboards.GenieListSpacesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of spaces to return per page",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token for getting the next page of results",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieListSpacesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Token to get the next page of results",
+        "launch_stage": "GA"
+      },
+      "spaces": {
+        "description": "List of Genie spaces",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieMessage": {
+    "fields": {
+      "attachments": {
+        "description": "AI-generated response to the message",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "content": {
+        "description": "User message content",
+        "launch_stage": "GA"
+      },
+      "conversation_id": {
+        "description": "Conversation ID",
+        "launch_stage": "GA"
+      },
+      "created_timestamp": {
+        "description": "Timestamp when the message was created",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "error": {
+        "description": "Error message if Genie failed to respond to the message",
+        "ref": "dashboards.MessageError",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "feedback": {
+        "description": "User feedback for the message if provided",
+        "ref": "dashboards.GenieFeedback",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "Message ID.\nLegacy identifier, use message_id instead",
+        "deprecated": true,
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_updated_timestamp": {
+        "description": "Timestamp when the message was last updated",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message_id": {
+        "description": "Message ID",
+        "launch_stage": "GA"
+      },
+      "query_result": {
+        "description": "The result of SQL query if the message includes a query attachment.\nDeprecated. Use `query_result_metadata` in `GenieQueryAttachment` instead.",
+        "ref": "dashboards.Result",
+        "deprecated": true,
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "space_id": {
+        "description": "Genie space ID",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "ref": "dashboards.MessageStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "user_id": {
+        "description": "ID of the user who created the message",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieMessageComment": {
+    "description": "A comment on a Genie conversation message.",
+    "fields": {
+      "content": {
+        "description": "Comment text content",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "conversation_id": {
+        "description": "Conversation ID",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "created_timestamp": {
+        "description": "Timestamp when the comment was created",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message_comment_id": {
+        "description": "Comment ID",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "message_id": {
+        "description": "Message ID",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "space_id": {
+        "description": "Genie space ID",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "user_id": {
+        "description": "ID of the user who created the comment",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieQueryAttachment": {
+    "fields": {
+      "description": {
+        "description": "Description of the query",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "id": {
+        "deprecated": true,
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_updated_timestamp": {
+        "description": "Time when the user updated the query last",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "parameters": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query": {
+        "description": "AI generated SQL query",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query_result_metadata": {
+        "description": "Metadata associated with the query result.",
+        "ref": "dashboards.GenieResultMetadata",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "statement_id": {
+        "description": "Statement Execution API statement id. Use [Get status, manifest, and result first chunk](:method:statementexecution/getstatement) to get the full result data.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "thoughts": {
+        "description": "Insights into how Genie came to generate the SQL.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "title": {
+        "description": "Name of the query",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieResultMetadata": {
+    "fields": {
+      "is_truncated": {
+        "description": "Indicates whether the result set is truncated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "row_count": {
+        "description": "The number of rows in the result set.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieSendMessageFeedbackRequest": {
+    "fields": {
+      "comment": {
+        "description": "Optional text feedback that will be stored as a comment.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "rating": {
+        "description": "The rating (POSITIVE, NEGATIVE, or NONE).",
+        "ref": "dashboards.GenieFeedbackRating",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieSpace": {
+    "fields": {
+      "create_time": {
+        "description": "Time when the Genie space was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Description of the Genie Space",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "etag": {
+        "description": "ETag for this space. Pass this value back in the update request to prevent overwriting\nconcurrent changes.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "parent_path": {
+        "description": "Parent folder path of the Genie Space",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "serialized_space": {
+        "description": "The contents of the Genie Space in serialized string form.\nThis field is excluded in List Genie spaces responses.\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "space_id": {
+        "description": "Genie space ID",
+        "launch_stage": "GA"
+      },
+      "title": {
+        "description": "Title of the Genie Space",
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "Time when the Genie space was last modified, matching the value shown in the Genie Agent UI.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "warehouse_id": {
+        "description": "Warehouse associated with the Genie Space",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieStartConversationMessageRequest": {
+    "fields": {
+      "content": {
+        "description": "The text of the message that starts the conversation.",
+        "launch_stage": "GA"
+      },
+      "enable_visualization": {
+        "description": "Enable visualization generation.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieStartConversationResponse": {
+    "fields": {
+      "conversation": {
+        "ref": "dashboards.GenieConversation",
+        "launch_stage": "GA"
+      },
+      "conversation_id": {
+        "description": "Conversation ID",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "ref": "dashboards.GenieMessage",
+        "launch_stage": "GA"
+      },
+      "message_id": {
+        "description": "Message ID",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.GenieSuggestedQuestionsAttachment": {
+    "description": "Follow-up questions suggested by Genie",
+    "fields": {
+      "questions": {
+        "description": "The suggested follow-up questions",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieTrashSpaceRequest": {},
+  "dashboards.GenieUpdateSpaceRequest": {
+    "fields": {
+      "description": {
+        "description": "Optional description",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "etag": {
+        "description": "ETag returned by a previous GET or UPDATE. When set, the update will fail if the space\nhas been modified since. Omit to apply the update unconditionally.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "parent_path": {
+        "description": "Parent workspace folder path to move this Genie space under.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "serialized_space": {
+        "description": "The contents of the Genie Space in serialized string form (full replacement).\nUse the [Get Genie Space](:method:genie/getspace) API to retrieve an example response, which includes the `serialized_space` field.\nThis field provides the structure of the JSON string that represents the space's layout and components.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "title": {
+        "description": "Optional title override",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "warehouse_id": {
+        "description": "Optional warehouse override",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "dashboards.GenieVizAttachment": {
+    "description": "Visualization generated by Genie for a query result. Use the attachment ID\nwith the download visualization API to retrieve the rendered image.",
+    "fields": {
+      "query_attachment_id": {
+        "description": "The ID of the query attachment the visualization was generated from",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "title": {
+        "description": "Name of the visualization",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.GetDashboardRequest": {},
+  "dashboards.GetPublishedDashboardRequest": {},
+  "dashboards.GetPublishedDashboardTokenInfoRequest": {
+    "fields": {
+      "external_value": {
+        "description": "Provided external value to be included in the custom claim.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "external_viewer_id": {
+        "description": "Provided external viewer id to be included in the custom claim.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dashboards.GetPublishedDashboardTokenInfoResponse": {
+    "fields": {
+      "authorization_details": {
+        "description": "Authorization constraints for accessing the published dashboard.\nCurrently includes `workspace_rule_set` and could be enriched with `unity_catalog_privileges` before\noAuth token generation.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "custom_claim": {
+        "description": "Custom claim generated from external_value and external_viewer_id.\nFormat: `urn:aibi:external_data:\u003cexternal_value\u003e:\u003cexternal_viewer_id\u003e:\u003cdashboard_id\u003e`",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "scope": {
+        "description": "Scope defining access permissions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dashboards.GetScheduleRequest": {},
+  "dashboards.GetSubscriptionRequest": {},
+  "dashboards.LifecycleState": {
+    "enum": [
+      "ACTIVE",
+      "TRASHED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "TRASHED": "GA"
+    }
+  },
+  "dashboards.ListDashboardsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The number of dashboards to return per page.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListDashboards` call.\nThis token can be used to retrieve the subsequent page.",
+        "launch_stage": "GA"
+      },
+      "show_trashed": {
+        "description": "The flag to include dashboards located in the trash.\nIf unspecified, only active dashboards will be returned.",
+        "launch_stage": "GA"
+      },
+      "view": {
+        "description": "`DASHBOARD_VIEW_BASIC` only includes summary metadata from the dashboard.",
+        "ref": "dashboards.DashboardView",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.ListDashboardsResponse": {
+    "fields": {
+      "dashboards": {
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent dashboards.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.ListSchedulesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The number of schedules to return per page.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListSchedules` call.\nUse this to retrieve the subsequent page.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.ListSchedulesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be used as a `page_token` in subsequent requests to retrieve the next page of results.\nIf this field is omitted, there are no subsequent schedules.",
+        "launch_stage": "GA"
+      },
+      "schedules": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.ListSubscriptionsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The number of subscriptions to return per page.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListSubscriptions` call.\nUse this to retrieve the subsequent page.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.ListSubscriptionsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be used as a `page_token` in subsequent requests to retrieve the next page of results.\nIf this field is omitted, there are no subsequent subscriptions.",
+        "launch_stage": "GA"
+      },
+      "subscriptions": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.MessageError": {
+    "fields": {
+      "error": {
+        "launch_stage": "GA"
+      },
+      "type": {
+        "ref": "dashboards.MessageErrorType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.MessageErrorType": {
+    "enum": [
+      "UNEXPECTED_REPLY_PROCESS_EXCEPTION",
+      "GENERIC_CHAT_COMPLETION_EXCEPTION",
+      "CONTEXT_EXCEEDED_EXCEPTION",
+      "DEPLOYMENT_NOT_FOUND_EXCEPTION",
+      "FUNCTIONS_NOT_AVAILABLE_EXCEPTION",
+      "INVALID_COMPLETION_REQUEST_EXCEPTION",
+      "CONTENT_FILTER_EXCEPTION",
+      "FUNCTION_ARGUMENTS_INVALID_JSON_EXCEPTION",
+      "RETRYABLE_PROCESSING_EXCEPTION",
+      "INVALID_FUNCTION_CALL_EXCEPTION",
+      "LOCAL_CONTEXT_EXCEEDED_EXCEPTION",
+      "CHAT_COMPLETION_NETWORK_EXCEPTION",
+      "INVALID_CHAT_COMPLETION_JSON_EXCEPTION",
+      "GENERIC_CHAT_COMPLETION_SERVICE_EXCEPTION",
+      "WAREHOUSE_ACCESS_MISSING_EXCEPTION",
+      "WAREHOUSE_NOT_FOUND_EXCEPTION",
+      "NO_TABLES_TO_QUERY_EXCEPTION",
+      "SQL_EXECUTION_EXCEPTION",
+      "REPLY_PROCESS_TIMEOUT_EXCEPTION",
+      "COULD_NOT_GET_UC_SCHEMA_EXCEPTION",
+      "INVALID_TABLE_IDENTIFIER_EXCEPTION",
+      "TOO_MANY_TABLES_EXCEPTION",
+      "FUNCTION_ARGUMENTS_INVALID_EXCEPTION",
+      "GENERIC_SQL_EXEC_API_CALL_EXCEPTION",
+      "CHAT_COMPLETION_CLIENT_EXCEPTION",
+      "CHAT_COMPLETION_CLIENT_TIMEOUT_EXCEPTION",
+      "UNKNOWN_AI_MODEL",
+      "TABLES_MISSING_EXCEPTION",
+      "MESSAGE_DELETED_WHILE_EXECUTING_EXCEPTION",
+      "MESSAGE_UPDATED_WHILE_EXECUTING_EXCEPTION",
+      "BLOCK_MULTIPLE_EXECUTIONS_EXCEPTION",
+      "INVALID_CERTIFIED_ANSWER_IDENTIFIER_EXCEPTION",
+      "TOO_MANY_CERTIFIED_ANSWERS_EXCEPTION",
+      "RATE_LIMIT_EXCEEDED_GENERIC_EXCEPTION",
+      "RATE_LIMIT_EXCEEDED_SPECIFIED_WAIT_EXCEPTION",
+      "FUNCTION_CALL_MISSING_PARAMETER_EXCEPTION",
+      "INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION",
+      "ILLEGAL_PARAMETER_DEFINITION_EXCEPTION",
+      "NO_QUERY_TO_VISUALIZE_EXCEPTION",
+      "NO_DEPLOYMENTS_AVAILABLE_TO_WORKSPACE",
+      "STOP_PROCESS_DUE_TO_AUTO_REGENERATE",
+      "FUNCTION_ARGUMENTS_INVALID_TYPE_EXCEPTION",
+      "MESSAGE_CANCELLED_WHILE_EXECUTING_EXCEPTION",
+      "COULD_NOT_GET_MODEL_DEPLOYMENTS_EXCEPTION",
+      "GENERATED_SQL_QUERY_TOO_LONG_EXCEPTION",
+      "MISSING_SQL_QUERY_EXCEPTION",
+      "DESCRIBE_QUERY_UNEXPECTED_FAILURE",
+      "DESCRIBE_QUERY_TIMEOUT",
+      "DESCRIBE_QUERY_INVALID_SQL_ERROR",
+      "INVALID_SQL_UNKNOWN_TABLE_EXCEPTION",
+      "INVALID_SQL_MULTIPLE_STATEMENTS_EXCEPTION",
+      "INVALID_SQL_MULTIPLE_DATASET_REFERENCES_EXCEPTION",
+      "MESSAGE_ATTACHMENT_TOO_LONG_ERROR",
+      "INTERNAL_CATALOG_PATH_OVERLAP_EXCEPTION",
+      "INTERNAL_CATALOG_MISSING_UC_PATH_EXCEPTION",
+      "EXCEEDED_MAX_TOKEN_LENGTH_EXCEPTION",
+      "INTERNAL_CATALOG_ASSET_CREATION_ONGOING_EXCEPTION",
+      "INTERNAL_CATALOG_ASSET_CREATION_FAILED_EXCEPTION",
+      "INTERNAL_CATALOG_ASSET_CREATION_UNSUPPORTED_EXCEPTION",
+      "UNSUPPORTED_CONVERSATION_TYPE_EXCEPTION",
+      "COULD_NOT_GET_DASHBOARD_SCHEMA_EXCEPTION"
+    ],
+    "enum_launch_stages": {
+      "BLOCK_MULTIPLE_EXECUTIONS_EXCEPTION": "GA",
+      "CHAT_COMPLETION_CLIENT_EXCEPTION": "GA",
+      "CHAT_COMPLETION_CLIENT_TIMEOUT_EXCEPTION": "GA",
+      "CHAT_COMPLETION_NETWORK_EXCEPTION": "GA",
+      "CONTENT_FILTER_EXCEPTION": "GA",
+      "CONTEXT_EXCEEDED_EXCEPTION": "GA",
+      "COULD_NOT_GET_DASHBOARD_SCHEMA_EXCEPTION": "GA",
+      "COULD_NOT_GET_MODEL_DEPLOYMENTS_EXCEPTION": "GA",
+      "COULD_NOT_GET_UC_SCHEMA_EXCEPTION": "GA",
+      "DEPLOYMENT_NOT_FOUND_EXCEPTION": "GA",
+      "DESCRIBE_QUERY_INVALID_SQL_ERROR": "GA",
+      "DESCRIBE_QUERY_TIMEOUT": "GA",
+      "DESCRIBE_QUERY_UNEXPECTED_FAILURE": "GA",
+      "EXCEEDED_MAX_TOKEN_LENGTH_EXCEPTION": "GA",
+      "FUNCTIONS_NOT_AVAILABLE_EXCEPTION": "GA",
+      "FUNCTION_ARGUMENTS_INVALID_EXCEPTION": "GA",
+      "FUNCTION_ARGUMENTS_INVALID_JSON_EXCEPTION": "GA",
+      "FUNCTION_ARGUMENTS_INVALID_TYPE_EXCEPTION": "GA",
+      "FUNCTION_CALL_MISSING_PARAMETER_EXCEPTION": "GA",
+      "GENERATED_SQL_QUERY_TOO_LONG_EXCEPTION": "GA",
+      "GENERIC_CHAT_COMPLETION_EXCEPTION": "GA",
+      "GENERIC_CHAT_COMPLETION_SERVICE_EXCEPTION": "GA",
+      "GENERIC_SQL_EXEC_API_CALL_EXCEPTION": "GA",
+      "ILLEGAL_PARAMETER_DEFINITION_EXCEPTION": "GA",
+      "INTERNAL_CATALOG_ASSET_CREATION_FAILED_EXCEPTION": "GA",
+      "INTERNAL_CATALOG_ASSET_CREATION_ONGOING_EXCEPTION": "GA",
+      "INTERNAL_CATALOG_ASSET_CREATION_UNSUPPORTED_EXCEPTION": "GA",
+      "INTERNAL_CATALOG_MISSING_UC_PATH_EXCEPTION": "GA",
+      "INTERNAL_CATALOG_PATH_OVERLAP_EXCEPTION": "GA",
+      "INVALID_CERTIFIED_ANSWER_FUNCTION_EXCEPTION": "GA",
+      "INVALID_CERTIFIED_ANSWER_IDENTIFIER_EXCEPTION": "GA",
+      "INVALID_CHAT_COMPLETION_JSON_EXCEPTION": "GA",
+      "INVALID_COMPLETION_REQUEST_EXCEPTION": "GA",
+      "INVALID_FUNCTION_CALL_EXCEPTION": "GA",
+      "INVALID_SQL_MULTIPLE_DATASET_REFERENCES_EXCEPTION": "GA",
+      "INVALID_SQL_MULTIPLE_STATEMENTS_EXCEPTION": "GA",
+      "INVALID_SQL_UNKNOWN_TABLE_EXCEPTION": "GA",
+      "INVALID_TABLE_IDENTIFIER_EXCEPTION": "GA",
+      "LOCAL_CONTEXT_EXCEEDED_EXCEPTION": "GA",
+      "MESSAGE_ATTACHMENT_TOO_LONG_ERROR": "GA",
+      "MESSAGE_CANCELLED_WHILE_EXECUTING_EXCEPTION": "GA",
+      "MESSAGE_DELETED_WHILE_EXECUTING_EXCEPTION": "GA",
+      "MESSAGE_UPDATED_WHILE_EXECUTING_EXCEPTION": "GA",
+      "MISSING_SQL_QUERY_EXCEPTION": "GA",
+      "NO_DEPLOYMENTS_AVAILABLE_TO_WORKSPACE": "GA",
+      "NO_QUERY_TO_VISUALIZE_EXCEPTION": "GA",
+      "NO_TABLES_TO_QUERY_EXCEPTION": "GA",
+      "RATE_LIMIT_EXCEEDED_GENERIC_EXCEPTION": "GA",
+      "RATE_LIMIT_EXCEEDED_SPECIFIED_WAIT_EXCEPTION": "GA",
+      "REPLY_PROCESS_TIMEOUT_EXCEPTION": "GA",
+      "RETRYABLE_PROCESSING_EXCEPTION": "GA",
+      "SQL_EXECUTION_EXCEPTION": "GA",
+      "STOP_PROCESS_DUE_TO_AUTO_REGENERATE": "GA",
+      "TABLES_MISSING_EXCEPTION": "GA",
+      "TOO_MANY_CERTIFIED_ANSWERS_EXCEPTION": "GA",
+      "TOO_MANY_TABLES_EXCEPTION": "GA",
+      "UNEXPECTED_REPLY_PROCESS_EXCEPTION": "GA",
+      "UNKNOWN_AI_MODEL": "GA",
+      "UNSUPPORTED_CONVERSATION_TYPE_EXCEPTION": "GA",
+      "WAREHOUSE_ACCESS_MISSING_EXCEPTION": "GA",
+      "WAREHOUSE_NOT_FOUND_EXCEPTION": "GA"
+    }
+  },
+  "dashboards.MessageStatus": {
+    "description": "MessageStatus.\nThe possible values are:\n* `FETCHING_METADATA`: Fetching metadata from the data sources.\n* `FILTERING_CONTEXT`: Running smart context step to determine relevant context.\n* `ASKING_AI`: Waiting for the LLM to respond to the user's question.\n* `PENDING_WAREHOUSE`: Waiting for warehouse before the SQL query can start executing.\n* `EXECUTING_QUERY`: Executing a generated SQL query. Get the SQL query result by calling [getMessageAttachmentQueryResult](:method:genie/getMessageAttachmentQueryResult) API.\n* `FAILED`: The response generation or query execution failed. See `error` field.\n* `COMPLETED`: Message processing is completed. Results are in the `attachments` field. Get the SQL query result by calling [getMessageAttachmentQueryResult](:method:genie/getMessageAttachmentQueryResult) API.\n* `SUBMITTED`: Message has been submitted.\n* `QUERY_RESULT_EXPIRED`: SQL result is not available anymore. The user needs to rerun the query. Rerun the SQL query result by calling [executeMessageAttachmentQuery](:method:genie/executeMessageAttachmentQuery) API.\n* `CANCELLED`: Message has been cancelled.",
+    "enum": [
+      "FETCHING_METADATA",
+      "FILTERING_CONTEXT",
+      "ASKING_AI",
+      "PENDING_WAREHOUSE",
+      "EXECUTING_QUERY",
+      "FAILED",
+      "COMPLETED",
+      "SUBMITTED",
+      "QUERY_RESULT_EXPIRED",
+      "CANCELLED"
+    ],
+    "enum_launch_stages": {
+      "ASKING_AI": "GA",
+      "CANCELLED": "GA",
+      "COMPLETED": "GA",
+      "EXECUTING_QUERY": "GA",
+      "FAILED": "GA",
+      "FETCHING_METADATA": "GA",
+      "FILTERING_CONTEXT": "GA",
+      "PENDING_WAREHOUSE": "GA",
+      "QUERY_RESULT_EXPIRED": "GA",
+      "SUBMITTED": "GA"
+    },
+    "enum_descriptions": {
+      "ASKING_AI": "Waiting for the LLM to respond to the user's question.",
+      "CANCELLED": "Message has been cancelled.",
+      "COMPLETED": "Message processing is completed. Results are in the `attachments` field. Get the SQL query result by calling [getMessageAttachmentQueryResult](:method:genie/getMessageAttachmentQueryResult) API.",
+      "EXECUTING_QUERY": "Executing a generated SQL query. Get the SQL query result by calling [getMessageAttachmentQueryResult](:method:genie/getMessageAttachmentQueryResult) API.",
+      "FAILED": "The response generation or query execution failed. See `error` field.",
+      "FETCHING_METADATA": "Fetching metadata from the data sources.",
+      "FILTERING_CONTEXT": "Running smart context step to determine relevant context.",
+      "PENDING_WAREHOUSE": "Waiting for warehouse before the SQL query can start executing.",
+      "QUERY_RESULT_EXPIRED": "SQL result is not available anymore. The user needs to rerun the query. Rerun the SQL query result by calling [executeMessageAttachmentQuery](:method:genie/executeMessageAttachmentQuery) API.",
+      "SUBMITTED": "Message has been submitted."
+    }
+  },
+  "dashboards.MigrateDashboardRequest": {
+    "fields": {
+      "display_name": {
+        "description": "Display name for the new Lakeview dashboard.",
+        "launch_stage": "GA"
+      },
+      "parent_path": {
+        "description": "The workspace path of the folder to contain the migrated Lakeview dashboard.",
+        "launch_stage": "GA"
+      },
+      "source_dashboard_id": {
+        "description": "UUID of the dashboard to be migrated.",
+        "launch_stage": "GA"
+      },
+      "update_parameter_syntax": {
+        "description": "Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated\nto named syntax (:param) when converting datasets in the dashboard.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.PublishRequest": {
+    "fields": {
+      "embed_credentials": {
+        "description": "Flag to indicate if the publisher's credentials should be embedded in the\npublished dashboard. These embedded credentials will be used to execute the\npublished dashboard's queries.",
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "The ID of the warehouse that can be used to override the warehouse which\nwas set in the draft.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.PublishedDashboard": {
+    "fields": {
+      "display_name": {
+        "description": "The display name of the published dashboard.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "embed_credentials": {
+        "description": "Indicates whether credentials are embedded in the published dashboard.",
+        "launch_stage": "GA"
+      },
+      "revision_create_time": {
+        "description": "The timestamp of when the published dashboard was last revised.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "warehouse_id": {
+        "description": "The warehouse ID used to run the published dashboard.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.QueryAttachmentParameter": {
+    "fields": {
+      "keyword": {
+        "launch_stage": "GA"
+      },
+      "sql_type": {
+        "launch_stage": "GA"
+      },
+      "value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.Result": {
+    "fields": {
+      "is_truncated": {
+        "description": "If result is truncated",
+        "launch_stage": "GA"
+      },
+      "row_count": {
+        "description": "Row count of the result",
+        "launch_stage": "GA"
+      },
+      "statement_id": {
+        "description": "Statement Execution API statement id. Use [Get status, manifest, and result first chunk](:method:statementexecution/getstatement) to get the full result data.",
+        "launch_stage": "GA"
+      },
+      "statement_id_signature": {
+        "description": "JWT corresponding to the statement contained in this result",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.RevertDashboardRequest": {
+    "description": "Request to revert a dashboard draft to its last published state.",
+    "fields": {
+      "etag": {
+        "description": "The etag for the dashboard. Optionally, it can be provided to verify that the dashboard\nhas not been modified from its last retrieval.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.RevertDashboardResponse": {
+    "description": "Response to revert a dashboard draft to its last published state.",
+    "fields": {
+      "dashboard": {
+        "description": "The reverted dashboard.",
+        "ref": "dashboards.Dashboard",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.Schedule": {
+    "fields": {
+      "create_time": {
+        "description": "A timestamp indicating when the schedule was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "cron_schedule": {
+        "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+        "ref": "dashboards.CronSchedule",
+        "launch_stage": "GA"
+      },
+      "dashboard_id": {
+        "description": "UUID identifying the dashboard to which the schedule belongs.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "The display name for schedule.",
+        "launch_stage": "GA"
+      },
+      "etag": {
+        "description": "The etag for the schedule. Must be left empty on create, must be provided on updates to ensure\nthat the schedule has not been modified since the last read, and can be optionally provided on delete.",
+        "launch_stage": "GA"
+      },
+      "pause_status": {
+        "description": "The status indicates whether this schedule is paused or not.",
+        "ref": "dashboards.SchedulePauseStatus",
+        "launch_stage": "GA"
+      },
+      "schedule_id": {
+        "description": "UUID identifying the schedule.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the schedule was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "warehouse_id": {
+        "description": "The warehouse id to run the dashboard with for the schedule.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.SchedulePauseStatus": {
+    "enum": [
+      "UNPAUSED",
+      "PAUSED"
+    ],
+    "enum_launch_stages": {
+      "PAUSED": "GA",
+      "UNPAUSED": "GA"
+    }
+  },
+  "dashboards.ScoreReason": {
+    "enum": [
+      "EMPTY_RESULT",
+      "RESULT_MISSING_ROWS",
+      "RESULT_EXTRA_ROWS",
+      "RESULT_MISSING_COLUMNS",
+      "RESULT_EXTRA_COLUMNS",
+      "SINGLE_CELL_DIFFERENCE",
+      "EMPTY_GOOD_SQL",
+      "COLUMN_TYPE_DIFFERENCE",
+      "LLM_JUDGE_MISSING_JOIN",
+      "LLM_JUDGE_WRONG_FILTER",
+      "LLM_JUDGE_WRONG_AGGREGATION",
+      "LLM_JUDGE_WRONG_COLUMNS",
+      "LLM_JUDGE_SYNTAX_ERROR",
+      "LLM_JUDGE_SEMANTIC_ERROR",
+      "LLM_JUDGE_OTHER",
+      "LLM_JUDGE_MISSING_OR_INCORRECT_FILTER",
+      "LLM_JUDGE_INCOMPLETE_OR_PARTIAL_OUTPUT",
+      "LLM_JUDGE_MISINTERPRETATION_OF_USER_REQUEST",
+      "LLM_JUDGE_INSTRUCTION_COMPLIANCE_OR_MISSING_BUSINESS_LOGIC",
+      "LLM_JUDGE_INCORRECT_METRIC_CALCULATION",
+      "LLM_JUDGE_INCORRECT_TABLE_OR_FIELD_USAGE",
+      "LLM_JUDGE_INCORRECT_FUNCTION_USAGE",
+      "LLM_JUDGE_MISSING_OR_INCORRECT_JOIN",
+      "LLM_JUDGE_MISSING_OR_INCORRECT_AGGREGATION",
+      "LLM_JUDGE_FORMATTING_ERROR"
+    ],
+    "enum_launch_stages": {
+      "COLUMN_TYPE_DIFFERENCE": "PUBLIC_BETA",
+      "EMPTY_GOOD_SQL": "PUBLIC_BETA",
+      "EMPTY_RESULT": "PUBLIC_BETA",
+      "LLM_JUDGE_FORMATTING_ERROR": "PUBLIC_BETA",
+      "LLM_JUDGE_INCOMPLETE_OR_PARTIAL_OUTPUT": "PUBLIC_BETA",
+      "LLM_JUDGE_INCORRECT_FUNCTION_USAGE": "PUBLIC_BETA",
+      "LLM_JUDGE_INCORRECT_METRIC_CALCULATION": "PUBLIC_BETA",
+      "LLM_JUDGE_INCORRECT_TABLE_OR_FIELD_USAGE": "PUBLIC_BETA",
+      "LLM_JUDGE_INSTRUCTION_COMPLIANCE_OR_MISSING_BUSINESS_LOGIC": "PUBLIC_BETA",
+      "LLM_JUDGE_MISINTERPRETATION_OF_USER_REQUEST": "PUBLIC_BETA",
+      "LLM_JUDGE_MISSING_JOIN": "PUBLIC_BETA",
+      "LLM_JUDGE_MISSING_OR_INCORRECT_AGGREGATION": "PUBLIC_BETA",
+      "LLM_JUDGE_MISSING_OR_INCORRECT_FILTER": "PUBLIC_BETA",
+      "LLM_JUDGE_MISSING_OR_INCORRECT_JOIN": "PUBLIC_BETA",
+      "LLM_JUDGE_OTHER": "PUBLIC_BETA",
+      "LLM_JUDGE_SEMANTIC_ERROR": "PUBLIC_BETA",
+      "LLM_JUDGE_SYNTAX_ERROR": "PUBLIC_BETA",
+      "LLM_JUDGE_WRONG_AGGREGATION": "PUBLIC_BETA",
+      "LLM_JUDGE_WRONG_COLUMNS": "PUBLIC_BETA",
+      "LLM_JUDGE_WRONG_FILTER": "PUBLIC_BETA",
+      "RESULT_EXTRA_COLUMNS": "PUBLIC_BETA",
+      "RESULT_EXTRA_ROWS": "PUBLIC_BETA",
+      "RESULT_MISSING_COLUMNS": "PUBLIC_BETA",
+      "RESULT_MISSING_ROWS": "PUBLIC_BETA",
+      "SINGLE_CELL_DIFFERENCE": "PUBLIC_BETA"
+    }
+  },
+  "dashboards.Subscriber": {
+    "fields": {
+      "destination_subscriber": {
+        "description": "The destination to receive the subscription email.\nThis parameter is mutually exclusive with `user_subscriber`.",
+        "ref": "dashboards.SubscriptionSubscriberDestination",
+        "launch_stage": "GA"
+      },
+      "user_subscriber": {
+        "description": "The user to receive the subscription email.\nThis parameter is mutually exclusive with `destination_subscriber`.",
+        "ref": "dashboards.SubscriptionSubscriberUser",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.Subscription": {
+    "fields": {
+      "create_time": {
+        "description": "A timestamp indicating when the subscription was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "created_by_user_id": {
+        "description": "UserId of the user who adds subscribers (users or notification destinations) to the dashboard's schedule.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "dashboard_id": {
+        "description": "UUID identifying the dashboard to which the subscription belongs.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "etag": {
+        "description": "The etag for the subscription. Must be left empty on create, can be optionally provided on delete\nto ensure that the subscription has not been deleted since the last read.",
+        "launch_stage": "GA"
+      },
+      "schedule_id": {
+        "description": "UUID identifying the schedule to which the subscription belongs.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "skip_notify": {
+        "description": "Controls whether notifications are sent to the subscriber for scheduled dashboard refreshes.\nIf not defined, defaults to false in the backend to match the current behavior (refresh and notify)",
+        "launch_stage": "GA"
+      },
+      "subscriber": {
+        "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+        "ref": "dashboards.Subscriber",
+        "launch_stage": "GA"
+      },
+      "subscription_id": {
+        "description": "UUID identifying the subscription.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "A timestamp indicating when the subscription was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.SubscriptionSubscriberDestination": {
+    "fields": {
+      "destination_id": {
+        "description": "The canonical identifier of the destination to receive email notification.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.SubscriptionSubscriberUser": {
+    "fields": {
+      "user_id": {
+        "description": "UserId of the subscriber.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.TextAttachment": {
+    "description": "A text response on a conversation message: the answer, the final summary, or a\nclarifying follow-up question, along with optional phase and verification metadata.",
+    "fields": {
+      "content": {
+        "description": "AI generated message",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "launch_stage": "GA"
+      },
+      "purpose": {
+        "description": "Purpose of this text attachment. A completed message may contain more than\none text attachment (for example a clarifying follow-up question alongside\nthe final answer); use this field to tell them apart. `TEXT_ATTACHMENT_PURPOSE_ANSWER`\nmarks the final answer/summary and `FOLLOW_UP_QUESTION` marks a clarifying question.",
+        "ref": "dashboards.TextAttachmentPurpose",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.TextAttachmentPurpose": {
+    "description": "Purpose/intent of a text attachment",
+    "enum": [
+      "FOLLOW_UP_QUESTION",
+      "TEXT_ATTACHMENT_PURPOSE_ANSWER"
+    ],
+    "enum_launch_stages": {
+      "FOLLOW_UP_QUESTION": "GA",
+      "TEXT_ATTACHMENT_PURPOSE_ANSWER": "GA"
+    }
+  },
+  "dashboards.Thought": {
+    "description": "A single thought in the AI's reasoning process for a query.",
+    "fields": {
+      "content": {
+        "description": "The md formatted content for this thought.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "thought_type": {
+        "description": "The category of this thought.\nThe possible values are:\n* `THOUGHT_TYPE_DESCRIPTION`: A high-level description of how the question was interpreted.\n* `THOUGHT_TYPE_UNDERSTANDING`: How ambiguous parts of the question were resolved.\n* `THOUGHT_TYPE_DATA_SOURCING`: Which tables or datasets were identified as relevant.\n* `THOUGHT_TYPE_INSTRUCTIONS`: Which author-defined instructions were referenced.\n* `THOUGHT_TYPE_STEPS`: The logical steps taken to compute the answer.",
+        "ref": "dashboards.ThoughtType",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "dashboards.ThoughtType": {
+    "description": "ThoughtType.\nThe possible values are:\n* `THOUGHT_TYPE_UNSPECIFIED`: Default value that should not be used.\n* `THOUGHT_TYPE_DESCRIPTION`: A high-level description of how the question was interpreted.\n* `THOUGHT_TYPE_UNDERSTANDING`: How ambiguous parts of the question were resolved.\n* `THOUGHT_TYPE_DATA_SOURCING`: Which tables or datasets were identified as relevant.\n* `THOUGHT_TYPE_INSTRUCTIONS`: Which author-defined instructions were referenced.\n* `THOUGHT_TYPE_STEPS`: The logical steps taken to compute the answer.\nThe category of a Thought.\nAdditional values may be added in the future.",
+    "enum": [
+      "THOUGHT_TYPE_DESCRIPTION",
+      "THOUGHT_TYPE_UNDERSTANDING",
+      "THOUGHT_TYPE_DATA_SOURCING",
+      "THOUGHT_TYPE_INSTRUCTIONS",
+      "THOUGHT_TYPE_STEPS"
+    ],
+    "enum_launch_stages": {
+      "THOUGHT_TYPE_DATA_SOURCING": "PUBLIC_PREVIEW",
+      "THOUGHT_TYPE_DESCRIPTION": "PUBLIC_PREVIEW",
+      "THOUGHT_TYPE_INSTRUCTIONS": "PUBLIC_PREVIEW",
+      "THOUGHT_TYPE_STEPS": "PUBLIC_PREVIEW",
+      "THOUGHT_TYPE_UNDERSTANDING": "PUBLIC_PREVIEW"
+    },
+    "enum_descriptions": {
+      "THOUGHT_TYPE_DATA_SOURCING": "Which tables or datasets were identified as relevant.",
+      "THOUGHT_TYPE_DESCRIPTION": "A high-level description of how the question was interpreted.",
+      "THOUGHT_TYPE_INSTRUCTIONS": "Which author-defined instructions were referenced.",
+      "THOUGHT_TYPE_STEPS": "The logical steps taken to compute the answer.",
+      "THOUGHT_TYPE_UNDERSTANDING": "How ambiguous parts of the question were resolved."
+    }
+  },
+  "dashboards.TrashDashboardRequest": {},
+  "dashboards.TrashDashboardResponse": {},
+  "dashboards.UnpublishDashboardRequest": {},
+  "dashboards.UnpublishDashboardResponse": {},
+  "dashboards.UpdateDashboardRequest": {
+    "fields": {
+      "dashboard": {
+        "ref": "dashboards.Dashboard",
+        "launch_stage": "GA"
+      },
+      "dataset_catalog": {
+        "description": "Sets the default catalog for all datasets in this dashboard.\nDoes not impact table references that use fully qualified catalog names (ex: samples.nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+        "launch_stage": "GA"
+      },
+      "dataset_schema": {
+        "description": "Sets the default schema for all datasets in this dashboard.\nDoes not impact table references that use fully qualified schema names (ex: nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dashboards.UpdateScheduleRequest": {
+    "fields": {
+      "schedule": {
+        "description": "The schedule to update.",
+        "ref": "dashboards.Schedule",
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

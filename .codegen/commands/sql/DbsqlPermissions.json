@@ -1,0 +1,486 @@
+{
+  "id": "sql.DbsqlPermissions",
+  "name": "DbsqlPermissions",
+  "description": "The SQL Permissions API is similar to the endpoints of the :method:permissions/set. However, this\nexposes only one endpoint, which gets the Access Control List for a given object. You cannot\nmodify any permissions using this API.\n\nThere are three levels of permission:\n\n- `CAN_VIEW`: Allows read-only access\n\n- `CAN_RUN`: Allows read access and run access (superset of `CAN_VIEW`)\n\n- `CAN_MANAGE`: Allows all actions: read, run, edit, delete, modify permissions (superset of `CAN_RUN`)\n\n**Warning**: This API is deprecated. Please see the latest version of the Databricks SQL API. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Get",
+      "description": "Gets a JSON representation of the access control list (ACL) for a specified object.\n\n**Warning**: This API is deprecated. Please use :method:workspace/getpermissions instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Get object ACL.",
+      "path": "/api/2.0/preview/sql/permissions/{objectType}/{objectId}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetDbsqlPermissionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "objectType",
+            "description": "The type of object permissions to check.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "ObjectTypePlural",
+              "enum": [
+                {
+                  "content": "alerts"
+                },
+                {
+                  "content": "dashboards"
+                },
+                {
+                  "content": "data_sources"
+                },
+                {
+                  "content": "queries"
+                }
+              ]
+            }
+          },
+          {
+            "name": "objectId",
+            "description": "Object ID. An ACL is returned for the object with this UUID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "objectType",
+            "description": "The type of object permissions to check.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "ObjectTypePlural",
+              "enum": [
+                {
+                  "content": "alerts"
+                },
+                {
+                  "content": "dashboards"
+                },
+                {
+                  "content": "data_sources"
+                },
+                {
+                  "content": "queries"
+                }
+              ]
+            }
+          },
+          {
+            "name": "objectId",
+            "description": "Object ID. An ACL is returned for the object with this UUID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "objectId",
+          "description": "Object ID. An ACL is returned for the object with this UUID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "objectType",
+          "description": "The type of object permissions to check.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "ObjectTypePlural",
+            "enum": [
+              {
+                "content": "alerts"
+              },
+              {
+                "content": "dashboards"
+              },
+              {
+                "content": "data_sources"
+              },
+              {
+                "content": "queries"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "objectType",
+          "description": "The type of object permissions to check.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "ObjectTypePlural",
+            "enum": [
+              {
+                "content": "alerts"
+              },
+              {
+                "content": "dashboards"
+              },
+              {
+                "content": "data_sources"
+              },
+              {
+                "content": "queries"
+              }
+            ]
+          }
+        },
+        {
+          "name": "objectId",
+          "description": "Object ID. An ACL is returned for the object with this UUID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Set",
+      "description": "Sets the access control list (ACL) for a specified object. This operation will complete rewrite the ACL.\n\n**Warning**: This API is deprecated. Please use :method:workspace/setpermissions instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Set object ACL.",
+      "path": "/api/2.0/preview/sql/permissions/{objectType}/{objectId}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "objectType",
+            "description": "The type of object permission to set.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "ObjectTypePlural",
+              "enum": [
+                {
+                  "content": "alerts"
+                },
+                {
+                  "content": "dashboards"
+                },
+                {
+                  "content": "data_sources"
+                },
+                {
+                  "content": "queries"
+                }
+              ]
+            }
+          },
+          {
+            "name": "objectId",
+            "description": "Object ID. The ACL for the object with this UUID is overwritten by this request's POST content.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "objectType",
+            "description": "The type of object permission to set.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "ObjectTypePlural",
+              "enum": [
+                {
+                  "content": "alerts"
+                },
+                {
+                  "content": "dashboards"
+                },
+                {
+                  "content": "data_sources"
+                },
+                {
+                  "content": "queries"
+                }
+              ]
+            }
+          },
+          {
+            "name": "objectId",
+            "description": "Object ID. The ACL for the object with this UUID is overwritten by this request's POST content.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SetResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AccessControlList",
+            "array_value": {
+              "pascal_name": "AccessControl",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "objectId",
+          "description": "Object ID. The ACL for the object with this UUID is overwritten by this request's POST content.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "objectType",
+          "description": "The type of object permission to set.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "ObjectTypePlural",
+            "enum": [
+              {
+                "content": "alerts"
+              },
+              {
+                "content": "dashboards"
+              },
+              {
+                "content": "data_sources"
+              },
+              {
+                "content": "queries"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "objectType",
+          "description": "The type of object permission to set.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "ObjectTypePlural",
+            "enum": [
+              {
+                "content": "alerts"
+              },
+              {
+                "content": "dashboards"
+              },
+              {
+                "content": "data_sources"
+              },
+              {
+                "content": "queries"
+              }
+            ]
+          }
+        },
+        {
+          "name": "objectId",
+          "description": "Object ID. The ACL for the object with this UUID is overwritten by this request's POST content.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "TransferOwnership",
+      "description": "Transfers ownership of a dashboard, query, or alert to an active user. Requires an admin API key.\n\n**Warning**: This API is deprecated. For queries and alerts, please use :method:queries/update and :method:alerts/update respectively instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Transfer object ownership.",
+      "path": "/api/2.0/preview/sql/permissions/{objectType}/{objectId}/transfer",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TransferOwnershipRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "objectType",
+            "description": "The type of object on which to change ownership.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "OwnableObjectType",
+              "enum": [
+                {
+                  "content": "alert"
+                },
+                {
+                  "content": "dashboard"
+                },
+                {
+                  "content": "query"
+                }
+              ]
+            }
+          },
+          {
+            "name": "objectId",
+            "description": "The ID of the object on which to change ownership.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "TransferOwnershipObjectId",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "objectType",
+            "description": "The type of object on which to change ownership.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "OwnableObjectType",
+              "enum": [
+                {
+                  "content": "alert"
+                },
+                {
+                  "content": "dashboard"
+                },
+                {
+                  "content": "query"
+                }
+              ]
+            }
+          },
+          {
+            "name": "objectId",
+            "description": "The ID of the object on which to change ownership.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "TransferOwnershipObjectId",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Success",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "new_owner",
+          "description": "Email address for the new owner, who must exist in the workspace.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "objectId",
+          "description": "The ID of the object on which to change ownership.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "TransferOwnershipObjectId",
+            "is_object": true
+          }
+        },
+        {
+          "name": "objectType",
+          "description": "The type of object on which to change ownership.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "OwnableObjectType",
+            "enum": [
+              {
+                "content": "alert"
+              },
+              {
+                "content": "dashboard"
+              },
+              {
+                "content": "query"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "objectType",
+          "description": "The type of object on which to change ownership.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "OwnableObjectType",
+            "enum": [
+              {
+                "content": "alert"
+              },
+              {
+                "content": "dashboard"
+              },
+              {
+                "content": "query"
+              }
+            ]
+          }
+        },
+        {
+          "name": "objectId",
+          "description": "The ID of the object on which to change ownership.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "TransferOwnershipObjectId",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

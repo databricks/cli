@@ -1,0 +1,2184 @@
+{
+  "id": "pipelines.Pipelines",
+  "name": "Pipelines",
+  "description": "The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.\n\nSpark Declarative Pipelines is a framework for building reliable, maintainable, and testable data processing pipelines. You define the transformations to perform on your data, and Spark Declarative Pipelines manages task orchestration, cluster management, monitoring, data quality, and error handling.\n\nInstead of defining your data pipelines using a series of separate Apache Spark tasks, Spark Declarative Pipelines manages how your data is transformed based on a target schema you define for each processing step. You can also enforce data quality with Spark Declarative Pipelines expectations. Expectations allow you to define expected data quality and specify how to handle records that fail those expectations.",
+  "package": {
+    "name": "pipelines"
+  },
+  "docs_group": "lakeflow",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "PipelineStateInfoNameToPipelineIdMap"
+    },
+    "request": {
+      "pascal_name": "ListPipelinesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "ApplyEnvironment",
+      "description": "Applies the current pipeline environment onto the pipeline compute. The environment applied can be used by subsequent\ndev-mode updates.",
+      "summary": "Apply the latest environment to the pipeline.",
+      "path": "/api/2.0/pipelines/{pipeline_id}/environment/apply",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ApplyEnvironmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ApplyEnvironmentRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clone",
+      "description": "Creates a new pipeline using Unity Catalog from a pipeline using Hive Metastore.\nThis method returns the ID of the newly created clone.\nAdditionally, this method starts an update for the newly created pipeline.",
+      "summary": "Clone a pipeline.",
+      "path": "/api/2.0/pipelines/{pipeline_id}/clone",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_json_only": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ClonePipelineRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "Source pipeline to clone from",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "Source pipeline to clone from",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClonePipelineResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "allow_duplicate_names",
+          "description": "If false, deployment will fail if name conflicts with that of another pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "Budget policy of this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "catalog",
+          "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "channel",
+          "description": "SDP Release Channel that specifies which version to use.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "clone_mode",
+          "description": "The type of clone to perform. Currently, only deep copies are supported",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CloneMode",
+            "enum": [
+              {
+                "content": "MIGRATE_TO_UC"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clusters",
+          "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineClusterList",
+            "array_value": {
+              "pascal_name": "PipelineCluster",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "configuration",
+          "description": "String-String configuration for this pipeline execution.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "continuous",
+          "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "deployment",
+          "description": "Deployment type of this pipeline.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineDeployment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "development",
+          "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "edition",
+          "description": "Pipeline product edition.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "environment",
+          "description": "Environment specification for this pipeline used to install dependencies.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelinesEnvironment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "event_log",
+          "description": "Event log configuration for this pipeline",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EventLogSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "expected_last_modified",
+          "description": "If present, the last-modified time of the pipeline settings before the clone.\nIf the settings were modified after that time, then the request will fail with\na conflict.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "filters",
+          "description": "Filters on which Pipeline packages to include in the deployed graph.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Filters",
+            "is_object": true
+          }
+        },
+        {
+          "name": "gateway_definition",
+          "description": "The definition of a gateway pipeline to support change data capture.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IngestionGatewayPipelineDefinition",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ingestion_definition",
+          "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IngestionPipelineDefinition",
+            "is_object": true
+          }
+        },
+        {
+          "name": "libraries",
+          "description": "Libraries or code needed by this deployment.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineLibraryList",
+            "array_value": {
+              "pascal_name": "PipelineLibrary",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Friendly identifier for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notifications",
+          "description": "List of notification settings for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "NotificationsList",
+            "array_value": {
+              "pascal_name": "Notifications",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "photon",
+          "description": "Whether Photon is enabled for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "description": "Source pipeline to clone from",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "restart_window",
+          "description": "Restart window of this pipeline.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RestartWindow",
+            "is_object": true
+          }
+        },
+        {
+          "name": "root_path",
+          "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema",
+          "description": "The default schema (database) where tables are read from or published to.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serverless",
+          "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "serverless_compute_id",
+          "description": "Serverless compute ID specified by the user for serverless pipelines.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage",
+          "description": "DBFS root directory for storing checkpoints and tables.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "target",
+          "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "trigger",
+          "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineTrigger",
+            "is_object": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "Usage policy of this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "Source pipeline to clone from",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create",
+      "description": "Creates a new data processing pipeline based on the requested configuration. If successful, this method returns\nthe ID of the new pipeline.",
+      "summary": "Create a pipeline.",
+      "path": "/api/2.0/pipelines",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_json_only": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreatePipeline",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CreatePipelineResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "allow_duplicate_names",
+          "description": "If false, deployment will fail if name conflicts with that of another pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "Budget policy of this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "catalog",
+          "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "channel",
+          "description": "SDP Release Channel that specifies which version to use.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "clusters",
+          "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineClusterList",
+            "array_value": {
+              "pascal_name": "PipelineCluster",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "configuration",
+          "description": "String-String configuration for this pipeline execution.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "continuous",
+          "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "deployment",
+          "description": "Deployment type of this pipeline.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineDeployment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "development",
+          "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "dry_run",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "edition",
+          "description": "Pipeline product edition.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "environment",
+          "description": "Environment specification for this pipeline used to install dependencies.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelinesEnvironment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "event_log",
+          "description": "Event log configuration for this pipeline",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EventLogSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "filters",
+          "description": "Filters on which Pipeline packages to include in the deployed graph.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Filters",
+            "is_object": true
+          }
+        },
+        {
+          "name": "gateway_definition",
+          "description": "The definition of a gateway pipeline to support change data capture.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IngestionGatewayPipelineDefinition",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ingestion_definition",
+          "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IngestionPipelineDefinition",
+            "is_object": true
+          }
+        },
+        {
+          "name": "libraries",
+          "description": "Libraries or code needed by this deployment.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineLibraryList",
+            "array_value": {
+              "pascal_name": "PipelineLibrary",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Friendly identifier for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notifications",
+          "description": "List of notification settings for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "NotificationsList",
+            "array_value": {
+              "pascal_name": "Notifications",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "parameters",
+          "description": "Key/value map of default parameters to use for pipeline execution.\nMaximum total size: 10k characters (JSON format)",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "photon",
+          "description": "Whether Photon is enabled for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "restart_window",
+          "description": "Restart window of this pipeline.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RestartWindow",
+            "is_object": true
+          }
+        },
+        {
+          "name": "root_path",
+          "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "schema",
+          "description": "The default schema (database) where tables are read from or published to.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serverless",
+          "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "serverless_compute_id",
+          "description": "Serverless compute ID specified by the user for serverless pipelines.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage",
+          "description": "DBFS root directory for storing checkpoints and tables.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "target",
+          "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "trigger",
+          "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineTrigger",
+            "is_object": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "Usage policy of this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a pipeline. If the pipeline publishes to Unity Catalog, pipeline deletion will cascade to\nall pipeline tables. Please reach out to Databricks support for assistance to undo this action.",
+      "summary": "Delete a pipeline.",
+      "path": "/api/2.0/pipelines/{pipeline_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeletePipelineRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeletePipelineResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cascade",
+          "description": "If false, pipeline deletion will not cascade to its datasets (MVs, STs, Views).\nBy default, this parameter will be true and all tables will be deleted with the pipeline.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "force",
+          "description": "If true, deletion will proceed even if resource cleanup fails.\nBy default, deletion will fail if resources cleanup is required but fails.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a pipeline.",
+      "summary": "Get a pipeline.",
+      "path": "/api/2.0/pipelines/{pipeline_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPipelineRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetPipelineResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get pipeline permission levels.",
+      "path": "/api/2.0/permissions/pipelines/{pipeline_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPipelinePermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetPipelinePermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a pipeline. Pipelines can inherit permissions from their root object.",
+      "summary": "Get pipeline permissions.",
+      "path": "/api/2.0/permissions/pipelines/{pipeline_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPipelinePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PipelinePermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetUpdate",
+      "description": "Gets an update from an active pipeline.",
+      "summary": "Get a pipeline update.",
+      "path": "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetUpdateRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The ID of the pipeline.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_id",
+            "description": "The ID of the update.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The ID of the pipeline.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_id",
+            "description": "The ID of the update.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetUpdateResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "pipeline_id",
+          "description": "The ID of the pipeline.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_id",
+          "description": "The ID of the update.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "The ID of the pipeline.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_id",
+          "description": "The ID of the update.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListPipelineEvents",
+      "description": "Retrieves events for a pipeline.",
+      "summary": "List pipeline events.",
+      "path": "/api/2.0/pipelines/{pipeline_id}/events",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPipelineEventsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline to return events for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline to return events for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListPipelineEventsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "Criteria to select a subset of results, expressed using a SQL-like syntax.\nThe supported filters are:\n1. level='INFO' (or WARN or ERROR)\n2. level in ('INFO', 'WARN')\n3. id='[event-id]'\n4. timestamp \u003e 'TIMESTAMP' (or \u003e=,\u003c,\u003c=,=)\n\nComposite expressions are supported, for example: level in ('ERROR', 'WARN')\nAND timestamp\u003e '2021-07-22T06:37:33.083Z'",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Max number of entries to return in a single page. The system may return\nfewer than max_results events in a response, even if there are more events\navailable.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "A string indicating a sort order by timestamp for the results, for example, [\"timestamp asc\"].\nThe sort order can be ascending or descending. By default, events are returned\nin descending order by timestamp.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token returned by previous call. This field is mutually\nexclusive with all fields in this request except max_results. An error is\nreturned if any fields other than max_results are set when this field is set.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline to return events for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline to return events for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Page token returned by previous call. This field is mutually\nexclusive with all fields in this request except max_results. An error is\nreturned if any fields other than max_results are set when this field is set.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListPipelines",
+      "description": "Lists pipelines defined in the Spark Declarative Pipelines system.",
+      "summary": "List pipelines.",
+      "path": "/api/2.0/pipelines",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPipelinesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListPipelinesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "Select a subset of results based on the specified criteria.\nThe supported filters are:\n\n* `notebook='\u003cpath\u003e'` to select pipelines that reference the provided notebook path.\n* `name LIKE '[pattern]'` to select pipelines with a name that matches pattern.\nWildcards are supported, for example: `name LIKE '%shopping%'`\n\nComposite filters are not supported. This field is optional.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "The maximum number of entries to return in a single page. The system may\nreturn fewer than max_results pipelines in a response, even if there are\nmore pipelines available. This field is optional. The default value is 25.\nThe maximum value is 100. An error is returned if the value of max_results\nis greater than 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "A list of strings specifying the order of results.\nThe supported order_by field is id. The default is id asc.\nThis field is optional.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token returned by previous call",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Page token returned by previous call",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListUpdates",
+      "description": "List updates for an active pipeline.",
+      "summary": "List pipeline updates.",
+      "path": "/api/2.0/pipelines/{pipeline_id}/updates",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListUpdatesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline to return updates for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline to return updates for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListUpdatesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Max number of entries to return in a single page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token returned by previous call",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline to return updates for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "until_update_id",
+          "description": "If present, returns updates until and including this update_id.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline to return updates for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set pipeline permissions.",
+      "path": "/api/2.0/permissions/pipelines/{pipeline_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PipelinePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PipelinePermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "PipelineAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "StartUpdate",
+      "description": "Starts a new update for the pipeline. If there is already an active update for the pipeline, the request will fail and the active update will remain running.",
+      "summary": "Start a pipeline.",
+      "path": "/api/2.0/pipelines/{pipeline_id}/updates",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "StartUpdate",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StartUpdateResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cause",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "StartUpdateCause",
+            "enum": [
+              {
+                "content": "API_CALL"
+              },
+              {
+                "content": "INFRASTRUCTURE_MAINTENANCE"
+              },
+              {
+                "content": "JOB_TASK"
+              },
+              {
+                "content": "RETRY_ON_FAILURE"
+              },
+              {
+                "content": "SCHEMA_CHANGE"
+              },
+              {
+                "content": "SERVICE_UPGRADE"
+              },
+              {
+                "content": "USER_ACTION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "development",
+          "description": "Whether the update is started in the development mode.\nThis is recommended for interactive development and testing.\nReuses compute for faster iteration and disables automatic retries.\nNot recommended for production.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "full_refresh",
+          "description": "If true, this update will reset all tables before running.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "full_refresh_selection",
+          "description": "A list of tables to update with fullRefresh. If both refresh_selection and\nfull_refresh_selection are empty, this is a full graph update. Full Refresh on a table means\nthat the states of the table will be reset before the refresh.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "full_refresh_selection_by_path",
+          "description": "A list of file paths that identify the tables to update with a full refresh.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "parameters",
+          "description": "Key/value map of parameters to pass to the pipeline execution",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_selection",
+          "description": "A list of tables to update without fullRefresh. If both refresh_selection and\nfull_refresh_selection are empty, this is a full graph update. Full Refresh on a table means\nthat the states of the table will be reset before the refresh.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "refresh_selection_by_path",
+          "description": "A list of file paths that identify the tables to update.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "replace_where_overrides",
+          "description": "A list of predicate overrides for replace_where flows in this update.\nOnly replace_where flows may be specified. Flows not listed use their original predicate.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ReplaceWhereOverrideList",
+            "array_value": {
+              "pascal_name": "ReplaceWhereOverride",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "reset_checkpoint_selection",
+          "description": "A list of flows for which this update should reset the streaming checkpoint. This selection will not clear\nthe data in the flow's target table. Flows in this list may also appear in refresh_selection and full_refresh_selection.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "rewind_spec",
+          "description": "The information about the requested rewind operation.\nIf specified this is a rewind mode update.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RewindSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "validate_only",
+          "description": "If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stop",
+      "description": "Stops the pipeline by canceling the active update. If there is no active update for the pipeline, this request is a no-op.",
+      "summary": "Stop a pipeline.",
+      "path": "/api/2.0/pipelines/{pipeline_id}/stop",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "StopRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StopPipelineResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "IDLE"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "GetPipelineResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "Cause"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "Cause"
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates a pipeline with the supplied configuration.",
+      "summary": "Edit a pipeline.",
+      "path": "/api/2.0/pipelines/{pipeline_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EditPipeline",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "Unique identifier for this pipeline.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "Unique identifier for this pipeline.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EditPipelineResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "allow_duplicate_names",
+          "description": "If false, deployment will fail if name has changed and conflicts the name of another pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "Budget policy of this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "catalog",
+          "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "channel",
+          "description": "SDP Release Channel that specifies which version to use.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "clusters",
+          "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineClusterList",
+            "array_value": {
+              "pascal_name": "PipelineCluster",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "configuration",
+          "description": "String-String configuration for this pipeline execution.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "continuous",
+          "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "deployment",
+          "description": "Deployment type of this pipeline.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineDeployment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "development",
+          "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "edition",
+          "description": "Pipeline product edition.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "environment",
+          "description": "Environment specification for this pipeline used to install dependencies.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelinesEnvironment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "event_log",
+          "description": "Event log configuration for this pipeline",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EventLogSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "expected_last_modified",
+          "description": "If present, the last-modified time of the pipeline settings before the edit.\nIf the settings were modified after that time, then the request will fail with\na conflict.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "filters",
+          "description": "Filters on which Pipeline packages to include in the deployed graph.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Filters",
+            "is_object": true
+          }
+        },
+        {
+          "name": "gateway_definition",
+          "description": "The definition of a gateway pipeline to support change data capture.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IngestionGatewayPipelineDefinition",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ingestion_definition",
+          "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IngestionPipelineDefinition",
+            "is_object": true
+          }
+        },
+        {
+          "name": "libraries",
+          "description": "Libraries or code needed by this deployment.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineLibraryList",
+            "array_value": {
+              "pascal_name": "PipelineLibrary",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Friendly identifier for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notifications",
+          "description": "List of notification settings for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "NotificationsList",
+            "array_value": {
+              "pascal_name": "Notifications",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "parameters",
+          "description": "Key/value map of default parameters to use for pipeline execution.\nMaximum total size: 10k characters (JSON format)",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "photon",
+          "description": "Whether Photon is enabled for this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "description": "Unique identifier for this pipeline.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "restart_window",
+          "description": "Restart window of this pipeline.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RestartWindow",
+            "is_object": true
+          }
+        },
+        {
+          "name": "root_path",
+          "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "schema",
+          "description": "The default schema (database) where tables are read from or published to.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serverless",
+          "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "serverless_compute_id",
+          "description": "Serverless compute ID specified by the user for serverless pipelines.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage",
+          "description": "DBFS root directory for storing checkpoints and tables.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "target",
+          "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "trigger",
+          "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineTrigger",
+            "is_object": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "Usage policy of this pipeline.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "Unique identifier for this pipeline.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a pipeline. Pipelines can inherit permissions from their root object.",
+      "summary": "Update pipeline permissions.",
+      "path": "/api/2.0/permissions/pipelines/{pipeline_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PipelinePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "pipeline_id",
+            "description": "The pipeline for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PipelinePermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PipelineAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "PipelineAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "pipeline_id",
+          "description": "The pipeline for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

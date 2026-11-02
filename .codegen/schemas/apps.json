@@ -1,0 +1,1960 @@
+{
+  "apps.App": {
+    "fields": {
+      "active_deployment": {
+        "description": "The active deployment of the app. A deployment is considered active when it has been deployed\nto the app compute.",
+        "ref": "apps.AppDeployment",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "app_status": {
+        "ref": "apps.ApplicationStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "budget_policy_id": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "compute_max_instances": {
+        "description": "Maximum number of app instances the app is configured to run. Must be set together with `compute_min_instances`.",
+        "launch_stage": "GA"
+      },
+      "compute_min_instances": {
+        "description": "Minimum number of app instances the app is configured to run. Must be set together with `compute_max_instances`.",
+        "launch_stage": "GA"
+      },
+      "compute_size": {
+        "ref": "apps.ComputeSize",
+        "launch_stage": "GA"
+      },
+      "compute_status": {
+        "ref": "apps.ComputeStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "create_time": {
+        "description": "The creation time of the app. Formatted timestamp in ISO 6801.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "The email of the user that created the app.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "default_git_source": {
+        "description": "The Git source of the app's most recent active deployment, including the repository\nconfiguration and the resolved reference. Populated by the system after a Git-based\ndeployment and used as the default reference when automatic deployments are enabled.",
+        "ref": "apps.GitSource",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "default_source_code_path": {
+        "description": "The default workspace file system path of the source code from which app deployment are\ncreated. This field tracks the workspace source code path of the last active deployment.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "The description of the app.",
+        "launch_stage": "GA"
+      },
+      "effective_budget_policy_id": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_usage_policy_id": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_user_api_scopes": {
+        "description": "The effective api scopes granted to the user access token.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "forward_user_access_token": {
+        "description": "Forward the user's access token to the app. Requires stopping and starting app compute to take effect.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "git_repository": {
+        "description": "Git repository configuration for app deployments. When specified, deployments can\nreference code from this repository by providing only the git reference (branch, tag, or commit).",
+        "ref": "apps.GitRepository",
+        "launch_stage": "GA"
+      },
+      "git_source": {
+        "description": "The Git source to deploy from, specifying the reference to check out (branch, tag, or\ncommit) and an optional path to the app source code within the repository configured in\ngit_repository.",
+        "ref": "apps.GitSource",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "The unique identifier of the app.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
+        "launch_stage": "GA"
+      },
+      "oauth2_app_client_id": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "oauth2_app_integration_id": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "pending_deployment": {
+        "description": "The pending deployment of the app. A deployment is considered pending when it is being prepared\nfor deployment to the app compute.",
+        "ref": "apps.AppDeployment",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "resources": {
+        "description": "Resources for the app.",
+        "launch_stage": "GA"
+      },
+      "service_principal_client_id": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "service_principal_id": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "service_principal_name": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "source_code_path": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "space": {
+        "description": "Name of the space this app belongs to.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "telemetry_export_destinations": {
+        "launch_stage": "GA"
+      },
+      "thumbnail_url": {
+        "description": "The URL of the thumbnail image for the app.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "The update time of the app. Formatted timestamp in ISO 6801.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "updater": {
+        "description": "The email of the user that last updated the app.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "url": {
+        "description": "The URL of the app once it is deployed.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "usage_policy_id": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "user_api_scopes": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "apps.AppAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "apps.AppPermissionLevel",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppDeployment": {
+    "fields": {
+      "command": {
+        "description": "The command with which to run the app. This will override the command specified in the app.yaml file.",
+        "launch_stage": "GA"
+      },
+      "create_time": {
+        "description": "The creation time of the deployment. Formatted timestamp in ISO 6801.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "The email of the user creates the deployment.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "deployment_artifacts": {
+        "description": "The deployment artifacts for an app.",
+        "ref": "apps.AppDeploymentArtifacts",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "deployment_id": {
+        "description": "The unique id of the deployment.",
+        "launch_stage": "GA"
+      },
+      "env_vars": {
+        "description": "The environment variables to set in the app runtime environment. This will override the environment variables specified in the app.yaml file.",
+        "launch_stage": "GA"
+      },
+      "git_source": {
+        "description": "Git repository to use as the source for the app deployment.",
+        "ref": "apps.GitSource",
+        "launch_stage": "GA"
+      },
+      "health_check": {
+        "description": "Deploy-time health check for the app. Verifies the app is responding to HTTP requests before considering the deployment successful.",
+        "ref": "apps.AppHealthCheck",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "mode": {
+        "description": "The mode of which the deployment will manage the source code.",
+        "ref": "apps.AppDeploymentMode",
+        "launch_stage": "GA"
+      },
+      "source_code_path": {
+        "description": "The workspace file system path of the source code used to create the app deployment. This is different from\n`deployment_artifacts.source_code_path`, which is the path used by the deployed app. The former refers\nto the original source code location of the app in the workspace during deployment creation, whereas\nthe latter provides a system generated stable snapshotted source code path used by the deployment.",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Status and status message of the deployment",
+        "ref": "apps.AppDeploymentStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "The update time of the deployment. Formatted timestamp in ISO 6801.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "apps.AppDeploymentArtifacts": {
+    "fields": {
+      "source_code_path": {
+        "description": "The snapshotted workspace file system path of the source code loaded by the deployed app.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppDeploymentMode": {
+    "enum": [
+      "SNAPSHOT",
+      "AUTO_SYNC"
+    ],
+    "enum_launch_stages": {
+      "AUTO_SYNC": "GA",
+      "SNAPSHOT": "GA"
+    }
+  },
+  "apps.AppDeploymentState": {
+    "enum": [
+      "SUCCEEDED",
+      "FAILED",
+      "IN_PROGRESS",
+      "CANCELLED"
+    ],
+    "enum_launch_stages": {
+      "CANCELLED": "GA",
+      "FAILED": "GA",
+      "IN_PROGRESS": "GA",
+      "SUCCEEDED": "GA"
+    }
+  },
+  "apps.AppDeploymentStatus": {
+    "fields": {
+      "message": {
+        "description": "Message corresponding with the deployment state.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "State of the deployment.",
+        "ref": "apps.AppDeploymentState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "apps.AppHealthCheck": {
+    "description": "Deploy-time HTTP health check configuration for an app deployment.",
+    "fields": {
+      "path": {
+        "description": "HTTP path to probe, e.g. \"/health\" or \"/api/status\".",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "timeout": {
+        "description": "Timeout to wait for the health check to pass before failing the deployment. If not set, a default timeout is used.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifest": {
+    "description": "App manifest definition",
+    "fields": {
+      "description": {
+        "description": "Description of the app defined by manifest author / publisher",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Name of the app defined by manifest author / publisher",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "resource_specs": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "version": {
+        "description": "The manifest schema version, for now only 1 is allowed",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceExperimentSpec": {
+    "fields": {
+      "permission": {
+        "ref": "apps.AppManifestAppResourceExperimentSpecExperimentPermission",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceExperimentSpecExperimentPermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_EDIT",
+      "CAN_READ"
+    ],
+    "enum_launch_stages": {
+      "CAN_EDIT": "PRIVATE_PREVIEW",
+      "CAN_MANAGE": "PRIVATE_PREVIEW",
+      "CAN_READ": "PRIVATE_PREVIEW"
+    }
+  },
+  "apps.AppManifestAppResourceJobSpec": {
+    "fields": {
+      "permission": {
+        "description": "Permissions to grant on the Job. Supported permissions are: \"CAN_MANAGE\", \"IS_OWNER\", \"CAN_MANAGE_RUN\", \"CAN_VIEW\".",
+        "ref": "apps.AppManifestAppResourceJobSpecJobPermission",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceJobSpecJobPermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "IS_OWNER",
+      "CAN_MANAGE_RUN",
+      "CAN_VIEW"
+    ],
+    "enum_launch_stages": {
+      "CAN_MANAGE": "PRIVATE_PREVIEW",
+      "CAN_MANAGE_RUN": "PRIVATE_PREVIEW",
+      "CAN_VIEW": "PRIVATE_PREVIEW",
+      "IS_OWNER": "PRIVATE_PREVIEW"
+    }
+  },
+  "apps.AppManifestAppResourceSecretSpec": {
+    "fields": {
+      "permission": {
+        "description": "Permission to grant on the secret scope. For secrets, only one permission is allowed. Permission must be one of: \"READ\", \"WRITE\", \"MANAGE\".",
+        "ref": "apps.AppManifestAppResourceSecretSpecSecretPermission",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceSecretSpecSecretPermission": {
+    "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
+    "enum": [
+      "READ",
+      "WRITE",
+      "MANAGE"
+    ],
+    "enum_launch_stages": {
+      "MANAGE": "PRIVATE_PREVIEW",
+      "READ": "PRIVATE_PREVIEW",
+      "WRITE": "PRIVATE_PREVIEW"
+    }
+  },
+  "apps.AppManifestAppResourceServingEndpointSpec": {
+    "fields": {
+      "permission": {
+        "description": "Permission to grant on the serving endpoint. Supported permissions are: \"CAN_MANAGE\", \"CAN_QUERY\", \"CAN_VIEW\".",
+        "ref": "apps.AppManifestAppResourceServingEndpointSpecServingEndpointPermission",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceServingEndpointSpecServingEndpointPermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_QUERY",
+      "CAN_VIEW"
+    ],
+    "enum_launch_stages": {
+      "CAN_MANAGE": "PRIVATE_PREVIEW",
+      "CAN_QUERY": "PRIVATE_PREVIEW",
+      "CAN_VIEW": "PRIVATE_PREVIEW"
+    }
+  },
+  "apps.AppManifestAppResourceSpec": {
+    "description": "AppResource related fields are copied from app.proto but excludes resource identifiers (e.g. name, id, key, scope, etc.)",
+    "fields": {
+      "description": {
+        "description": "Description of the App Resource.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "experiment_spec": {
+        "ref": "apps.AppManifestAppResourceExperimentSpec",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "job_spec": {
+        "ref": "apps.AppManifestAppResourceJobSpec",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the App Resource.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "secret_spec": {
+        "ref": "apps.AppManifestAppResourceSecretSpec",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "serving_endpoint_spec": {
+        "ref": "apps.AppManifestAppResourceServingEndpointSpec",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "sql_warehouse_spec": {
+        "ref": "apps.AppManifestAppResourceSqlWarehouseSpec",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "uc_securable_spec": {
+        "ref": "apps.AppManifestAppResourceUcSecurableSpec",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceSqlWarehouseSpec": {
+    "fields": {
+      "permission": {
+        "description": "Permission to grant on the SQL warehouse. Supported permissions are: \"CAN_MANAGE\", \"CAN_USE\", \"IS_OWNER\".",
+        "ref": "apps.AppManifestAppResourceSqlWarehouseSpecSqlWarehousePermission",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceSqlWarehouseSpecSqlWarehousePermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_USE",
+      "IS_OWNER"
+    ],
+    "enum_launch_stages": {
+      "CAN_MANAGE": "PRIVATE_PREVIEW",
+      "CAN_USE": "PRIVATE_PREVIEW",
+      "IS_OWNER": "PRIVATE_PREVIEW"
+    }
+  },
+  "apps.AppManifestAppResourceUcSecurableSpec": {
+    "fields": {
+      "permission": {
+        "ref": "apps.AppManifestAppResourceUcSecurableSpecUcSecurablePermission",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "securable_type": {
+        "ref": "apps.AppManifestAppResourceUcSecurableSpecUcSecurableType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.AppManifestAppResourceUcSecurableSpecUcSecurablePermission": {
+    "enum": [
+      "READ_VOLUME",
+      "WRITE_VOLUME",
+      "MANAGE",
+      "SELECT",
+      "EXECUTE",
+      "USE_CONNECTION"
+    ],
+    "enum_launch_stages": {
+      "EXECUTE": "PRIVATE_PREVIEW",
+      "MANAGE": "PRIVATE_PREVIEW",
+      "READ_VOLUME": "PRIVATE_PREVIEW",
+      "SELECT": "PRIVATE_PREVIEW",
+      "USE_CONNECTION": "PRIVATE_PREVIEW",
+      "WRITE_VOLUME": "PRIVATE_PREVIEW"
+    }
+  },
+  "apps.AppManifestAppResourceUcSecurableSpecUcSecurableType": {
+    "enum": [
+      "VOLUME",
+      "TABLE",
+      "FUNCTION",
+      "CONNECTION",
+      "MODEL_SERVICE"
+    ],
+    "enum_launch_stages": {
+      "CONNECTION": "PRIVATE_PREVIEW",
+      "FUNCTION": "PRIVATE_PREVIEW",
+      "MODEL_SERVICE": "PRIVATE_PREVIEW",
+      "TABLE": "PRIVATE_PREVIEW",
+      "VOLUME": "PRIVATE_PREVIEW"
+    }
+  },
+  "apps.AppPermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "GA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "apps.AppPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppPermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_USE"
+    ]
+  },
+  "apps.AppPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppPermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "apps.AppPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppPermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResource": {
+    "fields": {
+      "app": {
+        "ref": "apps.AppResourceApp",
+        "launch_stage": "GA"
+      },
+      "database": {
+        "ref": "apps.AppResourceDatabase",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "Description of the App Resource.",
+        "launch_stage": "GA"
+      },
+      "experiment": {
+        "ref": "apps.AppResourceExperiment",
+        "launch_stage": "GA"
+      },
+      "genie_space": {
+        "ref": "apps.AppResourceGenieSpace",
+        "launch_stage": "GA"
+      },
+      "job": {
+        "ref": "apps.AppResourceJob",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the App Resource.",
+        "launch_stage": "GA"
+      },
+      "postgres": {
+        "ref": "apps.AppResourcePostgres",
+        "launch_stage": "GA"
+      },
+      "secret": {
+        "ref": "apps.AppResourceSecret",
+        "launch_stage": "GA"
+      },
+      "serving_endpoint": {
+        "ref": "apps.AppResourceServingEndpoint",
+        "launch_stage": "GA"
+      },
+      "sql_warehouse": {
+        "ref": "apps.AppResourceSqlWarehouse",
+        "launch_stage": "GA"
+      },
+      "uc_securable": {
+        "ref": "apps.AppResourceUcSecurable",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceApp": {
+    "fields": {
+      "name": {
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "ref": "apps.AppResourceAppAppPermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceAppAppPermission": {
+    "enum": [
+      "CAN_USE"
+    ],
+    "enum_launch_stages": {
+      "CAN_USE": "GA"
+    }
+  },
+  "apps.AppResourceDatabase": {
+    "fields": {
+      "database_name": {
+        "launch_stage": "GA"
+      },
+      "instance_name": {
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "ref": "apps.AppResourceDatabaseDatabasePermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceDatabaseDatabasePermission": {
+    "enum": [
+      "CAN_CONNECT_AND_CREATE"
+    ],
+    "enum_launch_stages": {
+      "CAN_CONNECT_AND_CREATE": "GA"
+    }
+  },
+  "apps.AppResourceExperiment": {
+    "fields": {
+      "experiment_id": {
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "ref": "apps.AppResourceExperimentExperimentPermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceExperimentExperimentPermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_EDIT",
+      "CAN_READ"
+    ],
+    "enum_launch_stages": {
+      "CAN_EDIT": "GA",
+      "CAN_MANAGE": "GA",
+      "CAN_READ": "GA"
+    }
+  },
+  "apps.AppResourceGenieSpace": {
+    "fields": {
+      "name": {
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "ref": "apps.AppResourceGenieSpaceGenieSpacePermission",
+        "launch_stage": "GA"
+      },
+      "space_id": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceGenieSpaceGenieSpacePermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_EDIT",
+      "CAN_RUN",
+      "CAN_VIEW"
+    ],
+    "enum_launch_stages": {
+      "CAN_EDIT": "GA",
+      "CAN_MANAGE": "GA",
+      "CAN_RUN": "GA",
+      "CAN_VIEW": "GA"
+    }
+  },
+  "apps.AppResourceJob": {
+    "fields": {
+      "id": {
+        "description": "Id of the job to grant permission on.",
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "description": "Permissions to grant on the Job. Supported permissions are: \"CAN_MANAGE\", \"IS_OWNER\", \"CAN_MANAGE_RUN\", \"CAN_VIEW\".",
+        "ref": "apps.AppResourceJobJobPermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceJobJobPermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "IS_OWNER",
+      "CAN_MANAGE_RUN",
+      "CAN_VIEW"
+    ],
+    "enum_launch_stages": {
+      "CAN_MANAGE": "GA",
+      "CAN_MANAGE_RUN": "GA",
+      "CAN_VIEW": "GA",
+      "IS_OWNER": "GA"
+    }
+  },
+  "apps.AppResourcePostgres": {
+    "fields": {
+      "branch": {
+        "launch_stage": "GA"
+      },
+      "database": {
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "ref": "apps.AppResourcePostgresPostgresPermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourcePostgresPostgresPermission": {
+    "enum": [
+      "CAN_CONNECT_AND_CREATE"
+    ],
+    "enum_launch_stages": {
+      "CAN_CONNECT_AND_CREATE": "GA"
+    }
+  },
+  "apps.AppResourceSecret": {
+    "fields": {
+      "key": {
+        "description": "Key of the secret to grant permission on.",
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "description": "Permission to grant on the secret scope. For secrets, only one permission is allowed. Permission must be one of: \"READ\", \"WRITE\", \"MANAGE\".",
+        "ref": "apps.AppResourceSecretSecretPermission",
+        "launch_stage": "GA"
+      },
+      "scope": {
+        "description": "Scope of the secret to grant permission on.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceSecretSecretPermission": {
+    "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
+    "enum": [
+      "READ",
+      "WRITE",
+      "MANAGE"
+    ],
+    "enum_launch_stages": {
+      "MANAGE": "GA",
+      "READ": "GA",
+      "WRITE": "GA"
+    }
+  },
+  "apps.AppResourceServingEndpoint": {
+    "fields": {
+      "name": {
+        "description": "Name of the serving endpoint to grant permission on.",
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "description": "Permission to grant on the serving endpoint. Supported permissions are: \"CAN_MANAGE\", \"CAN_QUERY\", \"CAN_VIEW\".",
+        "ref": "apps.AppResourceServingEndpointServingEndpointPermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceServingEndpointServingEndpointPermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_QUERY",
+      "CAN_VIEW"
+    ],
+    "enum_launch_stages": {
+      "CAN_MANAGE": "GA",
+      "CAN_QUERY": "GA",
+      "CAN_VIEW": "GA"
+    }
+  },
+  "apps.AppResourceSqlWarehouse": {
+    "fields": {
+      "id": {
+        "description": "Id of the SQL warehouse to grant permission on.",
+        "launch_stage": "GA"
+      },
+      "permission": {
+        "description": "Permission to grant on the SQL warehouse. Supported permissions are: \"CAN_MANAGE\", \"CAN_USE\", \"IS_OWNER\".",
+        "ref": "apps.AppResourceSqlWarehouseSqlWarehousePermission",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceSqlWarehouseSqlWarehousePermission": {
+    "enum": [
+      "CAN_MANAGE",
+      "CAN_USE",
+      "IS_OWNER"
+    ],
+    "enum_launch_stages": {
+      "CAN_MANAGE": "GA",
+      "CAN_USE": "GA",
+      "IS_OWNER": "GA"
+    }
+  },
+  "apps.AppResourceUcSecurable": {
+    "fields": {
+      "permission": {
+        "ref": "apps.AppResourceUcSecurableUcSecurablePermission",
+        "launch_stage": "GA"
+      },
+      "securable_full_name": {
+        "launch_stage": "GA"
+      },
+      "securable_kind": {
+        "description": "The securable kind from Unity Catalog.\nSee https://docs.databricks.com/api/workspace/tables/get#securable_kind_manifest-securable_kind.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "securable_type": {
+        "ref": "apps.AppResourceUcSecurableUcSecurableType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppResourceUcSecurableUcSecurablePermission": {
+    "enum": [
+      "READ_VOLUME",
+      "WRITE_VOLUME",
+      "SELECT",
+      "EXECUTE",
+      "USE_CONNECTION",
+      "MODIFY"
+    ],
+    "enum_launch_stages": {
+      "EXECUTE": "GA",
+      "MODIFY": "GA",
+      "READ_VOLUME": "GA",
+      "SELECT": "GA",
+      "USE_CONNECTION": "GA",
+      "WRITE_VOLUME": "GA"
+    }
+  },
+  "apps.AppResourceUcSecurableUcSecurableType": {
+    "enum": [
+      "VOLUME",
+      "TABLE",
+      "FUNCTION",
+      "CONNECTION",
+      "MODEL_SERVICE"
+    ],
+    "enum_launch_stages": {
+      "CONNECTION": "GA",
+      "FUNCTION": "GA",
+      "MODEL_SERVICE": "GA",
+      "TABLE": "GA",
+      "VOLUME": "GA"
+    }
+  },
+  "apps.AppThumbnail": {
+    "description": "The thumbnail for an app.",
+    "fields": {
+      "thumbnail": {
+        "description": "The thumbnail image bytes.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppUpdate": {
+    "fields": {
+      "budget_policy_id": {
+        "launch_stage": "GA"
+      },
+      "compute_max_instances": {
+        "description": "Maximum number of app instances the app is configured to run. Must be set together with `compute_min_instances`.",
+        "launch_stage": "GA"
+      },
+      "compute_min_instances": {
+        "description": "Minimum number of app instances the app is configured to run. Must be set together with `compute_max_instances`.",
+        "launch_stage": "GA"
+      },
+      "compute_size": {
+        "ref": "apps.ComputeSize",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "launch_stage": "GA"
+      },
+      "forward_user_access_token": {
+        "description": "Forward the user's access token to the app. Requires stopping and starting app compute to take effect.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "git_repository": {
+        "ref": "apps.GitRepository",
+        "launch_stage": "GA"
+      },
+      "resources": {
+        "launch_stage": "GA"
+      },
+      "status": {
+        "ref": "apps.AppUpdateUpdateStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "telemetry_export_destinations": {
+        "launch_stage": "GA"
+      },
+      "usage_policy_id": {
+        "launch_stage": "GA"
+      },
+      "user_api_scopes": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.AppUpdateUpdateStatus": {
+    "fields": {
+      "message": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "ref": "apps.AppUpdateUpdateStatusUpdateState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "apps.AppUpdateUpdateStatusUpdateState": {
+    "enum": [
+      "NOT_UPDATED",
+      "IN_PROGRESS",
+      "SUCCEEDED",
+      "FAILED"
+    ],
+    "enum_launch_stages": {
+      "FAILED": "GA",
+      "IN_PROGRESS": "GA",
+      "NOT_UPDATED": "GA",
+      "SUCCEEDED": "GA"
+    }
+  },
+  "apps.ApplicationState": {
+    "enum": [
+      "DEPLOYING",
+      "RUNNING",
+      "CRASHED",
+      "UNAVAILABLE"
+    ],
+    "enum_launch_stages": {
+      "CRASHED": "GA",
+      "DEPLOYING": "GA",
+      "RUNNING": "GA",
+      "UNAVAILABLE": "GA"
+    }
+  },
+  "apps.ApplicationStatus": {
+    "fields": {
+      "message": {
+        "description": "Application status message",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "running_instances": {
+        "description": "The number of app instances whose application process is running.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "State of the application.",
+        "ref": "apps.ApplicationState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "apps.AsyncUpdateAppRequest": {
+    "fields": {
+      "app": {
+        "ref": "apps.App",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.ComputeSize": {
+    "enum": [
+      "MEDIUM",
+      "LARGE",
+      "XLARGE"
+    ],
+    "enum_launch_stages": {
+      "LARGE": "GA",
+      "MEDIUM": "GA",
+      "XLARGE": "GA"
+    }
+  },
+  "apps.ComputeState": {
+    "enum": [
+      "ERROR",
+      "DELETING",
+      "STARTING",
+      "STOPPING",
+      "UPDATING",
+      "STOPPED",
+      "ACTIVE"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "DELETING": "GA",
+      "ERROR": "GA",
+      "STARTING": "GA",
+      "STOPPED": "GA",
+      "STOPPING": "GA",
+      "UPDATING": "GA"
+    }
+  },
+  "apps.ComputeStatus": {
+    "fields": {
+      "active_instances": {
+        "description": "The number of active compute instances currently used and billed for this application.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message": {
+        "description": "Compute status message",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "State of the app compute.",
+        "ref": "apps.ComputeState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "apps.CreateAppDeploymentRequest": {
+    "fields": {
+      "app_deployment": {
+        "description": "The app deployment configuration.",
+        "ref": "apps.AppDeployment",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.CreateAppRequest": {
+    "fields": {
+      "app": {
+        "ref": "apps.App",
+        "launch_stage": "GA"
+      },
+      "no_compute": {
+        "description": "If true, the app will not be started after creation.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.CreateCustomTemplateRequest": {
+    "fields": {
+      "template": {
+        "ref": "apps.CustomTemplate",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.CreateSpaceRequest": {
+    "fields": {
+      "space": {
+        "ref": "apps.Space",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "apps.CustomTemplate": {
+    "fields": {
+      "creator": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "The description of the template.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "git_provider": {
+        "description": "The Git provider of the template.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "git_repo": {
+        "description": "The Git repository URL that the template resides in.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "manifest": {
+        "description": "The manifest of the template. It defines fields and default values when installing the template.",
+        "ref": "apps.AppManifest",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "name": {
+        "description": "The name of the template. It must contain only alphanumeric characters, hyphens, underscores, and whitespaces.\nIt must be unique within the workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "path": {
+        "description": "The path to the template within the Git repository.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.DatabricksServiceExceptionWithDetailsProto": {
+    "description": "Databricks Error that is returned by all Databricks APIs.",
+    "fields": {
+      "details": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "error_code": {
+        "ref": "apps.ErrorCode",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "message": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "stack_trace": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "apps.DeleteAppRequest": {},
+  "apps.DeleteAppThumbnailRequest": {},
+  "apps.DeleteCustomTemplateRequest": {},
+  "apps.DeleteSpaceRequest": {},
+  "apps.EnvVar": {
+    "fields": {
+      "name": {
+        "description": "The name of the environment variable.",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "The value for the environment variable.",
+        "launch_stage": "GA"
+      },
+      "value_from": {
+        "description": "The name of an external Databricks resource that contains the value, such as a secret or a database table.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.ErrorCode": {
+    "description": "Error codes returned by Databricks APIs to indicate specific failure conditions.",
+    "enum": [
+      "UNKNOWN",
+      "INTERNAL_ERROR",
+      "TEMPORARILY_UNAVAILABLE",
+      "IO_ERROR",
+      "BAD_REQUEST",
+      "SERVICE_UNDER_MAINTENANCE",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE",
+      "DEADLINE_EXCEEDED",
+      "CANCELLED",
+      "RESOURCE_EXHAUSTED",
+      "ABORTED",
+      "NOT_FOUND",
+      "ALREADY_EXISTS",
+      "UNAUTHENTICATED",
+      "UNAVAILABLE",
+      "INVALID_PARAMETER_VALUE",
+      "ENDPOINT_NOT_FOUND",
+      "MALFORMED_REQUEST",
+      "INVALID_STATE",
+      "PERMISSION_DENIED",
+      "FEATURE_DISABLED",
+      "CUSTOMER_UNAUTHORIZED",
+      "REQUEST_LIMIT_EXCEEDED",
+      "RESOURCE_CONFLICT",
+      "UNPARSEABLE_HTTP_ERROR",
+      "NOT_IMPLEMENTED",
+      "DATA_LOSS",
+      "INVALID_STATE_TRANSITION",
+      "COULD_NOT_ACQUIRE_LOCK",
+      "RESOURCE_ALREADY_EXISTS",
+      "RESOURCE_DOES_NOT_EXIST",
+      "QUOTA_EXCEEDED",
+      "MAX_BLOCK_SIZE_EXCEEDED",
+      "MAX_READ_SIZE_EXCEEDED",
+      "PARTIAL_DELETE",
+      "MAX_LIST_SIZE_EXCEEDED",
+      "DRY_RUN_FAILED",
+      "RESOURCE_LIMIT_EXCEEDED",
+      "DIRECTORY_NOT_EMPTY",
+      "DIRECTORY_PROTECTED",
+      "MAX_NOTEBOOK_SIZE_EXCEEDED",
+      "MAX_CHILD_NODE_SIZE_EXCEEDED",
+      "SEARCH_QUERY_TOO_LONG",
+      "SEARCH_QUERY_TOO_SHORT",
+      "MANAGED_RESOURCE_GROUP_DOES_NOT_EXIST",
+      "PERMISSION_NOT_PROPAGATED",
+      "DEPLOYMENT_TIMEOUT",
+      "GIT_CONFLICT",
+      "GIT_UNKNOWN_REF",
+      "GIT_SENSITIVE_TOKEN_DETECTED",
+      "GIT_URL_NOT_ON_ALLOW_LIST",
+      "GIT_REMOTE_ERROR",
+      "PROJECTS_OPERATION_TIMEOUT",
+      "IPYNB_FILE_IN_REPO",
+      "INSECURE_PARTNER_RESPONSE",
+      "MALFORMED_PARTNER_RESPONSE",
+      "METASTORE_DOES_NOT_EXIST",
+      "DAC_DOES_NOT_EXIST",
+      "CATALOG_DOES_NOT_EXIST",
+      "SCHEMA_DOES_NOT_EXIST",
+      "TABLE_DOES_NOT_EXIST",
+      "SHARE_DOES_NOT_EXIST",
+      "RECIPIENT_DOES_NOT_EXIST",
+      "STORAGE_CREDENTIAL_DOES_NOT_EXIST",
+      "EXTERNAL_LOCATION_DOES_NOT_EXIST",
+      "PRINCIPAL_DOES_NOT_EXIST",
+      "PROVIDER_DOES_NOT_EXIST",
+      "METASTORE_ALREADY_EXISTS",
+      "DAC_ALREADY_EXISTS",
+      "CATALOG_ALREADY_EXISTS",
+      "SCHEMA_ALREADY_EXISTS",
+      "TABLE_ALREADY_EXISTS",
+      "SHARE_ALREADY_EXISTS",
+      "RECIPIENT_ALREADY_EXISTS",
+      "STORAGE_CREDENTIAL_ALREADY_EXISTS",
+      "EXTERNAL_LOCATION_ALREADY_EXISTS",
+      "PROVIDER_ALREADY_EXISTS",
+      "CATALOG_NOT_EMPTY",
+      "SCHEMA_NOT_EMPTY",
+      "METASTORE_NOT_EMPTY",
+      "PROVIDER_SHARE_NOT_ACCESSIBLE"
+    ],
+    "enum_launch_stages": {
+      "ABORTED": "PUBLIC_BETA",
+      "ALREADY_EXISTS": "PUBLIC_BETA",
+      "BAD_REQUEST": "PUBLIC_BETA",
+      "CANCELLED": "PUBLIC_BETA",
+      "CATALOG_ALREADY_EXISTS": "PUBLIC_BETA",
+      "CATALOG_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "CATALOG_NOT_EMPTY": "PUBLIC_BETA",
+      "COULD_NOT_ACQUIRE_LOCK": "PUBLIC_BETA",
+      "CUSTOMER_UNAUTHORIZED": "PUBLIC_BETA",
+      "DAC_ALREADY_EXISTS": "PUBLIC_BETA",
+      "DAC_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "DATA_LOSS": "PUBLIC_BETA",
+      "DEADLINE_EXCEEDED": "PUBLIC_BETA",
+      "DEPLOYMENT_TIMEOUT": "PUBLIC_BETA",
+      "DIRECTORY_NOT_EMPTY": "PUBLIC_BETA",
+      "DIRECTORY_PROTECTED": "PUBLIC_BETA",
+      "DRY_RUN_FAILED": "PUBLIC_BETA",
+      "ENDPOINT_NOT_FOUND": "PUBLIC_BETA",
+      "EXTERNAL_LOCATION_ALREADY_EXISTS": "PUBLIC_BETA",
+      "EXTERNAL_LOCATION_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "FEATURE_DISABLED": "PUBLIC_BETA",
+      "GIT_CONFLICT": "PUBLIC_BETA",
+      "GIT_REMOTE_ERROR": "PUBLIC_BETA",
+      "GIT_SENSITIVE_TOKEN_DETECTED": "PUBLIC_BETA",
+      "GIT_UNKNOWN_REF": "PUBLIC_BETA",
+      "GIT_URL_NOT_ON_ALLOW_LIST": "PUBLIC_BETA",
+      "INSECURE_PARTNER_RESPONSE": "PUBLIC_BETA",
+      "INTERNAL_ERROR": "PUBLIC_BETA",
+      "INVALID_PARAMETER_VALUE": "PUBLIC_BETA",
+      "INVALID_STATE": "PUBLIC_BETA",
+      "INVALID_STATE_TRANSITION": "PUBLIC_BETA",
+      "IO_ERROR": "PUBLIC_BETA",
+      "IPYNB_FILE_IN_REPO": "PUBLIC_BETA",
+      "MALFORMED_PARTNER_RESPONSE": "PUBLIC_BETA",
+      "MALFORMED_REQUEST": "PUBLIC_BETA",
+      "MANAGED_RESOURCE_GROUP_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "MAX_BLOCK_SIZE_EXCEEDED": "PUBLIC_BETA",
+      "MAX_CHILD_NODE_SIZE_EXCEEDED": "PUBLIC_BETA",
+      "MAX_LIST_SIZE_EXCEEDED": "PUBLIC_BETA",
+      "MAX_NOTEBOOK_SIZE_EXCEEDED": "PUBLIC_BETA",
+      "MAX_READ_SIZE_EXCEEDED": "PUBLIC_BETA",
+      "METASTORE_ALREADY_EXISTS": "PUBLIC_BETA",
+      "METASTORE_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "METASTORE_NOT_EMPTY": "PUBLIC_BETA",
+      "NOT_FOUND": "PUBLIC_BETA",
+      "NOT_IMPLEMENTED": "PUBLIC_BETA",
+      "PARTIAL_DELETE": "PUBLIC_BETA",
+      "PERMISSION_DENIED": "PUBLIC_BETA",
+      "PERMISSION_NOT_PROPAGATED": "PUBLIC_BETA",
+      "PRINCIPAL_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "PROJECTS_OPERATION_TIMEOUT": "PUBLIC_BETA",
+      "PROVIDER_ALREADY_EXISTS": "PUBLIC_BETA",
+      "PROVIDER_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "PROVIDER_SHARE_NOT_ACCESSIBLE": "PUBLIC_BETA",
+      "QUOTA_EXCEEDED": "PUBLIC_BETA",
+      "RECIPIENT_ALREADY_EXISTS": "PUBLIC_BETA",
+      "RECIPIENT_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "REQUEST_LIMIT_EXCEEDED": "PUBLIC_BETA",
+      "RESOURCE_ALREADY_EXISTS": "PUBLIC_BETA",
+      "RESOURCE_CONFLICT": "PUBLIC_BETA",
+      "RESOURCE_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "RESOURCE_EXHAUSTED": "PUBLIC_BETA",
+      "RESOURCE_LIMIT_EXCEEDED": "PUBLIC_BETA",
+      "SCHEMA_ALREADY_EXISTS": "PUBLIC_BETA",
+      "SCHEMA_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "SCHEMA_NOT_EMPTY": "PUBLIC_BETA",
+      "SEARCH_QUERY_TOO_LONG": "PUBLIC_BETA",
+      "SEARCH_QUERY_TOO_SHORT": "PUBLIC_BETA",
+      "SERVICE_UNDER_MAINTENANCE": "PUBLIC_BETA",
+      "SHARE_ALREADY_EXISTS": "PUBLIC_BETA",
+      "SHARE_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "STORAGE_CREDENTIAL_ALREADY_EXISTS": "PUBLIC_BETA",
+      "STORAGE_CREDENTIAL_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "TABLE_ALREADY_EXISTS": "PUBLIC_BETA",
+      "TABLE_DOES_NOT_EXIST": "PUBLIC_BETA",
+      "TEMPORARILY_UNAVAILABLE": "PUBLIC_BETA",
+      "UNAUTHENTICATED": "PUBLIC_BETA",
+      "UNAVAILABLE": "PUBLIC_BETA",
+      "UNKNOWN": "PUBLIC_BETA",
+      "UNPARSEABLE_HTTP_ERROR": "PUBLIC_BETA",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE": "PUBLIC_BETA"
+    }
+  },
+  "apps.GetAppDeploymentRequest": {},
+  "apps.GetAppPermissionLevelsRequest": {},
+  "apps.GetAppPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.GetAppPermissionsRequest": {},
+  "apps.GetAppRequest": {},
+  "apps.GetAppUpdateRequest": {},
+  "apps.GetCustomTemplateRequest": {},
+  "apps.GetOperationRequest": {},
+  "apps.GetSpaceRequest": {},
+  "apps.GitRepository": {
+    "description": "Git repository configuration specifying the location of the repository.",
+    "fields": {
+      "auto_deploy": {
+        "description": "When true, automatically deploys the app on push events to the branch configured in\nthe app's deployment_source.git_source.",
+        "launch_stage": "GA"
+      },
+      "caller_credential_id": {
+        "description": "ID of a personal access token Git credential owned by the caller, used to\ngrant the app's service principal access to this repository.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "provider": {
+        "description": "Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud,\nbitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.",
+        "launch_stage": "GA"
+      },
+      "url": {
+        "description": "URL of the Git repository.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.GitSource": {
+    "description": "Complete git source specification including repository location and reference.",
+    "fields": {
+      "branch": {
+        "description": "Git branch to checkout.",
+        "launch_stage": "GA"
+      },
+      "commit": {
+        "description": "Git commit SHA to checkout.",
+        "launch_stage": "GA"
+      },
+      "git_repository": {
+        "description": "Git repository configuration. Populated from the app's git_repository configuration.",
+        "ref": "apps.GitRepository",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "resolved_commit": {
+        "description": "The resolved commit SHA that was actually used for the deployment. This is populated by the\nsystem after resolving the reference (branch, tag, or commit). If commit is specified\ndirectly, this will match commit. If a branch or tag is specified, this contains the\ncommit SHA that the branch or tag pointed to at deployment time.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "source_code_path": {
+        "description": "Relative path to the app source code within the Git repository. If not specified, the root\nof the repository is used.",
+        "launch_stage": "GA"
+      },
+      "tag": {
+        "description": "Git tag to checkout.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.ListAppDeploymentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of apps. Requests first page if absent.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.ListAppDeploymentsResponse": {
+    "fields": {
+      "app_deployments": {
+        "description": "Deployment history of the app.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Pagination token to request the next page of apps.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.ListAppsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of apps. Requests first page if absent.",
+        "launch_stage": "GA"
+      },
+      "space": {
+        "description": "Filter apps by app space name. When specified, only apps belonging to this space are returned.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.ListAppsResponse": {
+    "fields": {
+      "apps": {
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Pagination token to request the next page of apps.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.ListCustomTemplatesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of custom templates. Requests first page if absent.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "apps.ListCustomTemplatesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Pagination token to request the next page of custom templates.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "templates": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.ListSpacesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of app spaces. Requests first page if absent.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "apps.ListSpacesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Pagination token to request the next page of app spaces.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "spaces": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "apps.Operation": {
+    "description": "This resource represents a long-running operation that is the result of a\nnetwork API call.",
+    "fields": {
+      "done": {
+        "description": "If the value is `false`, it means the operation is still in progress.\nIf `true`, the operation is completed, and either `error` or `response` is\navailable.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "error": {
+        "description": "The error result of the operation in case of failure or cancellation.",
+        "ref": "apps.DatabricksServiceExceptionWithDetailsProto",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "metadata": {
+        "description": "Service-specific metadata associated with the operation.  It typically\ncontains progress information and common metadata such as create time.\nSome services might not provide such metadata.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "name": {
+        "description": "The server-assigned name, which is only unique within the same service that\noriginally returns it. If you use the default HTTP mapping, the\n`name` should be a resource name ending with `operations/{unique_id}`.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "response": {
+        "description": "The normal, successful response of the operation.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "apps.Space": {
+    "fields": {
+      "assume_group_id": {
+        "description": "The group whose permissions users assume via Role Authorization for apps in this space. When\nset, user tokens assume the role of this group instead of doing regular obo token downscoping.\nSet only at space creation.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "create_time": {
+        "description": "The creation time of the app space. Formatted timestamp in ISO 6801.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "The email of the user that created the app space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "The description of the app space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_usage_policy_id": {
+        "description": "The effective usage policy ID used by apps in the space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_user_api_scopes": {
+        "description": "The effective api scopes granted to the user access token.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "The unique identifier of the app space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The name of the app space. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "resources": {
+        "description": "Resources for the app space. Resources configured at the space level are available to all apps in the space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "service_principal_client_id": {
+        "description": "The service principal client ID for the app space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "service_principal_id": {
+        "description": "The service principal ID for the app space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "service_principal_name": {
+        "description": "The service principal name for the app space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status": {
+        "description": "The status of the app space.",
+        "ref": "apps.SpaceStatus",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "The update time of the app space. Formatted timestamp in ISO 6801.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "updater": {
+        "description": "The email of the user that last updated the app space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "usage_policy_id": {
+        "description": "The usage policy ID for managing cost at the space level.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "user_api_scopes": {
+        "description": "OAuth scopes for apps in the space.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "apps.SpaceStatus": {
+    "fields": {
+      "message": {
+        "description": "Message providing context about the current state.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "The state of the app space.",
+        "ref": "apps.SpaceStatusSpaceState",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "apps.SpaceStatusSpaceState": {
+    "enum": [
+      "SPACE_CREATING",
+      "SPACE_ACTIVE",
+      "SPACE_ERROR",
+      "SPACE_DELETING",
+      "SPACE_DELETED",
+      "SPACE_UPDATING"
+    ],
+    "enum_launch_stages": {
+      "SPACE_ACTIVE": "PUBLIC_BETA",
+      "SPACE_CREATING": "PUBLIC_BETA",
+      "SPACE_DELETED": "PUBLIC_BETA",
+      "SPACE_DELETING": "PUBLIC_BETA",
+      "SPACE_ERROR": "PUBLIC_BETA",
+      "SPACE_UPDATING": "PUBLIC_BETA"
+    }
+  },
+  "apps.SpaceUpdate": {
+    "description": "Tracks app space update information.",
+    "fields": {
+      "description": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "resources": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "status": {
+        "ref": "apps.SpaceUpdateStatus",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "usage_policy_id": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "user_api_scopes": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "apps.SpaceUpdateState": {
+    "enum": [
+      "NOT_UPDATED",
+      "IN_PROGRESS",
+      "SUCCEEDED",
+      "FAILED"
+    ],
+    "enum_launch_stages": {
+      "FAILED": "PUBLIC_BETA",
+      "IN_PROGRESS": "PUBLIC_BETA",
+      "NOT_UPDATED": "PUBLIC_BETA",
+      "SUCCEEDED": "PUBLIC_BETA"
+    }
+  },
+  "apps.SpaceUpdateStatus": {
+    "description": "Status of an app space update operation",
+    "fields": {
+      "message": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "ref": "apps.SpaceUpdateState",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "apps.StartAppRequest": {},
+  "apps.StopAppRequest": {},
+  "apps.TelemetryExportDestination": {
+    "description": "A single telemetry export destination with its configuration and status.",
+    "fields": {
+      "unity_catalog": {
+        "ref": "apps.UnityCatalog",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.UnityCatalog": {
+    "description": "Unity Catalog Destinations for OTEL telemetry export.",
+    "fields": {
+      "logs_table": {
+        "description": "Unity Catalog table for OTEL logs.",
+        "launch_stage": "GA"
+      },
+      "metrics_table": {
+        "description": "Unity Catalog table for OTEL metrics.",
+        "launch_stage": "GA"
+      },
+      "traces_table": {
+        "description": "Unity Catalog table for OTEL traces (spans).",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.UpdateAppRequest": {
+    "fields": {
+      "app": {
+        "ref": "apps.App",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.UpdateAppThumbnailRequest": {
+    "fields": {
+      "app_thumbnail": {
+        "description": "The app thumbnail to set.",
+        "ref": "apps.AppThumbnail",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "apps.UpdateCustomTemplateRequest": {
+    "fields": {
+      "template": {
+        "ref": "apps.CustomTemplate",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "apps.UpdateSpaceRequest": {
+    "fields": {
+      "space": {
+        "ref": "apps.Space",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  }
+}

@@ -1,0 +1,3374 @@
+{
+  "pipelines.ApiSourceConnectorConfig": {
+    "description": "Top-level configuration for API Source connectors with arbitrary configuration.",
+    "fields": {
+      "configs": {
+        "description": "Arbitrary key-value configuration values for the API Source connector.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ApiSourceConnectorOptions": {
+    "description": "Options for API Source connectors with arbitrary configuration.",
+    "fields": {
+      "options": {
+        "description": "Arbitrary key-value configuration options for the API Source connector.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ApplyEnvironmentRequest": {},
+  "pipelines.ApplyEnvironmentRequestResponse": {},
+  "pipelines.AutoFullRefreshPolicy": {
+    "description": "Policy for auto full refresh.",
+    "fields": {
+      "enabled": {
+        "description": "(Required, Mutable) Whether to enable auto full refresh or not.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "min_interval_hours": {
+        "description": "(Optional, Mutable) Specify the minimum interval in hours between the timestamp\nat which a table was last full refreshed and the current timestamp for triggering auto full\nIf unspecified and autoFullRefresh is enabled then by default min_interval_hours is 24 hours.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.AvroTransformerOptions": {
+    "fields": {
+      "parse_mode": {
+        "description": "(Optional) Parse mode for Avro data.\nValid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.",
+        "ref": "pipelines.ParseMode",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema": {
+        "description": "Inline Avro JSON schema string.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema_file_path": {
+        "description": "Path to a schema file (.avsc).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema_registry": {
+        "description": "(Optional) Schema registry to resolve the Avro schema at runtime instead of\nproviding it inline or via a file path.",
+        "ref": "pipelines.SchemaRegistryConfig",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.CloneMode": {
+    "description": "Enum to specify which mode of clone to execute",
+    "enum": [
+      "MIGRATE_TO_UC"
+    ],
+    "enum_launch_stages": {
+      "MIGRATE_TO_UC": "GA"
+    }
+  },
+  "pipelines.ClonePipelineRequest": {
+    "fields": {
+      "allow_duplicate_names": {
+        "description": "If false, deployment will fail if name conflicts with that of another pipeline.",
+        "launch_stage": "GA"
+      },
+      "budget_policy_id": {
+        "description": "Budget policy of this pipeline.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "catalog": {
+        "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "SDP Release Channel that specifies which version to use.",
+        "launch_stage": "GA"
+      },
+      "clone_mode": {
+        "description": "The type of clone to perform. Currently, only deep copies are supported",
+        "ref": "pipelines.CloneMode",
+        "launch_stage": "GA"
+      },
+      "clusters": {
+        "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
+        "launch_stage": "GA"
+      },
+      "configuration": {
+        "description": "String-String configuration for this pipeline execution.",
+        "launch_stage": "GA"
+      },
+      "continuous": {
+        "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "deployment": {
+        "description": "Deployment type of this pipeline.",
+        "ref": "pipelines.PipelineDeployment",
+        "launch_stage": "GA"
+      },
+      "development": {
+        "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "edition": {
+        "description": "Pipeline product edition.",
+        "launch_stage": "GA"
+      },
+      "environment": {
+        "description": "Environment specification for this pipeline used to install dependencies.",
+        "ref": "pipelines.PipelinesEnvironment",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "event_log": {
+        "description": "Event log configuration for this pipeline",
+        "ref": "pipelines.EventLogSpec",
+        "launch_stage": "GA"
+      },
+      "expected_last_modified": {
+        "description": "If present, the last-modified time of the pipeline settings before the clone.\nIf the settings were modified after that time, then the request will fail with\na conflict.",
+        "launch_stage": "GA"
+      },
+      "filters": {
+        "description": "Filters on which Pipeline packages to include in the deployed graph.",
+        "ref": "pipelines.Filters",
+        "launch_stage": "GA"
+      },
+      "gateway_definition": {
+        "description": "The definition of a gateway pipeline to support change data capture.",
+        "ref": "pipelines.IngestionGatewayPipelineDefinition",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "id": {
+        "description": "Unique identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "ingestion_definition": {
+        "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
+        "ref": "pipelines.IngestionPipelineDefinition",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "libraries": {
+        "description": "Libraries or code needed by this deployment.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Friendly identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "notifications": {
+        "description": "List of notification settings for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "parent_path": {
+        "description": "Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "photon": {
+        "description": "Whether Photon is enabled for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "restart_window": {
+        "description": "Restart window of this pipeline.",
+        "ref": "pipelines.RestartWindow",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "root_path": {
+        "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schema": {
+        "description": "The default schema (database) where tables are read from or published to.",
+        "launch_stage": "GA"
+      },
+      "serverless": {
+        "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
+        "launch_stage": "GA"
+      },
+      "serverless_compute_id": {
+        "description": "Serverless compute ID specified by the user for serverless pipelines.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "storage": {
+        "description": "DBFS root directory for storing checkpoints and tables.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+        "launch_stage": "GA"
+      },
+      "target": {
+        "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "trigger": {
+        "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
+        "ref": "pipelines.PipelineTrigger",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "usage_policy_id": {
+        "description": "Usage policy of this pipeline.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ClonePipelineResponse": {
+    "fields": {
+      "pipeline_id": {
+        "description": "The pipeline id of the cloned pipeline",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.ConfluenceConnectorOptions": {
+    "description": "Confluence specific options for ingestion",
+    "fields": {
+      "include_confluence_spaces": {
+        "description": "(Optional) Spaces to filter Confluence data on",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ConfluentSchemaRegistryOptions": {
+    "fields": {
+      "subject": {
+        "description": "Required: subject name to resolve in the registry.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.ConnectionParameters": {
+    "fields": {
+      "source_catalog": {
+        "description": "Source catalog for initial connection.\nThis is necessary for schema exploration in some database systems like Oracle, and optional but nice-to-have\nin some other database systems like Postgres.\nFor Oracle databases, this maps to a service name.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ConnectorOptions": {
+    "description": "Wrapper message for source-specific options to support multiple connector types",
+    "fields": {
+      "api_source_connector_options": {
+        "description": "Connector-specific options for API Source connectors.",
+        "ref": "pipelines.ApiSourceConnectorOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "confluence_options": {
+        "ref": "pipelines.ConfluenceConnectorOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "gdrive_options": {
+        "ref": "pipelines.GoogleDriveOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "google_ads_options": {
+        "ref": "pipelines.GoogleAdsOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "jira_options": {
+        "ref": "pipelines.JiraConnectorOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "kafka_options": {
+        "ref": "pipelines.KafkaOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "linkedin_ads_options": {
+        "ref": "pipelines.LinkedInAdsOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "marketo_options": {
+        "ref": "pipelines.MarketoOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "meta_ads_options": {
+        "ref": "pipelines.MetaMarketingOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "onedrive_options": {
+        "ref": "pipelines.OneDriveOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "outlook_options": {
+        "ref": "pipelines.OutlookOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "rabbitmq_options": {
+        "ref": "pipelines.RabbitmqOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "reddit_ads_options": {
+        "ref": "pipelines.RedditAdsOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "sharepoint_options": {
+        "ref": "pipelines.SharepointOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "smartsheet_options": {
+        "ref": "pipelines.SmartsheetOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "tiktok_ads_options": {
+        "ref": "pipelines.TikTokAdsOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "zendesk_support_options": {
+        "ref": "pipelines.ZendeskSupportOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ConnectorType": {
+    "description": "For certain database sources LakeFlow Connect offers both query based and cdc\ningestion, ConnectorType can bse used to convey the type of ingestion.\nIf connection_name is provided for database sources, we default to Query Based ingestion",
+    "enum": [
+      "CDC",
+      "QUERY_BASED"
+    ],
+    "enum_launch_stages": {
+      "CDC": "PUBLIC_PREVIEW",
+      "QUERY_BASED": "PUBLIC_PREVIEW"
+    }
+  },
+  "pipelines.CreatePipeline": {
+    "fields": {
+      "allow_duplicate_names": {
+        "description": "If false, deployment will fail if name conflicts with that of another pipeline.",
+        "launch_stage": "GA"
+      },
+      "budget_policy_id": {
+        "description": "Budget policy of this pipeline.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "catalog": {
+        "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "SDP Release Channel that specifies which version to use.",
+        "launch_stage": "GA"
+      },
+      "clusters": {
+        "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
+        "launch_stage": "GA"
+      },
+      "configuration": {
+        "description": "String-String configuration for this pipeline execution.",
+        "launch_stage": "GA"
+      },
+      "continuous": {
+        "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "deployment": {
+        "description": "Deployment type of this pipeline.",
+        "ref": "pipelines.PipelineDeployment",
+        "launch_stage": "GA"
+      },
+      "development": {
+        "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "dry_run": {
+        "launch_stage": "GA"
+      },
+      "edition": {
+        "description": "Pipeline product edition.",
+        "launch_stage": "GA"
+      },
+      "environment": {
+        "description": "Environment specification for this pipeline used to install dependencies.",
+        "ref": "pipelines.PipelinesEnvironment",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "event_log": {
+        "description": "Event log configuration for this pipeline",
+        "ref": "pipelines.EventLogSpec",
+        "launch_stage": "GA"
+      },
+      "filters": {
+        "description": "Filters on which Pipeline packages to include in the deployed graph.",
+        "ref": "pipelines.Filters",
+        "launch_stage": "GA"
+      },
+      "gateway_definition": {
+        "description": "The definition of a gateway pipeline to support change data capture.",
+        "ref": "pipelines.IngestionGatewayPipelineDefinition",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "id": {
+        "description": "Unique identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "ingestion_definition": {
+        "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
+        "ref": "pipelines.IngestionPipelineDefinition",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "libraries": {
+        "description": "Libraries or code needed by this deployment.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Friendly identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "notifications": {
+        "description": "List of notification settings for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "Key/value map of default parameters to use for pipeline execution.\nMaximum total size: 10k characters (JSON format)",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "parent_path": {
+        "description": "Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "photon": {
+        "description": "Whether Photon is enabled for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "restart_window": {
+        "description": "Restart window of this pipeline.",
+        "ref": "pipelines.RestartWindow",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "root_path": {
+        "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "run_as": {
+        "ref": "pipelines.RunAs",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "The default schema (database) where tables are read from or published to.",
+        "launch_stage": "GA"
+      },
+      "serverless": {
+        "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
+        "launch_stage": "GA"
+      },
+      "serverless_compute_id": {
+        "description": "Serverless compute ID specified by the user for serverless pipelines.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "storage": {
+        "description": "DBFS root directory for storing checkpoints and tables.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+        "launch_stage": "GA"
+      },
+      "target": {
+        "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "trigger": {
+        "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
+        "ref": "pipelines.PipelineTrigger",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "usage_policy_id": {
+        "description": "Usage policy of this pipeline.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.CreatePipelineResponse": {
+    "fields": {
+      "effective_settings": {
+        "description": "Only returned when dry_run is true.",
+        "ref": "pipelines.PipelineSpec",
+        "launch_stage": "GA"
+      },
+      "pipeline_id": {
+        "description": "The unique identifier for the newly created pipeline. Only returned when dry_run is false.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.CronTrigger": {
+    "fields": {
+      "quartz_cron_schedule": {
+        "launch_stage": "GA"
+      },
+      "timezone_id": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.DataPlaneId": {
+    "fields": {
+      "instance": {
+        "description": "The instance name of the data plane emitting an event.",
+        "launch_stage": "GA"
+      },
+      "seq_no": {
+        "description": "A sequence number, unique and increasing within the data plane instance.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.DataStagingOptions": {
+    "description": "Location of staged data storage",
+    "fields": {
+      "catalog_name": {
+        "description": "(Required, Immutable) The name of the catalog for the connector's staging storage location.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schema_name": {
+        "description": "(Required, Immutable) The name of the schema for the connector's staging storage location.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "volume_name": {
+        "description": "(Optional) The Unity Catalog-compatible name for the storage location.\nThis is the volume to use for the data that is extracted by the connector.\nSpark Declarative Pipelines system will automatically create the volume under the catalog and schema.\nFor Combined Cdc Managed Ingestion pipelines default name for the volume would be :\n__databricks_ingestion_gateway_staging_data-$pipelineId",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.DayOfWeek": {
+    "description": "Days of week in which the window is allowed to happen.\nIf not specified all days of the week will be used.",
+    "enum": [
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY",
+      "SUNDAY"
+    ],
+    "enum_launch_stages": {
+      "FRIDAY": "PUBLIC_PREVIEW",
+      "MONDAY": "PUBLIC_PREVIEW",
+      "SATURDAY": "PUBLIC_PREVIEW",
+      "SUNDAY": "PUBLIC_PREVIEW",
+      "THURSDAY": "PUBLIC_PREVIEW",
+      "TUESDAY": "PUBLIC_PREVIEW",
+      "WEDNESDAY": "PUBLIC_PREVIEW"
+    }
+  },
+  "pipelines.DeletePipelineRequest": {
+    "fields": {
+      "cascade": {
+        "description": "If false, pipeline deletion will not cascade to its datasets (MVs, STs, Views).\nBy default, this parameter will be true and all tables will be deleted with the pipeline.",
+        "launch_stage": "GA"
+      },
+      "force": {
+        "description": "If true, deletion will proceed even if resource cleanup fails.\nBy default, deletion will fail if resources cleanup is required but fails.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.DeletePipelineResponse": {},
+  "pipelines.DeploymentKind": {
+    "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.",
+    "enum": [
+      "BUNDLE"
+    ],
+    "enum_launch_stages": {
+      "BUNDLE": "GA"
+    }
+  },
+  "pipelines.EditPipeline": {
+    "fields": {
+      "allow_duplicate_names": {
+        "description": "If false, deployment will fail if name has changed and conflicts the name of another pipeline.",
+        "launch_stage": "GA"
+      },
+      "budget_policy_id": {
+        "description": "Budget policy of this pipeline.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "catalog": {
+        "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "SDP Release Channel that specifies which version to use.",
+        "launch_stage": "GA"
+      },
+      "clusters": {
+        "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
+        "launch_stage": "GA"
+      },
+      "configuration": {
+        "description": "String-String configuration for this pipeline execution.",
+        "launch_stage": "GA"
+      },
+      "continuous": {
+        "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "deployment": {
+        "description": "Deployment type of this pipeline.",
+        "ref": "pipelines.PipelineDeployment",
+        "launch_stage": "GA"
+      },
+      "development": {
+        "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "edition": {
+        "description": "Pipeline product edition.",
+        "launch_stage": "GA"
+      },
+      "environment": {
+        "description": "Environment specification for this pipeline used to install dependencies.",
+        "ref": "pipelines.PipelinesEnvironment",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "event_log": {
+        "description": "Event log configuration for this pipeline",
+        "ref": "pipelines.EventLogSpec",
+        "launch_stage": "GA"
+      },
+      "expected_last_modified": {
+        "description": "If present, the last-modified time of the pipeline settings before the edit.\nIf the settings were modified after that time, then the request will fail with\na conflict.",
+        "launch_stage": "GA"
+      },
+      "filters": {
+        "description": "Filters on which Pipeline packages to include in the deployed graph.",
+        "ref": "pipelines.Filters",
+        "launch_stage": "GA"
+      },
+      "gateway_definition": {
+        "description": "The definition of a gateway pipeline to support change data capture.",
+        "ref": "pipelines.IngestionGatewayPipelineDefinition",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "id": {
+        "description": "Unique identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "ingestion_definition": {
+        "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
+        "ref": "pipelines.IngestionPipelineDefinition",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "libraries": {
+        "description": "Libraries or code needed by this deployment.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Friendly identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "notifications": {
+        "description": "List of notification settings for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "Key/value map of default parameters to use for pipeline execution.\nMaximum total size: 10k characters (JSON format)",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "parent_path": {
+        "description": "Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "photon": {
+        "description": "Whether Photon is enabled for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "restart_window": {
+        "description": "Restart window of this pipeline.",
+        "ref": "pipelines.RestartWindow",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "root_path": {
+        "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "run_as": {
+        "ref": "pipelines.RunAs",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "The default schema (database) where tables are read from or published to.",
+        "launch_stage": "GA"
+      },
+      "serverless": {
+        "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
+        "launch_stage": "GA"
+      },
+      "serverless_compute_id": {
+        "description": "Serverless compute ID specified by the user for serverless pipelines.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "storage": {
+        "description": "DBFS root directory for storing checkpoints and tables.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+        "launch_stage": "GA"
+      },
+      "target": {
+        "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "trigger": {
+        "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
+        "ref": "pipelines.PipelineTrigger",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "usage_policy_id": {
+        "description": "Usage policy of this pipeline.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.EditPipelineResponse": {},
+  "pipelines.ErrorDetail": {
+    "fields": {
+      "exceptions": {
+        "description": "The exception thrown for this error, with its chain of cause.",
+        "launch_stage": "GA"
+      },
+      "fatal": {
+        "description": "Whether this error is considered fatal, that is, unrecoverable.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.EventLevel": {
+    "description": "The severity level of the event.",
+    "enum": [
+      "INFO",
+      "WARN",
+      "ERROR",
+      "METRICS"
+    ],
+    "enum_launch_stages": {
+      "ERROR": "GA",
+      "INFO": "GA",
+      "METRICS": "GA",
+      "WARN": "GA"
+    }
+  },
+  "pipelines.EventLogSpec": {
+    "description": "Configurable event log parameters.",
+    "fields": {
+      "catalog": {
+        "description": "The UC catalog the event log is published under.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name the event log is published to in UC.",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "The UC schema the event log is published under.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.FileFilter": {
+    "fields": {
+      "modified_after": {
+        "description": "Include files with modification times occurring after the specified time.\nTimestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)\nBased on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "modified_before": {
+        "description": "Include files with modification times occurring before the specified time.\nTimestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)\nBased on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "path_filter": {
+        "description": "Include files with file names matching the pattern\nBased on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.FileIngestionOptions": {
+    "fields": {
+      "corrupt_record_column": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "file_filters": {
+        "description": "Generic options",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "format": {
+        "description": "required for TableSpec",
+        "ref": "pipelines.FileIngestionOptionsFileFormat",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "format_options": {
+        "description": "Format-specific options\nBased on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "ignore_corrupt_files": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "infer_column_types": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "reader_case_sensitive": {
+        "description": "Column name case sensitivity\nhttps://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "rescued_data_column": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "schema_evolution_mode": {
+        "ref": "pipelines.FileIngestionOptionsSchemaEvolutionMode",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "schema_hints": {
+        "description": "Override inferred schema of specific columns\nBased on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#override-schema-inference-with-schema-hints",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "single_variant_column": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.FileIngestionOptionsFileFormat": {
+    "enum": [
+      "BINARYFILE",
+      "JSON",
+      "CSV",
+      "XML",
+      "EXCEL",
+      "PARQUET",
+      "AVRO",
+      "ORC"
+    ],
+    "enum_launch_stages": {
+      "AVRO": "PRIVATE_PREVIEW",
+      "BINARYFILE": "PRIVATE_PREVIEW",
+      "CSV": "PRIVATE_PREVIEW",
+      "EXCEL": "PRIVATE_PREVIEW",
+      "JSON": "PRIVATE_PREVIEW",
+      "ORC": "PRIVATE_PREVIEW",
+      "PARQUET": "PRIVATE_PREVIEW",
+      "XML": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.FileIngestionOptionsSchemaEvolutionMode": {
+    "description": "Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work",
+    "enum": [
+      "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING",
+      "ADD_NEW_COLUMNS",
+      "RESCUE",
+      "FAIL_ON_NEW_COLUMNS",
+      "NONE"
+    ],
+    "enum_launch_stages": {
+      "ADD_NEW_COLUMNS": "PUBLIC_BETA",
+      "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING": "PUBLIC_BETA",
+      "FAIL_ON_NEW_COLUMNS": "PUBLIC_BETA",
+      "NONE": "PUBLIC_BETA",
+      "RESCUE": "PUBLIC_BETA"
+    }
+  },
+  "pipelines.FileLibrary": {
+    "fields": {
+      "path": {
+        "description": "The absolute path of the source code.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.Filters": {
+    "fields": {
+      "exclude": {
+        "description": "Paths to exclude.",
+        "launch_stage": "GA"
+      },
+      "include": {
+        "description": "Paths to include.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.GetPipelinePermissionLevelsRequest": {},
+  "pipelines.GetPipelinePermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.GetPipelinePermissionsRequest": {},
+  "pipelines.GetPipelineRequest": {},
+  "pipelines.GetPipelineResponse": {
+    "fields": {
+      "cause": {
+        "description": "An optional message detailing the cause of the pipeline state.",
+        "launch_stage": "GA"
+      },
+      "cluster_id": {
+        "description": "The ID of the cluster that the pipeline is running on.",
+        "launch_stage": "GA"
+      },
+      "creator_user_name": {
+        "description": "The username of the pipeline creator.",
+        "launch_stage": "GA"
+      },
+      "effective_budget_policy_id": {
+        "description": "Serverless budget policy ID of this pipeline.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "effective_publishing_mode": {
+        "description": "Publishing mode of the pipeline",
+        "ref": "pipelines.PublishingMode",
+        "launch_stage": "GA"
+      },
+      "effective_serverless_compute_id": {
+        "description": "Serverless compute ID resolved for the pipeline.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "health": {
+        "description": "The health of a pipeline.",
+        "ref": "pipelines.GetPipelineResponseHealth",
+        "launch_stage": "GA"
+      },
+      "last_modified": {
+        "description": "The last time the pipeline settings were modified or created.",
+        "launch_stage": "GA"
+      },
+      "latest_updates": {
+        "description": "Status of the latest updates for the pipeline. Ordered with the newest update first.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "A human friendly identifier for the pipeline, taken from the `spec`.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "Key/value map of default parameters to use for pipeline execution.\nMaximum total size: 10k characters (JSON format)",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "pipeline_id": {
+        "description": "The ID of the pipeline.",
+        "launch_stage": "GA"
+      },
+      "run_as": {
+        "description": "The user or service principal that the pipeline runs as, if specified in the request.\nThis field indicates the explicit configuration of `run_as` for the pipeline.\nTo find the value in all cases, explicit or implicit, use `run_as_user_name`.",
+        "ref": "pipelines.RunAs",
+        "launch_stage": "GA"
+      },
+      "run_as_user_name": {
+        "description": "Username of the user that the pipeline will run on behalf of.",
+        "launch_stage": "GA"
+      },
+      "spec": {
+        "description": "The pipeline specification. This field is not returned when called by `ListPipelines`.",
+        "ref": "pipelines.PipelineSpec",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "The pipeline state.",
+        "ref": "pipelines.PipelineState",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.GetPipelineResponseHealth": {
+    "description": "The health of a pipeline.",
+    "enum": [
+      "HEALTHY",
+      "UNHEALTHY"
+    ],
+    "enum_launch_stages": {
+      "HEALTHY": "GA",
+      "UNHEALTHY": "GA"
+    }
+  },
+  "pipelines.GetUpdateRequest": {},
+  "pipelines.GetUpdateResponse": {
+    "fields": {
+      "update": {
+        "description": "The current update info.",
+        "ref": "pipelines.UpdateInfo",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.GoogleAdsConfig": {
+    "fields": {
+      "manager_account_id": {
+        "description": "(Required) Manager Account ID (also called MCC Account ID) used to list and access\ncustomer accounts under this manager account. This is required for fetching the list\nof customer accounts during source selection.\nIf the same field is also set in the object-level GoogleAdsOptions (connector_options),\nthe object-level value takes precedence over this top-level config.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.GoogleAdsCustomReportOptions": {
+    "description": "User-defined custom report for the Google Ads connector. Mirrors the\nresource + fields + segments + metrics model that Google Ads GAQL exposes.\nThe customer account this report runs against is supplied by the source\nschema (namespace), not by this message. The whole message is gated by\nthe parent GoogleAdsOptions.custom_report_options stage; per-field stage\nannotations are intentionally omitted.\nOnly supported on table-type objects: a custom report requires a\ndestination table, so it cannot be specified at the schema/source level.",
+    "fields": {
+      "metrics": {
+        "description": "(Optional) Metric fields to select (e.g. \"metrics.clicks\",\n\"metrics.cost_micros\"). Multiple values are joined into the GAQL\nSELECT clause.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "resource": {
+        "description": "(Required) Google Ads resource to query (e.g. \"ad_group_ad\",\n\"keyword_view\", \"search_term_view\"). Must be a resource that has\nmetrics. Values are validated against Google Ads' field-service\ncatalog at pipeline plan time.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "resource_fields": {
+        "description": "(Optional) Resource fields to select, in fully-qualified GAQL form\n(e.g. \"ad_group_ad.ad.id\", \"ad_group_ad.status\"). Multiple values are\njoined into the GAQL SELECT clause.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "segments": {
+        "description": "(Optional) Segment fields to select (e.g. \"segments.date\",\n\"segments.device\"). Must include at least one of segments.date,\nsegments.week, or segments.month — that segment is used as the\nincremental cursor for the table.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.GoogleAdsOptions": {
+    "description": "Google Ads specific options for ingestion (object-level).\nWhen set, these values override the corresponding fields in GoogleAdsConfig\n(source_configurations).",
+    "fields": {
+      "custom_report_options": {
+        "description": "(Optional) Custom report definition. When set, the table is treated as a\nuser-defined Google Ads custom report: the connector synthesizes a GAQL\nquery from the resource, fields, segments, and metrics specified here.\nWhen unset, the table must match one of the connector's prebuilt sources.",
+        "ref": "pipelines.GoogleAdsCustomReportOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "lookback_window_days": {
+        "description": "(Optional) Number of days to look back for report tables to capture late-arriving data.\nIf not specified, defaults to 30 days.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "manager_account_id": {
+        "description": "(Optional at this level) Manager Account ID (also called MCC Account ID) used to list\nand access customer accounts under this manager account.\nOverrides GoogleAdsConfig.manager_account_id from source_configurations when set.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "sync_start_date": {
+        "description": "(Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years of historical data.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.GoogleDriveOptions": {
+    "fields": {
+      "entity_type": {
+        "ref": "pipelines.GoogleDriveOptionsGoogleDriveEntityType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "file_ingestion_options": {
+        "ref": "pipelines.FileIngestionOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "url": {
+        "description": "Google Drive URL.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.GoogleDriveOptionsGoogleDriveEntityType": {
+    "enum": [
+      "FILE",
+      "FILE_METADATA",
+      "PERMISSION"
+    ],
+    "enum_launch_stages": {
+      "FILE": "PRIVATE_PREVIEW",
+      "FILE_METADATA": "PRIVATE_PREVIEW",
+      "PERMISSION": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.IngestionConfig": {
+    "fields": {
+      "report": {
+        "description": "Select a specific source report.",
+        "ref": "pipelines.ReportSpec",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schema": {
+        "description": "Select all tables from a specific source schema.",
+        "ref": "pipelines.SchemaSpec",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "table": {
+        "description": "Select a specific source table.",
+        "ref": "pipelines.TableSpec",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.IngestionGatewayPipelineDefinition": {
+    "fields": {
+      "connection_id": {
+        "description": "[Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "connection_name": {
+        "description": "Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "connection_parameters": {
+        "description": "Optional, Internal. Parameters required to establish an initial connection with the source.",
+        "ref": "pipelines.ConnectionParameters",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "gateway_storage_catalog": {
+        "description": "Required, Immutable. The name of the catalog for the gateway pipeline's storage location.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "gateway_storage_name": {
+        "description": "Optional. The Unity Catalog-compatible name for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nSpark Declarative Pipelines system will automatically create the storage location under the catalog and schema.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "gateway_storage_schema": {
+        "description": "Required, Immutable. The name of the schema for the gateway pipelines's storage location.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.IngestionPipelineDefinition": {
+    "fields": {
+      "connection_name": {
+        "description": "The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with\nboth connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,\n(connector_type = QUERY_BASED OR connector_type = CDC).\nIf connection name corresponds to database connectors like Oracle, and connector_type is not provided then\nconnector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion\npipeline.\nUnder certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed\nIngestion Pipeline with Gateway pipeline.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "connector_type": {
+        "description": "(Optional) Connector Type for sources. Ex: CDC, Query Based.",
+        "ref": "pipelines.ConnectorType",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "data_staging_options": {
+        "description": "(Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline\nwith Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.\nIf not specified, the volume for staged data will be created in catalog and schema/target specified in the\ntop level pipeline definition.",
+        "ref": "pipelines.DataStagingOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "full_refresh_window": {
+        "description": "(Optional) A window that specifies a set of time ranges for snapshot queries in CDC.",
+        "ref": "pipelines.OperationTimeWindow",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "ingest_from_uc_foreign_catalog": {
+        "description": "Immutable. If set to true, the pipeline will ingest tables from the\nUC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.\nThe `source_catalog` fields in objects of IngestionConfig are interpreted as\nthe UC foreign catalogs to ingest from.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "ingestion_gateway_id": {
+        "description": "Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.\nThis is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).\nUnder certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc\nManaged Ingestion Pipeline.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "netsuite_jar_path": {
+        "description": "Netsuite only configuration. When the field is set for a netsuite connector,\nthe jar stored in the field will be validated and added to the classpath of\npipeline's cluster.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "objects": {
+        "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_configurations": {
+        "description": "Top-level source configurations",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_type": {
+        "description": "The type of the foreign source.\nThe source type will be inferred from the source connection or ingestion gateway.\nThis field is output only and will be ignored if provided.",
+        "ref": "pipelines.IngestionSourceType",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "table_configuration": {
+        "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
+        "ref": "pipelines.TableSpecificConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.IngestionPipelineDefinitionFanoutOptions": {
+    "description": "Fanout configuration for multi-table routing from streaming sources.\nRoutes each input record to a destination table based on a routing\nkey derived from the record. The key value becomes the table name\nsuffix: {destination_catalog}.{destination_schema}.{key_value}.",
+    "fields": {
+      "fanout_by": {
+        "description": "Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "transforms": {
+        "description": "Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig": {
+    "description": "Configurations that are only applicable for query-based ingestion connectors.",
+    "fields": {
+      "cursor_columns": {
+        "description": "The names of the monotonically increasing columns in the source table that are used to enable\nthe table to be read and ingested incrementally through structured streaming.\nThe columns are allowed to have repeated values but have to be non-decreasing.\nIf the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these\ncolumns will implicitly define the `sequence_by` behavior. You can still explicitly set\n`sequence_by` to override this default.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "deletion_condition": {
+        "description": "Specifies a SQL WHERE condition that specifies that the source row has been deleted.\nThis is sometimes referred to as \"soft-deletes\".\nFor example: \"Operation = 'DELETE'\" or \"is_deleted = true\".\nThis field is orthogonal to `hard_deletion_sync_interval_in_seconds`,\none for soft-deletes and the other for hard-deletes.\nSee also the hard_deletion_sync_min_interval_in_seconds field for\nhandling of \"hard deletes\" where the source rows are physically removed from the table.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "hard_deletion_sync_min_interval_in_seconds": {
+        "description": "Specifies the minimum interval (in seconds) between snapshots on primary keys\nfor detecting and synchronizing hard deletions—i.e., rows that have been\nphysically removed from the source table.\nThis interval acts as a lower bound. If ingestion runs less frequently than\nthis value, hard deletion synchronization will align with the actual ingestion\nfrequency instead of happening more often.\nIf not set, hard deletion synchronization via snapshots is disabled.\nThis field is mutable and can be updated without triggering a full snapshot.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.IngestionPipelineDefinitionWorkdayReportParameters": {
+    "fields": {
+      "incremental": {
+        "description": "(Optional) Marks the report as incremental.\nThis field is deprecated and should not be used. Use `parameters` instead. The incremental behavior is now\ncontrolled by the `parameters` field.",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "parameters": {
+        "description": "Parameters for the Workday report. Each key represents the parameter name (e.g., \"start_date\", \"end_date\"),\nand the corresponding value is a SQL-like expression used to compute the parameter value at runtime.\nExample:\n{\n\"start_date\": \"{ coalesce(current_offset(), date(\\\"2025-02-01\\\")) }\",\n\"end_date\": \"{ current_date() - INTERVAL 1 DAY }\"\n}",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "report_parameters": {
+        "description": "(Optional) Additional custom parameters for Workday Report\nThis field is deprecated and should not be used. Use `parameters` instead.",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue": {
+    "fields": {
+      "key": {
+        "description": "Key for the report parameter, can be a column name or other metadata",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "value": {
+        "description": "Value for the report parameter.\nPossible values it can take are these sql functions:\n1. coalesce(current_offset(), date(\"YYYY-MM-DD\")) -\u003e if current_offset() is null, then the passed date, else current_offset()\n2. current_date()\n3. date_sub(current_date(), x) -\u003e subtract x (some non-negative integer) days from current date",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.IngestionSourceType": {
+    "description": "Type of source system that a managed ingestion pipeline reads from.",
+    "enum": [
+      "MYSQL",
+      "POSTGRESQL",
+      "SQLSERVER",
+      "SALESFORCE",
+      "BIGQUERY",
+      "NETSUITE",
+      "WORKDAY_RAAS",
+      "GA4_RAW_DATA",
+      "SERVICENOW",
+      "MANAGED_POSTGRESQL",
+      "ORACLE",
+      "TERADATA",
+      "SHAREPOINT",
+      "DYNAMICS365",
+      "GOOGLE_DRIVE",
+      "JIRA",
+      "CONFLUENCE",
+      "META_MARKETING",
+      "TIKTOK_ADS",
+      "ZENDESK",
+      "SMARTSHEET",
+      "RABBITMQ",
+      "ONEDRIVE",
+      "FOREIGN_CATALOG"
+    ],
+    "enum_launch_stages": {
+      "BIGQUERY": "PUBLIC_PREVIEW",
+      "CONFLUENCE": "PUBLIC_PREVIEW",
+      "DYNAMICS365": "PUBLIC_PREVIEW",
+      "FOREIGN_CATALOG": "PRIVATE_PREVIEW",
+      "GA4_RAW_DATA": "PUBLIC_PREVIEW",
+      "GOOGLE_DRIVE": "PRIVATE_PREVIEW",
+      "JIRA": "PUBLIC_BETA",
+      "MANAGED_POSTGRESQL": "PUBLIC_PREVIEW",
+      "META_MARKETING": "PUBLIC_BETA",
+      "MYSQL": "PUBLIC_PREVIEW",
+      "NETSUITE": "PUBLIC_PREVIEW",
+      "ONEDRIVE": "PRIVATE_PREVIEW",
+      "ORACLE": "PUBLIC_PREVIEW",
+      "POSTGRESQL": "PUBLIC_PREVIEW",
+      "RABBITMQ": "PUBLIC_BETA",
+      "SALESFORCE": "PUBLIC_PREVIEW",
+      "SERVICENOW": "PUBLIC_PREVIEW",
+      "SHAREPOINT": "PUBLIC_PREVIEW",
+      "SMARTSHEET": "PUBLIC_PREVIEW",
+      "SQLSERVER": "PUBLIC_PREVIEW",
+      "TERADATA": "PUBLIC_PREVIEW",
+      "TIKTOK_ADS": "PUBLIC_BETA",
+      "WORKDAY_RAAS": "PUBLIC_PREVIEW",
+      "ZENDESK": "PUBLIC_PREVIEW"
+    }
+  },
+  "pipelines.JiraConnectorOptions": {
+    "description": "Jira specific options for ingestion",
+    "fields": {
+      "include_jira_spaces": {
+        "description": "(Optional) Projects to filter Jira data on",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.JsonTransformerOptions": {
+    "fields": {
+      "as_variant": {
+        "description": "Parse the entire value as a single Variant column.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema": {
+        "description": "Inline schema string for JSON parsing (Spark DDL format).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema_evolution_mode": {
+        "description": "(Optional) Schema evolution mode for schema inference.",
+        "ref": "pipelines.FileIngestionOptionsSchemaEvolutionMode",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema_file_path": {
+        "description": "Path to a schema file (.ddl).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema_hints": {
+        "description": "(Optional) Schema hints as a comma-separated string of \"column_name type\" pairs.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.KafkaOptions": {
+    "fields": {
+      "client_config": {
+        "description": "Undocumented backdoor mechanism for overriding parameters\nto pass to the Kafka client.\nThis is not supported and may break at any time.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "key_transformer": {
+        "description": "(Optional) Transformer for the message key.\nIf not specified, the key is left as raw bytes.",
+        "ref": "pipelines.Transformer",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "max_offsets_per_trigger": {
+        "description": "Internal option to control the maximum number of offsets to process per trigger.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "starting_offset": {
+        "description": "(Optional) Where to begin reading when no checkpoint exists.\nValid values: \"latest\" and \"earliest\". Defaults to \"latest\".",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "topic_pattern": {
+        "description": "Java regex pattern to subscribe to matching topics.\nOnly one of topics or topic_pattern must be specified.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "topics": {
+        "description": "Topics to subscribe to.\nOnly one of topics or topic_pattern must be specified.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "value_transformer": {
+        "description": "(Optional) Transformer for the message value.\nIf not specified, the value is left as raw bytes.",
+        "ref": "pipelines.Transformer",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.LinkedInAdsOptions": {
+    "description": "LinkedIn Ads specific options for ingestion.\nsync_start_date and lookback_window_days apply to both the prebuilt analytics\ntables and custom reports. custom_report_options defines a custom (user-defined)\nadAnalytics report and is only valid on a table object.",
+    "fields": {
+      "custom_report_options": {
+        "description": "(Optional) Custom report definition. Only valid on a table object. When set,\nthe table is synthesized from /rest/adAnalytics using the finder, pivots,\ntime granularity and metrics here. When unset, the table must match one of\nthe connector's prebuilt sources.",
+        "ref": "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "lookback_window_days": {
+        "description": "(Optional) Days to look back during incremental sync for late-arriving data.\nIf not specified, defaults to 30 days.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "sync_start_date": {
+        "description": "(Optional) Start date for the initial sync of report tables, YYYY-MM-DD.\nEarliest date from which to sync historical data; overrides the default\nwhen set. For finder attributedRevenueMetrics, this must be between 30 and\n366 days before today.\nIf not specified, defaults to 1 year of history.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions": {
+    "description": "User-defined custom report for the LinkedIn Ads connector. The destination\ntable name comes from the enclosing TableSpec.destination_table, the start\ndate from the enclosing LinkedInAdsOptions.sync_start_date, and the account\nit runs against from the source schema (namespace) -- none are repeated here.",
+    "fields": {
+      "entity_granularity": {
+        "description": "(Required) Entity pivots to group by; count/constraints depend on finder.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "finder": {
+        "description": "(Required) adAnalytics finder. See LinkedInAdsFinder.",
+        "ref": "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "metrics": {
+        "description": "(Optional) LinkedIn metric names for the report. Open vocabulary (not an\nenum): the valid set is large (~100) and evolves with the LinkedIn\nadAnalytics API, so values are passed through verbatim. If empty, a\npivot-safe default core set is ingested: impressions, clicks,\ncostInLocalCurrency, externalWebsiteConversions (valid for every pivot).\nIgnored for attributedRevenueMetrics (always returns the full\nRevenueAttributionMetrics struct).",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "time_granularity": {
+        "description": "(Optional) Time aggregation. Defaults to DAILY when unspecified. Used by\nanalytics/statistics; ignored for attributedRevenueMetrics.",
+        "ref": "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity": {
+    "description": "Entity pivot to group by.",
+    "enum": [
+      "CAMPAIGN",
+      "CREATIVE",
+      "CAMPAIGN_GROUP"
+    ],
+    "enum_launch_stages": {
+      "CAMPAIGN": "PRIVATE_PREVIEW",
+      "CAMPAIGN_GROUP": "PRIVATE_PREVIEW",
+      "CREATIVE": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder": {
+    "description": "adAnalytics finder. Determines call shape, valid pivots, and metric\nrequirements.",
+    "enum": [
+      "ANALYTICS",
+      "STATISTICS",
+      "ATTRIBUTED_REVENUE_METRICS"
+    ],
+    "enum_launch_stages": {
+      "ANALYTICS": "PRIVATE_PREVIEW",
+      "ATTRIBUTED_REVENUE_METRICS": "PRIVATE_PREVIEW",
+      "STATISTICS": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity": {
+    "description": "Time aggregation. Used by analytics/statistics; ignored for\nattributedRevenueMetrics. Defaults to DAILY when unspecified.",
+    "enum": [
+      "ALL",
+      "DAILY",
+      "MONTHLY",
+      "YEARLY"
+    ],
+    "enum_launch_stages": {
+      "ALL": "PRIVATE_PREVIEW",
+      "DAILY": "PRIVATE_PREVIEW",
+      "MONTHLY": "PRIVATE_PREVIEW",
+      "YEARLY": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.ListPipelineEventsRequest": {
+    "fields": {
+      "filter": {
+        "description": "Criteria to select a subset of results, expressed using a SQL-like syntax.\nThe supported filters are:\n1. level='INFO' (or WARN or ERROR)\n2. level in ('INFO', 'WARN')\n3. id='[event-id]'\n4. timestamp \u003e 'TIMESTAMP' (or \u003e=,\u003c,\u003c=,=)\n\nComposite expressions are supported, for example: level in ('ERROR', 'WARN')\nAND timestamp\u003e '2021-07-22T06:37:33.083Z'",
+        "launch_stage": "GA"
+      },
+      "max_results": {
+        "description": "Max number of entries to return in a single page. The system may return\nfewer than max_results events in a response, even if there are more events\navailable.",
+        "launch_stage": "GA"
+      },
+      "order_by": {
+        "description": "A string indicating a sort order by timestamp for the results, for example, [\"timestamp asc\"].\nThe sort order can be ascending or descending. By default, events are returned\nin descending order by timestamp.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Page token returned by previous call. This field is mutually\nexclusive with all fields in this request except max_results. An error is\nreturned if any fields other than max_results are set when this field is set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.ListPipelineEventsResponse": {
+    "fields": {
+      "events": {
+        "description": "The list of events matching the request criteria.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "If present, a token to fetch the next page of events.",
+        "launch_stage": "GA"
+      },
+      "prev_page_token": {
+        "description": "If present, a token to fetch the previous page of events.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.ListPipelinesRequest": {
+    "fields": {
+      "filter": {
+        "description": "Select a subset of results based on the specified criteria.\nThe supported filters are:\n\n* `notebook='\u003cpath\u003e'` to select pipelines that reference the provided notebook path.\n* `name LIKE '[pattern]'` to select pipelines with a name that matches pattern.\nWildcards are supported, for example: `name LIKE '%shopping%'`\n\nComposite filters are not supported. This field is optional.",
+        "launch_stage": "GA"
+      },
+      "max_results": {
+        "description": "The maximum number of entries to return in a single page. The system may\nreturn fewer than max_results pipelines in a response, even if there are\nmore pipelines available. This field is optional. The default value is 25.\nThe maximum value is 100. An error is returned if the value of max_results\nis greater than 100.",
+        "launch_stage": "GA"
+      },
+      "order_by": {
+        "description": "A list of strings specifying the order of results.\nThe supported order_by field is id. The default is id asc.\nThis field is optional.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Page token returned by previous call",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.ListPipelinesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "If present, a token to fetch the next page of pipelines.",
+        "launch_stage": "GA"
+      },
+      "statuses": {
+        "description": "The list of pipelines matching the request criteria.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.ListUpdatesRequest": {
+    "fields": {
+      "max_results": {
+        "description": "Max number of entries to return in a single page.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Page token returned by previous call",
+        "launch_stage": "GA"
+      },
+      "until_update_id": {
+        "description": "If present, returns updates until and including this update_id.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.ListUpdatesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "If present, then there are more results, and this a token to be used in a subsequent request\nto fetch the next page.",
+        "launch_stage": "GA"
+      },
+      "prev_page_token": {
+        "description": "If present, then this token can be used in a subsequent request to fetch the previous page.",
+        "launch_stage": "GA"
+      },
+      "updates": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.ManualTrigger": {},
+  "pipelines.MarketoOptions": {
+    "description": "Marketo specific options for ingestion",
+    "fields": {
+      "sync_start_date": {
+        "description": "(Optional) Start date for the initial sync in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, complete history is ingested.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.MaturityLevel": {
+    "description": "Maturity level for EventDetails.",
+    "enum": [
+      "STABLE",
+      "EVOLVING",
+      "DEPRECATED"
+    ],
+    "enum_launch_stages": {
+      "DEPRECATED": "GA",
+      "EVOLVING": "GA",
+      "STABLE": "GA"
+    }
+  },
+  "pipelines.MetaMarketingOptions": {
+    "description": "Meta Marketing (Meta Ads) specific options for ingestion",
+    "fields": {
+      "action_attribution_windows": {
+        "description": "(Optional, DEPRECATED — use custom_report_options.action_attribution_windows) Action attribution\nwindows for insights reporting (e.g. \"28d_click\", \"1d_view\")",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "action_breakdowns": {
+        "description": "(Optional, DEPRECATED — use custom_report_options.action_breakdowns) Action breakdowns",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "action_report_time": {
+        "description": "(Optional, DEPRECATED — use custom_report_options.action_report_time) Timing used to report\naction statistics (impression, conversion, mixed, or lifetime)",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "breakdowns": {
+        "description": "(Optional, DEPRECATED — use custom_report_options.breakdowns) Breakdowns to configure",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "custom_insights_lookback_window": {
+        "description": "(Optional) Window in days to revisit data during sync to capture\nupdated conversion data from the API, shared by prebuilt and custom reports.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "custom_report_options": {
+        "description": "(Optional) Per-table custom report definition. When set, defines the shape of the insights\ncall for this table (level/fields/breakdowns/action_breakdowns/etc.). Supersedes the deprecated\nflat report-shape fields above.",
+        "ref": "pipelines.MetaMarketingOptionsMetaMarketingCustomReportOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "level": {
+        "description": "(Optional, DEPRECATED — use custom_report_options.level) Granularity of data to pull\n(account, ad, adset, campaign)",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "start_date": {
+        "description": "(Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added\nafter this date will be ingested, shared by prebuilt and custom reports.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "time_increment": {
+        "description": "(Optional, DEPRECATED — use custom_report_options.time_increment) Value in string by which to\naggregate statistics (can take all_days, monthly or number of days)",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.MetaMarketingOptionsMetaMarketingCustomReportOptions": {
+    "description": "Defines the shape of a single Meta Ads custom report (one /insights call shape).\nstart_date, custom_insights_lookback_window live on MetaMarketingOptions, not here.\nMetrics are not customer-selectable; the connector returns a fixed standard metric set.",
+    "fields": {
+      "action_attribution_windows": {
+        "description": "(Optional) Action attribution windows for insights reporting (e.g. \"28d_click\", \"1d_view\")",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "action_breakdowns": {
+        "description": "(Optional) Action breakdowns to configure for data aggregation",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "action_report_time": {
+        "description": "(Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "breakdowns": {
+        "description": "(Optional) Breakdowns to configure for data aggregation",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "level": {
+        "description": "(Optional) Granularity of data to pull (account, ad, adset, campaign)",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "time_increment": {
+        "description": "(Optional) Value in string by which to aggregate statistics (all_days, monthly or number of days)",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.NotebookLibrary": {
+    "fields": {
+      "path": {
+        "description": "The absolute path of the source code.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.Notifications": {
+    "fields": {
+      "alerts": {
+        "description": "A list of alerts that trigger the sending of notifications to the configured\ndestinations. The supported alerts are:\n\n* `on-update-success`: A pipeline update completes successfully.\n* `on-update-failure`: Each time a pipeline update fails.\n* `on-update-fatal-failure`: A pipeline update fails with a non-retryable (fatal) error.\n* `on-flow-failure`: A single data flow fails.",
+        "launch_stage": "GA"
+      },
+      "email_recipients": {
+        "description": "A list of email addresses notified when a configured alert is triggered.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.OneDriveOptions": {
+    "fields": {
+      "entity_type": {
+        "description": "(Optional) The type of OneDrive entity to ingest.\nIf not specified, defaults to FILE.",
+        "ref": "pipelines.OneDriveOptionsOneDriveEntityType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "file_ingestion_options": {
+        "description": "(Optional) File ingestion options for processing files.",
+        "ref": "pipelines.FileIngestionOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "url": {
+        "description": "Required. The OneDrive URL.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.OneDriveOptionsOneDriveEntityType": {
+    "description": "The type of OneDrive entity to ingest.",
+    "enum": [
+      "FILE",
+      "FILE_METADATA"
+    ],
+    "enum_launch_stages": {
+      "FILE": "PRIVATE_PREVIEW",
+      "FILE_METADATA": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.OperationTimeWindow": {
+    "description": "Proto representing a window",
+    "fields": {
+      "days_of_week": {
+        "description": "Days of week in which the window is allowed to happen\nIf not specified all days of the week will be used.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "start_hour": {
+        "description": "An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "time_zone_id": {
+        "description": "Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.\nIf not specified, UTC will be used.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.Origin": {
+    "fields": {
+      "batch_id": {
+        "description": "The id of a batch. Unique within a flow.",
+        "launch_stage": "GA"
+      },
+      "cloud": {
+        "description": "The cloud provider, e.g., AWS or Azure.",
+        "launch_stage": "GA"
+      },
+      "cluster_id": {
+        "description": "The id of the cluster where an execution happens. Unique within a region.",
+        "launch_stage": "GA"
+      },
+      "dataset_name": {
+        "description": "The name of a dataset. Unique within a pipeline.",
+        "launch_stage": "GA"
+      },
+      "flow_id": {
+        "description": "The id of the flow. Globally unique. Incremental queries will generally\nreuse the same id while complete queries will have a new id per update.",
+        "launch_stage": "GA"
+      },
+      "flow_name": {
+        "description": "The name of the flow. Not unique.",
+        "launch_stage": "GA"
+      },
+      "host": {
+        "description": "The optional host name where the event was triggered",
+        "launch_stage": "GA"
+      },
+      "ingestion_source_catalog_name": {
+        "description": "The name of the source catalog name (if known) from whose data ingestion is described by this event.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "ingestion_source_connection_name": {
+        "description": "The name of the source UC connection (if known) from whose data ingestion is described by this event.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "ingestion_source_schema_name": {
+        "description": "The name of the source schema name (if known) from whose data ingestion is described by this event.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "ingestion_source_table_name": {
+        "description": "The name of the source table name (if known) from whose data ingestion is described by this event.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "ingestion_source_table_version": {
+        "description": "An optional implementation-defined source table version of a dataset being (re)ingested.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "maintenance_id": {
+        "description": "The id of a maintenance run. Globally unique.",
+        "launch_stage": "GA"
+      },
+      "materialization_name": {
+        "description": "Materialization name.",
+        "launch_stage": "GA"
+      },
+      "org_id": {
+        "description": "The org id of the user. Unique within a cloud.",
+        "launch_stage": "GA"
+      },
+      "pipeline_id": {
+        "description": "The id of the pipeline. Globally unique.",
+        "launch_stage": "GA"
+      },
+      "pipeline_name": {
+        "description": "The name of the pipeline. Not unique.",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "The cloud region.",
+        "launch_stage": "GA"
+      },
+      "request_id": {
+        "description": "The id of the request that caused an update.",
+        "launch_stage": "GA"
+      },
+      "table_id": {
+        "description": "The id of a (delta) table. Globally unique.",
+        "launch_stage": "GA"
+      },
+      "uc_resource_id": {
+        "description": "The Unity Catalog id of the MV or ST being updated.",
+        "launch_stage": "GA"
+      },
+      "update_id": {
+        "description": "The id of an execution. Globally unique.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.OutlookAttachmentMode": {
+    "description": "Attachment behavior mode for Outlook ingestion",
+    "enum": [
+      "ALL",
+      "NON_INLINE_ONLY",
+      "INLINE_ONLY",
+      "NONE"
+    ],
+    "enum_launch_stages": {
+      "ALL": "PRIVATE_PREVIEW",
+      "INLINE_ONLY": "PRIVATE_PREVIEW",
+      "NONE": "PRIVATE_PREVIEW",
+      "NON_INLINE_ONLY": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.OutlookBodyFormat": {
+    "description": "Body format for Outlook email content",
+    "enum": [
+      "TEXT_HTML",
+      "TEXT_PLAIN"
+    ],
+    "enum_launch_stages": {
+      "TEXT_HTML": "PRIVATE_PREVIEW",
+      "TEXT_PLAIN": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.OutlookOptions": {
+    "description": "Outlook specific options for ingestion",
+    "fields": {
+      "attachment_mode": {
+        "description": "(Optional) Controls which attachments to ingest.\nIf not specified, defaults to ALL.",
+        "ref": "pipelines.OutlookAttachmentMode",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "body_format": {
+        "description": "(Optional) Defines how the body_content column is populated.\nTEXT_HTML: Preserves full formatting, links, and styling.\nTEXT_PLAIN: Converts body to plain text. Recommended for AI/RAG pipelines to reduce token usage and noise.",
+        "ref": "pipelines.OutlookBodyFormat",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "folder_filter": {
+        "description": "Deprecated. Use include_folders instead.",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "include_folders": {
+        "description": "(Optional) Filter mail folders to include in the sync.\nIf not specified, all folders will be synced.\nExamples: Inbox, Sent Items, Custom_Folder\nFilter semantics: OR between different folders.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "include_mailboxes": {
+        "description": "(Optional) List of mailboxes to sync (e.g. mailbox email addresses or identifiers).\nIf not specified, all accessible mailboxes are ingested.\nFilter semantics: OR between different mailboxes.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "include_senders": {
+        "description": "(Optional) Filter emails by sender address. Uses exact email match.\nExamples: user@vendor.com, alerts@system.io, noreply@company.com\nIf not specified, emails from all senders will be synced.\nFilter semantics: OR between different senders.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "include_subjects": {
+        "description": "(Optional) Filter emails by subject line. Values ending with \"*\" use prefix match (subject starts with\nthe part before \"*\"); otherwise substring match (subject contains the value).\nExamples: \"Invoice\" (substring), \"Re:*\" (prefix), \"Support Ticket\", \"URGENT*\"\nIf not specified, emails with all subjects will be synced.\nFilter semantics: OR between different subjects.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "sender_filter": {
+        "description": "Deprecated. Use include_senders instead.",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "start_date": {
+        "description": "(Optional) Start date for the initial sync in YYYY-MM-DD format.\nFormat: YYYY-MM-DD (e.g., 2024-01-01)\nThis determines the earliest date from which to sync historical data.\nIf not specified, complete history is ingested.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "subject_filter": {
+        "description": "Deprecated. Use include_subjects instead.",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ParseMode": {
+    "description": "Determines how errors encountered while deserializing records are handled.",
+    "enum": [
+      "FAILFAST",
+      "PERMISSIVE"
+    ],
+    "enum_launch_stages": {
+      "FAILFAST": "PUBLIC_BETA",
+      "PERMISSIVE": "PUBLIC_BETA"
+    }
+  },
+  "pipelines.PathPattern": {
+    "fields": {
+      "include": {
+        "description": "The source code to include for pipelines",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.PipelineAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "pipelines.PipelinePermissionLevel",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelineAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelineCluster": {
+    "fields": {
+      "apply_policy_default_values": {
+        "description": "Note: This field won't be persisted. Only API users will check this field.",
+        "launch_stage": "GA"
+      },
+      "autoscale": {
+        "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
+        "ref": "pipelines.PipelineClusterAutoscale",
+        "launch_stage": "GA"
+      },
+      "aws_attributes": {
+        "description": "Attributes related to clusters running on Amazon Web Services.\nIf not specified at cluster creation, a set of default values will be used.",
+        "ref": "compute.AwsAttributes",
+        "launch_stage": "GA"
+      },
+      "azure_attributes": {
+        "description": "Attributes related to clusters running on Microsoft Azure.\nIf not specified at cluster creation, a set of default values will be used.",
+        "ref": "compute.AzureAttributes",
+        "launch_stage": "GA"
+      },
+      "cluster_log_conf": {
+        "description": "The configuration for delivering spark logs to a long-term storage destination.\nOnly dbfs destinations are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
+        "ref": "compute.ClusterLogConf",
+        "launch_stage": "GA"
+      },
+      "custom_tags": {
+        "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
+        "launch_stage": "GA"
+      },
+      "driver_instance_pool_id": {
+        "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned.",
+        "launch_stage": "GA"
+      },
+      "driver_node_type_id": {
+        "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.",
+        "launch_stage": "GA"
+      },
+      "enable_local_disk_encryption": {
+        "description": "Whether to enable local disk encryption for the cluster.",
+        "launch_stage": "GA"
+      },
+      "gcp_attributes": {
+        "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
+        "ref": "compute.GcpAttributes",
+        "launch_stage": "GA"
+      },
+      "init_scripts": {
+        "description": "The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+        "launch_stage": "GA"
+      },
+      "instance_pool_id": {
+        "description": "The optional ID of the instance pool to which the cluster belongs.",
+        "launch_stage": "GA"
+      },
+      "label": {
+        "description": "A label for the cluster specification, either `default` to configure the default cluster settings applied to both the update and maintenance clusters, `updates` to configure the update cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.",
+        "launch_stage": "GA"
+      },
+      "node_type_id": {
+        "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
+        "launch_stage": "GA"
+      },
+      "num_workers": {
+        "description": "Number of worker nodes that this cluster should have. A cluster has one Spark Driver\nand `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.\n\nNote: When reading the properties of a cluster, this field reflects the desired number\nof workers rather than the actual current number of workers. For instance, if a cluster\nis resized from 5 to 10 workers, this field will immediately be updated to reflect\nthe target size of 10 workers, whereas the workers listed in `spark_info` will gradually\nincrease from 5 to 10 as the new nodes are provisioned.",
+        "launch_stage": "GA"
+      },
+      "policy_id": {
+        "description": "The ID of the cluster policy used to create the cluster if applicable.",
+        "launch_stage": "GA"
+      },
+      "spark_conf": {
+        "description": "An object containing a set of optional, user-specified Spark configuration key-value pairs.\nSee :method:clusters/create for more details.",
+        "launch_stage": "GA"
+      },
+      "spark_env_vars": {
+        "description": "An object containing a set of optional, user-specified environment variable key-value pairs.\nPlease note that key-value pair of the form (X,Y) will be exported as is (i.e.,\n`export X='Y'`) while launching the driver and workers.\n\nIn order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending\nthem to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all\ndefault databricks managed environmental variables are included as well.\n\nExample Spark environment variables:\n`{\"SPARK_WORKER_MEMORY\": \"28000m\", \"SPARK_LOCAL_DIRS\": \"/local_disk0\"}` or\n`{\"SPARK_DAEMON_JAVA_OPTS\": \"$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true\"}`",
+        "launch_stage": "GA"
+      },
+      "ssh_public_keys": {
+        "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelineClusterAutoscale": {
+    "fields": {
+      "max_workers": {
+        "description": "The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.",
+        "launch_stage": "GA"
+      },
+      "min_workers": {
+        "description": "The minimum number of workers the cluster can scale down to when underutilized.\nIt is also the initial number of workers the cluster will have after creation.",
+        "launch_stage": "GA"
+      },
+      "mode": {
+        "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.",
+        "ref": "pipelines.PipelineClusterAutoscaleMode",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelineClusterAutoscaleMode": {
+    "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.",
+    "enum": [
+      "ENHANCED",
+      "LEGACY"
+    ],
+    "enum_launch_stages": {
+      "ENHANCED": "GA",
+      "LEGACY": "GA"
+    }
+  },
+  "pipelines.PipelineDeployment": {
+    "fields": {
+      "deployment_id": {
+        "description": "ID of the deployment that manages this pipeline. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "kind": {
+        "description": "The deployment method that manages the pipeline.",
+        "ref": "pipelines.DeploymentKind",
+        "launch_stage": "GA"
+      },
+      "metadata_file_path": {
+        "description": "The path to the file containing metadata about the deployment.",
+        "launch_stage": "GA"
+      },
+      "version_id": {
+        "description": "ID of the version of the deployment that produced this pipeline. Only\nset when `kind` is `BUNDLE`. Identifies a specific snapshot of the\ndeployment in the Deployment Metadata service.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.PipelineEvent": {
+    "fields": {
+      "error": {
+        "description": "Information about an error captured by the event.",
+        "ref": "pipelines.ErrorDetail",
+        "launch_stage": "GA"
+      },
+      "event_type": {
+        "description": "The event type. Should always correspond to the details",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "A time-based, globally unique id.",
+        "launch_stage": "GA"
+      },
+      "level": {
+        "description": "The severity level of the event.",
+        "ref": "pipelines.EventLevel",
+        "launch_stage": "GA"
+      },
+      "maturity_level": {
+        "description": "Maturity level for event_type.",
+        "ref": "pipelines.MaturityLevel",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "description": "The display message associated with the event.",
+        "launch_stage": "GA"
+      },
+      "origin": {
+        "description": "Describes where the event originates from.",
+        "ref": "pipelines.Origin",
+        "launch_stage": "GA"
+      },
+      "sequence": {
+        "description": "A sequencing object to identify and order events.",
+        "ref": "pipelines.Sequencing",
+        "launch_stage": "GA"
+      },
+      "timestamp": {
+        "description": "The time of the event.",
+        "launch_stage": "GA"
+      },
+      "truncation": {
+        "description": "Information about which fields were truncated from this event due to size constraints.\nIf empty or absent, no truncation occurred.\nSee https://docs.databricks.com/en/ldp/monitor-event-logs for information on\nretrieving complete event data.",
+        "ref": "pipelines.Truncation",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelineLibrary": {
+    "fields": {
+      "file": {
+        "description": "The path to a file that defines a pipeline and is stored in the Databricks Repos.",
+        "ref": "pipelines.FileLibrary",
+        "launch_stage": "GA"
+      },
+      "glob": {
+        "description": "The unified field to include source codes.\nEach entry can be a notebook path, a file path, or a folder path that ends `/**`.\nThis field cannot be used together with `notebook` or `file`.",
+        "ref": "pipelines.PathPattern",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "jar": {
+        "description": "URI of the jar to be installed. Currently only DBFS is supported.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "maven": {
+        "description": "Specification of a maven library to be installed.",
+        "ref": "compute.MavenLibrary",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "notebook": {
+        "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.",
+        "ref": "pipelines.NotebookLibrary",
+        "launch_stage": "GA"
+      },
+      "whl": {
+        "description": "URI of the whl to be installed.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelinePermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "GA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "pipelines.PipelinePermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelinePermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_MANAGE",
+      "IS_OWNER",
+      "CAN_RUN",
+      "CAN_VIEW"
+    ]
+  },
+  "pipelines.PipelinePermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelinePermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "pipelines.PipelinePermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelinePermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelineSpec": {
+    "fields": {
+      "budget_policy_id": {
+        "description": "Budget policy of this pipeline.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "catalog": {
+        "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "SDP Release Channel that specifies which version to use.",
+        "launch_stage": "GA"
+      },
+      "clusters": {
+        "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
+        "launch_stage": "GA"
+      },
+      "configuration": {
+        "description": "String-String configuration for this pipeline execution.",
+        "launch_stage": "GA"
+      },
+      "continuous": {
+        "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "deployment": {
+        "description": "Deployment type of this pipeline.",
+        "ref": "pipelines.PipelineDeployment",
+        "launch_stage": "GA"
+      },
+      "development": {
+        "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "edition": {
+        "description": "Pipeline product edition.",
+        "launch_stage": "GA"
+      },
+      "environment": {
+        "description": "Environment specification for this pipeline used to install dependencies.",
+        "ref": "pipelines.PipelinesEnvironment",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "event_log": {
+        "description": "Event log configuration for this pipeline",
+        "ref": "pipelines.EventLogSpec",
+        "launch_stage": "GA"
+      },
+      "filters": {
+        "description": "Filters on which Pipeline packages to include in the deployed graph.",
+        "ref": "pipelines.Filters",
+        "launch_stage": "GA"
+      },
+      "gateway_definition": {
+        "description": "The definition of a gateway pipeline to support change data capture.",
+        "ref": "pipelines.IngestionGatewayPipelineDefinition",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "id": {
+        "description": "Unique identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "ingestion_definition": {
+        "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
+        "ref": "pipelines.IngestionPipelineDefinition",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "libraries": {
+        "description": "Libraries or code needed by this deployment.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Friendly identifier for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "notifications": {
+        "description": "List of notification settings for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "parent_path": {
+        "description": "Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "photon": {
+        "description": "Whether Photon is enabled for this pipeline.",
+        "launch_stage": "GA"
+      },
+      "restart_window": {
+        "description": "Restart window of this pipeline.",
+        "ref": "pipelines.RestartWindow",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "root_path": {
+        "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "schema": {
+        "description": "The default schema (database) where tables are read from or published to.",
+        "launch_stage": "GA"
+      },
+      "serverless": {
+        "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
+        "launch_stage": "GA"
+      },
+      "serverless_compute_id": {
+        "description": "Serverless compute ID specified by the user for serverless pipelines.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "storage": {
+        "description": "DBFS root directory for storing checkpoints and tables.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+        "launch_stage": "GA"
+      },
+      "target": {
+        "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "trigger": {
+        "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
+        "ref": "pipelines.PipelineTrigger",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "usage_policy_id": {
+        "description": "Usage policy of this pipeline.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.PipelineState": {
+    "description": "The pipeline state.",
+    "enum": [
+      "DEPLOYING",
+      "STARTING",
+      "RUNNING",
+      "STOPPING",
+      "DELETED",
+      "RECOVERING",
+      "FAILED",
+      "RESETTING",
+      "IDLE"
+    ],
+    "enum_launch_stages": {
+      "DELETED": "GA",
+      "DEPLOYING": "GA",
+      "FAILED": "GA",
+      "IDLE": "GA",
+      "RECOVERING": "GA",
+      "RESETTING": "GA",
+      "RUNNING": "GA",
+      "STARTING": "GA",
+      "STOPPING": "GA"
+    }
+  },
+  "pipelines.PipelineStateInfo": {
+    "fields": {
+      "cluster_id": {
+        "description": "The unique identifier of the cluster running the pipeline.",
+        "launch_stage": "GA"
+      },
+      "creator_user_name": {
+        "description": "The username of the pipeline creator.",
+        "launch_stage": "GA"
+      },
+      "health": {
+        "description": "The health of a pipeline.",
+        "ref": "pipelines.PipelineStateInfoHealth",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "latest_updates": {
+        "description": "Status of the latest updates for the pipeline. Ordered with the newest update first.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The user-friendly name of the pipeline.",
+        "launch_stage": "GA"
+      },
+      "pipeline_id": {
+        "description": "The unique identifier of the pipeline.",
+        "launch_stage": "GA"
+      },
+      "run_as_user_name": {
+        "description": "The username that the pipeline runs as. This is a read only value derived from the pipeline owner.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "ref": "pipelines.PipelineState",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelineStateInfoHealth": {
+    "description": "The health of a pipeline.",
+    "enum": [
+      "HEALTHY",
+      "UNHEALTHY"
+    ],
+    "enum_launch_stages": {
+      "HEALTHY": "GA",
+      "UNHEALTHY": "GA"
+    }
+  },
+  "pipelines.PipelineTrigger": {
+    "fields": {
+      "cron": {
+        "ref": "pipelines.CronTrigger",
+        "launch_stage": "GA"
+      },
+      "manual": {
+        "ref": "pipelines.ManualTrigger",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.PipelinesEnvironment": {
+    "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
+    "fields": {
+      "dependencies": {
+        "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "environment_version": {
+        "description": "The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.PostgresCatalogConfig": {
+    "description": "PG-specific catalog-level configuration parameters",
+    "fields": {
+      "slot_config": {
+        "description": "Optional. The Postgres slot configuration to use for logical replication",
+        "ref": "pipelines.PostgresSlotConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.PostgresSlotConfig": {
+    "description": "PostgresSlotConfig contains the configuration for a Postgres logical replication slot",
+    "fields": {
+      "publication_name": {
+        "description": "The name of the publication to use for the Postgres source",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "slot_name": {
+        "description": "The name of the logical replication slot to use for the Postgres source",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ProtobufTransformerOptions": {
+    "fields": {
+      "desc_file_path": {
+        "description": "Required: path to the .desc file (dbfs:/... or /Volumes/...).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "message_name": {
+        "description": "Required: fully-qualified message type name.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "parse_mode": {
+        "description": "(Optional) Parse mode for Protobuf data.\nValid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.",
+        "ref": "pipelines.ParseMode",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "recursive_fields_max_depth": {
+        "description": "(Optional) Maximum expansion depth for recursive protobuf fields.\nSpark SQL does not natively support recursive types, so recursive\nfields are expanded up to this depth and truncated beyond it.\nValid values: -1 (disallow recursive fields), 0 (drop), 1-10.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "schema_registry": {
+        "description": "(Optional) Schema registry to resolve the Protobuf schema at runtime instead\nof providing it via desc_file_path.",
+        "ref": "pipelines.SchemaRegistryConfig",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.PublishingMode": {
+    "description": "Enum representing the publishing mode of a pipeline.",
+    "enum": [
+      "LEGACY_PUBLISHING_MODE",
+      "DEFAULT_PUBLISHING_MODE"
+    ],
+    "enum_launch_stages": {
+      "DEFAULT_PUBLISHING_MODE": "GA",
+      "LEGACY_PUBLISHING_MODE": "GA"
+    }
+  },
+  "pipelines.RabbitmqOptions": {
+    "description": "RabbitMQ specific options for ingestion.\nPerformance tuning options (consumers_per_task, max_messages_per_fetch, etc.)\nare intentionally not exposed in the public API. The managed connector uses\nsensible defaults internally. These can be added later if user demand arises.",
+    "fields": {
+      "queue": {
+        "description": "(Required) RabbitMQ queue name to consume from.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.RedditAdsOptions": {
+    "description": "Reddit Ads specific options for ingestion",
+    "fields": {
+      "custom_report_options": {
+        "description": "(Optional) Custom report definition. When set, the table is treated as a\nuser-defined Reddit Ads custom report. When unset, the table must match\none of the connector's prebuilt sources.",
+        "ref": "pipelines.RedditAdsOptionsRedditAdsCustomReportOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "lookback_window_days": {
+        "description": "(Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.\nIf not specified, defaults to 30 days.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "sync_start_date": {
+        "description": "(Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years ago.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.RedditAdsOptionsRedditAdsCustomReportOptions": {
+    "description": "User-defined custom report for the Reddit Ads connector.\nApplies only to the custom_report table — prebuilt tables ignore this.",
+    "fields": {
+      "breakdowns": {
+        "description": "(Optional) Breakdown dimensions to group report data by.\nExamples: CAMPAIGN_ID, DATE, COUNTRY, REGION, AD_ID.\nMust include at least one time dimension (DATE or HOUR).",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "fields": {
+        "description": "(Optional) Fields to include in the report (maps to the Reddit Ads API `fields` parameter).\nExamples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ReplaceWhereOverride": {
+    "description": "Specifies a replace_where predicate override for a replace where flow.",
+    "fields": {
+      "flow_name": {
+        "description": "Name of the flow to apply this override to.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "predicate_override": {
+        "description": "SQL predicate string to use as replace_where condition.\nExample: `date = '2024-10-10' AND city = 'xyz'`",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.ReportSpec": {
+    "fields": {
+      "destination_catalog": {
+        "description": "Required. Destination catalog to store table.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "destination_schema": {
+        "description": "Required. Destination schema to store table.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "destination_table": {
+        "description": "Required. Destination table name. The pipeline fails if a table with that name already exists.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_url": {
+        "description": "Required. Report URL in the source system.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "table_configuration": {
+        "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.",
+        "ref": "pipelines.TableSpecificConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.RestartWindow": {
+    "fields": {
+      "days_of_week": {
+        "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "start_hour": {
+        "description": "An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "time_zone_id": {
+        "description": "Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.\nIf not specified, UTC will be used.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.RewindDatasetSpec": {
+    "description": "Configuration for rewinding a specific dataset.",
+    "fields": {
+      "cascade": {
+        "description": "Whether to cascade the rewind to dependent datasets. Must be specified.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "identifier": {
+        "description": "The identifier of the dataset (e.g., \"main.foo.tbl1\").",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "reset_checkpoints": {
+        "description": "Whether to reset checkpoints for this dataset.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.RewindSpec": {
+    "description": "Information about a rewind being requested for this pipeline or some of the datasets in it.",
+    "fields": {
+      "datasets": {
+        "description": "List of datasets to rewind with specific configuration for each. When not specified,\nall datasets will be rewound with cascade = true and reset_checkpoints = true.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "dry_run": {
+        "description": "If true, this is a dry run and we should emit the RewindSummary but not perform the rewind.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "rewind_timestamp": {
+        "description": "The base timestamp to rewind to. Exactly one of rewind_timestamp or rewind_point_id must be\nspecified.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.RunAs": {
+    "description": "Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.\n\nOnly `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.",
+    "fields": {
+      "group_name": {
+        "description": "Group name of an account group assigned to the workspace. When set, the pipeline runs as the group and the group's permissions are used for data access. Setting this field requires being a member of the group, or having the `Assume` permission on the group.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "service_principal_name": {
+        "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "The email of an active workspace user. Users can only set this field to their own email.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.SchemaRegistryConfig": {
+    "fields": {
+      "confluent_options": {
+        "description": "Required: Confluent-compatible schema registry options.",
+        "ref": "pipelines.ConfluentSchemaRegistryOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "connection_name": {
+        "description": "(Optional) UC connection for registry authentication.\nSpecify if different from the top-level source connection.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "protobuf_message_name": {
+        "description": "(Optional, Protobuf only) Selects a specific message from a schema that\ndefines multiple Protobuf messages. Simple (\"Location\") or fully-qualified\n(\"com.example.protos.Location\"). Defaults to the first message.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.SchemaSpec": {
+    "fields": {
+      "connector_options": {
+        "description": "(Optional) Source Specific Connector Options",
+        "ref": "pipelines.ConnectorOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "destination_catalog": {
+        "description": "Required. Destination catalog to store tables.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "destination_schema": {
+        "description": "Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "fanout_options": {
+        "description": "Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
+        "ref": "pipelines.IngestionPipelineDefinitionFanoutOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "source_catalog": {
+        "description": "The source catalog name. Might be optional depending on the type of source.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_schema": {
+        "description": "Schema name in the source database. Optional: some source types (for example streaming or\nmessage-bus connectors) do not use it, so it may be absent from a pipeline's definition.\nClients that assume it is always present should handle its absence.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "table_configuration": {
+        "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.",
+        "ref": "pipelines.TableSpecificConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.Sequencing": {
+    "fields": {
+      "control_plane_seq_no": {
+        "description": "A sequence number, unique and increasing per pipeline.",
+        "launch_stage": "GA"
+      },
+      "data_plane_id": {
+        "description": "the ID assigned by the data plane.",
+        "ref": "pipelines.DataPlaneId",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.SerializedException": {
+    "fields": {
+      "class_name": {
+        "description": "Runtime class of the exception",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "description": "Exception message",
+        "launch_stage": "GA"
+      },
+      "stack": {
+        "description": "Stack trace consisting of a list of stack frames",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.SharepointOptions": {
+    "fields": {
+      "entity_type": {
+        "description": "(Optional) The type of SharePoint entity to ingest.\nIf not specified, defaults to FILE.",
+        "ref": "pipelines.SharepointOptionsSharepointEntityType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "file_ingestion_options": {
+        "description": "(Optional) File ingestion options for processing files.",
+        "ref": "pipelines.FileIngestionOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "url": {
+        "description": "Required. The SharePoint URL.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.SharepointOptionsSharepointEntityType": {
+    "enum": [
+      "FILE",
+      "FILE_METADATA",
+      "PERMISSION",
+      "LIST"
+    ],
+    "enum_launch_stages": {
+      "FILE": "PRIVATE_PREVIEW",
+      "FILE_METADATA": "PRIVATE_PREVIEW",
+      "LIST": "PRIVATE_PREVIEW",
+      "PERMISSION": "PRIVATE_PREVIEW"
+    }
+  },
+  "pipelines.SmartsheetOptions": {
+    "description": "Smartsheet specific options for ingestion",
+    "fields": {
+      "enforce_schema": {
+        "description": "(Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.SourceCatalogConfig": {
+    "description": "SourceCatalogConfig contains catalog-level custom configuration parameters for each source",
+    "fields": {
+      "postgres": {
+        "description": "Postgres-specific catalog-level configuration parameters",
+        "ref": "pipelines.PostgresCatalogConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_catalog": {
+        "description": "Source catalog name",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.SourceConfig": {
+    "fields": {
+      "api_source_connector_config": {
+        "description": "Connector-specific top-level configuration for API Source connectors.",
+        "ref": "pipelines.ApiSourceConnectorConfig",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "catalog": {
+        "description": "Catalog-level source configuration parameters",
+        "ref": "pipelines.SourceCatalogConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "google_ads_config": {
+        "ref": "pipelines.GoogleAdsConfig",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.StackFrame": {
+    "fields": {
+      "declaring_class": {
+        "description": "Class from which the method call originated",
+        "launch_stage": "GA"
+      },
+      "file_name": {
+        "description": "File where the method is defined",
+        "launch_stage": "GA"
+      },
+      "line_number": {
+        "description": "Line from which the method was called",
+        "launch_stage": "GA"
+      },
+      "method_name": {
+        "description": "Name of the method which was called",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.StartUpdate": {
+    "fields": {
+      "cause": {
+        "ref": "pipelines.StartUpdateCause",
+        "launch_stage": "GA"
+      },
+      "development": {
+        "description": "Whether the update is started in the development mode.\nThis is recommended for interactive development and testing.\nReuses compute for faster iteration and disables automatic retries.\nNot recommended for production.",
+        "launch_stage": "GA"
+      },
+      "full_refresh": {
+        "description": "If true, this update will reset all tables before running.",
+        "launch_stage": "GA"
+      },
+      "full_refresh_selection": {
+        "description": "A list of tables to update with fullRefresh. If both refresh_selection and\nfull_refresh_selection are empty, this is a full graph update. Full Refresh on a table means\nthat the states of the table will be reset before the refresh.",
+        "launch_stage": "GA"
+      },
+      "full_refresh_selection_by_path": {
+        "description": "A list of file paths that identify the tables to update with a full refresh.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "parameters": {
+        "description": "Key/value map of parameters to pass to the pipeline execution",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "refresh_selection": {
+        "description": "A list of tables to update without fullRefresh. If both refresh_selection and\nfull_refresh_selection are empty, this is a full graph update. Full Refresh on a table means\nthat the states of the table will be reset before the refresh.",
+        "launch_stage": "GA"
+      },
+      "refresh_selection_by_path": {
+        "description": "A list of file paths that identify the tables to update.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "replace_where_overrides": {
+        "description": "A list of predicate overrides for replace_where flows in this update.\nOnly replace_where flows may be specified. Flows not listed use their original predicate.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "reset_checkpoint_selection": {
+        "description": "A list of flows for which this update should reset the streaming checkpoint. This selection will not clear\nthe data in the flow's target table. Flows in this list may also appear in refresh_selection and full_refresh_selection.",
+        "launch_stage": "GA"
+      },
+      "rewind_spec": {
+        "description": "The information about the requested rewind operation.\nIf specified this is a rewind mode update.",
+        "ref": "pipelines.RewindSpec",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "validate_only": {
+        "description": "If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.StartUpdateCause": {
+    "description": "What triggered this update.",
+    "enum": [
+      "API_CALL",
+      "RETRY_ON_FAILURE",
+      "SERVICE_UPGRADE",
+      "SCHEMA_CHANGE",
+      "JOB_TASK",
+      "USER_ACTION",
+      "INFRASTRUCTURE_MAINTENANCE"
+    ],
+    "enum_launch_stages": {
+      "API_CALL": "GA",
+      "INFRASTRUCTURE_MAINTENANCE": "GA",
+      "JOB_TASK": "GA",
+      "RETRY_ON_FAILURE": "GA",
+      "SCHEMA_CHANGE": "GA",
+      "SERVICE_UPGRADE": "GA",
+      "USER_ACTION": "GA"
+    }
+  },
+  "pipelines.StartUpdateResponse": {
+    "fields": {
+      "update_id": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.StopPipelineResponse": {},
+  "pipelines.StopRequest": {},
+  "pipelines.TableSpec": {
+    "fields": {
+      "connector_options": {
+        "description": "(Optional) Source Specific Connector Options",
+        "ref": "pipelines.ConnectorOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "destination_catalog": {
+        "description": "Required. Destination catalog to store table.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "destination_schema": {
+        "description": "Required. Destination schema to store table.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "destination_table": {
+        "description": "Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_catalog": {
+        "description": "Source catalog name. Might be optional depending on the type of source.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_schema": {
+        "description": "Schema name in the source database. Might be optional depending on the type of source.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_table": {
+        "description": "Table name in the source database. Optional: some source types (for example streaming or\nmessage-bus connectors) do not use it, so it may be absent from a pipeline's definition.\nClients that assume it is always present should handle its absence.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "table_configuration": {
+        "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.",
+        "ref": "pipelines.TableSpecificConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "pipelines.TableSpecificConfig": {
+    "fields": {
+      "auto_full_refresh_policy": {
+        "description": "(Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try\nto fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy\nin table configuration will override the above level auto_full_refresh_policy.\nFor example,\n{\n\"auto_full_refresh_policy\": {\n\"enabled\": true,\n\"min_interval_hours\": 23,\n}\n}\nIf unspecified, auto full refresh is disabled.",
+        "ref": "pipelines.AutoFullRefreshPolicy",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "clustering_columns": {
+        "description": "List of column names to use for clustering the destination table.\nWhen specified, the destination Delta table will be clustered by these columns.\nThis can improve query performance when filtering on these columns.\nNote: clustering_columns in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "enable_auto_clustering": {
+        "description": "Whether to enable auto clustering on the destination table.\nWhen enabled, Delta will automatically optimize the data layout\nbased on the clustering columns for improved query performance.\nNote: enable_auto_clustering in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "exclude_columns": {
+        "description": "A list of column names to be excluded for the ingestion.\nWhen not specified, include_columns fully controls what columns to be ingested.\nWhen specified, all other columns including future ones will be automatically included for ingestion.\nThis field in mutually exclusive with `include_columns`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "include_columns": {
+        "description": "A list of column names to be included for the ingestion.\nWhen not specified, all columns except ones in exclude_columns will be included. Future\ncolumns will be automatically included.\nWhen specified, all other future columns will be automatically excluded from ingestion.\nThis field in mutually exclusive with `exclude_columns`.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "primary_keys": {
+        "description": "The primary key of the table used to apply changes.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "query_based_connector_config": {
+        "ref": "pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "row_filter": {
+        "description": "(Optional, Immutable) The row filter condition to be applied to the table.\nIt must not contain the WHERE keyword, only the actual filter condition.\nIt must be in DBSQL format.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "salesforce_include_formula_fields": {
+        "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "scd_type": {
+        "ref": "pipelines.TableSpecificConfigScdType",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "sequence_by": {
+        "description": "The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_metadata_column": {
+        "description": "(Optional) Name of the struct column added to each ingested record to hold per row source\nmetadata.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "table_properties": {
+        "description": "Table properties to set on the destination table.\nThese are key-value pairs that configure various Delta table behaviors or any user defined properties.\nExample: {\"delta.feature.variantType\": \"supported\", \"delta.enableTypeWidening\": \"true\"}\nNote: table_properties in table specific configuration will override the table_properties of the pipeline definition.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "workday_report_parameters": {
+        "description": "(Optional) Additional custom parameters for Workday Report",
+        "ref": "pipelines.IngestionPipelineDefinitionWorkdayReportParameters",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.TableSpecificConfigScdType": {
+    "description": "The SCD type to use to ingest the table.",
+    "enum": [
+      "SCD_TYPE_1",
+      "SCD_TYPE_2",
+      "APPEND_ONLY"
+    ],
+    "enum_launch_stages": {
+      "APPEND_ONLY": "PUBLIC_PREVIEW",
+      "SCD_TYPE_1": "PUBLIC_PREVIEW",
+      "SCD_TYPE_2": "PUBLIC_PREVIEW"
+    }
+  },
+  "pipelines.TikTokAdsOptions": {
+    "description": "TikTok Ads specific options for ingestion",
+    "fields": {
+      "custom_report_options": {
+        "description": "(Optional) Custom report definition. When set, the table is treated as a\nuser-defined TikTok Ads custom report: the connector synthesizes a report\nrequest from the dimensions, metrics, report type, and data level specified\nhere. Supersedes the deprecated top-level dimensions/metrics/report_type/\ndata_level/query_lifetime fields above.",
+        "ref": "pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "data_level": {
+        "description": "Deprecated. Use custom_report_options.data_level instead.",
+        "ref": "pipelines.TikTokAdsOptionsTikTokDataLevel",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "dimensions": {
+        "description": "Deprecated. Use custom_report_options.dimensions instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "lookback_window_days": {
+        "description": "(Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "metrics": {
+        "description": "Deprecated. Use custom_report_options.metrics instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "query_lifetime": {
+        "description": "Deprecated. Use custom_report_options.query_lifetime instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "report_type": {
+        "description": "Deprecated. Use custom_report_options.report_type instead.",
+        "ref": "pipelines.TikTokAdsOptionsTikTokReportType",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "sync_start_date": {
+        "description": "(Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions": {
+    "description": "User-defined custom report for the TikTok Ads connector. Groups the\ndimensions + metrics + report type + data level that define a TikTok Ads\ncustom report request.",
+    "fields": {
+      "data_level": {
+        "description": "(Optional) Data level for the report.\nIf not specified, defaults to AUCTION_CAMPAIGN.",
+        "ref": "pipelines.TikTokAdsOptionsTikTokDataLevel",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "dimensions": {
+        "description": "(Optional) Dimensions to include in the report (e.g. \"campaign_id\",\n\"adgroup_id\", \"ad_id\", \"stat_time_day\", \"stat_time_hour\").",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "metrics": {
+        "description": "(Optional) Metrics to include in the report (e.g. \"spend\", \"impressions\",\n\"clicks\", \"conversion\", \"cpc\").",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "query_lifetime": {
+        "description": "(Optional) Whether to request lifetime metrics (all-time aggregated data).\nWhen true, the report returns all-time data.\nIf not specified, defaults to false.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "report_type": {
+        "description": "(Optional) Report type for the TikTok Ads API.\nIf not specified, defaults to BASIC.",
+        "ref": "pipelines.TikTokAdsOptionsTikTokReportType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "pipelines.TikTokAdsOptionsTikTokDataLevel": {
+    "description": "Data level for TikTok Ads report aggregation.",
+    "enum": [
+      "AUCTION_ADVERTISER",
+      "AUCTION_CAMPAIGN",
+      "AUCTION_ADGROUP",
+      "AUCTION_AD"
+    ],
+    "enum_launch_stages": {
+      "AUCTION_AD": "PUBLIC_BETA",
+      "AUCTION_ADGROUP": "PUBLIC_BETA",
+      "AUCTION_ADVERTISER": "PUBLIC_BETA",
+      "AUCTION_CAMPAIGN": "PUBLIC_BETA"
+    }
+  },
+  "pipelines.TikTokAdsOptionsTikTokReportType": {
+    "description": "Report type for TikTok Ads API.",
+    "enum": [
+      "BASIC",
+      "AUDIENCE",
+      "PLAYABLE_AD",
+      "DSA",
+      "BUSINESS_CENTER",
+      "GMV_MAX"
+    ],
+    "enum_launch_stages": {
+      "AUDIENCE": "PUBLIC_BETA",
+      "BASIC": "PUBLIC_BETA",
+      "BUSINESS_CENTER": "PUBLIC_BETA",
+      "DSA": "PUBLIC_BETA",
+      "GMV_MAX": "PUBLIC_BETA",
+      "PLAYABLE_AD": "PUBLIC_BETA"
+    }
+  },
+  "pipelines.Transformer": {
+    "description": "Specifies how to transform binary data into structured data.",
+    "fields": {
+      "avro_options": {
+        "ref": "pipelines.AvroTransformerOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "format": {
+        "description": "Required: the wire format of the data.",
+        "ref": "pipelines.TransformerFormat",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "input_column": {
+        "description": "Optional input column to transform. When set, the transformer reads\nfrom this column instead of the default source column.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "json_options": {
+        "ref": "pipelines.JsonTransformerOptions",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "output_column": {
+        "description": "Optional output column name. When set, the transformed result is\nwritten to this column instead of replacing the input column.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "protobuf_options": {
+        "ref": "pipelines.ProtobufTransformerOptions",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "pipelines.TransformerFormat": {
+    "enum": [
+      "STRING",
+      "JSON",
+      "AVRO",
+      "PROTOBUF"
+    ],
+    "enum_launch_stages": {
+      "AVRO": "PUBLIC_BETA",
+      "JSON": "PUBLIC_BETA",
+      "PROTOBUF": "PUBLIC_BETA",
+      "STRING": "PUBLIC_BETA"
+    }
+  },
+  "pipelines.Truncation": {
+    "description": "Information about truncations applied to this event.",
+    "fields": {
+      "truncated_fields": {
+        "description": "List of fields that were truncated from this event. If empty or absent,\nno truncation occurred.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.TruncationTruncationDetail": {
+    "description": "Details about a specific field that was truncated.",
+    "fields": {
+      "field_name": {
+        "description": "The name of the truncated field (e.g., \"error\").\nCorresponds to field names in PipelineEvent.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.UpdateInfo": {
+    "fields": {
+      "cause": {
+        "description": "What triggered this update.",
+        "ref": "pipelines.UpdateInfoCause",
+        "launch_stage": "GA"
+      },
+      "cluster_id": {
+        "description": "The ID of the cluster that the update is running on.",
+        "launch_stage": "GA"
+      },
+      "config": {
+        "description": "The pipeline configuration with system defaults applied where unspecified by the user.\nNot returned by ListUpdates.",
+        "ref": "pipelines.PipelineSpec",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "The time when this update was created.",
+        "launch_stage": "GA"
+      },
+      "full_refresh": {
+        "description": "If true, this update will reset all tables before running.",
+        "launch_stage": "GA"
+      },
+      "full_refresh_selection": {
+        "description": "A list of tables to update with fullRefresh. If both refresh_selection and\nfull_refresh_selection are empty, this is a full graph update. Full Refresh on a table means\nthat the states of the table will be reset before the refresh.",
+        "launch_stage": "GA"
+      },
+      "full_refresh_selection_by_path": {
+        "description": "A list of file paths that identify the tables to update with a full refresh.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "mode": {
+        "description": "Indicates whether the update is either part of a continuous job run, or running in legacy continuous pipeline mode.\nReturned only for GetUpdate; not populated in ListUpdates responses.",
+        "ref": "pipelines.UpdateMode",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "Key/value map of parameters used to initiate the update",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "pipeline_id": {
+        "description": "The ID of the pipeline.",
+        "launch_stage": "GA"
+      },
+      "refresh_selection": {
+        "description": "A list of tables to update without fullRefresh. If both refresh_selection and\nfull_refresh_selection are empty, this is a full graph update. Full Refresh on a table means\nthat the states of the table will be reset before the refresh.",
+        "launch_stage": "GA"
+      },
+      "refresh_selection_by_path": {
+        "description": "A list of file paths that identify the tables to update.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "state": {
+        "description": "The update state.",
+        "ref": "pipelines.UpdateInfoState",
+        "launch_stage": "GA"
+      },
+      "update_id": {
+        "description": "The ID of this update.",
+        "launch_stage": "GA"
+      },
+      "validate_only": {
+        "description": "If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.UpdateInfoCause": {
+    "description": "What triggered this update.",
+    "enum": [
+      "API_CALL",
+      "RETRY_ON_FAILURE",
+      "SERVICE_UPGRADE",
+      "SCHEMA_CHANGE",
+      "JOB_TASK",
+      "USER_ACTION",
+      "INFRASTRUCTURE_MAINTENANCE"
+    ],
+    "enum_launch_stages": {
+      "API_CALL": "GA",
+      "INFRASTRUCTURE_MAINTENANCE": "GA",
+      "JOB_TASK": "GA",
+      "RETRY_ON_FAILURE": "GA",
+      "SCHEMA_CHANGE": "GA",
+      "SERVICE_UPGRADE": "GA",
+      "USER_ACTION": "GA"
+    }
+  },
+  "pipelines.UpdateInfoState": {
+    "description": "The update state.",
+    "enum": [
+      "QUEUED",
+      "CREATED",
+      "WAITING_FOR_RESOURCES",
+      "INITIALIZING",
+      "RESETTING",
+      "SETTING_UP_TABLES",
+      "RUNNING",
+      "STOPPING",
+      "COMPLETED",
+      "FAILED",
+      "CANCELED"
+    ],
+    "enum_launch_stages": {
+      "CANCELED": "GA",
+      "COMPLETED": "GA",
+      "CREATED": "GA",
+      "FAILED": "GA",
+      "INITIALIZING": "GA",
+      "QUEUED": "GA",
+      "RESETTING": "GA",
+      "RUNNING": "GA",
+      "SETTING_UP_TABLES": "GA",
+      "STOPPING": "GA",
+      "WAITING_FOR_RESOURCES": "GA"
+    }
+  },
+  "pipelines.UpdateMode": {
+    "enum": [
+      "DEFAULT",
+      "CONTINUOUS"
+    ],
+    "enum_launch_stages": {
+      "CONTINUOUS": "GA",
+      "DEFAULT": "GA"
+    }
+  },
+  "pipelines.UpdateStateInfo": {
+    "fields": {
+      "creation_time": {
+        "launch_stage": "GA"
+      },
+      "state": {
+        "ref": "pipelines.UpdateStateInfoState",
+        "launch_stage": "GA"
+      },
+      "update_id": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "pipelines.UpdateStateInfoState": {
+    "description": "The update state.",
+    "enum": [
+      "QUEUED",
+      "CREATED",
+      "WAITING_FOR_RESOURCES",
+      "INITIALIZING",
+      "RESETTING",
+      "SETTING_UP_TABLES",
+      "RUNNING",
+      "STOPPING",
+      "COMPLETED",
+      "FAILED",
+      "CANCELED"
+    ],
+    "enum_launch_stages": {
+      "CANCELED": "GA",
+      "COMPLETED": "GA",
+      "CREATED": "GA",
+      "FAILED": "GA",
+      "INITIALIZING": "GA",
+      "QUEUED": "GA",
+      "RESETTING": "GA",
+      "RUNNING": "GA",
+      "SETTING_UP_TABLES": "GA",
+      "STOPPING": "GA",
+      "WAITING_FOR_RESOURCES": "GA"
+    }
+  },
+  "pipelines.ZendeskSupportOptions": {
+    "description": "Zendesk Support specific options for ingestion",
+    "fields": {
+      "start_date": {
+        "description": "(Optional) Start date in YYYY-MM-DD format for the initial sync.\nThis determines the earliest date from which to sync historical data.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  }
+}

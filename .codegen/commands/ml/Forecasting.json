@@ -1,0 +1,410 @@
+{
+  "id": "ml.Forecasting",
+  "name": "Forecasting",
+  "description": "The Forecasting API allows you to create and get serverless forecasting experiments",
+  "package": {
+    "name": "ml"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "ml",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "methods": [
+    {
+      "name": "CreateExperiment",
+      "description": "Creates a serverless forecasting experiment. Returns the experiment ID.",
+      "summary": "Create a forecasting experiment.",
+      "path": "/api/2.0/automl/create-forecasting-experiment",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateForecastingExperimentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "train_data_path",
+            "description": "The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used as training data for the forecasting model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "target_column",
+            "description": "The column in the input training table used as the prediction target for model training. The values in this column are used as the ground truth for model training.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "time_column",
+            "description": "The column in the input training table that represents each row's timestamp.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "forecast_granularity",
+            "description": "The time interval between consecutive rows in the time series data.\nPossible values include: '1 second', '1 minute', '5 minutes', '10 minutes', '15 minutes', '30 minutes', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "forecast_horizon",
+            "description": "The number of time steps into the future to make predictions, calculated as a multiple of forecast_granularity. This value represents how far ahead the model should forecast.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "train_data_path",
+            "description": "The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used as training data for the forecasting model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "target_column",
+            "description": "The column in the input training table used as the prediction target for model training. The values in this column are used as the ground truth for model training.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "time_column",
+            "description": "The column in the input training table that represents each row's timestamp.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "forecast_granularity",
+            "description": "The time interval between consecutive rows in the time series data.\nPossible values include: '1 second', '1 minute', '5 minutes', '10 minutes', '15 minutes', '30 minutes', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "forecast_horizon",
+            "description": "The number of time steps into the future to make predictions, calculated as a multiple of forecast_granularity. This value represents how far ahead the model should forecast.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateForecastingExperimentResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "custom_weights_column",
+          "description": "The column in the training table used to customize weights for each time series.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "experiment_path",
+          "description": "The path in the workspace to store the created experiment.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "forecast_granularity",
+          "description": "The time interval between consecutive rows in the time series data.\nPossible values include: '1 second', '1 minute', '5 minutes', '10 minutes', '15 minutes', '30 minutes', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "forecast_horizon",
+          "description": "The number of time steps into the future to make predictions, calculated as a multiple of forecast_granularity. This value represents how far ahead the model should forecast.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "future_feature_data_path",
+          "description": "The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store future feature data for predictions.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "holiday_regions",
+          "description": "The region code(s) to automatically add holiday features. Currently supports only one region.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "include_features",
+          "description": "Specifies the list of feature columns to include in model training. These columns must exist\nin the training data and be of type string, numerical, or boolean. If not specified, no additional\nfeatures will be included.\nNote: Certain columns are automatically handled:\n- Automatically excluded: split_column, target_column, custom_weights_column.\n- Automatically included: time_column.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "max_runtime",
+          "description": "The maximum duration for the experiment in minutes. The experiment stops automatically if it exceeds this limit.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "prediction_data_path",
+          "description": "The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store predictions.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "primary_metric",
+          "description": "The evaluation metric used to optimize the forecasting model.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "register_to",
+          "description": "The fully qualified path of a Unity Catalog model, formatted as catalog_name.schema_name.model_name, used to store the best model.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "split_column",
+          "description": "// The column in the training table used for custom data splits. Values must be 'train', 'validate', or 'test'.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "target_column",
+          "description": "The column in the input training table used as the prediction target for model training. The values in this column are used as the ground truth for model training.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "time_column",
+          "description": "The column in the input training table that represents each row's timestamp.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "timeseries_identifier_columns",
+          "description": "The column in the training table used to group the dataset for predicting individual time series.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "train_data_path",
+          "description": "The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used as training data for the forecasting model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "training_frameworks",
+          "description": "List of frameworks to include for model tuning. Possible values are 'Prophet', 'ARIMA', 'DeepAR'. An empty list includes all supported frameworks.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "train_data_path",
+          "description": "The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used as training data for the forecasting model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "target_column",
+          "description": "The column in the input training table used as the prediction target for model training. The values in this column are used as the ground truth for model training.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "time_column",
+          "description": "The column in the input training table that represents each row's timestamp.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "forecast_granularity",
+          "description": "The time interval between consecutive rows in the time series data.\nPossible values include: '1 second', '1 minute', '5 minutes', '10 minutes', '15 minutes', '30 minutes', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "forecast_horizon",
+          "description": "The number of time steps into the future to make predictions, calculated as a multiple of forecast_granularity. This value represents how far ahead the model should forecast.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "SUCCEEDED"
+          }
+        ],
+        "timeout": 120,
+        "poll": {
+          "response": {
+            "pascal_name": "ForecastingExperiment"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GetExperiment",
+      "description": "Public RPC to get forecasting experiment",
+      "summary": "Get a forecasting experiment.",
+      "path": "/api/2.0/automl/get-forecasting-experiment/{experiment_id}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetForecastingExperimentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The unique ID of a forecasting experiment",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "experiment_id",
+            "description": "The unique ID of a forecasting experiment",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ForecastingExperiment",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "experiment_id",
+          "description": "The unique ID of a forecasting experiment",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "experiment_id",
+          "description": "The unique ID of a forecasting experiment",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

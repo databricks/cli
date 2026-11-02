@@ -1,0 +1,819 @@
+{
+  "id": "catalog.Metastores",
+  "name": "Metastores",
+  "description": "A metastore is the top-level container of objects in Unity Catalog. It stores data assets\n(tables and views) and the permissions that govern access to them. Databricks account admins\ncan create metastores and assign them to Databricks workspaces to control which workloads\nuse each metastore. For a workspace to use Unity Catalog, it must have a Unity Catalog\nmetastore attached.\n\nEach metastore is configured with a root storage location in a cloud storage account.\nThis storage location is used for metadata and managed tables data.\n\nNOTE: This metastore is distinct from the metastore included in Databricks workspaces\ncreated before Unity Catalog was released. If your workspace includes a legacy Hive\nmetastore, the data in that metastore is available in a catalog named hive_metastore.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListMetastoresRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Assign",
+      "description": "Creates a new metastore assignment.\nIf an assignment for the same __workspace_id__ exists, it will be overwritten by the new __metastore_id__ and\n__default_catalog_name__. The caller must be an account admin.",
+      "summary": "Create an assignment.",
+      "path": "/api/2.1/unity-catalog/workspaces/{workspace_id}/metastore",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateMetastoreAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "metastore_id",
+            "description": "The unique ID of the metastore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "default_catalog_name",
+            "description": "The name of the default catalog in the metastore.\nThis field is deprecated. Please use \"Default Namespace API\" to\nconfigure the default catalog for a Databricks workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "metastore_id",
+            "description": "The unique ID of the metastore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "default_catalog_name",
+            "description": "The name of the default catalog in the metastore.\nThis field is deprecated. Please use \"Default Namespace API\" to\nconfigure the default catalog for a Databricks workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AssignResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "default_catalog_name",
+          "description": "The name of the default catalog in the metastore.\nThis field is deprecated. Please use \"Default Namespace API\" to\nconfigure the default catalog for a Databricks workspace.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The unique ID of the metastore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "A workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "A workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The unique ID of the metastore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "default_catalog_name",
+          "description": "The name of the default catalog in the metastore.\nThis field is deprecated. Please use \"Default Namespace API\" to\nconfigure the default catalog for a Databricks workspace.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create",
+      "description": "Creates a new metastore based on a provided name and optional storage root path.\nBy default (if the __owner__ field is not set), the owner of the new metastore is the user calling\nthe __createMetastore__ API.  If the __owner__ field is set to the empty string (**\"\"**), the ownership is\nassigned to the System User instead.",
+      "summary": "Create a metastore.",
+      "path": "/api/2.1/unity-catalog/metastores",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateMetastore",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The user-specified name of the metastore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The user-specified name of the metastore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MetastoreInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "external_access_enabled",
+          "description": "Whether to allow non-DBR clients to directly access entities under the metastore.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The user-specified name of the metastore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_root",
+          "description": "The storage root URL for metastore",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The user-specified name of the metastore.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Current",
+      "description": "Gets the metastore assignment for the workspace being accessed.",
+      "summary": "Get metastore assignment for workspace.",
+      "path": "/api/2.1/unity-catalog/current-metastore-assignment",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CurrentRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "MetastoreAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The unique ID of the Databricks workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "metastore_id",
+            "description": "The unique ID of the metastore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The unique ID of the Databricks workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "metastore_id",
+            "description": "The unique ID of the metastore.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a metastore. The caller must be a metastore admin.",
+      "summary": "Delete a metastore.",
+      "path": "/api/2.1/unity-catalog/metastores/{id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteMetastoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID of the metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID of the metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "Force deletion even if the metastore is not empty. Default is false.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique ID of the metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique ID of the metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a metastore that matches the supplied ID. The caller must be a metastore admin to retrieve this info.",
+      "summary": "Get a metastore.",
+      "path": "/api/2.1/unity-catalog/metastores/{id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetMetastoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID of the metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID of the metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MetastoreInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Unique ID of the metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique ID of the metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of the available metastores (as __MetastoreInfo__ objects). The caller must be an admin to retrieve this info.\nThere is no guarantee of a specific ordering of the elements in the array.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List metastores.",
+      "path": "/api/2.1/unity-catalog/metastores",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListMetastoresRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListMetastoresResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of metastores to return.\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all the metastores are returned (not recommended).\n- Note: The number of returned metastores might be less than the specified max_results size, even zero.\nThe only definitive indication that no further metastores can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of metastores to return.\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all the metastores are returned (not recommended).\n- Note: The number of returned metastores might be less than the specified max_results size, even zero.\nThe only definitive indication that no further metastores can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Summary",
+      "description": "Gets information about a metastore.\nThis summary includes the storage credential, the cloud vendor, the cloud region, and the global metastore ID.",
+      "summary": "Get a metastore summary.",
+      "path": "/api/2.1/unity-catalog/metastore_summary",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SummaryRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetMetastoreSummaryResponse",
+        "is_object": true
+      }
+    },
+    {
+      "name": "Unassign",
+      "description": "Deletes a metastore assignment. The caller must be an account administrator.",
+      "summary": "Delete an assignment.",
+      "path": "/api/2.1/unity-catalog/workspaces/{workspace_id}/metastore",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UnassignRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "metastore_id",
+            "description": "Query for the ID of the metastore to delete.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "metastore_id",
+            "description": "Query for the ID of the metastore to delete.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UnassignResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "metastore_id",
+          "description": "Query for the ID of the metastore to delete.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "A workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "A workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Query for the ID of the metastore to delete.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates information for a specific metastore. The caller must be a metastore admin.\nIf the __owner__ field is set to the empty string (**\"\"**), the ownership is updated\nto the System User.",
+      "summary": "Update a metastore.",
+      "path": "/api/2.1/unity-catalog/metastores/{id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateMetastore",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID of the metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Unique ID of the metastore.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MetastoreInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "delta_sharing_organization_name",
+          "description": "The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "delta_sharing_recipient_token_lifetime_in_seconds",
+          "description": "The lifetime of delta sharing recipient token in seconds.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "delta_sharing_scope",
+          "description": "The scope of Delta Sharing enabled for the metastore.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DeltaSharingScopeEnum",
+            "enum": [
+              {
+                "content": "INTERNAL"
+              },
+              {
+                "content": "INTERNAL_AND_EXTERNAL"
+              }
+            ]
+          }
+        },
+        {
+          "name": "external_access_enabled",
+          "description": "Whether to allow non-DBR clients to directly access entities under the metastore.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique ID of the metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the metastore.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "The owner of the metastore.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "privilege_model_version",
+          "description": "Privilege model version of the metastore, of the form `major.minor` (e.g., `1.0`).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_root_credential_id",
+          "description": "UUID of storage credential to access the metastore storage_root.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique ID of the metastore.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateAssignment",
+      "description": "Updates a metastore assignment. This operation can be used to update __metastore_id__ or __default_catalog_name__\nfor a specified Workspace, if the Workspace is already assigned a metastore.\nThe caller must be an account admin to update __metastore_id__; otherwise, the caller can be a Workspace admin.",
+      "summary": "Update an assignment.",
+      "path": "/api/2.1/unity-catalog/workspaces/{workspace_id}/metastore",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateMetastoreAssignment",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "A workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateAssignmentResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "default_catalog_name",
+          "description": "The name of the default catalog in the metastore.\nThis field is deprecated. Please use \"Default Namespace API\" to\nconfigure the default catalog for a Databricks workspace.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The unique ID of the metastore.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "A workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "A workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    }
+  ]
+}

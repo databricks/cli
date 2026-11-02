@@ -1,0 +1,577 @@
+{
+  "id": "files.Files",
+  "name": "Files",
+  "description": "The Files API is a standard HTTP API that allows you to read, write, list, and delete files and directories by\nreferring to their URI. The API makes working with file content as raw bytes easier and more efficient.\n\nThe API supports [Unity Catalog volumes](https://docs.databricks.com/en/connect/unity-catalog/volumes.html), where files and directories to operate on are specified using their\nvolume URI path, which follows the format /Volumes/\u0026lt;catalog_name\u0026gt;/\u0026lt;schema_name\u0026gt;/\u0026lt;volume_name\u0026gt;/\u0026lt;path_to_file\u0026gt;.\n\nThe Files API has two distinct endpoints, one for working with files (`/fs/files`) and another one for working\nwith directories (`/fs/directories`). Both endpoints use the standard HTTP methods GET, HEAD, PUT, and DELETE to\nmanage files and directories specified using their URI path. The path is always absolute.\n\nUse of Files API may incur Databricks data transfer charges.",
+  "package": {
+    "name": "files"
+  },
+  "docs_group": "files",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListDirectoryContentsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateDirectory",
+      "description": "Creates an empty directory. If necessary, also creates any parent directories of the\nnew, empty directory (like the shell command `mkdir -p`). If called on an existing\ndirectory, returns a success response; this method is idempotent (it will succeed if the directory already\nexists).",
+      "summary": "Create a directory.",
+      "path": "/api/2.0/fs/directories{directory_path}",
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateDirectoryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a file. If the request is successful, there is no response body.",
+      "summary": "Delete a file.",
+      "path": "/api/2.0/fs/files{file_path}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteFileRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDirectory",
+      "description": "Deletes an empty directory.\n\nTo delete a non-empty directory, first delete all of its contents. This can be done\nby listing the directory contents and deleting each file and subdirectory recursively.",
+      "summary": "Delete a directory.",
+      "path": "/api/2.0/fs/directories{directory_path}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteDirectoryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Download",
+      "description": "Downloads a file. The file contents are the response body. This is a\nstandard HTTP file download, not a JSON RPC. It supports the\nRange and If-Unmodified-Since HTTP headers.",
+      "summary": "Download a file.",
+      "path": "/api/2.0/fs/files{file_path}",
+      "is_crud_read": true,
+      "is_response_byte_stream": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DownloadRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DownloadResponse",
+        "is_object": true
+      },
+      "response_body_field": {
+        "pascal_name": "Contents"
+      },
+      "all_fields": [
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDirectoryMetadata",
+      "description": "Get the metadata of a directory. The response HTTP headers contain the metadata.\nThere is no response body.\n\nThis method is useful to check if a directory exists and the caller has access to it.\n\nIf you wish to ensure the directory exists, you can instead use `PUT`, which will create\nthe directory if it does not exist, and is idempotent (it will succeed if the directory\nalready exists).",
+      "summary": "Get directory metadata.",
+      "path": "/api/2.0/fs/directories{directory_path}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetDirectoryMetadataRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMetadata",
+      "description": "Get the metadata of a file. The response HTTP headers contain the metadata. There is no\nresponse body.",
+      "summary": "Get file metadata.",
+      "path": "/api/2.0/fs/files{file_path}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetMetadataRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetMetadataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListDirectoryContents",
+      "description": "Returns the contents of a directory.\nIf there is no directory at the specified path, the API returns an HTTP 404 error.",
+      "summary": "List directory contents.",
+      "path": "/api/2.0/fs/directories{directory_path}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListDirectoryContentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "directory_path",
+            "description": "The absolute path of a directory.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListDirectoryResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of directory entries to return. The response may contain fewer\nentries. If the response contains a `next_page_token`, there may be more entries,\neven if fewer than `page_size` entries are in the response.\n\nWe recommend not to set this value unless you are intentionally listing less than\nthe complete directory contents.\n\nIf unspecified, at most 1000 directory entries will be returned.\nThe maximum value is 1000. Values above 1000 will be coerced to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "An opaque page token which was the `next_page_token` in the response of the previous\nrequest to list the contents of this directory. Provide this token to retrieve the\nnext page of directory entries.\nWhen providing a `page_token`, all other parameters provided to the request must match\nthe previous request.\nTo list all of the entries in a directory, it is necessary to continue requesting\npages of entries until the response contains no `next_page_token`. Note that the\nnumber of entries returned must not be used to determine when the listing is complete.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "directory_path",
+          "description": "The absolute path of a directory.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "An opaque page token which was the `next_page_token` in the response of the previous\nrequest to list the contents of this directory. Provide this token to retrieve the\nnext page of directory entries.\nWhen providing a `page_token`, all other parameters provided to the request must match\nthe previous request.\nTo list all of the entries in a directory, it is necessary to continue requesting\npages of entries until the response contains no `next_page_token`. Note that the\nnumber of entries returned must not be used to determine when the listing is complete.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Upload",
+      "description": "Uploads a file of up to 5 GiB. The file contents should be sent as the request body as\nraw bytes (an octet stream); do not encode or otherwise modify the bytes before sending.\nThe contents of the resulting file will be exactly the bytes sent in the request body.\nIf the request is successful, there is no response body.",
+      "summary": "Upload a file.",
+      "path": "/api/2.0/fs/files{file_path}",
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UploadRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "contents",
+            "required": true,
+            "entity": {}
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "file_path",
+            "description": "The absolute path of the file.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "contents",
+        "required": true,
+        "entity": {}
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "contents",
+          "required": true,
+          "entity": {}
+        },
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "overwrite",
+          "description": "If true or unspecified, an existing file will be overwritten. If false, an error will be returned if the path points to an existing file.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "file_path",
+          "description": "The absolute path of the file.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

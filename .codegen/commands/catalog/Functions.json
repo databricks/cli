@@ -1,0 +1,426 @@
+{
+  "id": "catalog.Functions",
+  "name": "Functions",
+  "description": "Functions implement User-Defined Functions (UDFs) in Unity Catalog.\n\nThe function implementation can be any SQL expression or Query, and it can be invoked wherever a table reference is allowed in a query.\nIn Unity Catalog, a function resides at the same level as a table, so it can be referenced with the form __catalog_name__.__schema_name__.__function_name__.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "FunctionInfoNameToFullNameMap"
+    },
+    "request": {
+      "pascal_name": "ListFunctionsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "**WARNING: This API is experimental and will change in future versions**\n\nCreates a new function\n\nThe user must have the following permissions in order for the function to be created:\n- **USE_CATALOG** on the function's parent catalog\n- **USE_SCHEMA** and **CREATE_FUNCTION** on the function's parent schema",
+      "summary": "Create a function.",
+      "path": "/api/2.1/unity-catalog/functions",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateFunctionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "function_info",
+            "description": "Partial __FunctionInfo__ specifying the function to be created.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateFunction",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "function_info",
+            "description": "Partial __FunctionInfo__ specifying the function to be created.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CreateFunction",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FunctionInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "function_info",
+          "description": "Partial __FunctionInfo__ specifying the function to be created.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreateFunction",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes the function that matches the supplied name.\nFor the deletion to succeed, the user must satisfy one of the following conditions:\n- Is the owner of the function's parent catalog\n- Is the owner of the function's parent schema and have the **USE_CATALOG** privilege on its parent catalog\n- Is the owner of the function itself and have both the **USE_CATALOG** privilege on its parent catalog and the **USE_SCHEMA** privilege on its parent schema",
+      "summary": "Delete a function.",
+      "path": "/api/2.1/unity-catalog/functions/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteFunctionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) .",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) .",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "Force deletion even if the function is notempty.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) .",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) .",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a function from within a parent catalog and schema.\nFor the fetch to succeed, the user must satisfy one of the following requirements:\n- Is a metastore admin\n- Is an owner of the function's parent catalog\n- Have the **USE_CATALOG** privilege on the function's parent catalog and be the owner of the function\n- Have the **USE_CATALOG** privilege on the function's parent catalog, the **USE_SCHEMA** privilege on the function's parent schema, and the **EXECUTE** privilege on the function itself",
+      "summary": "Get a function.",
+      "path": "/api/2.1/unity-catalog/functions/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetFunctionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FunctionInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_browse",
+          "description": "Whether to include functions in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List functions within the specified parent catalog and schema.\nIf the user is a metastore admin, all functions are returned in the output list.\nOtherwise, the user must have the **USE_CATALOG** privilege on the catalog and the **USE_SCHEMA** privilege on the schema, and the output list contains only functions for which either the user has the **EXECUTE** privilege or the user is the owner.\nThere is no guarantee of a specific ordering of the elements in the array.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List functions.",
+      "path": "/api/2.1/unity-catalog/functions",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListFunctionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog for functions of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Parent schema of functions.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog for functions of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schema_name",
+            "description": "Parent schema of functions.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListFunctionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog for functions of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include functions in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of functions to return.\nIf not set, all the functions are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Parent schema of functions.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog for functions of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "Parent schema of functions.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of functions to return.\nIf not set, all the functions are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates the function that matches the supplied name.\nOnly the owner of the function can be updated. If the user is not a metastore admin, the user must be a member of the group that is the new function owner.\n- Is a metastore admin\n- Is the owner of the function's parent catalog\n- Is the owner of the function's parent schema and has the **USE_CATALOG** privilege on its parent catalog\n- Is the owner of the function itself and has the **USE_CATALOG** privilege on its parent catalog as well as the **USE_SCHEMA** privilege on the function's parent schema.",
+      "summary": "Update a function.",
+      "path": "/api/2.1/unity-catalog/functions/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateFunction",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FunctionInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of current owner of the function.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__).",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

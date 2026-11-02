@@ -1,0 +1,839 @@
+{
+  "id": "domains.Domains",
+  "name": "Domains",
+  "description": "Manage domains for organizing and discovering data assets.",
+  "package": {
+    "name": "domains"
+  },
+  "docs_group": "domains",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListDomainsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateDomain",
+      "description": "Create a domain. If `domain_id` is omitted, the server generates one.",
+      "summary": "Create a domain.",
+      "path": "/api/2.0/domains",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateDomainRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "domain",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Domain",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "domain",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Domain",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "domain",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Domain",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "tag_key",
+              "description": "Governed tag key associated with this domain.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "tag_key",
+              "description": "Governed tag key associated with this domain.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Domain",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "description": "Governed tag key associated with this domain.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_key",
+            "description": "Governed tag key associated with this domain.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "domain",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Domain",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "tag_key",
+                "description": "Governed tag key associated with this domain.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "tag_key",
+                "description": "Governed tag key associated with this domain.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "domain_id",
+          "description": "Client-supplied resource ID for the new domain. If omitted, the server\ngenerates one.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "business_owner_ids",
+          "description": "Principal IDs of the business owners (users, groups, or service principals).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_int64": true
+            }
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when the domain was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Full description (max 4096 chars)",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "domain_id",
+          "description": "Unique identifier for the domain. If omitted at Create, the server\ngenerates one.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "draft",
+          "description": "Whether to mark the domain as a draft. If omitted on Create, the server\napplies a default; the resolved value is returned in `effective_draft`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_draft",
+          "description": "Resolved draft state of the domain.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "icon",
+          "description": "Icon to display for the domain.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DomainIcon",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_domain_id",
+          "description": "Domain ID of the parent. If absent, this is a top-level domain.\nIf present, this domain is a subdomain of the specified parent.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subtitle",
+          "description": "Short description (max 280 chars)",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "Governed tag key associated with this domain.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "technical_owner_ids",
+          "description": "Principal IDs of the technical owners (users, groups, or service principals).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_int64": true
+            }
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when the domain was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "tag_key",
+          "description": "Governed tag key associated with this domain.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDomain",
+      "description": "Delete a domain. By default the request fails if the domain still has\nGlossary pages; set `force` to delete those pages along with the domain.",
+      "summary": "Delete a domain.",
+      "path": "/api/2.0/{name=domains/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteDomainRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the domain to delete.\nFormat: `domains/{domain_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the domain to delete.\nFormat: `domains/{domain_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "When false (default), DeleteDomain is rejected with FAILED_PRECONDITION if\nthe domain still has Glossary pages. When true, those pages are deleted\nfirst and then the domain is removed.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name of the domain to delete.\nFormat: `domains/{domain_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the domain to delete.\nFormat: `domains/{domain_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDomain",
+      "description": "Get a domain by resource name.\n\nAuthorization: external callers must have the `MANAGE DISCOVER` permission.",
+      "summary": "Get a domain.",
+      "path": "/api/2.0/{name=domains/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetDomainRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the domain to retrieve.\nFormat: `domains/{domain_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the domain to retrieve.\nFormat: `domains/{domain_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Domain",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "description": "Governed tag key associated with this domain.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_key",
+            "description": "Governed tag key associated with this domain.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the domain to retrieve.\nFormat: `domains/{domain_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the domain to retrieve.\nFormat: `domains/{domain_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListDomains",
+      "description": "List domains in the account. Set `parent_domain_id` to return only the\ndirect subdomains of a given domain.\n\nAuthorization: external callers must have the `MANAGE DISCOVER` permission;\nonly domains the caller is authorized to read are returned.",
+      "summary": "List domains.",
+      "path": "/api/2.0/domains",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListDomainsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListDomainsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_domain_id",
+          "description": "Filter by parent domain.\n- Absent: return all domains regardless of hierarchy.\n- Present: return only direct children of the specified domain.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateDomain",
+      "description": "Update a domain. `update_mask` selects which fields to modify; the domain\nis identified by its resource `name`.",
+      "summary": "Update a domain.",
+      "path": "/api/2.0/{name=domains/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateDomainRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "domain",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Domain",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "domain",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Domain",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "domain",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Domain",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "tag_key",
+              "description": "Governed tag key associated with this domain.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "tag_key",
+              "description": "Governed tag key associated with this domain.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Domain",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_key",
+            "description": "Governed tag key associated with this domain.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_key",
+            "description": "Governed tag key associated with this domain.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "domain",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Domain",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "tag_key",
+                "description": "Governed tag key associated with this domain.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "tag_key",
+                "description": "Governed tag key associated with this domain.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "business_owner_ids",
+          "description": "Principal IDs of the business owners (users, groups, or service principals).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_int64": true
+            }
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when the domain was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Full description (max 4096 chars)",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "domain_id",
+          "description": "Unique identifier for the domain. If omitted at Create, the server\ngenerates one.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "draft",
+          "description": "Whether to mark the domain as a draft. If omitted on Create, the server\napplies a default; the resolved value is returned in `effective_draft`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "effective_draft",
+          "description": "Resolved draft state of the domain.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "icon",
+          "description": "Icon to display for the domain.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DomainIcon",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_domain_id",
+          "description": "Domain ID of the parent. If absent, this is a top-level domain.\nIf present, this domain is a subdomain of the specified parent.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subtitle",
+          "description": "Short description (max 280 chars)",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "Governed tag key associated with this domain.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "technical_owner_ids",
+          "description": "Principal IDs of the technical owners (users, groups, or service principals).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_int64": true
+            }
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when the domain was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "Governed tag key associated with this domain.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

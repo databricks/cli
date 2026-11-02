@@ -1,0 +1,185 @@
+{
+  "tags.CreateTagAssignmentRequest": {
+    "fields": {
+      "tag_assignment": {
+        "ref": "tags.TagAssignment",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "tags.CreateTagPolicyRequest": {
+    "fields": {
+      "tag_policy": {
+        "ref": "tags.TagPolicy",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "tags.DeleteTagAssignmentRequest": {},
+  "tags.DeleteTagPolicyRequest": {},
+  "tags.GetTagAssignmentRequest": {},
+  "tags.GetTagPolicyRequest": {},
+  "tags.ListTagAssignmentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Optional. Maximum number of tag assignments to return in a single page",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of tag assignments. Requests first page if absent.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "tags.ListTagAssignmentsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Pagination token to request the next page of tag assignments",
+        "launch_stage": "GA"
+      },
+      "tag_assignments": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "tags.ListTagPoliciesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of results to return in this request. Fewer results may be returned than requested. If\nunspecified or set to 0, this defaults to 1000. The maximum value is 1000; values above 1000 will be coerced down\nto 1000.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "An optional page token received from a previous list tag policies call.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "tags.ListTagPoliciesResponse": {
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "GA"
+      },
+      "tag_policies": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "tags.TagAssignment": {
+    "fields": {
+      "entity_id": {
+        "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "entity_type": {
+        "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "tag_key": {
+        "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "tag_value": {
+        "description": "The value of the tag",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "tags.TagPolicy": {
+    "fields": {
+      "create_time": {
+        "description": "Timestamp when the tag policy was created",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "id": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "tag_key": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "update_time": {
+        "description": "Timestamp when the tag policy was last updated",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "values": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL",
+          "UNORDERED_LIST"
+        ]
+      }
+    }
+  },
+  "tags.UpdateTagAssignmentRequest": {
+    "fields": {
+      "tag_assignment": {
+        "ref": "tags.TagAssignment",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "tags.UpdateTagPolicyRequest": {
+    "fields": {
+      "tag_policy": {
+        "ref": "tags.TagPolicy",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "tags.Value": {
+    "fields": {
+      "name": {
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

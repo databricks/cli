@@ -1,0 +1,1507 @@
+{
+  "id": "sql.AlertsV2",
+  "name": "AlertsV2",
+  "description": "New version of SQL Alerts",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "AlertV2DisplayNameToIdMap"
+    },
+    "request": {
+      "pascal_name": "ListAlertsV2Request"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateAlert",
+      "description": "Create Alert",
+      "summary": "Create an alert.",
+      "path": "/api/2.0/alerts",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateAlertV2Request",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "alert",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "alert",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "alert",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "AlertV2",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "query_text",
+              "description": "Text of the query to be run.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "warehouse_id",
+              "description": "ID of the SQL warehouse attached to the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "evaluation",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AlertV2Evaluation",
+                "is_object": true
+              }
+            },
+            {
+              "name": "schedule",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "query_text",
+              "description": "Text of the query to be run.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "warehouse_id",
+              "description": "ID of the SQL warehouse attached to the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "evaluation",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AlertV2Evaluation",
+                "is_object": true
+              }
+            },
+            {
+              "name": "schedule",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "AlertV2",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query_text",
+            "description": "Text of the query to be run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "ID of the SQL warehouse attached to the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "evaluation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2Evaluation",
+              "is_object": true
+            }
+          },
+          {
+            "name": "schedule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query_text",
+            "description": "Text of the query to be run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "ID of the SQL warehouse attached to the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "evaluation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2Evaluation",
+              "is_object": true
+            }
+          },
+          {
+            "name": "schedule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "alert",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertV2",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "query_text",
+                "description": "Text of the query to be run.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "warehouse_id",
+                "description": "ID of the SQL warehouse attached to the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "evaluation",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AlertV2Evaluation",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "schedule",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "query_text",
+                "description": "Text of the query to be run.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "warehouse_id",
+                "description": "ID of the SQL warehouse attached to the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "evaluation",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AlertV2Evaluation",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "schedule",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "The timestamp indicating when the alert was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_description",
+          "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_summary",
+          "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_template_format",
+          "description": "The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTemplateFormat",
+            "enum": [
+              {
+                "content": "HTML"
+              },
+              {
+                "content": "MARKDOWN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_run_as",
+          "description": "The actual identity that will be used to execute the alert.\nThis is an output-only field that shows the resolved run-as identity after applying\npermissions and defaults.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AlertV2RunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "evaluation",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertV2Evaluation",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "The canonical identifier of the alert to retrieve information about.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "lifecycle_state",
+          "description": "Indicates whether the query is trashed.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertLifecycleState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DELETED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_user_name",
+          "description": "The owner's username. This field is set to \"Unavailable\" if the user has been deleted.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parameters",
+          "description": "A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.\n\nReference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.\nEach parameter consists of a name, a value, and optionally a type. To represent a NULL\nvalue, the `value` field may be omitted or set to `null` explicitly. If the `type` field\nis omitted, the value is interpreted as a string.\n\nIf the type is given, parameters will be checked for type correctness according\nto the given type. A value is correct if the provided string can be converted to\nthe requested type using the `cast` function. The exact semantics are described in\nthe section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertStatementParameterList",
+            "array_value": {
+              "pascal_name": "AlertStatementParameter",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_text",
+          "description": "Text of the query to be run.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as",
+          "description": "Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AlertV2RunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "run_as_user_name",
+          "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The timestamp indicating when the alert was updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "ID of the SQL warehouse attached to the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "display_name",
+          "description": "The display name of the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_text",
+          "description": "Text of the query to be run.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "ID of the SQL warehouse attached to the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "evaluation",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertV2Evaluation",
+            "is_object": true
+          }
+        },
+        {
+          "name": "schedule",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetAlert",
+      "description": "Gets an alert.",
+      "summary": "Get an alert.",
+      "path": "/api/2.0/alerts/{id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetAlertV2Request",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AlertV2",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query_text",
+            "description": "Text of the query to be run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "ID of the SQL warehouse attached to the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "evaluation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2Evaluation",
+              "is_object": true
+            }
+          },
+          {
+            "name": "schedule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query_text",
+            "description": "Text of the query to be run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "ID of the SQL warehouse attached to the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "evaluation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2Evaluation",
+              "is_object": true
+            }
+          },
+          {
+            "name": "schedule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListAlerts",
+      "description": "Gets a list of alerts accessible to the user, ordered by creation time.",
+      "summary": "List alerts.",
+      "path": "/api/2.0/alerts",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAlertsV2Request",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAlertsV2Response",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "TrashAlert",
+      "description": "Moves an alert to the trash. Trashed alerts immediately disappear from list views, and can no longer trigger. You can restore a trashed alert through the UI. A trashed alert is permanently deleted after 30 days.",
+      "summary": "Delete an alert (legacy TrashAlert).",
+      "path": "/api/2.0/alerts/{id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TrashAlertV2Request",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Empty",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "purge",
+          "description": "Whether to permanently delete the alert. If not set, the alert will only be soft deleted.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateAlert",
+      "description": "Update alert",
+      "summary": "Update an alert.",
+      "path": "/api/2.0/alerts/{id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateAlertV2Request",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "The canonical identifier of the alert to retrieve information about.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "alert",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "The canonical identifier of the alert to retrieve information about.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "alert",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "alert",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "AlertV2",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "query_text",
+              "description": "Text of the query to be run.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "warehouse_id",
+              "description": "ID of the SQL warehouse attached to the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "evaluation",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AlertV2Evaluation",
+                "is_object": true
+              }
+            },
+            {
+              "name": "schedule",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "query_text",
+              "description": "Text of the query to be run.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "warehouse_id",
+              "description": "ID of the SQL warehouse attached to the alert.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "evaluation",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "AlertV2Evaluation",
+                "is_object": true
+              }
+            },
+            {
+              "name": "schedule",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "AlertV2",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query_text",
+            "description": "Text of the query to be run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "ID of the SQL warehouse attached to the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "evaluation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2Evaluation",
+              "is_object": true
+            }
+          },
+          {
+            "name": "schedule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query_text",
+            "description": "Text of the query to be run.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "ID of the SQL warehouse attached to the alert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "evaluation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AlertV2Evaluation",
+              "is_object": true
+            }
+          },
+          {
+            "name": "schedule",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "alert",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertV2",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "query_text",
+                "description": "Text of the query to be run.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "warehouse_id",
+                "description": "ID of the SQL warehouse attached to the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "evaluation",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AlertV2Evaluation",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "schedule",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "query_text",
+                "description": "Text of the query to be run.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "warehouse_id",
+                "description": "ID of the SQL warehouse attached to the alert.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "evaluation",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AlertV2Evaluation",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "schedule",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "id",
+          "description": "The canonical identifier of the alert to retrieve information about.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "The timestamp indicating when the alert was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_description",
+          "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_summary",
+          "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_template_format",
+          "description": "The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTemplateFormat",
+            "enum": [
+              {
+                "content": "HTML"
+              },
+              {
+                "content": "MARKDOWN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_run_as",
+          "description": "The actual identity that will be used to execute the alert.\nThis is an output-only field that shows the resolved run-as identity after applying\npermissions and defaults.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AlertV2RunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "evaluation",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertV2Evaluation",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "The canonical identifier of the alert to retrieve information about.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "lifecycle_state",
+          "description": "Indicates whether the query is trashed.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertLifecycleState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DELETED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_user_name",
+          "description": "The owner's username. This field is set to \"Unavailable\" if the user has been deleted.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parameters",
+          "description": "A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.\n\nReference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.\nEach parameter consists of a name, a value, and optionally a type. To represent a NULL\nvalue, the `value` field may be omitted or set to `null` explicitly. If the `type` field\nis omitted, the value is interpreted as a string.\n\nIf the type is given, parameters will be checked for type correctness according\nto the given type. A value is correct if the provided string can be converted to\nthe requested type using the `cast` function. The exact semantics are described in\nthe section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertStatementParameterList",
+            "array_value": {
+              "pascal_name": "AlertStatementParameter",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_text",
+          "description": "Text of the query to be run.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as",
+          "description": "Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AlertV2RunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "run_as_user_name",
+          "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The timestamp indicating when the alert was updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "ID of the SQL warehouse attached to the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "The canonical identifier of the alert to retrieve information about.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_text",
+          "description": "Text of the query to be run.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "ID of the SQL warehouse attached to the alert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "evaluation",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AlertV2Evaluation",
+            "is_object": true
+          }
+        },
+        {
+          "name": "schedule",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2099 @@
+{
+  "id": "sql.Warehouses",
+  "name": "Warehouses",
+  "description": "A SQL warehouse is a compute resource that lets you run SQL commands on data objects within Databricks SQL. Compute resources are infrastructure resources that provide processing capabilities in the cloud.",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "EndpointInfoNameToIdMap"
+    },
+    "request": {
+      "pascal_name": "ListWarehousesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new SQL warehouse.",
+      "summary": "Create a warehouse.",
+      "path": "/api/2.0/sql/warehouses",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateWarehouseRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CreateWarehouseResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "auto_stop_mins",
+          "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "channel",
+          "description": "Channel Details",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Channel",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_size",
+          "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator_name",
+          "description": "warehouse creator name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "customer_version_label",
+          "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_photon",
+          "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "enable_serverless_compute",
+          "description": "Configures whether the warehouse should use serverless compute",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "instance_profile_arn",
+          "description": "Deprecated. Instance profile used to pass IAM role to the cluster",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_dbu",
+          "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "max_num_clusters",
+          "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "min_num_clusters",
+          "description": "Minimum number of available clusters that will be maintained for this SQL\nwarehouse. Increasing this will ensure that a larger number of clusters are\nalways running and therefore may reduce the cold start time for new\nqueries. This is similar to reserved vs. revocable cores in a resource\nmanager.\n\nSupported values:\n- Must be \u003e 0\n- Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "reyden_cluster_size_multiplier",
+          "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_float64": true
+          }
+        },
+        {
+          "name": "spot_instance_policy",
+          "description": "Configurations whether the endpoint should use spot instances.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SpotInstancePolicy",
+            "enum": [
+              {
+                "content": "COST_OPTIMIZED"
+              },
+              {
+                "content": "POLICY_UNSPECIFIED"
+              },
+              {
+                "content": "RELIABILITY_OPTIMIZED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "statement_timeout",
+          "description": "Warehouse statement timeout in seconds.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointTags",
+            "is_object": true
+          }
+        },
+        {
+          "name": "warehouse_type",
+          "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreateWarehouseRequestWarehouseType",
+            "enum": [
+              {
+                "content": "CLASSIC"
+              },
+              {
+                "content": "PRO"
+              },
+              {
+                "content": "REALTIME"
+              },
+              {
+                "content": "TYPE_UNSPECIFIED"
+              }
+            ]
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "GetWarehouseResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "Health"
+          },
+          {
+            "pascal_name": "Summary"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "Health"
+        }
+      }
+    },
+    {
+      "name": "CreateDefaultWarehouseOverride",
+      "description": "Creates a new default warehouse override for a user.\nUsers can create their own override. Admins can create overrides for any user.",
+      "summary": "Create default warehouse override.",
+      "path": "/api/warehouses/v1/default-warehouse-overrides",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateDefaultWarehouseOverrideRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "default_warehouse_override",
+            "description": "Required. The default warehouse override to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverride",
+              "is_object": true
+            }
+          },
+          {
+            "name": "default_warehouse_override_id",
+            "description": "Required. The ID to use for the override, which will become the final component\nof the override's resource name.\nCan be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "default_warehouse_override_id",
+            "description": "Required. The ID to use for the override, which will become the final component\nof the override's resource name.\nCan be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "default_warehouse_override",
+            "description": "Required. The default warehouse override to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverride",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "default_warehouse_override",
+        "description": "Required. The default warehouse override to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DefaultWarehouseOverride",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "type",
+              "description": "The type of override behavior.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "DefaultWarehouseOverrideType",
+                "enum": [
+                  {
+                    "content": "CUSTOM"
+                  },
+                  {
+                    "content": "LAST_SELECTED"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "type",
+              "description": "The type of override behavior.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "DefaultWarehouseOverrideType",
+                "enum": [
+                  {
+                    "content": "CUSTOM"
+                  },
+                  {
+                    "content": "LAST_SELECTED"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DefaultWarehouseOverride",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "type",
+            "description": "The type of override behavior.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverrideType",
+              "enum": [
+                {
+                  "content": "CUSTOM"
+                },
+                {
+                  "content": "LAST_SELECTED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "type",
+            "description": "The type of override behavior.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverrideType",
+              "enum": [
+                {
+                  "content": "CUSTOM"
+                },
+                {
+                  "content": "LAST_SELECTED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "default_warehouse_override",
+          "description": "Required. The default warehouse override to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultWarehouseOverride",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "type",
+                "description": "The type of override behavior.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "DefaultWarehouseOverrideType",
+                  "enum": [
+                    {
+                      "content": "CUSTOM"
+                    },
+                    {
+                      "content": "LAST_SELECTED"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "type",
+                "description": "The type of override behavior.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "DefaultWarehouseOverrideType",
+                  "enum": [
+                    {
+                      "content": "CUSTOM"
+                    },
+                    {
+                      "content": "LAST_SELECTED"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "default_warehouse_override_id",
+          "description": "Required. The ID to use for the override, which will become the final component\nof the override's resource name.\nCan be a numeric user ID or the literal string \"me\" for the current user.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "default_warehouse_override_id",
+          "description": "The ID component of the resource name (user ID).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the default warehouse override.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "type",
+          "description": "The type of override behavior.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultWarehouseOverrideType",
+            "enum": [
+              {
+                "content": "CUSTOM"
+              },
+              {
+                "content": "LAST_SELECTED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The specific warehouse ID when type is CUSTOM.\nNot set for LAST_SELECTED type.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "default_warehouse_override_id",
+          "description": "Required. The ID to use for the override, which will become the final component\nof the override's resource name.\nCan be a numeric user ID or the literal string \"me\" for the current user.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "type",
+          "description": "The type of override behavior.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultWarehouseOverrideType",
+            "enum": [
+              {
+                "content": "CUSTOM"
+              },
+              {
+                "content": "LAST_SELECTED"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a SQL warehouse.",
+      "summary": "Delete a warehouse.",
+      "path": "/api/2.0/sql/warehouses/{id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteWarehouseRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteWarehouseResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDefaultWarehouseOverride",
+      "description": "Deletes the default warehouse override for a user.\nUsers can delete their own override. Admins can delete overrides for any user.\nAfter deletion, the workspace default warehouse will be used.",
+      "summary": "Delete default warehouse override.",
+      "path": "/api/warehouses/v1/{name=default-warehouse-overrides/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteDefaultWarehouseOverrideRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the default warehouse override to delete.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the default warehouse override to delete.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the default warehouse override to delete.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the default warehouse override to delete.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edit",
+      "description": "Updates the configuration for a SQL warehouse.",
+      "summary": "Update a warehouse.",
+      "path": "/api/2.0/sql/warehouses/{id}/edit",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EditWarehouseRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the warehouse to configure.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the warehouse to configure.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EditWarehouseResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "auto_stop_mins",
+          "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "channel",
+          "description": "Channel Details",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Channel",
+            "is_object": true
+          }
+        },
+        {
+          "name": "cluster_size",
+          "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator_name",
+          "description": "warehouse creator name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "customer_version_label",
+          "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enable_photon",
+          "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "enable_serverless_compute",
+          "description": "Configures whether the warehouse should use serverless compute",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Required. Id of the warehouse to configure.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instance_profile_arn",
+          "description": "Deprecated. Instance profile used to pass IAM role to the cluster",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_dbu",
+          "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "max_num_clusters",
+          "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "min_num_clusters",
+          "description": "Minimum number of available clusters that will be maintained for this SQL\nwarehouse. Increasing this will ensure that a larger number of clusters are\nalways running and therefore may reduce the cold start time for new\nqueries. This is similar to reserved vs. revocable cores in a resource\nmanager.\n\nSupported values:\n- Must be \u003e 0\n- Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "reyden_cluster_size_multiplier",
+          "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_float64": true
+          }
+        },
+        {
+          "name": "spot_instance_policy",
+          "description": "Configurations whether the endpoint should use spot instances.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SpotInstancePolicy",
+            "enum": [
+              {
+                "content": "COST_OPTIMIZED"
+              },
+              {
+                "content": "POLICY_UNSPECIFIED"
+              },
+              {
+                "content": "RELIABILITY_OPTIMIZED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "statement_timeout",
+          "description": "Warehouse statement timeout in seconds.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointTags",
+            "is_object": true
+          }
+        },
+        {
+          "name": "warehouse_type",
+          "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EditWarehouseRequestWarehouseType",
+            "enum": [
+              {
+                "content": "CLASSIC"
+              },
+              {
+                "content": "PRO"
+              },
+              {
+                "content": "REALTIME"
+              },
+              {
+                "content": "TYPE_UNSPECIFIED"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Required. Id of the warehouse to configure.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "GetWarehouseResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "Health"
+          },
+          {
+            "pascal_name": "Summary"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "Health"
+        }
+      }
+    },
+    {
+      "name": "Get",
+      "description": "Gets the information for a single SQL warehouse.",
+      "summary": "Get warehouse info.",
+      "path": "/api/2.0/sql/warehouses/{id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWarehouseRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetWarehouseResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDefaultWarehouseOverride",
+      "description": "Returns the default warehouse override for a user.\nUsers can fetch their own override. Admins can fetch overrides for any user.\nIf no override exists, the UI will fallback to the workspace default warehouse.",
+      "summary": "Get default warehouse override.",
+      "path": "/api/warehouses/v1/{name=default-warehouse-overrides/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetDefaultWarehouseOverrideRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the default warehouse override to retrieve.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the default warehouse override to retrieve.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DefaultWarehouseOverride",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "type",
+            "description": "The type of override behavior.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverrideType",
+              "enum": [
+                {
+                  "content": "CUSTOM"
+                },
+                {
+                  "content": "LAST_SELECTED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "type",
+            "description": "The type of override behavior.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverrideType",
+              "enum": [
+                {
+                  "content": "CUSTOM"
+                },
+                {
+                  "content": "LAST_SELECTED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the default warehouse override to retrieve.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the default warehouse override to retrieve.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get SQL warehouse permission levels.",
+      "path": "/api/2.0/permissions/warehouses/{warehouse_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWarehousePermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetWarehousePermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a SQL warehouse. SQL warehouses can inherit permissions from their root object.",
+      "summary": "Get SQL warehouse permissions.",
+      "path": "/api/2.0/permissions/warehouses/{warehouse_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWarehousePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WarehousePermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetWorkspaceWarehouseConfig",
+      "description": "Gets the workspace level configuration that is shared by all SQL warehouses in a workspace.",
+      "summary": "Get the workspace configuration.",
+      "path": "/api/2.0/sql/config/warehouses",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceWarehouseConfigRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetWorkspaceWarehouseConfigResponse",
+        "is_object": true
+      }
+    },
+    {
+      "name": "List",
+      "description": "Lists all SQL warehouses that a user has access to.",
+      "summary": "List warehouses.",
+      "path": "/api/2.0/sql/warehouses",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListWarehousesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListWarehousesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The max number of warehouses to return.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListWarehouses` call.\nProvide this to retrieve the subsequent page; otherwise the first\nwill be retrieved.\n\nWhen paginating, all other parameters provided to `ListWarehouses` must match\nthe call that provided the page token.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as_user_id",
+          "description": "Deprecated: this field is ignored by the server.\nService Principal which will be used to fetch the list of endpoints.\nIf not specified, SQL Gateway will use the user from the session header.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListWarehouses` call.\nProvide this to retrieve the subsequent page; otherwise the first\nwill be retrieved.\n\nWhen paginating, all other parameters provided to `ListWarehouses` must match\nthe call that provided the page token.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListDefaultWarehouseOverrides",
+      "description": "Lists all default warehouse overrides in the workspace.\nOnly workspace administrators can list all overrides.",
+      "summary": "List default warehouse overrides.",
+      "path": "/api/warehouses/v1/default-warehouse-overrides",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListDefaultWarehouseOverridesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListDefaultWarehouseOverridesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of overrides to return. The service may return fewer than\nthis value.\nIf unspecified, at most 100 overrides will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListDefaultWarehouseOverrides` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListDefaultWarehouseOverrides`\nmust match the call that provided the page token.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListDefaultWarehouseOverrides` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListDefaultWarehouseOverrides`\nmust match the call that provided the page token.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set SQL warehouse permissions.",
+      "path": "/api/2.0/permissions/warehouses/{warehouse_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "WarehousePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WarehousePermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WarehouseAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "WarehouseAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetWorkspaceWarehouseConfig",
+      "description": "Sets the workspace level configuration that is shared by all SQL warehouses in a workspace.",
+      "summary": "Set the workspace configuration.",
+      "path": "/api/2.0/sql/config/warehouses",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetWorkspaceWarehouseConfigRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "SetWorkspaceWarehouseConfigResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "channel",
+          "description": "Optional: Channel selection details",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Channel",
+            "is_object": true
+          }
+        },
+        {
+          "name": "config_param",
+          "description": "Deprecated: Use sql_configuration_parameters",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RepeatedEndpointConfPairs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "data_access_config",
+          "description": "Spark confs for external hive metastore configuration\nJSON serialized size must be less than \u003c= 512K",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointConfPairList",
+            "array_value": {
+              "pascal_name": "EndpointConfPair",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "enable_serverless_compute",
+          "description": "Deprecated: only setting this to true is allowed.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "enabled_warehouse_types",
+          "description": "List of Warehouse Types allowed in this workspace (limits allowed value of\nthe type field in CreateWarehouse and EditWarehouse). Note: Some types\ncannot be disabled, they don't need to be specified\nin SetWorkspaceWarehouseConfig.\nNote: Disabling a type may cause existing warehouses to be converted to\nanother type. Used by frontend to save specific type availability in the\nwarehouse create and edit form UI.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WarehouseTypePairList",
+            "array_value": {
+              "pascal_name": "WarehouseTypePair",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "global_param",
+          "description": "Deprecated: Use sql_configuration_parameters",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RepeatedEndpointConfPairs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "google_service_account",
+          "description": "GCP only: Google Service Account used to pass to cluster to access Google\nCloud Storage",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instance_profile_arn",
+          "description": "AWS Only: The instance profile used to pass an IAM role to the SQL\nwarehouses. This configuration is also applied to the workspace's\nserverless compute for notebooks and jobs.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "security_policy",
+          "description": "Security policy for warehouses",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SetWorkspaceWarehouseConfigRequestSecurityPolicy",
+            "enum": [
+              {
+                "content": "DATA_ACCESS_CONTROL"
+              },
+              {
+                "content": "NONE"
+              },
+              {
+                "content": "PASSTHROUGH"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sql_configuration_parameters",
+          "description": "SQL configuration parameters",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RepeatedEndpointConfPairs",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Start",
+      "description": "Starts a SQL warehouse.",
+      "summary": "Start a warehouse.",
+      "path": "/api/2.0/sql/warehouses/{id}/start",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "StartRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StartWarehouseResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "RUNNING"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "GetWarehouseResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "Health"
+          },
+          {
+            "pascal_name": "Summary"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "Health"
+        }
+      }
+    },
+    {
+      "name": "Stop",
+      "description": "Stops a SQL warehouse.",
+      "summary": "Stop a warehouse.",
+      "path": "/api/2.0/sql/warehouses/{id}/stop",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "StopRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Required. Id of the SQL warehouse.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StopWarehouseResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Required. Id of the SQL warehouse.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "STOPPED"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "GetWarehouseResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "Health"
+          },
+          {
+            "pascal_name": "Summary"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "Health"
+        }
+      }
+    },
+    {
+      "name": "UpdateDefaultWarehouseOverride",
+      "description": "Updates an existing default warehouse override for a user.\nUsers can update their own override. Admins can update overrides for any user.",
+      "summary": "Update default warehouse override.",
+      "path": "/api/warehouses/v1/{name=default-warehouse-overrides/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateDefaultWarehouseOverrideRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the default warehouse override.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "default_warehouse_override",
+            "description": "Required. The default warehouse override to update.\nThe name field must be set in the format: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverride",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. Field mask specifying which fields to update.\nOnly the fields specified in the mask will be updated.\nUse \"*\" to update all fields.\nWhen allow_missing is true, this field is ignored and all fields are applied.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the default warehouse override.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. Field mask specifying which fields to update.\nOnly the fields specified in the mask will be updated.\nUse \"*\" to update all fields.\nWhen allow_missing is true, this field is ignored and all fields are applied.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "default_warehouse_override",
+            "description": "Required. The default warehouse override to update.\nThe name field must be set in the format: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverride",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "default_warehouse_override",
+        "description": "Required. The default warehouse override to update.\nThe name field must be set in the format: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DefaultWarehouseOverride",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "type",
+              "description": "The type of override behavior.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "DefaultWarehouseOverrideType",
+                "enum": [
+                  {
+                    "content": "CUSTOM"
+                  },
+                  {
+                    "content": "LAST_SELECTED"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "type",
+              "description": "The type of override behavior.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "DefaultWarehouseOverrideType",
+                "enum": [
+                  {
+                    "content": "CUSTOM"
+                  },
+                  {
+                    "content": "LAST_SELECTED"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DefaultWarehouseOverride",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "type",
+            "description": "The type of override behavior.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverrideType",
+              "enum": [
+                {
+                  "content": "CUSTOM"
+                },
+                {
+                  "content": "LAST_SELECTED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "type",
+            "description": "The type of override behavior.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWarehouseOverrideType",
+              "enum": [
+                {
+                  "content": "CUSTOM"
+                },
+                {
+                  "content": "LAST_SELECTED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "If set to true, and the override is not found, a new override will be created.\nIn this situation, `update_mask` is ignored and all fields are applied.\nDefaults to false.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "default_warehouse_override",
+          "description": "Required. The default warehouse override to update.\nThe name field must be set in the format: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultWarehouseOverride",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "type",
+                "description": "The type of override behavior.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "DefaultWarehouseOverrideType",
+                  "enum": [
+                    {
+                      "content": "CUSTOM"
+                    },
+                    {
+                      "content": "LAST_SELECTED"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "type",
+                "description": "The type of override behavior.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "DefaultWarehouseOverrideType",
+                  "enum": [
+                    {
+                      "content": "CUSTOM"
+                    },
+                    {
+                      "content": "LAST_SELECTED"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the default warehouse override.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. Field mask specifying which fields to update.\nOnly the fields specified in the mask will be updated.\nUse \"*\" to update all fields.\nWhen allow_missing is true, this field is ignored and all fields are applied.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "default_warehouse_override_id",
+          "description": "The ID component of the resource name (user ID).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the default warehouse override.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "type",
+          "description": "The type of override behavior.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultWarehouseOverrideType",
+            "enum": [
+              {
+                "content": "CUSTOM"
+              },
+              {
+                "content": "LAST_SELECTED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The specific warehouse ID when type is CUSTOM.\nNot set for LAST_SELECTED type.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the default warehouse override.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. Field mask specifying which fields to update.\nOnly the fields specified in the mask will be updated.\nUse \"*\" to update all fields.\nWhen allow_missing is true, this field is ignored and all fields are applied.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "type",
+          "description": "The type of override behavior.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultWarehouseOverrideType",
+            "enum": [
+              {
+                "content": "CUSTOM"
+              },
+              {
+                "content": "LAST_SELECTED"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a SQL warehouse. SQL warehouses can inherit permissions from their root object.",
+      "summary": "Update SQL warehouse permissions.",
+      "path": "/api/2.0/permissions/warehouses/{warehouse_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "WarehousePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "warehouse_id",
+            "description": "The SQL warehouse for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WarehousePermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WarehouseAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "WarehouseAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "warehouse_id",
+          "description": "The SQL warehouse for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

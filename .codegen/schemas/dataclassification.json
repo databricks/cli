@@ -1,0 +1,92 @@
+{
+  "dataclassification.AutoTaggingConfig": {
+    "description": "Auto-tagging configuration for a classification tag.\nWhen enabled, detected columns are automatically tagged with Unity Catalog\ntags.",
+    "fields": {
+      "auto_tagging_mode": {
+        "description": "Whether auto-tagging is enabled or disabled for this classification tag.",
+        "ref": "dataclassification.AutoTaggingConfigAutoTaggingMode",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "classification_tag": {
+        "description": "The Classification Tag. For built-in classes this is a system tag (e.g., \"class.name\",\n\"class.location\"); for custom classes it is a user-defined governance tag key.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "dataclassification.AutoTaggingConfigAutoTaggingMode": {
+    "description": "Auto-tagging mode.",
+    "enum": [
+      "AUTO_TAGGING_DISABLED",
+      "AUTO_TAGGING_ENABLED"
+    ],
+    "enum_launch_stages": {
+      "AUTO_TAGGING_DISABLED": "PUBLIC_PREVIEW",
+      "AUTO_TAGGING_ENABLED": "PUBLIC_PREVIEW"
+    }
+  },
+  "dataclassification.CatalogConfig": {
+    "description": "Data Classification configuration for a Unity Catalog catalog. This message follows the \"At Most One Resource\" pattern: at most one CatalogConfig exists per catalog.\n- Full CRUD operations are supported: Create enables Data Classification, Delete disables it\n- It has no unique identifier of its own and uses its parent catalog's identifier (catalog_name)",
+    "fields": {
+      "auto_tag_configs": {
+        "description": "List of auto-tagging configurations for this catalog.\nEmpty list means no auto-tagging is enabled.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "excluded_schemas": {
+        "description": "Schemas to exclude from the scan, each named relative to the parent catalog.\nIf specified, all schemas except the specified ones will be scanned.\nMutually exclusive with `included_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+        "ref": "dataclassification.CatalogConfigSchemaNames",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "included_schemas": {
+        "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+        "ref": "dataclassification.CatalogConfigSchemaNames",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Resource name in the format: catalogs/{catalog_name}/config.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dataclassification.CatalogConfigSchemaNames": {
+    "description": "Wrapper message for a list of schema names.",
+    "fields": {
+      "names": {
+        "description": "Schema names, each relative to the parent catalog. Must not be empty.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dataclassification.CreateCatalogConfigRequest": {
+    "fields": {
+      "catalog_config": {
+        "description": "The configuration to create.",
+        "ref": "dataclassification.CatalogConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "dataclassification.DeleteCatalogConfigRequest": {},
+  "dataclassification.GetCatalogConfigRequest": {},
+  "dataclassification.UpdateCatalogConfigRequest": {
+    "fields": {
+      "catalog_config": {
+        "description": "The configuration to apply to the catalog.\nThe name field in catalog_config identifies which resource to update.",
+        "ref": "dataclassification.CatalogConfig",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "Field mask specifying which fields to update.",
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

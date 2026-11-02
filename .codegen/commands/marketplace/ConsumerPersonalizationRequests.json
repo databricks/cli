@@ -1,0 +1,284 @@
+{
+  "id": "marketplace.ConsumerPersonalizationRequests",
+  "name": "ConsumerPersonalizationRequests",
+  "description": "Personalization Requests allow customers to interact with the individualized Marketplace listing flow.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListAllPersonalizationRequestsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a personalization request for a listing.",
+      "summary": "Create a personalization request.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/personalization-requests",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreatePersonalizationRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "intended_use",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "accepted_consumer_terms",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ConsumerTerms",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "intended_use",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "accepted_consumer_terms",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ConsumerTerms",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreatePersonalizationRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "accepted_consumer_terms",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ConsumerTerms",
+            "is_object": true
+          }
+        },
+        {
+          "name": "comment",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "company",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "first_name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "intended_use",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "is_from_lighthouse",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "last_name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recipient_type",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DeltaSharingRecipientType",
+            "enum": [
+              {
+                "content": "DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS"
+              },
+              {
+                "content": "DELTA_SHARING_RECIPIENT_TYPE_OPEN"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get the personalization request for a listing. Each consumer can make at *most* one personalization request for a listing.",
+      "summary": "Get the personalization request for a listing.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/personalization-requests",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPersonalizationRequestRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetPersonalizationRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List personalization requests for a consumer across all listings.",
+      "summary": "List all personalization requests.",
+      "path": "/api/2.1/marketplace-consumer/personalization-requests",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAllPersonalizationRequestsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAllPersonalizationRequestsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

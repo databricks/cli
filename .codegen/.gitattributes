@@ -1,1 +1,5 @@
-cli.json linguist-generated=true
+# eol=lf: TestCommittedShardsAreCanonical compares the shards byte-for-byte
+# against freshly split output, which must hold on Windows checkouts too.
+index.json linguist-generated=true eol=lf
+schemas/*.json linguist-generated=true eol=lf
+commands/**/*.json linguist-generated=true eol=lf

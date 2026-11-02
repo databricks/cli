@@ -1,0 +1,462 @@
+{
+  "environments.BaseEnvironmentType": {
+    "description": "If changed, also update estore/namespaces/defaultbaseenvironments/latest.proto",
+    "enum": [
+      "CPU",
+      "GPU"
+    ],
+    "enum_launch_stages": {
+      "CPU": "GA",
+      "GPU": "GA"
+    }
+  },
+  "environments.CreateWorkspaceBaseEnvironmentRequest": {
+    "fields": {
+      "request_id": {
+        "description": "A unique identifier for this request. A random UUID is recommended.\nThis request is only idempotent if a request_id is provided.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "workspace_base_environment": {
+        "description": "Required. The workspace base environment to create.",
+        "ref": "environments.WorkspaceBaseEnvironment",
+        "launch_stage": "GA"
+      },
+      "workspace_base_environment_id": {
+        "description": "The ID to use for the workspace base environment, which will become the final component of\nthe resource name.\nThis value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "environments.DatabricksServiceExceptionWithDetailsProto": {
+    "description": "Databricks Error that is returned by all Databricks APIs.",
+    "fields": {
+      "details": {
+        "launch_stage": "GA"
+      },
+      "error_code": {
+        "ref": "environments.ErrorCode",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "launch_stage": "GA"
+      },
+      "stack_trace": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "environments.DefaultWorkspaceBaseEnvironment": {
+    "description": "A singleton resource representing the default workspace base environment configuration.\nThis resource contains the workspace base environments that are used as defaults\nfor serverless notebooks and jobs in the workspace, for both CPU and GPU compute types.",
+    "fields": {
+      "cpu_workspace_base_environment": {
+        "description": "The default workspace base environment for CPU compute.\nFormat: workspace-base-environments/{workspace_base_environment}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "gpu_workspace_base_environment": {
+        "description": "The default workspace base environment for GPU compute.\nFormat: workspace-base-environments/{workspace_base_environment}",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "The resource name of this singleton resource.\nFormat: default-workspace-base-environment",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "environments.DeleteWorkspaceBaseEnvironmentRequest": {},
+  "environments.EnvironmentSpec": {
+    "description": "Environment specification for a WorkspaceBaseEnvironment.\nContains the environment version and dependencies configuration.",
+    "fields": {
+      "dependencies": {
+        "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a valid pip requirements file line per https://pip.pypa.io/en/stable/reference/requirements-file-format/.\nAllowed dependencies include a requirement specifier, an archive URL, a local project path (such as WSFS or UC Volumes in Databricks), or a VCS project URL.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "environment_version": {
+        "description": "Environment version used by the environment.\nEach version comes with a specific Python version and a set of Python packages.\nThe version is a string, consisting of an integer.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "environments.ErrorCode": {
+    "description": "Error codes returned by Databricks APIs to indicate specific failure conditions.",
+    "enum": [
+      "UNKNOWN",
+      "INTERNAL_ERROR",
+      "TEMPORARILY_UNAVAILABLE",
+      "IO_ERROR",
+      "BAD_REQUEST",
+      "SERVICE_UNDER_MAINTENANCE",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE",
+      "DEADLINE_EXCEEDED",
+      "CANCELLED",
+      "RESOURCE_EXHAUSTED",
+      "ABORTED",
+      "NOT_FOUND",
+      "ALREADY_EXISTS",
+      "UNAUTHENTICATED",
+      "UNAVAILABLE",
+      "INVALID_PARAMETER_VALUE",
+      "ENDPOINT_NOT_FOUND",
+      "MALFORMED_REQUEST",
+      "INVALID_STATE",
+      "PERMISSION_DENIED",
+      "FEATURE_DISABLED",
+      "CUSTOMER_UNAUTHORIZED",
+      "REQUEST_LIMIT_EXCEEDED",
+      "RESOURCE_CONFLICT",
+      "UNPARSEABLE_HTTP_ERROR",
+      "NOT_IMPLEMENTED",
+      "DATA_LOSS",
+      "INVALID_STATE_TRANSITION",
+      "COULD_NOT_ACQUIRE_LOCK",
+      "RESOURCE_ALREADY_EXISTS",
+      "RESOURCE_DOES_NOT_EXIST",
+      "QUOTA_EXCEEDED",
+      "MAX_BLOCK_SIZE_EXCEEDED",
+      "MAX_READ_SIZE_EXCEEDED",
+      "PARTIAL_DELETE",
+      "MAX_LIST_SIZE_EXCEEDED",
+      "DRY_RUN_FAILED",
+      "RESOURCE_LIMIT_EXCEEDED",
+      "DIRECTORY_NOT_EMPTY",
+      "DIRECTORY_PROTECTED",
+      "MAX_NOTEBOOK_SIZE_EXCEEDED",
+      "MAX_CHILD_NODE_SIZE_EXCEEDED",
+      "SEARCH_QUERY_TOO_LONG",
+      "SEARCH_QUERY_TOO_SHORT",
+      "MANAGED_RESOURCE_GROUP_DOES_NOT_EXIST",
+      "PERMISSION_NOT_PROPAGATED",
+      "DEPLOYMENT_TIMEOUT",
+      "GIT_CONFLICT",
+      "GIT_UNKNOWN_REF",
+      "GIT_SENSITIVE_TOKEN_DETECTED",
+      "GIT_URL_NOT_ON_ALLOW_LIST",
+      "GIT_REMOTE_ERROR",
+      "PROJECTS_OPERATION_TIMEOUT",
+      "IPYNB_FILE_IN_REPO",
+      "INSECURE_PARTNER_RESPONSE",
+      "MALFORMED_PARTNER_RESPONSE",
+      "METASTORE_DOES_NOT_EXIST",
+      "DAC_DOES_NOT_EXIST",
+      "CATALOG_DOES_NOT_EXIST",
+      "SCHEMA_DOES_NOT_EXIST",
+      "TABLE_DOES_NOT_EXIST",
+      "SHARE_DOES_NOT_EXIST",
+      "RECIPIENT_DOES_NOT_EXIST",
+      "STORAGE_CREDENTIAL_DOES_NOT_EXIST",
+      "EXTERNAL_LOCATION_DOES_NOT_EXIST",
+      "PRINCIPAL_DOES_NOT_EXIST",
+      "PROVIDER_DOES_NOT_EXIST",
+      "METASTORE_ALREADY_EXISTS",
+      "DAC_ALREADY_EXISTS",
+      "CATALOG_ALREADY_EXISTS",
+      "SCHEMA_ALREADY_EXISTS",
+      "TABLE_ALREADY_EXISTS",
+      "SHARE_ALREADY_EXISTS",
+      "RECIPIENT_ALREADY_EXISTS",
+      "STORAGE_CREDENTIAL_ALREADY_EXISTS",
+      "EXTERNAL_LOCATION_ALREADY_EXISTS",
+      "PROVIDER_ALREADY_EXISTS",
+      "CATALOG_NOT_EMPTY",
+      "SCHEMA_NOT_EMPTY",
+      "METASTORE_NOT_EMPTY",
+      "PROVIDER_SHARE_NOT_ACCESSIBLE"
+    ],
+    "enum_launch_stages": {
+      "ABORTED": "GA",
+      "ALREADY_EXISTS": "GA",
+      "BAD_REQUEST": "GA",
+      "CANCELLED": "GA",
+      "CATALOG_ALREADY_EXISTS": "GA",
+      "CATALOG_DOES_NOT_EXIST": "GA",
+      "CATALOG_NOT_EMPTY": "GA",
+      "COULD_NOT_ACQUIRE_LOCK": "GA",
+      "CUSTOMER_UNAUTHORIZED": "GA",
+      "DAC_ALREADY_EXISTS": "GA",
+      "DAC_DOES_NOT_EXIST": "GA",
+      "DATA_LOSS": "GA",
+      "DEADLINE_EXCEEDED": "GA",
+      "DEPLOYMENT_TIMEOUT": "GA",
+      "DIRECTORY_NOT_EMPTY": "GA",
+      "DIRECTORY_PROTECTED": "GA",
+      "DRY_RUN_FAILED": "GA",
+      "ENDPOINT_NOT_FOUND": "GA",
+      "EXTERNAL_LOCATION_ALREADY_EXISTS": "GA",
+      "EXTERNAL_LOCATION_DOES_NOT_EXIST": "GA",
+      "FEATURE_DISABLED": "GA",
+      "GIT_CONFLICT": "GA",
+      "GIT_REMOTE_ERROR": "GA",
+      "GIT_SENSITIVE_TOKEN_DETECTED": "GA",
+      "GIT_UNKNOWN_REF": "GA",
+      "GIT_URL_NOT_ON_ALLOW_LIST": "GA",
+      "INSECURE_PARTNER_RESPONSE": "GA",
+      "INTERNAL_ERROR": "GA",
+      "INVALID_PARAMETER_VALUE": "GA",
+      "INVALID_STATE": "GA",
+      "INVALID_STATE_TRANSITION": "GA",
+      "IO_ERROR": "GA",
+      "IPYNB_FILE_IN_REPO": "GA",
+      "MALFORMED_PARTNER_RESPONSE": "GA",
+      "MALFORMED_REQUEST": "GA",
+      "MANAGED_RESOURCE_GROUP_DOES_NOT_EXIST": "GA",
+      "MAX_BLOCK_SIZE_EXCEEDED": "GA",
+      "MAX_CHILD_NODE_SIZE_EXCEEDED": "GA",
+      "MAX_LIST_SIZE_EXCEEDED": "GA",
+      "MAX_NOTEBOOK_SIZE_EXCEEDED": "GA",
+      "MAX_READ_SIZE_EXCEEDED": "GA",
+      "METASTORE_ALREADY_EXISTS": "GA",
+      "METASTORE_DOES_NOT_EXIST": "GA",
+      "METASTORE_NOT_EMPTY": "GA",
+      "NOT_FOUND": "GA",
+      "NOT_IMPLEMENTED": "GA",
+      "PARTIAL_DELETE": "GA",
+      "PERMISSION_DENIED": "GA",
+      "PERMISSION_NOT_PROPAGATED": "GA",
+      "PRINCIPAL_DOES_NOT_EXIST": "GA",
+      "PROJECTS_OPERATION_TIMEOUT": "GA",
+      "PROVIDER_ALREADY_EXISTS": "GA",
+      "PROVIDER_DOES_NOT_EXIST": "GA",
+      "PROVIDER_SHARE_NOT_ACCESSIBLE": "GA",
+      "QUOTA_EXCEEDED": "GA",
+      "RECIPIENT_ALREADY_EXISTS": "GA",
+      "RECIPIENT_DOES_NOT_EXIST": "GA",
+      "REQUEST_LIMIT_EXCEEDED": "GA",
+      "RESOURCE_ALREADY_EXISTS": "GA",
+      "RESOURCE_CONFLICT": "GA",
+      "RESOURCE_DOES_NOT_EXIST": "GA",
+      "RESOURCE_EXHAUSTED": "GA",
+      "RESOURCE_LIMIT_EXCEEDED": "GA",
+      "SCHEMA_ALREADY_EXISTS": "GA",
+      "SCHEMA_DOES_NOT_EXIST": "GA",
+      "SCHEMA_NOT_EMPTY": "GA",
+      "SEARCH_QUERY_TOO_LONG": "GA",
+      "SEARCH_QUERY_TOO_SHORT": "GA",
+      "SERVICE_UNDER_MAINTENANCE": "GA",
+      "SHARE_ALREADY_EXISTS": "GA",
+      "SHARE_DOES_NOT_EXIST": "GA",
+      "STORAGE_CREDENTIAL_ALREADY_EXISTS": "GA",
+      "STORAGE_CREDENTIAL_DOES_NOT_EXIST": "GA",
+      "TABLE_ALREADY_EXISTS": "GA",
+      "TABLE_DOES_NOT_EXIST": "GA",
+      "TEMPORARILY_UNAVAILABLE": "GA",
+      "UNAUTHENTICATED": "GA",
+      "UNAVAILABLE": "GA",
+      "UNKNOWN": "GA",
+      "UNPARSEABLE_HTTP_ERROR": "GA",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE": "GA"
+    }
+  },
+  "environments.GetDefaultWorkspaceBaseEnvironmentRequest": {},
+  "environments.GetOperationRequest": {},
+  "environments.GetWorkspaceBaseEnvironmentRequest": {},
+  "environments.ListWorkspaceBaseEnvironmentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of environments to return per page.\nDefault is 1000.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token for pagination. Received from a previous ListWorkspaceBaseEnvironments call.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "environments.ListWorkspaceBaseEnvironmentsResponse": {
+    "description": "Response message for ListWorkspaceBaseEnvironments.",
+    "fields": {
+      "next_page_token": {
+        "description": "Token to retrieve the next page of results.\nEmpty if there are no more results.",
+        "launch_stage": "GA"
+      },
+      "workspace_base_environments": {
+        "description": "The list of workspace base environments.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "environments.Operation": {
+    "description": "This resource represents a long-running operation that is the result of a\nnetwork API call.",
+    "fields": {
+      "done": {
+        "description": "If the value is `false`, it means the operation is still in progress.\nIf `true`, the operation is completed, and either `error` or `response` is\navailable.",
+        "launch_stage": "GA"
+      },
+      "error": {
+        "description": "The error result of the operation in case of failure or cancellation.",
+        "ref": "environments.DatabricksServiceExceptionWithDetailsProto",
+        "launch_stage": "GA"
+      },
+      "metadata": {
+        "description": "Service-specific metadata associated with the operation.  It typically\ncontains progress information and common metadata such as create time.\nSome services might not provide such metadata.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The server-assigned name, which is only unique within the same service that\noriginally returns it. If you use the default HTTP mapping, the\n`name` should be a resource name ending with `operations/{unique_id}`.",
+        "launch_stage": "GA"
+      },
+      "response": {
+        "description": "The normal, successful response of the operation.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "environments.RefreshWorkspaceBaseEnvironmentRequest": {
+    "description": "Request message for RefreshWorkspaceBaseEnvironments."
+  },
+  "environments.UpdateDefaultWorkspaceBaseEnvironmentRequest": {
+    "fields": {
+      "default_workspace_base_environment": {
+        "description": "Required. The default workspace base environment configuration to update.",
+        "ref": "environments.DefaultWorkspaceBaseEnvironment",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "Field mask specifying which fields to update. Use comma as the separator for multiple fields (no space).\nThe special value '*' indicates that all fields should be updated (full replacement).\nValid field paths: cpu_workspace_base_environment, gpu_workspace_base_environment\n\nTo unset one or both defaults, include the field path(s) in the mask and omit them from the request body.\nTo unset both, you must list both paths explicitly — the wildcard '*' cannot be used to unset fields.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "environments.UpdateWorkspaceBaseEnvironmentRequest": {
+    "fields": {
+      "workspace_base_environment": {
+        "description": "Required. The workspace base environment with updated fields.\nThe name field is used to identify the environment to update.",
+        "ref": "environments.WorkspaceBaseEnvironment",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "environments.WorkspaceBaseEnvironment": {
+    "description": "A WorkspaceBaseEnvironment defines a workspace-level environment configuration\nconsisting of an environment version and a list of dependencies.",
+    "fields": {
+      "base_environment_type": {
+        "description": "The type of base environment (CPU or GPU).",
+        "ref": "environments.BaseEnvironmentType",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "create_time": {
+        "description": "Timestamp when the environment was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator_user_id": {
+        "description": "User ID of the creator.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "Human-readable display name for the workspace base environment.",
+        "launch_stage": "GA"
+      },
+      "filepath": {
+        "description": "The WSFS or UC Volumes path to the environment YAML file.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "is_default": {
+        "description": "Whether this is the default environment for the workspace.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_updated_user_id": {
+        "description": "User ID of the last user who updated the environment.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message": {
+        "description": "Status message providing additional details about the environment status.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the workspace base environment.\nFormat: workspace-base-environments/{workspace-base-environment}",
+        "launch_stage": "GA"
+      },
+      "spec": {
+        "description": "The environment specification containing version and dependencies.",
+        "ref": "environments.EnvironmentSpec",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status": {
+        "description": "The status of the materialized workspace base environment.",
+        "ref": "environments.WorkspaceBaseEnvironmentCacheStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "Timestamp when the environment was last updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "environments.WorkspaceBaseEnvironmentCacheStatus": {
+    "description": "Status of the environment materialization.",
+    "enum": [
+      "PENDING",
+      "CREATED",
+      "FAILED",
+      "EXPIRED",
+      "INVALID",
+      "REFRESHING"
+    ],
+    "enum_launch_stages": {
+      "CREATED": "GA",
+      "EXPIRED": "GA",
+      "FAILED": "GA",
+      "INVALID": "GA",
+      "PENDING": "GA",
+      "REFRESHING": "GA"
+    }
+  },
+  "environments.WorkspaceBaseEnvironmentOperationMetadata": {
+    "description": "Metadata for the WorkspaceBaseEnvironment long-running operations.\nThis message tracks the progress of the workspace base environment long-running process."
+  }
+}

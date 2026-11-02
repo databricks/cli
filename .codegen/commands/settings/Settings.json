@@ -1,0 +1,30 @@
+{
+  "id": "settings.Settings",
+  "name": "Settings",
+  "description": "Workspace Settings API allows users to manage settings at the workspace level.",
+  "package": {
+    "name": "settings"
+  },
+  "has_subservices": true,
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "subservice_ids": [
+    "settings.AibiDashboardEmbeddingAccessPolicy",
+    "settings.AibiDashboardEmbeddingApprovedDomains",
+    "settings.AutomaticClusterUpdate",
+    "settings.ComplianceSecurityProfile",
+    "settings.DashboardEmailSubscriptions",
+    "settings.DefaultNamespace",
+    "settings.DefaultWarehouseId",
+    "settings.DisableLegacyAccess",
+    "settings.DisableLegacyDbfs",
+    "settings.EnableExportNotebook",
+    "settings.EnableNotebookTableClipboard",
+    "settings.EnableResultsDownloading",
+    "settings.EnhancedSecurityMonitoring",
+    "settings.LlmProxyPartnerPoweredWorkspace",
+    "settings.RestrictWorkspaceAdmins",
+    "settings.SqlResultsDownload"
+  ]
+}

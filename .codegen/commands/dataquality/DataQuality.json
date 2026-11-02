@@ -1,0 +1,2317 @@
+{
+  "id": "dataquality.DataQuality",
+  "name": "DataQuality",
+  "description": "Manage the data quality of Unity Catalog objects (currently support `schema` and `table`)",
+  "package": {
+    "name": "dataquality"
+  },
+  "docs_group": "dataquality",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListMonitorRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CancelRefresh",
+      "description": "Cancels a data quality monitor refresh. Currently only supported for the `table` `object_type`.\nThe call must be made in the same workspace as where the monitor was created.\n\nThe caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the table's parent catalog.\n2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and **USE_SCHEMA** on the table's parent schema.\n3. **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on the table.",
+      "summary": "Cancel a refresh.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}/refreshes/{refresh_id}/cancel",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CancelRefreshRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CancelRefreshResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateMonitor",
+      "description": "Create a data quality monitor on a Unity Catalog object. The caller must provide either `anomaly_detection_config` for a schema monitor or `data_profiling_config` for a table monitor.\n\nFor the `table` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on the table\n2. **USE_CATALOG** on the table's parent catalog, **MANAGE** and **USE_SCHEMA** on the table's parent schema, and **SELECT** on the table.\n3. **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** and **SELECT** on the table.\n\nWorkspace assets, such as the dashboard, will be created in the workspace where this call was made.\n\nFor the `schema` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the schema's parent catalog.\n2. **USE_CATALOG** on the schema's parent catalog, and **MANAGE** and **USE_SCHEMA** on the schema.",
+      "summary": "Create a monitor.",
+      "path": "/api/data-quality/v1/monitors",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateMonitorRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "monitor",
+            "description": "The monitor to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Monitor",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "monitor",
+            "description": "The monitor to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Monitor",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "monitor",
+        "description": "The monitor to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Monitor",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Monitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "monitor",
+          "description": "The monitor to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Monitor",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "anomaly_detection_config",
+          "description": "Anomaly Detection Configuration, applicable to `schema` object types.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AnomalyDetectionConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "data_profiling_config",
+          "description": "Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`\nmust be present.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DataProfilingConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateRefresh",
+      "description": "Creates a refresh. Currently only supported for the `table` `object_type`.\nThe call must be made in the same workspace as where the monitor was created.\n\nThe caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the table's parent catalog.\n2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and **USE_SCHEMA** on the table's parent schema.\n3. **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on the table.",
+      "summary": "Create a refresh.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}/refreshes",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateRefreshRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh",
+            "description": "The refresh to create",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Refresh",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "refresh",
+            "description": "The refresh to create",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Refresh",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "refresh",
+        "description": "The refresh to create",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Refresh",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Refresh",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh",
+          "description": "The refresh to create",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Refresh",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "end_time_ms",
+          "description": "Time when the refresh ended (milliseconds since 1/1/1970 UTC).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "message",
+          "description": "An optional message to give insight into the current state of the refresh (e.g. FAILURE messages).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "start_time_ms",
+          "description": "Time when the refresh started (milliseconds since 1/1/1970 UTC).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current state of the refresh.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RefreshState",
+            "enum": [
+              {
+                "content": "MONITOR_REFRESH_STATE_CANCELED"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_FAILED"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_PENDING"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_RUNNING"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_SUCCESS"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_UNKNOWN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "trigger",
+          "description": "What triggered the refresh.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RefreshTrigger",
+            "enum": [
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_DATA_CHANGE"
+              },
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_MANUAL"
+              },
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_SCHEDULE"
+              },
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_UNKNOWN"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteMonitor",
+      "description": "Delete a data quality monitor on Unity Catalog object.\n\nFor the `table` `object_type`, the caller must have either of the following sets of permissions:\n**MANAGE** and **USE_CATALOG** on the table's parent catalog.\n**USE_CATALOG** on the table's parent catalog, and **MANAGE** and **USE_SCHEMA** on the table's parent schema.\n**USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on the table.\n\nNote that the metric tables and dashboard will not be deleted as part of this call; those\nassets must be manually cleaned up (if desired).\n\nFor the `schema` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the schema's parent catalog.\n2. **USE_CATALOG** on the schema's parent catalog, and **MANAGE** and **USE_SCHEMA** on the schema.",
+      "summary": "Delete a monitor.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteMonitorRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteRefresh",
+      "description": "(Unimplemented) Delete a refresh",
+      "summary": "Delete a refresh.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}/refreshes/{refresh_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteRefreshRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMonitor",
+      "description": "Read a data quality monitor on a Unity Catalog object.\n\nFor the `table` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the table's parent catalog.\n2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and **USE_SCHEMA** on the table's parent schema.\n3. **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on the table.\n\nFor the `schema` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the schema's parent catalog.\n2. **USE_CATALOG** on the schema's parent catalog, and **USE_SCHEMA** on the schema.\n\nThe returned information includes configuration values on the entity and parent entity as well as information on\nassets created by the monitor. Some information (e.g. dashboard) may be filtered out\nif the caller is in a different workspace than where the monitor was created.",
+      "summary": "Read a monitor.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetMonitorRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Monitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetRefresh",
+      "description": "Get data quality monitor refresh. The call must be made in the same workspace as where the monitor was created.\n\nFor the `table` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the table's parent catalog.\n2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and **USE_SCHEMA** on the table's parent schema.\n3. **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on the table.\n\nFor the `schema` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the schema's parent catalog.\n2. **USE_CATALOG** on the schema's parent catalog, and **USE_SCHEMA** on the schema.",
+      "summary": "Get a refresh.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}/refreshes/{refresh_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetRefreshRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Refresh",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListMonitor",
+      "description": "(Unimplemented) List data quality monitors.",
+      "summary": "List monitors.",
+      "path": "/api/data-quality/v1/monitors",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListMonitorRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListMonitorResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListRefresh",
+      "description": "List data quality monitor refreshes. The call must be made in the same workspace as where the monitor was created.\n\nFor the `table` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the table's parent catalog.\n2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and **USE_SCHEMA** on the table's parent schema.\n3. **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on the table.\n\nFor the `schema` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the schema's parent catalog.\n2. **USE_CATALOG** on the schema's parent catalog, and **USE_SCHEMA** on the schema.",
+      "summary": "List refreshes.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}/refreshes",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListRefreshRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListRefreshResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateMonitor",
+      "description": "Update a data quality monitor on Unity Catalog object.\n\nFor the `table` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the table's parent catalog.\n2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and **USE_SCHEMA** on the table's parent schema.\n3. **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on the table.\n\nFor the `schema` `object_type`, the caller must have either of the following sets of permissions:\n1. **MANAGE** and **USE_CATALOG** on the schema's parent catalog.\n2. **USE_CATALOG** on the schema's parent catalog, and **MANAGE** and **USE_SCHEMA** on the schema.",
+      "summary": "Update a monitor.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateMonitorRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "monitor",
+            "description": "The monitor to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Monitor",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask to specify which fields to update as a comma-separated list.\nExample value: `data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask to specify which fields to update as a comma-separated list.\nExample value: `data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "monitor",
+            "description": "The monitor to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Monitor",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "monitor",
+        "description": "The monitor to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Monitor",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Monitor",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "monitor",
+          "description": "The monitor to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Monitor",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask to specify which fields to update as a comma-separated list.\nExample value: `data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "anomaly_detection_config",
+          "description": "Anomaly Detection Configuration, applicable to `schema` object types.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AnomalyDetectionConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "data_profiling_config",
+          "description": "Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`\nmust be present.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DataProfilingConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask to specify which fields to update as a comma-separated list.\nExample value: `data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateRefresh",
+      "description": "(Unimplemented) Update a refresh",
+      "summary": "Update a refresh.",
+      "path": "/api/data-quality/v1/monitors/{object_type}/{object_id}/refreshes/{refresh_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateRefreshRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "refresh",
+            "description": "The refresh to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Refresh",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask to specify which fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "refresh_id",
+            "description": "Unique id of the refresh operation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask to specify which fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "refresh",
+            "description": "The refresh to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Refresh",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "refresh",
+        "description": "The refresh to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Refresh",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "object_type",
+              "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "object_id",
+              "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Refresh",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "object_type",
+            "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "object_id",
+            "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh",
+          "description": "The refresh to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Refresh",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "object_type",
+                "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "object_id",
+                "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask to specify which fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "end_time_ms",
+          "description": "Time when the refresh ended (milliseconds since 1/1/1970 UTC).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "message",
+          "description": "An optional message to give insight into the current state of the refresh (e.g. FAILURE messages).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "start_time_ms",
+          "description": "Time when the refresh started (milliseconds since 1/1/1970 UTC).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current state of the refresh.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RefreshState",
+            "enum": [
+              {
+                "content": "MONITOR_REFRESH_STATE_CANCELED"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_FAILED"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_PENDING"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_RUNNING"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_SUCCESS"
+              },
+              {
+                "content": "MONITOR_REFRESH_STATE_UNKNOWN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "trigger",
+          "description": "What triggered the refresh.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RefreshTrigger",
+            "enum": [
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_DATA_CHANGE"
+              },
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_MANUAL"
+              },
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_SCHEDULE"
+              },
+              {
+                "content": "MONITOR_REFRESH_TRIGGER_UNKNOWN"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "refresh_id",
+          "description": "Unique id of the refresh operation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask to specify which fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_type",
+          "description": "The type of the monitored object. Can be one of the following: `schema` or `table`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "object_id",
+          "description": "The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

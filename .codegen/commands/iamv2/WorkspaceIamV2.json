@@ -1,0 +1,5496 @@
+{
+  "id": "iamv2.WorkspaceIamV2",
+  "name": "WorkspaceIamV2",
+  "description": "These APIs are used to manage identities and the workspace access of these identities in Databricks.",
+  "package": {
+    "name": "iamv2"
+  },
+  "docs_group": "iam",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CreateDirectGroupMemberProxy",
+      "description": "Creates a group membership (assigns a principal to a group).",
+      "summary": "Create a direct group membership.",
+      "path": "/api/2.0/identity/groups/{group_id}/direct-members",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateDirectGroupMemberProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "direct_group_member",
+            "description": "Required. The group membership to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DirectGroupMember",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "direct_group_member",
+            "description": "Required. The group membership to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DirectGroupMember",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "direct_group_member",
+        "description": "Required. The group membership to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DirectGroupMember",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "principal_id",
+              "description": "Internal ID of the principal in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "principal_id",
+              "description": "Internal ID of the principal in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "DirectGroupMember",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Internal ID of the principal in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "Internal ID of the principal in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "direct_group_member",
+          "description": "Required. The group membership to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DirectGroupMember",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "principal_id",
+                "description": "Internal ID of the principal in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "principal_id",
+                "description": "Internal ID of the principal in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Display name of the principal.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "external_id",
+          "description": "The external ID of the principal in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "group_id",
+          "description": "The internal ID of the group this member belongs to.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "membership_source",
+          "description": "The source of group membership (internal or from identity provider).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "GroupMembershipSource",
+            "enum": [
+              {
+                "content": "IDENTITY_PROVIDER"
+              },
+              {
+                "content": "INTERNAL"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "Internal ID of the principal in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_type",
+          "description": "The type of the principal (user/service principal/group).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrincipalType",
+            "enum": [
+              {
+                "content": "GROUP"
+              },
+              {
+                "content": "SERVICE_PRINCIPAL"
+              },
+              {
+                "content": "USER"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "Internal ID of the principal in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateGroupProxy",
+      "description": "Creates a local group in the Databricks account that parents the calling workspace and returns\nthe created group. A local group is one that is not synced from the customer's identity\nprovider, and can be created whether or not Account Identity Management (AIM) is enabled.\n\nWhen AIM is enabled, supplying an external ID returns an error. To provision the identity from\nyour identity provider, resolve it by its external ID with ResolveGroup; to read an existing\nexternal identity, use the ExternalGroup resource.",
+      "summary": "Create a group in the account.",
+      "path": "/api/2.0/identity/groups",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateGroupProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "group",
+            "description": "Required. Group to be created in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Group",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "group",
+            "description": "Required. Group to be created in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Group",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "group",
+        "description": "Required. Group to be created in Databricks",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Group",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Group",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "group",
+          "description": "Required. Group to be created in Databricks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Group",
+            "is_object": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The parent account ID for group in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "external_id",
+          "description": "ExternalId of the group in the customer's IdP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "group_id",
+          "description": "Internal group ID of the group in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "group_name",
+          "description": "Display name of the group.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateServicePrincipalProxy",
+      "description": "Creates a local service principal in the Databricks account that parents the calling workspace\nand returns the created service principal. A local service principal is one that is not synced\nfrom the customer's identity provider, and can be created whether or not Account Identity\nManagement (AIM) is enabled.\n\nWhen AIM is enabled, supplying an external ID returns an error. To provision the identity from\nyour identity provider, resolve it by its external ID with ResolveServicePrincipal; to read an\nexisting external identity, use the ExternalServicePrincipal resource.",
+      "summary": "Create a service principal in the account.",
+      "path": "/api/2.0/identity/service-principals",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateServicePrincipalProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "service_principal",
+            "description": "Required. Service principal to be created in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ServicePrincipal",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "service_principal",
+            "description": "Required. Service principal to be created in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ServicePrincipal",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "service_principal",
+        "description": "Required. Service principal to be created in Databricks",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ServicePrincipal",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "Display name of the service principal.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "account_sp_status",
+              "description": "The activity status of a service principal in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "Display name of the service principal.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "account_sp_status",
+              "description": "The activity status of a service principal in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ServicePrincipal",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "Display name of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "account_sp_status",
+            "description": "The activity status of a service principal in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "Display name of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "account_sp_status",
+            "description": "The activity status of a service principal in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "service_principal",
+          "description": "Required. Service principal to be created in Databricks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ServicePrincipal",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "Display name of the service principal.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "account_sp_status",
+                "description": "The activity status of a service principal in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "Display name of the service principal.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "account_sp_status",
+                "description": "The activity status of a service principal in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The parent account ID for the service principal in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_sp_status",
+          "description": "The activity status of a service principal in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "application_id",
+          "description": "Application ID of the service principal. Set at creation time and cannot be changed\nafterwards; when omitted, the server generates one.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Display name of the service principal.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "external_id",
+          "description": "ExternalId of the service principal in the customer's IdP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "Internal service principal ID of the service principal in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "display_name",
+          "description": "Display name of the service principal.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_sp_status",
+          "description": "The activity status of a service principal in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateUserProxy",
+      "description": "Creates a local user in the Databricks account that parents the calling workspace and returns\nthe created user. A local user is one that is not synced from the customer's identity provider,\nand can be created whether or not Account Identity Management (AIM) is enabled.\n\nWhen AIM is enabled, supplying an external ID returns an error. To provision the identity from\nyour identity provider, resolve it by its external ID with ResolveUser; to read an existing\nexternal identity, use the ExternalUser resource.",
+      "summary": "Create a user in the account.",
+      "path": "/api/2.0/identity/users",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateUserProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "user",
+            "description": "Required. User to be created in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "User",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "user",
+            "description": "Required. User to be created in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "User",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "user",
+        "description": "Required. User to be created in Databricks",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "User",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "username",
+              "description": "Username/email of the user.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "full_name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "UserFullName",
+                "is_object": true
+              }
+            },
+            {
+              "name": "account_user_status",
+              "description": "The activity status of a user in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "username",
+              "description": "Username/email of the user.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "full_name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "UserFullName",
+                "is_object": true
+              }
+            },
+            {
+              "name": "account_user_status",
+              "description": "The activity status of a user in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "User",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "username",
+            "description": "Username/email of the user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserFullName",
+              "is_object": true
+            }
+          },
+          {
+            "name": "account_user_status",
+            "description": "The activity status of a user in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "username",
+            "description": "Username/email of the user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserFullName",
+              "is_object": true
+            }
+          },
+          {
+            "name": "account_user_status",
+            "description": "The activity status of a user in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "user",
+          "description": "Required. User to be created in Databricks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "User",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "username",
+                "description": "Username/email of the user.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "full_name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "UserFullName",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "account_user_status",
+                "description": "The activity status of a user in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "username",
+                "description": "Username/email of the user.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "full_name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "UserFullName",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "account_user_status",
+                "description": "The activity status of a user in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The accountId parent of the user in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_user_status",
+          "description": "The activity status of a user in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "external_id",
+          "description": "ExternalId of the user in the customer's IdP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UserFullName",
+            "is_object": true
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "Internal userId of the user in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "username",
+          "description": "Username/email of the user.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "username",
+          "description": "Username/email of the user.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UserFullName",
+            "is_object": true
+          }
+        },
+        {
+          "name": "account_user_status",
+          "description": "The activity status of a user in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateWorkspaceAssignmentDetailProxy",
+      "description": "Creates a workspace assignment detail for a principal in the calling workspace.",
+      "summary": "Create a workspace assignment detail for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignment-details",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateWorkspaceAssignmentDetailProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_assignment_detail",
+            "description": "Required. Workspace assignment detail to be created in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignmentDetail",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_assignment_detail",
+            "description": "Required. Workspace assignment detail to be created in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignmentDetail",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_assignment_detail",
+        "description": "Required. Workspace assignment detail to be created in Databricks.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceAssignmentDetail",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "WorkspaceAssignmentDetail",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "workspace_assignment_detail",
+          "description": "Required. Workspace assignment detail to be created in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceAssignmentDetail",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The account ID parent of the workspace where the principal is assigned",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_entitlements",
+          "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "entitlements",
+          "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_type",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrincipalType",
+            "enum": [
+              {
+                "content": "GROUP"
+              },
+              {
+                "content": "SERVICE_PRINCIPAL"
+              },
+              {
+                "content": "USER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID where the principal is assigned.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateWorkspaceAssignmentProxy",
+      "description": "Creates a workspace assignment for a principal in the calling workspace. Entitlements\nare granted one at a time rather than atomically. If the request fails partway through, the\nprincipal stays assigned to the workspace with only some of the requested entitlements. Get the\nassignment afterwards to confirm which entitlements were granted.",
+      "summary": "Create a workspace assignment for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignments",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateWorkspaceAssignmentProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_assignment",
+            "description": "Required. Workspace assignment to be created in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignment",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_assignment",
+            "description": "Required. Workspace assignment to be created in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_assignment",
+        "description": "Required. Workspace assignment to be created in Databricks.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceAssignment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "WorkspaceAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "workspace_assignment",
+          "description": "Required. Workspace assignment to be created in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceAssignment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The account ID parent of the workspace where the principal is assigned",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_entitlements",
+          "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "entitlements",
+          "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_type",
+          "description": "The type of the principal (user/service principal/group) that is assigned.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrincipalType",
+            "enum": [
+              {
+                "content": "GROUP"
+              },
+              {
+                "content": "SERVICE_PRINCIPAL"
+              },
+              {
+                "content": "USER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID where the principal is assigned.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteDirectGroupMemberProxy",
+      "description": "Deletes a group membership (unassigns a principal from a group).",
+      "summary": "Delete a direct group membership.",
+      "path": "/api/2.0/identity/groups/{group_id}/direct-members/{principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteDirectGroupMemberProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "Required. Internal ID of the principal to be unassigned from the group.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "Required. Internal ID of the principal to be unassigned from the group.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "Required. Internal ID of the principal to be unassigned from the group.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "Required. Internal ID of the principal to be unassigned from the group.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteGroupProxy",
+      "description": "Deletes a group by its internal ID from the Databricks\naccount that parents the calling workspace.",
+      "summary": "Delete a group in the account.",
+      "path": "/api/2.0/identity/groups/{group_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteGroupProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteServicePrincipalProxy",
+      "description": "Deletes a service principal by its internal ID\nfrom the Databricks account that parents the calling workspace.",
+      "summary": "Delete a service principal in the account.",
+      "path": "/api/2.0/identity/service-principals/{service_principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteServicePrincipalProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "Required. Internal ID of the service principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "Required. Internal ID of the service principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "service_principal_id",
+          "description": "Required. Internal ID of the service principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "Required. Internal ID of the service principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteUserProxy",
+      "description": "Deletes a user by its internal ID from the Databricks\naccount that parents the calling workspace.",
+      "summary": "Delete a user in the account.",
+      "path": "/api/2.0/identity/users/{user_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteUserProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "user_id",
+            "description": "Required. Internal ID of the user in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "user_id",
+            "description": "Required. Internal ID of the user in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "user_id",
+          "description": "Required. Internal ID of the user in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "user_id",
+          "description": "Required. Internal ID of the user in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteWorkspaceAssignmentDetailProxy",
+      "description": "Deletes a workspace assignment detail for a principal in the calling workspace, revoking all of\nits entitlements. Entitlements are revoked one at a time rather than atomically. If the request\nfails partway through, the principal stays assigned with some of its original entitlements.\nRetrying is safe.",
+      "summary": "Delete a workspace assignment detail for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteWorkspaceAssignmentDetailProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteWorkspaceAssignmentProxy",
+      "description": "Deletes a workspace assignment for a principal in the calling workspace, revoking all of\nits entitlements. Entitlements are revoked one at a time rather than atomically. If the request\nfails partway through, the principal stays assigned with some of its original entitlements.\nRetrying is safe.",
+      "summary": "Delete a workspace assignment for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignments/{principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteWorkspaceAssignmentProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks to delete workspace assignment for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDirectGroupMemberProxy",
+      "description": "Gets a provisioned direct member of a group.",
+      "summary": "Get a direct group member.",
+      "path": "/api/2.0/identity/groups/{group_id}/direct-members/{principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetDirectGroupMemberProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "Required. Internal ID of the principal belonging to the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "Required. Internal ID of the principal belonging to the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DirectGroupMember",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Internal ID of the principal in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "Internal ID of the principal in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "Required. Internal ID of the principal belonging to the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "Required. Internal ID of the principal belonging to the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetExternalGroupProxy",
+      "description": "Retrieves an external group with the given external ID from the customer's\nIdP. If the group does not exist, it will be created in the account. If the\ncustomer is not onboarded onto Automatic Identity Management (AIM), this will\nreturn an error. Workspace-scoped variant for workspace-authenticated callers.",
+      "summary": "Get an external group in the account.",
+      "path": "/api/2.0/identity/{name=external-groups/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetExternalGroupProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the external group.\nFormat: external-groups/{external_group_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the external group.\nFormat: external-groups/{external_group_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExternalGroup",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the external group.\nFormat: external-groups/{external_group_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the external group.\nFormat: external-groups/{external_group_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetExternalServicePrincipalProxy",
+      "description": "Retrieves an external service principal with the given external ID from the\ncustomer's IdP. If the service principal does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM),\nthis will return an error. Workspace-scoped variant for workspace-authenticated\ncallers.",
+      "summary": "Get an external service principal in the account.",
+      "path": "/api/2.0/identity/{name=external-service-principals/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetExternalServicePrincipalProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the external service principal.\nFormat: external-service-principals/{external_service_principal_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the external service principal.\nFormat: external-service-principals/{external_service_principal_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExternalServicePrincipal",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the external service principal.\nFormat: external-service-principals/{external_service_principal_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the external service principal.\nFormat: external-service-principals/{external_service_principal_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetExternalUserProxy",
+      "description": "Retrieves an external user with the given external ID from the customer's\nIdP. If the user does not exist, it will be created. If the customer is not\nonboarded onto Automatic Identity Management (AIM), this will return an error.\nWorkspace-scoped variant for workspace-authenticated callers.",
+      "summary": "Get an external user in the account.",
+      "path": "/api/2.0/identity/{name=external-users/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetExternalUserProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the external user.\nFormat: external-users/{external_user_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the external user.\nFormat: external-users/{external_user_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExternalUser",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the external user.\nFormat: external-users/{external_user_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the external user.\nFormat: external-users/{external_user_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetGroupProxy",
+      "description": "Fetches a group by its internal ID from the Databricks\naccount that parents the calling workspace.",
+      "summary": "Get a group in the account.",
+      "path": "/api/2.0/identity/groups/{group_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetGroupProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Group",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetServicePrincipalProxy",
+      "description": "Fetches a service principal by its internal ID\nfrom the Databricks account that parents the calling workspace.",
+      "summary": "Get a service principal in the account.",
+      "path": "/api/2.0/identity/service-principals/{service_principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetServicePrincipalProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "Required. Internal ID of the service principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "Required. Internal ID of the service principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ServicePrincipal",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "Display name of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "account_sp_status",
+            "description": "The activity status of a service principal in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "Display name of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "account_sp_status",
+            "description": "The activity status of a service principal in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "service_principal_id",
+          "description": "Required. Internal ID of the service principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "Required. Internal ID of the service principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetUserProxy",
+      "description": "Fetches a user by its internal ID from the Databricks account\nthat parents the calling workspace.",
+      "summary": "Get a user in the account.",
+      "path": "/api/2.0/identity/users/{user_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetUserProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "user_id",
+            "description": "Required. Internal ID of the user in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "user_id",
+            "description": "Required. Internal ID of the user in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "User",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "username",
+            "description": "Username/email of the user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserFullName",
+              "is_object": true
+            }
+          },
+          {
+            "name": "account_user_status",
+            "description": "The activity status of a user in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "username",
+            "description": "Username/email of the user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserFullName",
+              "is_object": true
+            }
+          },
+          {
+            "name": "account_user_status",
+            "description": "The activity status of a user in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "user_id",
+          "description": "Required. Internal ID of the user in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "user_id",
+          "description": "Required. Internal ID of the user in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetWorkspaceAccessDetailLocal",
+      "description": "Returns the access details for a principal in the current workspace. Allows for checking access details for any\nprovisioned principal (user, service principal, or group) in the current workspace.\n* Provisioned principal here refers to one that has been synced into Databricks from the customer's IdP or\nadded explicitly to Databricks via SCIM/UI.\nAllows for passing in a \"view\" parameter to control what fields are returned (BASIC by default or FULL).",
+      "summary": "Get workspace access details for a principal.",
+      "path": "/api/2.0/identity/workspace-access-details/{principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetWorkspaceAccessDetailLocalRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the access details are being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the access details are being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceAccessDetail",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the access details are being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "Controls what fields are returned.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "WorkspaceAccessDetailView",
+            "enum": [
+              {
+                "content": "BASIC"
+              },
+              {
+                "content": "FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the access details are being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetWorkspaceAssignmentDetailProxy",
+      "description": "Returns the assignment details for a principal in the calling workspace.",
+      "summary": "Get workspace assignment details for a principal.",
+      "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetWorkspaceAssignmentDetailProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment details are being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment details are being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceAssignmentDetail",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment details are being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment details are being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetWorkspaceAssignmentProxy",
+      "description": "Returns the assignment for a principal in the calling workspace.",
+      "summary": "Get a workspace assignment for a principal.",
+      "path": "/api/2.0/identity/workspace-assignments/{principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetWorkspaceAssignmentProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment is being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment is being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment is being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the assignment is being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetWorkspaceIdentityDetail",
+      "description": "Returns the identity details for a principal in a workspace.",
+      "summary": "Get workspace identity details for a principal.",
+      "path": "/api/2.0/identity/workspace-identity-details/{principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetWorkspaceIdentityDetailRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the identity details are being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. The internal ID of the principal (user/sp/group) for which the identity details are being requested.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceIdentityDetail",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the identity details are being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. The internal ID of the principal (user/sp/group) for which the identity details are being requested.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListDirectGroupMembersProxy",
+      "description": "Lists provisioned direct members of a group with their membership source (internal or from identity provider).",
+      "summary": "List direct group members.",
+      "path": "/api/2.0/identity/groups/{group_id}/direct-members",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListDirectGroupMembersProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks whose direct members are being listed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks whose direct members are being listed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListDirectGroupMembersResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks whose direct members are being listed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of members to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks whose direct members are being listed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListGroupsProxy",
+      "description": "Lists the groups in the Databricks account that parents\nthe calling workspace, returning one page per call. Supports filtering by group name or external ID.",
+      "summary": "List groups in the account.",
+      "path": "/api/2.0/identity/groups",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListGroupsProxyRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListGroupsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "Optional. Allows filtering groups by group name or external id.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous ListGroups call. Provide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous ListGroups call. Provide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListServicePrincipalsProxy",
+      "description": "Lists the service principals in the Databricks\naccount that parents the calling workspace, returning one page per call. Supports filtering by\napplication ID or external ID.",
+      "summary": "List service principals in the account.",
+      "path": "/api/2.0/identity/service-principals",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListServicePrincipalsProxyRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListServicePrincipalsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "Optional. Allows filtering service principals by application id or external id.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of SPs to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous ListServicePrincipals call. Provide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous ListServicePrincipals call. Provide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListTransitiveParentGroupsProxy",
+      "description": "Lists all transitive parent groups of a principal.",
+      "summary": "List all transitive parent groups of a principal.",
+      "path": "/api/2.0/identity/principals/{principal_id}/transitive-parent-groups",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListTransitiveParentGroupsProxyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. Internal ID of the principal in Databricks whose transitive parent groups are being listed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. Internal ID of the principal in Databricks whose transitive parent groups are being listed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListTransitiveParentGroupsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of parent groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous ListTransitiveParentGroups call. Provide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "Required. Internal ID of the principal in Databricks whose transitive parent groups are being listed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. Internal ID of the principal in Databricks whose transitive parent groups are being listed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListUsersProxy",
+      "description": "Lists the users in the Databricks account that parents the\ncalling workspace, returning one page per call. Supports filtering by username or external ID.",
+      "summary": "List users in the account.",
+      "path": "/api/2.0/identity/users",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListUsersProxyRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListUsersResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "Optional. Allows filtering users by username or external id.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The maximum number of users to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous ListUsers call. Provide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous ListUsers call. Provide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListWorkspaceAssignmentDetailsProxy",
+      "description": "Lists workspace assignment details for the calling workspace. The response omits the\nper-principal entitlement fields (`entitlements` and `effective_entitlements`). To read the\nentitlements for a single principal, get that principal's assignment detail.",
+      "summary": "List workspace assignment details for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignment-details",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListWorkspaceAssignmentDetailsProxyRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListWorkspaceAssignmentDetailsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of workspace assignment details to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListWorkspaceAssignmentsProxy",
+      "description": "Lists workspace assignments for the calling workspace. The response omits the\nper-principal entitlement fields (`entitlements` and `effective_entitlements`). To read the\nentitlements for a single principal, get that principal's assignment.",
+      "summary": "List workspace assignments for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignments",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListWorkspaceAssignmentsProxyRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListWorkspaceAssignmentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of workspace assignments to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ResolveGroupProxy",
+      "description": "Resolves a group with the given external ID from the customer's IdP. If the group does not exist, it will be created in the account.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
+      "summary": "Resolve an external group in the Databricks account.",
+      "path": "/api/2.0/identity/groups/resolve-by-external-id",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ResolveGroupProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "external_id",
+            "description": "Required. The external ID of the group in the customer's IdP.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "external_id",
+            "description": "Required. The external ID of the group in the customer's IdP.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ResolveGroupResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "external_id",
+          "description": "Required. The external ID of the group in the customer's IdP.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "external_id",
+          "description": "Required. The external ID of the group in the customer's IdP.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ResolveServicePrincipalProxy",
+      "description": "Resolves a service principal with the given external ID from the customer's IdP. If the service\nprincipal does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
+      "summary": "Resolve an external service principal in the Databricks account.",
+      "path": "/api/2.0/identity/service-principals/resolve-by-external-id",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ResolveServicePrincipalProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "external_id",
+            "description": "Required. The external ID of the service principal in the customer's IdP.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "external_id",
+            "description": "Required. The external ID of the service principal in the customer's IdP.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ResolveServicePrincipalResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "external_id",
+          "description": "Required. The external ID of the service principal in the customer's IdP.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "external_id",
+          "description": "Required. The external ID of the service principal in the customer's IdP.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ResolveUserProxy",
+      "description": "Resolves a user with the given external ID from the customer's IdP. If the user does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
+      "summary": "Resolve an external user in the Databricks account.",
+      "path": "/api/2.0/identity/users/resolve-by-external-id",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ResolveUserProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "external_id",
+            "description": "Required. The external ID of the user in the customer's IdP.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "external_id",
+            "description": "Required. The external ID of the user in the customer's IdP.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ResolveUserResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "external_id",
+          "description": "Required. The external ID of the user in the customer's IdP.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "external_id",
+          "description": "Required. The external ID of the user in the customer's IdP.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateGroupProxy",
+      "description": "Updates an existing group in the Databricks account that\nparents the calling workspace. Only the fields named in the update mask are modified. Returns\nthe updated Group resource.\n\nWhen AIM is enabled and the group is an external identity (its external_id is set), only\nexternal_id can be updated; its other fields are sourced from your identity provider.\nWith AIM and group visibility filters, a new nonempty external_id must identify a visible group.\nClearing external_id is allowed.",
+      "summary": "Update a group in the account.",
+      "path": "/api/2.0/identity/groups/{group_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateGroupProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "group",
+            "description": "Required. Group to be updated in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Group",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Optional. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "group_id",
+            "description": "Required. Internal ID of the group in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Optional. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "group",
+            "description": "Required. Group to be updated in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Group",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "group",
+        "description": "Required. Group to be updated in Databricks",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Group",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Group",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "group",
+          "description": "Required. Group to be updated in Databricks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Group",
+            "is_object": true
+          }
+        },
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Optional. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The parent account ID for group in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "external_id",
+          "description": "ExternalId of the group in the customer's IdP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "group_id",
+          "description": "Internal group ID of the group in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "group_name",
+          "description": "Display name of the group.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "group_id",
+          "description": "Required. Internal ID of the group in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Optional. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateServicePrincipalProxy",
+      "description": "Updates an existing service principal in the\nDatabricks account that parents the calling workspace. Only the fields named in the update mask\nare modified. Returns the updated ServicePrincipal resource.\n\nFor locally managed service principals, is_agent must be set to true or false when updated.\n\nWhen AIM is enabled and the service principal is an external identity (its external_id is set),\nonly external_id can be updated; its other fields are sourced from your identity provider.",
+      "summary": "Update a service principal in the account.",
+      "path": "/api/2.0/identity/service-principals/{service_principal_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateServicePrincipalProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "Required. Internal ID of the service principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "service_principal",
+            "description": "Required. Service principal to be updated in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ServicePrincipal",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Optional. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "Required. Internal ID of the service principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Optional. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "service_principal",
+            "description": "Required. Service principal to be updated in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ServicePrincipal",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "service_principal",
+        "description": "Required. Service principal to be updated in Databricks",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ServicePrincipal",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "Display name of the service principal.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "account_sp_status",
+              "description": "The activity status of a service principal in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "Display name of the service principal.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "account_sp_status",
+              "description": "The activity status of a service principal in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ServicePrincipal",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "Display name of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "account_sp_status",
+            "description": "The activity status of a service principal in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "Display name of the service principal.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "account_sp_status",
+            "description": "The activity status of a service principal in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "service_principal",
+          "description": "Required. Service principal to be updated in Databricks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ServicePrincipal",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "Display name of the service principal.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "account_sp_status",
+                "description": "The activity status of a service principal in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "Display name of the service principal.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "account_sp_status",
+                "description": "The activity status of a service principal in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "Required. Internal ID of the service principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Optional. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The parent account ID for the service principal in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_sp_status",
+          "description": "The activity status of a service principal in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "application_id",
+          "description": "Application ID of the service principal. Set at creation time and cannot be changed\nafterwards; when omitted, the server generates one.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Display name of the service principal.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "external_id",
+          "description": "ExternalId of the service principal in the customer's IdP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "Internal service principal ID of the service principal in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "Required. Internal ID of the service principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Optional. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Display name of the service principal.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_sp_status",
+          "description": "The activity status of a service principal in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateUserProxy",
+      "description": "Updates an existing user in the Databricks account that parents the calling workspace and\nreturns the updated user. Only the fields named in the update mask are modified. The updatable\nfields are fullName.givenName, fullName.familyName, status, and externalId.\n\nWhen AIM is enabled and the user is an external identity (its external_id is set), only\nexternal_id can be updated; its other fields are sourced from your identity provider.",
+      "summary": "Update a user in the account.",
+      "path": "/api/2.0/identity/users/{user_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateUserProxyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "user_id",
+            "description": "Required. Internal ID of the user in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "user",
+            "description": "Required. User to be updated in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "User",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Optional. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "user_id",
+            "description": "Required. Internal ID of the user in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Optional. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "user",
+            "description": "Required. User to be updated in Databricks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "User",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "user",
+        "description": "Required. User to be updated in Databricks",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "User",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "username",
+              "description": "Username/email of the user.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "full_name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "UserFullName",
+                "is_object": true
+              }
+            },
+            {
+              "name": "account_user_status",
+              "description": "The activity status of a user in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "username",
+              "description": "Username/email of the user.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "full_name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "UserFullName",
+                "is_object": true
+              }
+            },
+            {
+              "name": "account_user_status",
+              "description": "The activity status of a user in a Databricks account.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "State",
+                "enum": [
+                  {
+                    "content": "ACTIVE"
+                  },
+                  {
+                    "content": "INACTIVE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "User",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "username",
+            "description": "Username/email of the user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserFullName",
+              "is_object": true
+            }
+          },
+          {
+            "name": "account_user_status",
+            "description": "The activity status of a user in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "username",
+            "description": "Username/email of the user.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserFullName",
+              "is_object": true
+            }
+          },
+          {
+            "name": "account_user_status",
+            "description": "The activity status of a user in a Databricks account.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "State",
+              "enum": [
+                {
+                  "content": "ACTIVE"
+                },
+                {
+                  "content": "INACTIVE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "update_mask",
+          "description": "Optional. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "user",
+          "description": "Required. User to be updated in Databricks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "User",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "username",
+                "description": "Username/email of the user.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "full_name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "UserFullName",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "account_user_status",
+                "description": "The activity status of a user in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "username",
+                "description": "Username/email of the user.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "full_name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "UserFullName",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "account_user_status",
+                "description": "The activity status of a user in a Databricks account.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "State",
+                  "enum": [
+                    {
+                      "content": "ACTIVE"
+                    },
+                    {
+                      "content": "INACTIVE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "Required. Internal ID of the user in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The accountId parent of the user in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_user_status",
+          "description": "The activity status of a user in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "external_id",
+          "description": "ExternalId of the user in the customer's IdP.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UserFullName",
+            "is_object": true
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "Internal userId of the user in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "username",
+          "description": "Username/email of the user.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "user_id",
+          "description": "Required. Internal ID of the user in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Optional. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "username",
+          "description": "Username/email of the user.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UserFullName",
+            "is_object": true
+          }
+        },
+        {
+          "name": "account_user_status",
+          "description": "The activity status of a user in a Databricks account.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateWorkspaceAssignmentDetailProxy",
+      "description": "Updates the entitlements of a directly assigned principal in the calling workspace. Changes are\napplied one at a time rather than atomically. If the request fails partway through, only some of\nthe requested changes take effect. Get the assignment detail afterwards to confirm the final\nstate.",
+      "summary": "Update a workspace assignment detail for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateWorkspaceAssignmentDetailProxyRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "workspace_assignment_detail",
+            "description": "Required. Workspace assignment detail to be updated in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignmentDetail",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_assignment_detail",
+            "description": "Required. Workspace assignment detail to be updated in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignmentDetail",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_assignment_detail",
+        "description": "Required. Workspace assignment detail to be updated in Databricks.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceAssignmentDetail",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "WorkspaceAssignmentDetail",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "workspace_assignment_detail",
+          "description": "Required. Workspace assignment detail to be updated in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceAssignmentDetail",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The account ID parent of the workspace where the principal is assigned",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_entitlements",
+          "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "entitlements",
+          "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_type",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrincipalType",
+            "enum": [
+              {
+                "content": "GROUP"
+              },
+              {
+                "content": "SERVICE_PRINCIPAL"
+              },
+              {
+                "content": "USER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID where the principal is assigned.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateWorkspaceAssignmentProxy",
+      "description": "Updates the entitlements of a directly assigned principal in the calling workspace. Changes are\napplied one at a time rather than atomically. If the request fails partway through, only some of\nthe requested changes take effect. Get the assignment afterwards to confirm the final\nstate.",
+      "summary": "Update a workspace assignment for a workspace.",
+      "path": "/api/2.0/identity/workspace-assignments/{principal_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateWorkspaceAssignmentProxyRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "workspace_assignment",
+            "description": "Required. Workspace assignment to be updated in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignment",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_assignment",
+            "description": "Required. Workspace assignment to be updated in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceAssignment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_assignment",
+        "description": "Required. Workspace assignment to be updated in Databricks.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceAssignment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "principal_id",
+              "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_int64": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "WorkspaceAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal_id",
+            "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "workspace_assignment",
+          "description": "Required. Workspace assignment to be updated in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceAssignment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "principal_id",
+                "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int64": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The account ID parent of the workspace where the principal is assigned",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "effective_entitlements",
+          "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "entitlements",
+          "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntitlementList",
+            "array_value": {
+              "pascal_name": "Entitlement",
+              "enum": [
+                {
+                  "content": "ALLOW_CLUSTER_CREATE"
+                },
+                {
+                  "content": "ALLOW_INSTANCE_POOL_CREATE"
+                },
+                {
+                  "content": "DATABRICKS_SQL_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ACCESS"
+                },
+                {
+                  "content": "WORKSPACE_ADMIN"
+                },
+                {
+                  "content": "WORKSPACE_CONSUME"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_type",
+          "description": "The type of the principal (user/service principal/group) that is assigned.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrincipalType",
+            "enum": [
+              {
+                "content": "GROUP"
+              },
+              {
+                "content": "SERVICE_PRINCIPAL"
+              },
+              {
+                "content": "USER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID where the principal is assigned.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateWorkspaceIdentityDetail",
+      "description": "Updates a workspace identity detail for a principal.",
+      "summary": "Update workspace identity details for a principal.",
+      "path": "/api/2.0/identity/workspace-identity-details/{principal_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateWorkspaceIdentityDetailRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "workspace_identity_detail",
+            "description": "Required. Workspace identity detail to be updated in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceIdentityDetail",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "principal_id",
+            "description": "Required. ID of the principal in Databricks.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Required. The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_identity_detail",
+            "description": "Required. Workspace identity detail to be updated in Databricks.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceIdentityDetail",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_identity_detail",
+        "description": "Required. Workspace identity detail to be updated in Databricks.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceIdentityDetail",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "WorkspaceIdentityDetail",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "workspace_identity_detail",
+          "description": "Required. Workspace identity detail to be updated in Databricks.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceIdentityDetail",
+            "is_object": true
+          }
+        },
+        {
+          "name": "assignment_type",
+          "description": "The type of assignment the principal has to the workspace (direct or indirect).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceIdentityDetailAssignmentType",
+            "enum": [
+              {
+                "content": "DIRECT"
+              },
+              {
+                "content": "INDIRECT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The internal ID of the principal (user/sp/group) in Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_type",
+          "description": "The type of the principal (user/service principal/group).",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrincipalType",
+            "enum": [
+              {
+                "content": "GROUP"
+              },
+              {
+                "content": "SERVICE_PRINCIPAL"
+              },
+              {
+                "content": "USER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_identity_status",
+          "description": "The activity status of an identity in a Databricks workspace.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "State",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "INACTIVE"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "principal_id",
+          "description": "Required. ID of the principal in Databricks.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Required. The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,343 @@
+{
+  "domains.CreateDomainRequest": {
+    "fields": {
+      "domain": {
+        "ref": "domains.Domain",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "domain_id": {
+        "description": "Client-supplied resource ID for the new domain. If omitted, the server\ngenerates one.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "domains.DeleteDomainRequest": {
+    "fields": {
+      "force": {
+        "description": "When false (default), DeleteDomain is rejected with FAILED_PRECONDITION if\nthe domain still has Glossary pages. When true, those pages are deleted\nfirst and then the domain is removed.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "domains.Domain": {
+    "fields": {
+      "business_owner_ids": {
+        "description": "Principal IDs of the business owners (users, groups, or service principals).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "create_time": {
+        "description": "Timestamp when the domain was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Full description (max 4096 chars)",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "domain_id": {
+        "description": "Unique identifier for the domain. If omitted at Create, the server\ngenerates one.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "draft": {
+        "description": "Whether to mark the domain as a draft. If omitted on Create, the server\napplies a default; the resolved value is returned in `effective_draft`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "effective_draft": {
+        "description": "Resolved draft state of the domain.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "icon": {
+        "description": "Icon to display for the domain.",
+        "ref": "domains.DomainIcon",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "parent_domain_id": {
+        "description": "Domain ID of the parent. If absent, this is a top-level domain.\nIf present, this domain is a subdomain of the specified parent.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "subtitle": {
+        "description": "Short description (max 280 chars)",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "tag_key": {
+        "description": "Governed tag key associated with this domain.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "technical_owner_ids": {
+        "description": "Principal IDs of the technical owners (users, groups, or service principals).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "update_time": {
+        "description": "Timestamp when the domain was last updated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "domains.DomainIcon": {
+    "description": "Icon configuration for a domain.",
+    "fields": {
+      "color": {
+        "description": "Hex color code with # prefix (e.g., \"#FF5733\").",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "ref": "domains.DomainIconName",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "domains.DomainIconName": {
+    "description": "Available icon names for a domain.",
+    "enum": [
+      "ADDRESS_BOOK",
+      "ALARM",
+      "ARROWS_IN",
+      "ATOM",
+      "BALLOON",
+      "BANK",
+      "BARRICADE",
+      "BASKET",
+      "BRIDGE",
+      "CACTUS",
+      "CALL_BELL",
+      "CARROT",
+      "CHART_PIE_SLICE",
+      "CITY",
+      "CLOUD",
+      "COINS",
+      "COMPASS_ROSE",
+      "CRANE_TOWER",
+      "CROWN",
+      "CUBE_TRANSPARENT",
+      "FADERS",
+      "FLAG_BANNER_FOLD",
+      "FLAG_CHECKERED",
+      "GAVEL",
+      "HAMBURGER",
+      "HEAD_CIRCUIT",
+      "HOURGLASS_HIGH",
+      "INTERSECT_THREE",
+      "MICROSCOPE",
+      "MOON_STARS",
+      "PACKAGE",
+      "PARACHUTE",
+      "PEPPER",
+      "PIGGY_BANK",
+      "PILL",
+      "PLANET",
+      "PLANT",
+      "PLUGS_CONNECTED",
+      "POPCORN",
+      "PRESENTATION_CHART",
+      "PUZZLE_PIECE",
+      "RAINBOW",
+      "RANKING",
+      "RECEIPT",
+      "ROCKET",
+      "RULER",
+      "SAILBOAT",
+      "SCALES",
+      "SCAN_SMILEY",
+      "SCROLL",
+      "SHIELD_CHECKERED",
+      "SNEAKER",
+      "SNOWFLAKE",
+      "SOLAR_ROOF",
+      "SPEEDOMETER",
+      "STAMP",
+      "STEPS",
+      "STRATEGY",
+      "SWORD",
+      "TELEVISION_SIMPLE",
+      "TENT",
+      "TICKET",
+      "TRACTOR",
+      "TRAFFIC_CONE",
+      "TRAIN",
+      "TREE_EVERGREEN",
+      "TREE_STRUCTURE",
+      "TROLLEY_SUITCASE",
+      "TROPHY",
+      "TRUCK_TRAILER",
+      "USERS_THREE",
+      "VECTOR_THREE"
+    ],
+    "enum_launch_stages": {
+      "ADDRESS_BOOK": "PUBLIC_BETA",
+      "ALARM": "PUBLIC_BETA",
+      "ARROWS_IN": "PUBLIC_BETA",
+      "ATOM": "PUBLIC_BETA",
+      "BALLOON": "PUBLIC_BETA",
+      "BANK": "PUBLIC_BETA",
+      "BARRICADE": "PUBLIC_BETA",
+      "BASKET": "PUBLIC_BETA",
+      "BRIDGE": "PUBLIC_BETA",
+      "CACTUS": "PUBLIC_BETA",
+      "CALL_BELL": "PUBLIC_BETA",
+      "CARROT": "PUBLIC_BETA",
+      "CHART_PIE_SLICE": "PUBLIC_BETA",
+      "CITY": "PUBLIC_BETA",
+      "CLOUD": "PUBLIC_BETA",
+      "COINS": "PUBLIC_BETA",
+      "COMPASS_ROSE": "PUBLIC_BETA",
+      "CRANE_TOWER": "PUBLIC_BETA",
+      "CROWN": "PUBLIC_BETA",
+      "CUBE_TRANSPARENT": "PUBLIC_BETA",
+      "FADERS": "PUBLIC_BETA",
+      "FLAG_BANNER_FOLD": "PUBLIC_BETA",
+      "FLAG_CHECKERED": "PUBLIC_BETA",
+      "GAVEL": "PUBLIC_BETA",
+      "HAMBURGER": "PUBLIC_BETA",
+      "HEAD_CIRCUIT": "PUBLIC_BETA",
+      "HOURGLASS_HIGH": "PUBLIC_BETA",
+      "INTERSECT_THREE": "PUBLIC_BETA",
+      "MICROSCOPE": "PUBLIC_BETA",
+      "MOON_STARS": "PUBLIC_BETA",
+      "PACKAGE": "PUBLIC_BETA",
+      "PARACHUTE": "PUBLIC_BETA",
+      "PEPPER": "PUBLIC_BETA",
+      "PIGGY_BANK": "PUBLIC_BETA",
+      "PILL": "PUBLIC_BETA",
+      "PLANET": "PUBLIC_BETA",
+      "PLANT": "PUBLIC_BETA",
+      "PLUGS_CONNECTED": "PUBLIC_BETA",
+      "POPCORN": "PUBLIC_BETA",
+      "PRESENTATION_CHART": "PUBLIC_BETA",
+      "PUZZLE_PIECE": "PUBLIC_BETA",
+      "RAINBOW": "PUBLIC_BETA",
+      "RANKING": "PUBLIC_BETA",
+      "RECEIPT": "PUBLIC_BETA",
+      "ROCKET": "PUBLIC_BETA",
+      "RULER": "PUBLIC_BETA",
+      "SAILBOAT": "PUBLIC_BETA",
+      "SCALES": "PUBLIC_BETA",
+      "SCAN_SMILEY": "PUBLIC_BETA",
+      "SCROLL": "PUBLIC_BETA",
+      "SHIELD_CHECKERED": "PUBLIC_BETA",
+      "SNEAKER": "PUBLIC_BETA",
+      "SNOWFLAKE": "PUBLIC_BETA",
+      "SOLAR_ROOF": "PUBLIC_BETA",
+      "SPEEDOMETER": "PUBLIC_BETA",
+      "STAMP": "PUBLIC_BETA",
+      "STEPS": "PUBLIC_BETA",
+      "STRATEGY": "PUBLIC_BETA",
+      "SWORD": "PUBLIC_BETA",
+      "TELEVISION_SIMPLE": "PUBLIC_BETA",
+      "TENT": "PUBLIC_BETA",
+      "TICKET": "PUBLIC_BETA",
+      "TRACTOR": "PUBLIC_BETA",
+      "TRAFFIC_CONE": "PUBLIC_BETA",
+      "TRAIN": "PUBLIC_BETA",
+      "TREE_EVERGREEN": "PUBLIC_BETA",
+      "TREE_STRUCTURE": "PUBLIC_BETA",
+      "TROLLEY_SUITCASE": "PUBLIC_BETA",
+      "TROPHY": "PUBLIC_BETA",
+      "TRUCK_TRAILER": "PUBLIC_BETA",
+      "USERS_THREE": "PUBLIC_BETA",
+      "VECTOR_THREE": "PUBLIC_BETA"
+    }
+  },
+  "domains.GetDomainRequest": {},
+  "domains.ListDomainsRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "parent_domain_id": {
+        "description": "Filter by parent domain.\n- Absent: return all domains regardless of hierarchy.\n- Present: return only direct children of the specified domain.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "domains.ListDomainsResponse": {
+    "fields": {
+      "domains": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "domains.UpdateDomainRequest": {
+    "fields": {
+      "domain": {
+        "ref": "domains.Domain",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  }
+}

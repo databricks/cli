@@ -1,0 +1,33 @@
+{
+  "id": "sql.RedashConfig",
+  "name": "RedashConfig",
+  "description": "Redash V2 service for workspace configurations (internal)",
+  "package": {
+    "name": "sql"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "sql",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "methods": [
+    {
+      "name": "GetConfig",
+      "description": "Read workspace configuration for Redash-v2.",
+      "summary": "Read workspace configuration for Redash-v2.",
+      "path": "/api/2.0/redash-v2/config",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetConfigRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ClientConfig",
+        "is_object": true
+      }
+    }
+  ]
+}

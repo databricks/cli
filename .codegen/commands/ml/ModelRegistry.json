@@ -1,0 +1,3844 @@
+{
+  "id": "ml.ModelRegistry",
+  "name": "ModelRegistry",
+  "description": "Note: This API reference documents APIs for the Workspace Model Registry. Databricks recommends using\n[Models in Unity Catalog](/api/workspace/registeredmodels) instead. Models in Unity Catalog provides\ncentralized model governance, cross-workspace access, lineage, and deployment. Workspace Model Registry\nwill be deprecated in the future.\n\nThe Workspace Model Registry is a centralized model repository and a UI and set of APIs that enable\nyou to manage the full lifecycle of MLflow Models.",
+  "package": {
+    "name": "ml"
+  },
+  "docs_group": "ml",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListModelsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "ApproveTransitionRequest",
+      "description": "Approves a model version stage transition request.",
+      "summary": "Approve transition request.",
+      "path": "/api/2.0/mlflow/transition-requests/approve",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ApproveTransitionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "archive_existing_versions",
+            "description": "Specifies whether to archive all current model versions in the target stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "archive_existing_versions",
+            "description": "Specifies whether to archive all current model versions in the target stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ApproveTransitionRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "archive_existing_versions",
+          "description": "Specifies whether to archive all current model versions in the target stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "archive_existing_versions",
+          "description": "Specifies whether to archive all current model versions in the target stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateComment",
+      "description": "Posts a comment on a model version. A comment can be submitted either by a user or programmatically to display\nrelevant information about the model. For example, test results or deployment errors.",
+      "summary": "Post a comment.",
+      "path": "/api/2.0/mlflow/comments/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateComment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "comment",
+            "description": "User-provided comment on the action.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "comment",
+            "description": "User-provided comment on the action.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateCommentResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateModel",
+      "description": "Creates a new registered model with the name specified in the request body.\nThrows `RESOURCE_ALREADY_EXISTS` if a registered model with the given name exists.",
+      "summary": "Create a model.",
+      "path": "/api/2.0/mlflow/registered-models/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateModelRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Register models under this name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Register models under this name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateModelResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "Optional description for registered model.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Register models under this name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Additional metadata for registered model.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelTagList",
+            "array_value": {
+              "pascal_name": "ModelTag",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Register models under this name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateModelVersion",
+      "description": "Creates a model version.",
+      "summary": "Create a model version.",
+      "path": "/api/2.0/mlflow/model-versions/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateModelVersionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Register model under this name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source",
+            "description": "URI indicating the location of the model artifacts.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Register model under this name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source",
+            "description": "URI indicating the location of the model artifacts.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateModelVersionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "Optional description for model version.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Register model under this name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "MLflow run ID for correlation, if `source` was generated by an experiment run in\nMLflow tracking server",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_link",
+          "description": "MLflow run link - this is the exact link of the run that generated this model version,\npotentially hosted at another instance of MLflow.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source",
+          "description": "URI indicating the location of the model artifacts.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Additional metadata for model version.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ModelVersionTagList",
+            "array_value": {
+              "pascal_name": "ModelVersionTag",
+              "is_object": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Register model under this name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source",
+          "description": "URI indicating the location of the model artifacts.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateTransitionRequest",
+      "description": "Creates a model version stage transition request.",
+      "summary": "Make a transition request.",
+      "path": "/api/2.0/mlflow/transition-requests/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateTransitionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateTransitionRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateWebhook",
+      "description": "**NOTE:** This endpoint is in Public Preview.\nCreates a registry webhook.",
+      "summary": "Create a webhook.",
+      "path": "/api/2.0/mlflow/registry-webhooks/create",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateRegistryWebhook",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "events",
+            "description": "Events that can trigger a registry webhook:\n* `MODEL_VERSION_CREATED`: A new model version was created for the associated model.\n\n* `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed.\n\n* `TRANSITION_REQUEST_CREATED`: A user requested a model version’s stage be transitioned.\n\n* `COMMENT_CREATED`: A user wrote a comment on a registered model.\n\n* `REGISTERED_MODEL_CREATED`: A new registered model was created. This event type can only be specified for a registry-wide webhook, which can be created by not specifying a model name in the create request.\n\n* `MODEL_VERSION_TAG_SET`: A user set a tag on the model version.\n\n* `MODEL_VERSION_TRANSITIONED_TO_STAGING`: A model version was transitioned to staging.\n\n* `MODEL_VERSION_TRANSITIONED_TO_PRODUCTION`: A model version was transitioned to production.\n\n* `MODEL_VERSION_TRANSITIONED_TO_ARCHIVED`: A model version was archived.\n\n* `TRANSITION_REQUEST_TO_STAGING_CREATED`: A user requested a model version be transitioned to staging.\n\n* `TRANSITION_REQUEST_TO_PRODUCTION_CREATED`: A user requested a model version be transitioned to production.\n\n* `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A user requested a model version be archived.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RegistryWebhookEventList",
+              "array_value": {
+                "pascal_name": "RegistryWebhookEvent",
+                "enum": [
+                  {
+                    "content": "COMMENT_CREATED"
+                  },
+                  {
+                    "content": "MODEL_VERSION_CREATED"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TAG_SET"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_STAGE"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_TO_ARCHIVED"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_TO_PRODUCTION"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_TO_STAGING"
+                  },
+                  {
+                    "content": "REGISTERED_MODEL_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_TO_ARCHIVED_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_TO_PRODUCTION_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_TO_STAGING_CREATED"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "events",
+            "description": "Events that can trigger a registry webhook:\n* `MODEL_VERSION_CREATED`: A new model version was created for the associated model.\n\n* `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed.\n\n* `TRANSITION_REQUEST_CREATED`: A user requested a model version’s stage be transitioned.\n\n* `COMMENT_CREATED`: A user wrote a comment on a registered model.\n\n* `REGISTERED_MODEL_CREATED`: A new registered model was created. This event type can only be specified for a registry-wide webhook, which can be created by not specifying a model name in the create request.\n\n* `MODEL_VERSION_TAG_SET`: A user set a tag on the model version.\n\n* `MODEL_VERSION_TRANSITIONED_TO_STAGING`: A model version was transitioned to staging.\n\n* `MODEL_VERSION_TRANSITIONED_TO_PRODUCTION`: A model version was transitioned to production.\n\n* `MODEL_VERSION_TRANSITIONED_TO_ARCHIVED`: A model version was archived.\n\n* `TRANSITION_REQUEST_TO_STAGING_CREATED`: A user requested a model version be transitioned to staging.\n\n* `TRANSITION_REQUEST_TO_PRODUCTION_CREATED`: A user requested a model version be transitioned to production.\n\n* `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A user requested a model version be archived.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RegistryWebhookEventList",
+              "array_value": {
+                "pascal_name": "RegistryWebhookEvent",
+                "enum": [
+                  {
+                    "content": "COMMENT_CREATED"
+                  },
+                  {
+                    "content": "MODEL_VERSION_CREATED"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TAG_SET"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_STAGE"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_TO_ARCHIVED"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_TO_PRODUCTION"
+                  },
+                  {
+                    "content": "MODEL_VERSION_TRANSITIONED_TO_STAGING"
+                  },
+                  {
+                    "content": "REGISTERED_MODEL_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_TO_ARCHIVED_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_TO_PRODUCTION_CREATED"
+                  },
+                  {
+                    "content": "TRANSITION_REQUEST_TO_STAGING_CREATED"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateWebhookResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "User-specified description for the webhook.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "events",
+          "description": "Events that can trigger a registry webhook:\n* `MODEL_VERSION_CREATED`: A new model version was created for the associated model.\n\n* `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed.\n\n* `TRANSITION_REQUEST_CREATED`: A user requested a model version’s stage be transitioned.\n\n* `COMMENT_CREATED`: A user wrote a comment on a registered model.\n\n* `REGISTERED_MODEL_CREATED`: A new registered model was created. This event type can only be specified for a registry-wide webhook, which can be created by not specifying a model name in the create request.\n\n* `MODEL_VERSION_TAG_SET`: A user set a tag on the model version.\n\n* `MODEL_VERSION_TRANSITIONED_TO_STAGING`: A model version was transitioned to staging.\n\n* `MODEL_VERSION_TRANSITIONED_TO_PRODUCTION`: A model version was transitioned to production.\n\n* `MODEL_VERSION_TRANSITIONED_TO_ARCHIVED`: A model version was archived.\n\n* `TRANSITION_REQUEST_TO_STAGING_CREATED`: A user requested a model version be transitioned to staging.\n\n* `TRANSITION_REQUEST_TO_PRODUCTION_CREATED`: A user requested a model version be transitioned to production.\n\n* `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A user requested a model version be archived.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegistryWebhookEventList",
+            "array_value": {
+              "pascal_name": "RegistryWebhookEvent",
+              "enum": [
+                {
+                  "content": "COMMENT_CREATED"
+                },
+                {
+                  "content": "MODEL_VERSION_CREATED"
+                },
+                {
+                  "content": "MODEL_VERSION_TAG_SET"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_STAGE"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_ARCHIVED"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_PRODUCTION"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_STAGING"
+                },
+                {
+                  "content": "REGISTERED_MODEL_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_ARCHIVED_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_PRODUCTION_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_STAGING_CREATED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "http_url_spec",
+          "description": "External HTTPS URL called on event trigger (by using a POST request).",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "HttpUrlSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "job_spec",
+          "description": "ID of the job that the webhook runs.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "model_name",
+          "description": "If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Enable or disable triggering the webhook, or put the webhook into test mode. The default is `ACTIVE`:\n* `ACTIVE`: Webhook is triggered when an associated event happens.\n\n* `DISABLED`: Webhook is not triggered.\n\n* `TEST_MODE`: Webhook can be triggered through the test endpoint, but is not triggered on a real event.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegistryWebhookStatus",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DISABLED"
+              },
+              {
+                "content": "TEST_MODE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteComment",
+      "description": "Deletes a comment on a model version.",
+      "summary": "Delete a comment.",
+      "path": "/api/2.0/mlflow/comments/delete",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteCommentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique identifier of an activity",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Unique identifier of an activity",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteCommentResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Unique identifier of an activity",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique identifier of an activity",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteModel",
+      "description": "Deletes a registered model.",
+      "summary": "Delete a model.",
+      "path": "/api/2.0/mlflow/registered-models/delete",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteModelRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteModelResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteModelTag",
+      "description": "Deletes the tag for a registered model.",
+      "summary": "Delete a model tag.",
+      "path": "/api/2.0/mlflow/registered-models/delete-tag",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteModelTagRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model that the tag was logged under.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model that the tag was logged under.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteModelTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "key",
+          "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the registered model that the tag was logged under.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the registered model that the tag was logged under.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteModelVersion",
+      "description": "Deletes a model version.",
+      "summary": "Delete a model version.",
+      "path": "/api/2.0/mlflow/model-versions/delete",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteModelVersionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteModelVersionResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteModelVersionTag",
+      "description": "Deletes a model version tag.",
+      "summary": "Delete a model version tag.",
+      "path": "/api/2.0/mlflow/model-versions/delete-tag",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteModelVersionTagRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model that the tag was logged under.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number that the tag was logged under.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model that the tag was logged under.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number that the tag was logged under.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteModelVersionTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "key",
+          "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the registered model that the tag was logged under.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number that the tag was logged under.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the registered model that the tag was logged under.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number that the tag was logged under.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the tag. The name must be an exact match; wild-card deletion is not supported. Maximum size is 250 bytes.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteTransitionRequest",
+      "description": "Cancels a model version stage transition request.",
+      "summary": "Delete a transition request.",
+      "path": "/api/2.0/mlflow/transition-requests/delete",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteTransitionRequestRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition request. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "creator",
+            "description": "Username of the user who created this request. Of the transition requests matching the specified details, only the one transition created by this user will be deleted.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition request. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "creator",
+            "description": "Username of the user who created this request. Of the transition requests matching the specified details, only the one transition created by this user will be deleted.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteTransitionRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "Username of the user who created this request. Of the transition requests matching the specified details, only the one transition created by this user will be deleted.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition request. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition request. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "Username of the user who created this request. Of the transition requests matching the specified details, only the one transition created by this user will be deleted.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteWebhook",
+      "description": "**NOTE:** This endpoint is in Public Preview.\nDeletes a registry webhook.",
+      "summary": "Delete a webhook.",
+      "path": "/api/2.0/mlflow/registry-webhooks/delete",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteWebhookRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Webhook ID required to delete a registry webhook.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Webhook ID required to delete a registry webhook.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteWebhookResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Webhook ID required to delete a registry webhook.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Webhook ID required to delete a registry webhook.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetLatestVersions",
+      "description": "Gets the latest version of a registered model.",
+      "summary": "Get the latest version.",
+      "path": "/api/2.0/mlflow/registered-models/get-latest-versions",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetLatestVersionsRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetLatestVersionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stages",
+          "description": "List of stages.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {}
+    },
+    {
+      "name": "GetModel",
+      "description": "Get the details of a model.\nThis is a Databricks workspace version of the [MLflow endpoint](https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel)\nthat also returns the model's Databricks workspace ID and the permission level of the requesting user on the model.",
+      "summary": "Get model.",
+      "path": "/api/2.0/mlflow/databricks/registered-models/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetModelRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetModelResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetModelVersion",
+      "description": "Get a model version.",
+      "summary": "Get a model version.",
+      "path": "/api/2.0/mlflow/model-versions/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetModelVersionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetModelVersionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetModelVersionDownloadUri",
+      "description": "Gets a URI to download the model version.",
+      "summary": "Get a model version URI.",
+      "path": "/api/2.0/mlflow/model-versions/get-download-uri",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetModelVersionDownloadUriRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetModelVersionDownloadUriResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get registered model permission levels.",
+      "path": "/api/2.0/permissions/registered-models/{registered_model_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRegisteredModelPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetRegisteredModelPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a registered model. Registered models can inherit permissions from their root object.",
+      "summary": "Get registered model permissions.",
+      "path": "/api/2.0/permissions/registered-models/{registered_model_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRegisteredModelPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RegisteredModelPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListModels",
+      "description": "Lists all available registered models, up to the limit specified in __max_results__.",
+      "summary": "List models.",
+      "path": "/api/2.0/mlflow/registered-models/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListModelsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListModelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of registered models desired. Max threshold is 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page based on a previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page based on a previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListTransitionRequests",
+      "description": "Gets a list of all open stage transition requests for the model version.",
+      "summary": "List transition requests.",
+      "path": "/api/2.0/mlflow/transition-requests/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListTransitionRequestsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListTransitionRequestsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the registered model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the registered model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {}
+    },
+    {
+      "name": "ListWebhooks",
+      "description": "**NOTE:** This endpoint is in Public Preview.\nLists all registry webhooks.",
+      "summary": "List registry webhooks.",
+      "path": "/api/2.0/mlflow/registry-webhooks/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListWebhooksRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListRegistryWebhooks",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "events",
+          "description": "Events that trigger the webhook.\n* `MODEL_VERSION_CREATED`: A new model version was created for the associated model.\n\n* `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed.\n\n* `TRANSITION_REQUEST_CREATED`: A user requested a model version’s stage be transitioned.\n\n* `COMMENT_CREATED`: A user wrote a comment on a registered model.\n\n* `REGISTERED_MODEL_CREATED`: A new registered model was created. This event type can only be specified for a registry-wide webhook, which can be created by not specifying a model name in the create request.\n\n* `MODEL_VERSION_TAG_SET`: A user set a tag on the model version.\n\n* `MODEL_VERSION_TRANSITIONED_TO_STAGING`: A model version was transitioned to staging.\n\n* `MODEL_VERSION_TRANSITIONED_TO_PRODUCTION`: A model version was transitioned to production.\n\n* `MODEL_VERSION_TRANSITIONED_TO_ARCHIVED`: A model version was archived.\n\n* `TRANSITION_REQUEST_TO_STAGING_CREATED`: A user requested a model version be transitioned to staging.\n\n* `TRANSITION_REQUEST_TO_PRODUCTION_CREATED`: A user requested a model version be transitioned to production.\n\n* `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A user requested a model version be archived.\n\nIf `events` is specified, any webhook with one or more of the specified trigger events is included in the output.\nIf `events` is not specified, webhooks of all event types are included in the output.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "RegistryWebhookEventList",
+            "array_value": {
+              "pascal_name": "RegistryWebhookEvent",
+              "enum": [
+                {
+                  "content": "COMMENT_CREATED"
+                },
+                {
+                  "content": "MODEL_VERSION_CREATED"
+                },
+                {
+                  "content": "MODEL_VERSION_TAG_SET"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_STAGE"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_ARCHIVED"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_PRODUCTION"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_STAGING"
+                },
+                {
+                  "content": "REGISTERED_MODEL_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_ARCHIVED_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_PRODUCTION_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_STAGING_CREATED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "max_results",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "model_name",
+          "description": "Registered model name\nIf not specified, all webhooks associated with the specified events are listed, regardless of their associated model.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token indicating the page of artifact results to fetch",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token indicating the page of artifact results to fetch",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "RejectTransitionRequest",
+      "description": "Rejects a model version stage transition request.",
+      "summary": "Reject a transition request.",
+      "path": "/api/2.0/mlflow/transition-requests/reject",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RejectTransitionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RejectTransitionRequestResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RenameModel",
+      "description": "Renames a registered model.",
+      "summary": "Rename a model.",
+      "path": "/api/2.0/mlflow/registered-models/rename",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RenameModelRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RenameModelResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "If provided, updates the name for this `registered_model`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SearchModelVersions",
+      "description": "Searches for specific model versions based on the supplied __filter__.",
+      "summary": "Search model versions.",
+      "path": "/api/2.0/mlflow/model-versions/search",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SearchModelVersionsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "SearchModelVersionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "String filter condition, like \"name='my-model-name'\". Must be a single boolean condition,\nwith string values wrapped in single quotes.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of models desired. Max threshold is 10K.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "List of columns to be ordered by including model name, version, stage with an\noptional \"DESC\" or \"ASC\" annotation, where \"ASC\" is the default.\nTiebreaks are done by latest stage transition timestamp, followed by name ASC, followed by\nversion DESC.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to next page based on previous search query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to next page based on previous search query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SearchModels",
+      "description": "Search for registered models based on the specified __filter__.",
+      "summary": "Search models.",
+      "path": "/api/2.0/mlflow/registered-models/search",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SearchModelsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "SearchModelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "String filter condition, like \"name LIKE 'my-model-name'\".\nInterpreted in the backend automatically as \"name LIKE '%my-model-name%'\".\nSingle boolean condition, with string values wrapped in single quotes.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of models desired. Default is 100. Max threshold is 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "List of columns for ordering search results, which can include model name and last updated\ntimestamp with an optional \"DESC\" or \"ASC\" annotation, where \"ASC\" is the default.\nTiebreaks are done by model name ASC.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page based on a previous search query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page based on a previous search query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SetModelTag",
+      "description": "Sets a tag on a registered model.",
+      "summary": "Set a tag.",
+      "path": "/api/2.0/mlflow/registered-models/set-tag",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetModelTagRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Unique name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Unique name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SetModelTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "key",
+          "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Unique name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Unique name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetModelVersionTag",
+      "description": "Sets a model version tag.",
+      "summary": "Set a version tag.",
+      "path": "/api/2.0/mlflow/model-versions/set-tag",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetModelVersionTagRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Unique name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Unique name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "key",
+            "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "value",
+            "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SetModelVersionTagResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "key",
+          "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Unique name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Unique name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "key",
+          "description": "Name of the tag. Maximum size depends on storage backend.\nIf a tag with this name already exists, its preexisting value will be replaced by the specified `value`.\nAll storage backends are guaranteed to support key values up to 250 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "value",
+          "description": "String value of the tag being logged. Maximum size depends on storage backend.\nAll storage backends are guaranteed to support key values up to 5000 bytes in size.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set registered model permissions.",
+      "path": "/api/2.0/permissions/registered-models/{registered_model_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RegisteredModelPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RegisteredModelPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegisteredModelAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "RegisteredModelAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "TestRegistryWebhook",
+      "description": "**NOTE:** This endpoint is in Public Preview.\nTests a registry webhook.",
+      "summary": "Test a webhook.",
+      "path": "/api/2.0/mlflow/registry-webhooks/test",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TestRegistryWebhookRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Webhook ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "id",
+            "description": "Webhook ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TestRegistryWebhookResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "event",
+          "description": "If `event` is specified, the test trigger uses the specified event. If `event` is not specified, the test trigger uses a randomly chosen event associated with the webhook.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegistryWebhookEvent",
+            "enum": [
+              {
+                "content": "COMMENT_CREATED"
+              },
+              {
+                "content": "MODEL_VERSION_CREATED"
+              },
+              {
+                "content": "MODEL_VERSION_TAG_SET"
+              },
+              {
+                "content": "MODEL_VERSION_TRANSITIONED_STAGE"
+              },
+              {
+                "content": "MODEL_VERSION_TRANSITIONED_TO_ARCHIVED"
+              },
+              {
+                "content": "MODEL_VERSION_TRANSITIONED_TO_PRODUCTION"
+              },
+              {
+                "content": "MODEL_VERSION_TRANSITIONED_TO_STAGING"
+              },
+              {
+                "content": "REGISTERED_MODEL_CREATED"
+              },
+              {
+                "content": "TRANSITION_REQUEST_CREATED"
+              },
+              {
+                "content": "TRANSITION_REQUEST_TO_ARCHIVED_CREATED"
+              },
+              {
+                "content": "TRANSITION_REQUEST_TO_PRODUCTION_CREATED"
+              },
+              {
+                "content": "TRANSITION_REQUEST_TO_STAGING_CREATED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "id",
+          "description": "Webhook ID",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Webhook ID",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "TransitionStage",
+      "description": "Transition a model version's stage.\nThis is a Databricks workspace version of the [MLflow endpoint](https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage)\nthat also accepts a comment associated with the transition to be recorded.",
+      "summary": "Transition a stage.",
+      "path": "/api/2.0/mlflow/databricks/model-versions/transition-stage",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TransitionModelVersionStageDatabricks",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "archive_existing_versions",
+            "description": "Specifies whether to archive all current model versions in the target stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Version of the model.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "stage",
+            "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "archive_existing_versions",
+            "description": "Specifies whether to archive all current model versions in the target stage.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TransitionStageResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "archive_existing_versions",
+          "description": "Specifies whether to archive all current model versions in the target stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Version of the model.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "stage",
+          "description": "Target stage of the transition. Valid values are:\n\n* `None`: The initial stage of a model version.\n\n* `Staging`: Staging or pre-production stage.\n\n* `Production`: Production stage.\n\n* `Archived`: Archived stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "archive_existing_versions",
+          "description": "Specifies whether to archive all current model versions in the target stage.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateComment",
+      "description": "Post an edit to a comment on a model version.",
+      "summary": "Update a comment.",
+      "path": "/api/2.0/mlflow/comments/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateComment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Unique identifier of an activity",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "comment",
+            "description": "User-provided comment on the action.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "id",
+            "description": "Unique identifier of an activity",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "comment",
+            "description": "User-provided comment on the action.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateCommentResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of an activity",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Unique identifier of an activity",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided comment on the action.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateModel",
+      "description": "Updates a registered model.",
+      "summary": "Update model.",
+      "path": "/api/2.0/mlflow/registered-models/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateModelRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Registered model unique name identifier.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateModelResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "If provided, updates the description for this `registered_model`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Registered model unique name identifier.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateModelVersion",
+      "description": "Updates the model version.",
+      "summary": "Update model version.",
+      "path": "/api/2.0/mlflow/model-versions/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateModelVersionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the registered model",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version",
+            "description": "Model version number",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateModelVersionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "If provided, updates the description for this `registered_model`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the registered model",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "Model version number",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a registered model. Registered models can inherit permissions from their root object.",
+      "summary": "Update registered model permissions.",
+      "path": "/api/2.0/permissions/registered-models/{registered_model_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RegisteredModelPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "registered_model_id",
+            "description": "The registered model for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RegisteredModelPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegisteredModelAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "RegisteredModelAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "registered_model_id",
+          "description": "The registered model for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateWebhook",
+      "description": "**NOTE:** This endpoint is in Public Preview.\nUpdates a registry webhook.",
+      "summary": "Update a webhook.",
+      "path": "/api/2.0/mlflow/registry-webhooks/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateRegistryWebhook",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Webhook ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "id",
+            "description": "Webhook ID",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateWebhookResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "User-specified description for the webhook.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "events",
+          "description": "Events that can trigger a registry webhook:\n* `MODEL_VERSION_CREATED`: A new model version was created for the associated model.\n\n* `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed.\n\n* `TRANSITION_REQUEST_CREATED`: A user requested a model version’s stage be transitioned.\n\n* `COMMENT_CREATED`: A user wrote a comment on a registered model.\n\n* `REGISTERED_MODEL_CREATED`: A new registered model was created. This event type can only be specified for a registry-wide webhook, which can be created by not specifying a model name in the create request.\n\n* `MODEL_VERSION_TAG_SET`: A user set a tag on the model version.\n\n* `MODEL_VERSION_TRANSITIONED_TO_STAGING`: A model version was transitioned to staging.\n\n* `MODEL_VERSION_TRANSITIONED_TO_PRODUCTION`: A model version was transitioned to production.\n\n* `MODEL_VERSION_TRANSITIONED_TO_ARCHIVED`: A model version was archived.\n\n* `TRANSITION_REQUEST_TO_STAGING_CREATED`: A user requested a model version be transitioned to staging.\n\n* `TRANSITION_REQUEST_TO_PRODUCTION_CREATED`: A user requested a model version be transitioned to production.\n\n* `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A user requested a model version be archived.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegistryWebhookEventList",
+            "array_value": {
+              "pascal_name": "RegistryWebhookEvent",
+              "enum": [
+                {
+                  "content": "COMMENT_CREATED"
+                },
+                {
+                  "content": "MODEL_VERSION_CREATED"
+                },
+                {
+                  "content": "MODEL_VERSION_TAG_SET"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_STAGE"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_ARCHIVED"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_PRODUCTION"
+                },
+                {
+                  "content": "MODEL_VERSION_TRANSITIONED_TO_STAGING"
+                },
+                {
+                  "content": "REGISTERED_MODEL_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_ARCHIVED_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_PRODUCTION_CREATED"
+                },
+                {
+                  "content": "TRANSITION_REQUEST_TO_STAGING_CREATED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "http_url_spec",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "HttpUrlSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Webhook ID",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "job_spec",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegistryWebhookStatus",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "DISABLED"
+              },
+              {
+                "content": "TEST_MODE"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Webhook ID",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

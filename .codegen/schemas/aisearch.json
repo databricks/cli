@@ -1,0 +1,1098 @@
+{
+  "aisearch.ColumnInfo": {
+    "description": "Column information (name and data type) for an index column. Surfaced on `Index.column_info`.",
+    "fields": {
+      "name": {
+        "description": "Name of the column.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "type_text": {
+        "description": "Data type of the column (e.g., \"string\", \"int\", \"array\u003cfloat\u003e\").",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.CreateEndpointRequest": {
+    "fields": {
+      "endpoint": {
+        "description": "The Endpoint resource to create. Fields other than `endpoint.name` carry the desired\nconfiguration; `endpoint.name` is server-assigned from `parent` and `endpoint_id`.",
+        "ref": "aisearch.Endpoint",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "endpoint_id": {
+        "description": "The user-supplied short name for the Endpoint, per AIP-133. The server composes the\nfull `Endpoint.name` as `{parent}/endpoints/{endpoint_id}`. AIP-133 does not list\n`endpoint_id` as a fields-may-be-required entry, so we annotate it OPTIONAL on the\nwire; the server still rejects empty values with INVALID_PARAMETER_VALUE.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.CreateIndexRequest": {
+    "fields": {
+      "index": {
+        "description": "The Index resource to create. Fields other than `index.name` carry the desired\nconfiguration; `index.name` is server-assigned from `parent` and `index_id`.",
+        "ref": "aisearch.Index",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "index_id": {
+        "description": "The user-supplied Unity Catalog table name for the Index, per AIP-133. The server\ncomposes the full `Index.name` as `{parent}/indexes/{index_id}`. AIP-133 does not\nlist `index_id` as a fields-may-be-required entry, so we annotate it OPTIONAL on the\nwire; the server still rejects empty values with INVALID_PARAMETER_VALUE.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.CustomTag": {
+    "description": "User-defined key/value tag attached to an AI Search endpoint for cost attribution and access control.",
+    "fields": {
+      "key": {
+        "description": "Key field for an AI Search endpoint tag.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "value": {
+        "description": "[Optional] Value field for an AI Search endpoint tag.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.DataModificationResult": {
+    "description": "Per-row outcome of a data-plane upsert or delete operation.",
+    "fields": {
+      "failed_primary_keys": {
+        "description": "Primary keys of rows that failed to process.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "success_row_count": {
+        "description": "Count of rows processed successfully.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.DataModificationStatus": {
+    "description": "Overall outcome of a data-plane upsert or delete. Mirrors the legacy\n`databricks.brickindexscheduler.UpsertDeleteDataStatus` value-for-value.",
+    "enum": [
+      "SUCCESS",
+      "PARTIAL_SUCCESS",
+      "FAILURE"
+    ],
+    "enum_launch_stages": {
+      "FAILURE": "PUBLIC_PREVIEW",
+      "PARTIAL_SUCCESS": "PUBLIC_PREVIEW",
+      "SUCCESS": "PUBLIC_PREVIEW"
+    }
+  },
+  "aisearch.DeleteEndpointRequest": {},
+  "aisearch.DeleteIndexRequest": {},
+  "aisearch.DeltaSyncIndexSpec": {
+    "description": "Specification for a Delta Sync index — the index is kept in sync with a source Delta table.",
+    "fields": {
+      "columns_to_sync": {
+        "description": "[Optional] Select the columns to sync with the index. If left blank, all columns\nfrom the source table are synced. The primary key column and embedding source or\nvector column are always synced.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "embedding_source_columns": {
+        "description": "The columns that contain the embedding source.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "embedding_vector_columns": {
+        "description": "The columns that contain the embedding vectors.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "embedding_writeback_table": {
+        "description": "[Optional] Name of the Delta table to sync the index contents and computed embeddings to.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "pipeline_id": {
+        "description": "The ID of the pipeline that is used to sync the index.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "pipeline_type": {
+        "description": "Pipeline execution mode. Required on create — the backend rejects an unset value.\nStorage Optimized endpoints accept only `TRIGGERED`; Standard endpoints accept both.\nNo explicit `stage` — a REQUIRED field staged below its service would be dropped from\ncombined specs while remaining in `required`, tripping the OpenAPI required-vs-properties\nconsistency check. The field inherits the service's launch stage.",
+        "ref": "aisearch.PipelineType",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "source_table": {
+        "description": "The full name of the source Delta table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.DirectAccessIndexSpec": {
+    "description": "Specification for a Direct Access index — the customer manages vectors and metadata directly.",
+    "fields": {
+      "embedding_source_columns": {
+        "description": "The columns that contain the embedding source.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "embedding_vector_columns": {
+        "description": "The columns that contain the embedding vectors.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "schema_json": {
+        "description": "The schema of the index in JSON format. Supported types are `integer`, `long`,\n`float`, `double`, `boolean`, `string`, `date`, `timestamp`. Supported types for\nvector columns: `array\u003cfloat\u003e`, `array\u003cdouble\u003e`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.EmbeddingSourceColumn": {
+    "description": "Name of an embedding source column and its associated embedding model endpoint.",
+    "fields": {
+      "embedding_model_endpoint": {
+        "description": "Name of the embedding model endpoint, used by default for both ingestion and querying.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "model_endpoint_name_for_query": {
+        "description": "Name of the embedding model endpoint which, if specified, is used for querying (not ingestion).",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the source column.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "aisearch.EmbeddingVectorColumn": {
+    "description": "Name and dimension of an embedding vector column.",
+    "fields": {
+      "embedding_dimension": {
+        "description": "Dimension of the embedding vector.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the column.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "aisearch.Endpoint": {
+    "description": "An AI Search endpoint — compute infrastructure that hosts AI Search indexes\nand serves queries against them. Customers create, query, and delete endpoints;\nthe system manages provisioning, scaling, and health status.",
+    "fields": {
+      "budget_policy_id": {
+        "description": "The user-selected budget policy id for the endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "create_time": {
+        "description": "Time the endpoint was created.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "Creator of the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "custom_tags": {
+        "description": "The custom tags assigned to the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_budget_policy_id": {
+        "description": "The budget policy id applied to the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "endpoint_status": {
+        "description": "Current status of the endpoint",
+        "ref": "aisearch.EndpointStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "endpoint_type": {
+        "description": "Type of endpoint. Required on create and immutable thereafter.",
+        "ref": "aisearch.EndpointType",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "id": {
+        "description": "Unique identifier of the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "index_count": {
+        "description": "Number of indexes on the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_updated_user": {
+        "description": "User who last updated the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "replica_count": {
+        "description": "The client-supplied desired number of replicas for the endpoint, applied at\ncreate/update time. Mutually exclusive with `target_qps`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "scaling_info": {
+        "description": "Scaling information for the endpoint",
+        "ref": "aisearch.EndpointScalingInfo",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "target_qps": {
+        "description": "Target QPS for the endpoint. Mutually exclusive with `replica_count`. Best-effort;\nthe system does not guarantee this QPS will be achieved.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "throughput_info": {
+        "description": "Throughput information for the endpoint",
+        "ref": "aisearch.EndpointThroughputInfo",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "Time the endpoint was last updated.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "usage_policy_id": {
+        "description": "The usage policy id applied to the endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.EndpointScalingInfo": {
+    "description": "Scaling information for a Standard endpoint: the current scaling state, the requested QPS\ntarget, and the progress of an in-progress scaling change.",
+    "fields": {
+      "requested_target_qps": {
+        "description": "The requested QPS target for the endpoint. Best-effort; the system does not\nguarantee this QPS will be achieved.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "state": {
+        "description": "The current state of the scaling change request.",
+        "ref": "aisearch.ScalingChangeState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.EndpointStatus": {
+    "description": "Lifecycle and health state of an AI Search endpoint, along with any human-readable detail\nabout that state.",
+    "fields": {
+      "message": {
+        "description": "Human-readable detail about the endpoint's current state or the reason for a state transition.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "state": {
+        "description": "Current lifecycle state of the endpoint. See `State` for the meaning of each value.",
+        "ref": "aisearch.EndpointStatusState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.EndpointStatusState": {
+    "description": "Lifecycle state of an AI Search endpoint, used by both Standard and Storage Optimized SKUs.",
+    "enum": [
+      "PROVISIONING",
+      "ONLINE",
+      "OFFLINE",
+      "RED_STATE",
+      "YELLOW_STATE",
+      "DELETED",
+      "STOPPING",
+      "STOPPED",
+      "STARTING"
+    ],
+    "enum_launch_stages": {
+      "DELETED": "PUBLIC_PREVIEW",
+      "OFFLINE": "PUBLIC_PREVIEW",
+      "ONLINE": "PUBLIC_PREVIEW",
+      "PROVISIONING": "PUBLIC_PREVIEW",
+      "RED_STATE": "PUBLIC_PREVIEW",
+      "STARTING": "PRIVATE_PREVIEW",
+      "STOPPED": "PRIVATE_PREVIEW",
+      "STOPPING": "PRIVATE_PREVIEW",
+      "YELLOW_STATE": "PUBLIC_PREVIEW"
+    }
+  },
+  "aisearch.EndpointThroughputInfo": {
+    "description": "Throughput information for an AI Search endpoint, including requested and current concurrency settings.",
+    "fields": {
+      "change_request_message": {
+        "description": "Additional information about the throughput change request",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "change_request_state": {
+        "description": "The state of the most recent throughput change request",
+        "ref": "aisearch.ThroughputChangeRequestState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "current_concurrency": {
+        "description": "The current concurrency (total CPU) allocated to the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "current_concurrency_utilization_percentage": {
+        "description": "The current utilization of concurrency as a percentage (0-100)",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "current_num_replicas": {
+        "description": "The current number of replicas allocated to the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "maximum_concurrency_allowed": {
+        "description": "The maximum concurrency allowed for this endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "minimal_concurrency_allowed": {
+        "description": "The minimum concurrency allowed for this endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "requested_concurrency": {
+        "description": "The requested concurrency (total CPU) for the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "requested_num_replicas": {
+        "description": "The requested number of replicas for the endpoint",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.EndpointType": {
+    "description": "Type of endpoint.",
+    "enum": [
+      "STORAGE_OPTIMIZED",
+      "STANDARD"
+    ],
+    "enum_launch_stages": {
+      "STANDARD": "PUBLIC_PREVIEW",
+      "STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"
+    }
+  },
+  "aisearch.FacetResultData": {
+    "description": "Facet aggregation rows returned by a query.",
+    "fields": {
+      "facet_array": {
+        "description": "Facet rows; each row is `[facet_column_name, value_or_range, count]`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "facet_row_count": {
+        "description": "Number of facet rows returned.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.GetEndpointRequest": {},
+  "aisearch.GetIndexRequest": {},
+  "aisearch.Index": {
+    "description": "An AI Search index — a searchable collection of vectors and metadata hosted on an\nAI Search endpoint. Indexes are children of endpoints; customers create, get, list,\nand delete them. The `{index}` segment of the resource name is the index's Unity\nCatalog table name.",
+    "fields": {
+      "creator": {
+        "description": "Creator of the index.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "delta_sync_index_spec": {
+        "description": "Specification for a Delta Sync index. Set when `index_type` is `DELTA_SYNC`.",
+        "ref": "aisearch.DeltaSyncIndexSpec",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "direct_access_index_spec": {
+        "description": "Specification for a Direct Access index. Set when `index_type` is `DIRECT_ACCESS`.",
+        "ref": "aisearch.DirectAccessIndexSpec",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "endpoint": {
+        "description": "Name of the endpoint associated with the index. Ignored on create — the endpoint is\ntaken from `CreateIndexRequest.parent`; populated only on output.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "index_subtype": {
+        "description": "The subtype of the index. Set on create and immutable thereafter.",
+        "ref": "aisearch.IndexSubtype",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "index_type": {
+        "description": "Type of index. Required on create and immutable thereafter.",
+        "ref": "aisearch.IndexType",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "name": {
+        "description": "Name of the AI Search index. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}/indexes/{index}`) on output, where\n`{index}` is the index's Unity Catalog table name. On create, the user-supplied UC\ntable name is conveyed via `CreateIndexRequest.index_id`; the server composes the\nfull `name` and returns it on the response.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "primary_key": {
+        "description": "Primary key of the index. Set on create and immutable thereafter.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "status": {
+        "description": "Current status of the index.",
+        "ref": "aisearch.IndexStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.IndexStatus": {
+    "description": "Lifecycle and health state of an AI Search index, along with human-readable\ndetail about that state and basic indexing progress.",
+    "fields": {
+      "index_url": {
+        "description": "Index API URL used to perform operations on the index.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "indexed_row_count": {
+        "description": "Number of rows indexed.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message": {
+        "description": "Human-readable detail about the index's current state.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "ready": {
+        "description": "Whether the index is ready for search.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.IndexSubtype": {
+    "description": "The subtype of the AI Search index, determining the indexing and retrieval strategy.\n- `VECTOR`: Not a supported create value — do not select it. Use `HYBRID` (vector + hybrid\nsearch) or `FULL_TEXT` (full-text only). It is the proto2 default (`= 0`) solely to mirror\nthe legacy `index_v2.proto` enum value-for-value; it is not an offered index subtype.\n- `FULL_TEXT`: An index that uses full-text search without vector embeddings.\n- `HYBRID`: An index that uses vector embeddings for similarity search and hybrid search.",
+    "enum": [
+      "VECTOR",
+      "FULL_TEXT",
+      "HYBRID"
+    ],
+    "enum_launch_stages": {
+      "FULL_TEXT": "PUBLIC_PREVIEW",
+      "HYBRID": "PUBLIC_PREVIEW",
+      "VECTOR": "PUBLIC_PREVIEW"
+    },
+    "enum_descriptions": {
+      "FULL_TEXT": "An index that uses full-text search without vector embeddings.",
+      "HYBRID": "An index that uses vector embeddings for similarity search and hybrid search.",
+      "VECTOR": "Not a supported create value — do not select it. Use `HYBRID` (vector + hybrid"
+    }
+  },
+  "aisearch.IndexType": {
+    "description": "There are 2 types of AI Search indexes:\n- `DELTA_SYNC`: An index that automatically syncs with a source Delta Table,\nautomatically and incrementally updating the index as the underlying data in\nthe Delta Table changes.\n- `DIRECT_ACCESS`: An index that supports direct read and write of vectors and\nmetadata through our REST and SDK APIs. With this model, the user manages\nindex updates.",
+    "enum": [
+      "DELTA_SYNC",
+      "DIRECT_ACCESS"
+    ],
+    "enum_launch_stages": {
+      "DELTA_SYNC": "PUBLIC_PREVIEW",
+      "DIRECT_ACCESS": "PUBLIC_PREVIEW"
+    },
+    "enum_descriptions": {
+      "DELTA_SYNC": "An index that automatically syncs with a source Delta Table,",
+      "DIRECT_ACCESS": "An index that supports direct read and write of vectors and"
+    }
+  },
+  "aisearch.ListEndpointsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Best-effort upper bound on the number of results to return. Honored as an upper\nbound by the shim: `page_size` only narrows the legacy backend's response, never\nwidens it, so the practical cap is `min(page_size, legacy_fixed_page_size)`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response. If not provided, returns the first page.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.ListEndpointsResponse": {
+    "description": "Response for ListEndpoints carrying the page of endpoints and an optional continuation token.",
+    "fields": {
+      "endpoints": {
+        "description": "The endpoints in the workspace.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. Empty when there are no more results.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.ListIndexesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Best-effort upper bound on the number of results to return. Honored as an upper\nbound by the shim: `page_size` only narrows the legacy backend's response, never\nwidens it, so the practical cap is `min(page_size, legacy_fixed_page_size)`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response. If not provided, returns the first page.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.ListIndexesResponse": {
+    "description": "Response for ListIndexes carrying the page of indexes and an optional continuation token.",
+    "fields": {
+      "indexes": {
+        "description": "The indexes on the endpoint. The field is named `indexes` (not the irregular plural\n`indices`) to satisfy core::0132, which derives the response field name from the\nListIndexes method. core::0158::response-plural-first-field independently computes the\nresource plural as `indices` and is satisfied via a scoped field exception below.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. Empty when there are no more results.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.PipelineType": {
+    "description": "Pipeline execution mode for a Delta Sync index. Required on create for Delta Sync\nindexes; the legacy backend rejects an unset value with INVALID_PARAMETER_VALUE.\n- `TRIGGERED`: the pipeline stops after refreshing the source table once, using the\ndata available when the update started.\n- `CONTINUOUS`: the pipeline processes new data as it arrives in the source table to\nkeep the index fresh.",
+    "enum": [
+      "TRIGGERED",
+      "CONTINUOUS"
+    ],
+    "enum_launch_stages": {
+      "CONTINUOUS": "PUBLIC_PREVIEW",
+      "TRIGGERED": "PUBLIC_PREVIEW"
+    },
+    "enum_descriptions": {
+      "CONTINUOUS": "the pipeline processes new data as it arrives in the source table to",
+      "TRIGGERED": "the pipeline stops after refreshing the source table once, using the"
+    }
+  },
+  "aisearch.QueryIndexRequest": {
+    "description": "Request to query (search) an AI Search index. The legacy `num_results` count is exposed as\n`max_results`; v1 returns up to `max_results` rows in a single response (no cursor pagination\n— see the note on `max_results` below).",
+    "fields": {
+      "columns": {
+        "description": "Column names to include in each result row.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "columns_to_rerank": {
+        "description": "Columns whose values are sent to the reranker.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "facets": {
+        "description": "Facets to compute over the matched results (e.g. `\"category TOP 5\"`).",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "filters_json": {
+        "description": "JSON string describing query filters (e.g. `{\"id \u003e\": 5}`).",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "max_results": {
+        "description": "Maximum number of results to return (the legacy `num_results`). Defaults to 10.\nPrefer `page_size`; when both are set, `page_size` takes precedence.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query_columns": {
+        "description": "Text columns to search for `query_text`. When empty, all text columns are searched.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query_text": {
+        "description": "Query text. Required for Delta Sync indexes that compute embeddings from a model endpoint.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query_type": {
+        "description": "Query type: `ANN`, `HYBRID`, or `FULL_TEXT`. Defaults to `ANN`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query_vector": {
+        "description": "Query vector. Required for Direct Access indexes and Delta Sync indexes with self-managed\nvectors.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "reranker": {
+        "description": "If set, results are reranked before being returned.",
+        "ref": "aisearch.RerankerConfig",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "score_threshold": {
+        "description": "Score threshold for the approximate nearest-neighbor search. Defaults to 0.0.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "sort_columns": {
+        "description": "Sort clauses, e.g. `[\"rating DESC\", \"price ASC\"]`. Overrides relevance ordering.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.QueryIndexResponse": {
+    "description": "Response for QueryIndex carrying the matched rows and their column metadata.",
+    "fields": {
+      "facet_result": {
+        "description": "Facet aggregation rows, when facets were requested.",
+        "ref": "aisearch.FacetResultData",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "manifest": {
+        "description": "Metadata describing the result columns.",
+        "ref": "aisearch.ResultManifest",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "result": {
+        "description": "The matched result rows.",
+        "ref": "aisearch.ResultData",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.RemoveDataRequest": {
+    "description": "Request to remove rows by primary key from a Direct Access AI Search index.\nNamed RemoveData (not DeleteData) so the linter does not classify it as a standard\nAIP-135 Delete method — it deletes rows within an index, not the index resource.",
+    "fields": {
+      "primary_keys": {
+        "description": "Primary keys of the rows to remove.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "aisearch.RemoveDataResponse": {
+    "description": "Response for RemoveData.",
+    "fields": {
+      "result": {
+        "description": "Per-row outcome of the delete.",
+        "ref": "aisearch.DataModificationResult",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status": {
+        "description": "Overall status of the delete.",
+        "ref": "aisearch.DataModificationStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.RerankerConfig": {
+    "description": "Configuration for reranking query results with a reranker model.",
+    "fields": {
+      "model": {
+        "description": "Reranker identifier: \"databricks_reranker\" for the base model, or a Model Serving\nendpoint name when `model_type` is MODEL_TYPE_FINETUNED.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "model_type": {
+        "description": "Discriminator for how `model` is interpreted.",
+        "ref": "aisearch.RerankerConfigModelType",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "parameters": {
+        "description": "Parameters controlling reranking.",
+        "ref": "aisearch.RerankerConfigRerankerParameters",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.RerankerConfigModelType": {
+    "description": "How the `model` field is interpreted.",
+    "enum": [
+      "MODEL_TYPE_BASE",
+      "MODEL_TYPE_FINETUNED"
+    ],
+    "enum_launch_stages": {
+      "MODEL_TYPE_BASE": "PUBLIC_PREVIEW",
+      "MODEL_TYPE_FINETUNED": "PUBLIC_PREVIEW"
+    }
+  },
+  "aisearch.RerankerConfigRerankerParameters": {
+    "description": "Parameters controlling how the reranker processes results.",
+    "fields": {
+      "columns_to_rerank": {
+        "description": "Columns whose values are concatenated and sent to the reranker.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.ResultData": {
+    "description": "The rows of a query result set.",
+    "fields": {
+      "data_array": {
+        "description": "Result rows; each row is a list of column values aligned with the manifest columns.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "row_count": {
+        "description": "Number of rows in the result set.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.ResultManifest": {
+    "description": "Metadata describing the columns of a query result set.",
+    "fields": {
+      "column_count": {
+        "description": "Number of columns in the result set.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "columns": {
+        "description": "Information about each column in the result set.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "facet_column_count": {
+        "description": "Number of columns in the facet result.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "facet_columns": {
+        "description": "Information about each facet column.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.ScalingChangeState": {
+    "description": "State of the most recent scaling change request for a Standard endpoint.",
+    "enum": [
+      "SCALING_CHANGE_UNSPECIFIED",
+      "SCALING_CHANGE_APPLIED",
+      "SCALING_CHANGE_IN_PROGRESS"
+    ],
+    "enum_launch_stages": {
+      "SCALING_CHANGE_APPLIED": "PUBLIC_PREVIEW",
+      "SCALING_CHANGE_IN_PROGRESS": "PUBLIC_PREVIEW",
+      "SCALING_CHANGE_UNSPECIFIED": "PUBLIC_PREVIEW"
+    }
+  },
+  "aisearch.ScanIndexRequest": {
+    "description": "Request to scan (paginate over) the rows of an AI Search index. Models the legacy\n`num_results` / `last_primary_key` cursor as AIP-158 `page_size` / `page_token`.",
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of rows to return in this page.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token from a previous response; if unset, scanning starts from the beginning.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "aisearch.ScanIndexResponse": {
+    "description": "Response for ScanIndex carrying a page of rows and an optional continuation token.",
+    "fields": {
+      "data": {
+        "description": "The rows in this page, each a struct of column name to value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "Token for the next page; empty when the scan is exhausted.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "aisearch.SyncIndexRequest": {
+    "description": "Request to synchronize a Delta Sync AI Search index with its source Delta table."
+  },
+  "aisearch.SyncIndexResponse": {
+    "description": "Response for SyncIndex. Empty today; reserved so future sync metadata (e.g. an\noperation handle) can be added without breaking the wire contract."
+  },
+  "aisearch.ThroughputChangeRequestState": {
+    "description": "State of the most recent throughput change request issued against a Storage Optimized\nendpoint. Surfaced on `EndpointThroughputInfo.change_request_state`.",
+    "enum": [
+      "CHANGE_SUCCESS",
+      "CHANGE_FAILED",
+      "CHANGE_REACHED_MINIMUM",
+      "CHANGE_REACHED_MAXIMUM",
+      "CHANGE_IN_PROGRESS",
+      "CHANGE_ADJUSTED"
+    ],
+    "enum_launch_stages": {
+      "CHANGE_ADJUSTED": "PUBLIC_PREVIEW",
+      "CHANGE_FAILED": "PUBLIC_PREVIEW",
+      "CHANGE_IN_PROGRESS": "PUBLIC_PREVIEW",
+      "CHANGE_REACHED_MAXIMUM": "PUBLIC_PREVIEW",
+      "CHANGE_REACHED_MINIMUM": "PUBLIC_PREVIEW",
+      "CHANGE_SUCCESS": "PUBLIC_PREVIEW"
+    }
+  },
+  "aisearch.UpdateEndpointRequest": {
+    "fields": {
+      "endpoint": {
+        "description": "The Endpoint resource to update. `endpoint.name` carries the full resource path.",
+        "ref": "aisearch.Endpoint",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The list of fields to update.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "aisearch.UpsertDataRequest": {
+    "description": "Request to upsert rows into a Direct Access AI Search index.",
+    "fields": {
+      "inputs_json": {
+        "description": "JSON document describing the rows to upsert.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "aisearch.UpsertDataResponse": {
+    "description": "Response for UpsertData.",
+    "fields": {
+      "result": {
+        "description": "Per-row outcome of the upsert.",
+        "ref": "aisearch.DataModificationResult",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status": {
+        "description": "Overall status of the upsert.",
+        "ref": "aisearch.DataModificationStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  }
+}

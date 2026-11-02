@@ -1,0 +1,2644 @@
+{
+  "id": "dashboards.Lakeview",
+  "name": "Lakeview",
+  "description": "These APIs provide specific management operations for Lakeview dashboards. Generic resource management can be done with Workspace API (import, export, get-status, list, delete).",
+  "package": {
+    "name": "dashboards"
+  },
+  "docs_group": "dashboards",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListDashboardsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a draft dashboard.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Create dashboard.",
+      "path": "/api/2.0/lakeview/dashboards",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateDashboardRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "dashboard",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Dashboard",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "dashboard",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Dashboard",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "dashboard",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Dashboard",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Dashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Dashboard",
+            "is_object": true
+          }
+        },
+        {
+          "name": "dataset_catalog",
+          "description": "Sets the default catalog for all datasets in this dashboard.\nDoes not impact table references that use fully qualified catalog names (ex: samples.nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dataset_schema",
+          "description": "Sets the default schema for all datasets in this dashboard.\nDoes not impact table references that use fully qualified schema names (ex: nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "The timestamp of when the dashboard was created.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the dashboard.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard\nhas not been modified since the last read.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "lifecycle_state",
+          "description": "The state of the dashboard resource. Used for tracking trashed status.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LifecycleState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "TRASHED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "The workspace path of the folder containing the dashboard. Includes leading slash and no\ntrailing slash.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The workspace path of the dashboard asset, including the file name.\nExported dashboards always have the file extension `.lvdash.json`.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serialized_dashboard",
+          "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The timestamp of when the dashboard was last updated by the user.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The warehouse ID used to run the dashboard.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSchedule",
+      "description": "Create dashboard schedule.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Create dashboard schedule.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateScheduleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule",
+            "description": "The schedule to create. A dashboard is limited to 10 schedules.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Schedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "schedule",
+            "description": "The schedule to create. A dashboard is limited to 10 schedules.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Schedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "schedule",
+        "description": "The schedule to create. A dashboard is limited to 10 schedules.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Schedule",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "cron_schedule",
+              "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "cron_schedule",
+              "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Schedule",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cron_schedule",
+            "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cron_schedule",
+            "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule",
+          "description": "The schedule to create. A dashboard is limited to 10 schedules.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Schedule",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "cron_schedule",
+                "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "cron_schedule",
+                "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "A timestamp indicating when the schedule was created.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cron_schedule",
+          "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name for schedule.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the schedule. Must be left empty on create, must be provided on updates to ensure\nthat the schedule has not been modified since the last read, and can be optionally provided on delete.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "pause_status",
+          "description": "The status indicates whether this schedule is paused or not.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SchedulePauseStatus",
+            "enum": [
+              {
+                "content": "PAUSED"
+              },
+              {
+                "content": "UNPAUSED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "A timestamp indicating when the schedule was last updated.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The warehouse id to run the dashboard with for the schedule.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cron_schedule",
+          "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSubscription",
+      "description": "Create schedule subscription.\n\nThe caller must be a workspace user with one of the following\n[entitlements](https://docs.databricks.com/security/auth/entitlements):\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "Create schedule subscription.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules/{schedule_id}/subscriptions",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateSubscriptionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule to which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "subscription",
+            "description": "The subscription to create. A schedule is limited to 100 subscriptions.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Subscription",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule to which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "subscription",
+            "description": "The subscription to create. A schedule is limited to 100 subscriptions.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Subscription",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "subscription",
+        "description": "The subscription to create. A schedule is limited to 100 subscriptions.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Subscription",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "subscriber",
+              "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "Subscriber",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "subscriber",
+              "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "Subscriber",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Subscription",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "subscriber",
+            "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Subscriber",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "subscriber",
+            "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Subscriber",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule to which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subscription",
+          "description": "The subscription to create. A schedule is limited to 100 subscriptions.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Subscription",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "subscriber",
+                "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "Subscriber",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "subscriber",
+                "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "Subscriber",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "A timestamp indicating when the subscription was created.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_by_user_id",
+          "description": "UserId of the user who adds subscribers (users or notification destinations) to the dashboard's schedule.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the subscription belongs.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the subscription. Must be left empty on create, can be optionally provided on delete\nto ensure that the subscription has not been deleted since the last read.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule to which the subscription belongs.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "skip_notify",
+          "description": "Controls whether notifications are sent to the subscriber for scheduled dashboard refreshes.\nIf not defined, defaults to false in the backend to match the current behavior (refresh and notify)",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "subscriber",
+          "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Subscriber",
+            "is_object": true
+          }
+        },
+        {
+          "name": "subscription_id",
+          "description": "UUID identifying the subscription.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "A timestamp indicating when the subscription was last updated.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule to which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subscriber",
+          "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Subscriber",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSchedule",
+      "description": "Delete dashboard schedule.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Delete dashboard schedule.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules/{schedule_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteScheduleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the schedule. Optionally, it can be provided to verify that the schedule has not\nbeen modified from its last retrieval.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSubscription",
+      "description": "Delete schedule subscription.\n\nThe caller must be a workspace user with one of the following\n[entitlements](https://docs.databricks.com/security/auth/entitlements):\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "Delete schedule subscription.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules/{schedule_id}/subscriptions/{subscription_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteSubscriptionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "subscription_id",
+            "description": "UUID identifying the subscription.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "subscription_id",
+            "description": "UUID identifying the subscription.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the subscription. Can be optionally provided to ensure that the subscription has not been\nmodified since the last read.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subscription_id",
+          "description": "UUID identifying the subscription.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subscription_id",
+          "description": "UUID identifying the subscription.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a draft dashboard.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Get dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Dashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPublished",
+      "description": "Get the current published dashboard.\n\nThe caller must be a workspace user with one of the following entitlements:\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "Get published dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/published",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPublishedDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the published dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the published dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PublishedDashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the published dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the published dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSchedule",
+      "description": "Get dashboard schedule.\n\nThe caller must be a workspace user with one of the following\n[entitlements](https://docs.databricks.com/security/auth/entitlements):\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "Get dashboard schedule.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules/{schedule_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetScheduleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Schedule",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cron_schedule",
+            "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cron_schedule",
+            "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSubscription",
+      "description": "Get schedule subscription.\n\nThe caller must be a workspace user with one of the following\n[entitlements](https://docs.databricks.com/security/auth/entitlements):\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "Get schedule subscription.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules/{schedule_id}/subscriptions/{subscription_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetSubscriptionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "subscription_id",
+            "description": "UUID identifying the subscription.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule which the subscription belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "subscription_id",
+            "description": "UUID identifying the subscription.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Subscription",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "subscriber",
+            "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Subscriber",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "subscriber",
+            "description": "Subscriber details for users and destinations to be added as subscribers to the schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Subscriber",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subscription_id",
+          "description": "UUID identifying the subscription.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule which the subscription belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "subscription_id",
+          "description": "UUID identifying the subscription.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List dashboards.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "List dashboards.",
+      "path": "/api/2.0/lakeview/dashboards",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListDashboardsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListDashboardsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The number of dashboards to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListDashboards` call.\nThis token can be used to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "show_trashed",
+          "description": "The flag to include dashboards located in the trash.\nIf unspecified, only active dashboards will be returned.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "`DASHBOARD_VIEW_BASIC` only includes summary metadata from the dashboard.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "DashboardView",
+            "enum": [
+              {
+                "content": "DASHBOARD_VIEW_BASIC"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListDashboards` call.\nThis token can be used to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSchedules",
+      "description": "List dashboard schedules.\n\nThe caller must be a workspace user with one of the following\n[entitlements](https://docs.databricks.com/security/auth/entitlements):\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "List dashboard schedules.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListSchedulesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedules belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedules belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSchedulesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedules belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The number of schedules to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListSchedules` call.\nUse this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedules belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListSchedules` call.\nUse this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSubscriptions",
+      "description": "List schedule subscriptions.\n\nThe caller must be a workspace user with one of the following\n[entitlements](https://docs.databricks.com/security/auth/entitlements):\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "List schedule subscriptions.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules/{schedule_id}/subscriptions",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListSubscriptionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard which the subscriptions belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule which the subscriptions belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard which the subscriptions belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule which the subscriptions belongs.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSubscriptionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard which the subscriptions belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "The number of subscriptions to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListSubscriptions` call.\nUse this to retrieve the subsequent page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule which the subscriptions belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard which the subscriptions belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule which the subscriptions belongs.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListSubscriptions` call.\nUse this to retrieve the subsequent page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Migrate",
+      "description": "Deprecated: Legacy dashboard migration is no longer supported. Use Lakeview (AI/BI)\ndashboards instead.",
+      "summary": "Migrate dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/migrate",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "MigrateDashboardRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "source_dashboard_id",
+            "description": "UUID of the dashboard to be migrated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "source_dashboard_id",
+            "description": "UUID of the dashboard to be migrated.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Dashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "display_name",
+          "description": "Display name for the new Lakeview dashboard.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "The workspace path of the folder to contain the migrated Lakeview dashboard.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_dashboard_id",
+          "description": "UUID of the dashboard to be migrated.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_parameter_syntax",
+          "description": "Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated\nto named syntax (:param) when converting datasets in the dashboard.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "source_dashboard_id",
+          "description": "UUID of the dashboard to be migrated.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Publish",
+      "description": "Publish the current draft dashboard.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Publish dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/published",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PublishRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to be published.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to be published.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PublishedDashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to be published.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "embed_credentials",
+          "description": "Flag to indicate if the publisher's credentials should be embedded in the\npublished dashboard. These embedded credentials will be used to execute the\npublished dashboard's queries.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The ID of the warehouse that can be used to override the warehouse which\nwas set in the draft.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to be published.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revert",
+      "description": "Revert a dashboard's definition in draft mode to the last published version.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Revert dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/revert",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RevertDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RevertDashboardResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the dashboard. Optionally, it can be provided to verify that the dashboard\nhas not been modified from its last retrieval.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trash",
+      "description": "Trash a dashboard.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Trash dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "TrashDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TrashDashboardResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unpublish",
+      "description": "Unpublish the dashboard.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Unpublish dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/published",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UnpublishDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the published dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the published dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UnpublishDashboardResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the published dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the published dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Update a draft dashboard.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Update dashboard.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateDashboardRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "dashboard",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Dashboard",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "dashboard",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Dashboard",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "dashboard",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Dashboard",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Dashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Dashboard",
+            "is_object": true
+          }
+        },
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dataset_catalog",
+          "description": "Sets the default catalog for all datasets in this dashboard.\nDoes not impact table references that use fully qualified catalog names (ex: samples.nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dataset_schema",
+          "description": "Sets the default schema for all datasets in this dashboard.\nDoes not impact table references that use fully qualified schema names (ex: nyctaxi.trips).\nLeave blank to keep each dataset’s existing configuration.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "The timestamp of when the dashboard was created.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the dashboard.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard\nhas not been modified since the last read.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "lifecycle_state",
+          "description": "The state of the dashboard resource. Used for tracking trashed status.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LifecycleState",
+            "enum": [
+              {
+                "content": "ACTIVE"
+              },
+              {
+                "content": "TRASHED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "The workspace path of the folder containing the dashboard. Includes leading slash and no\ntrailing slash.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The workspace path of the dashboard asset, including the file name.\nExported dashboards always have the file extension `.lvdash.json`.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "serialized_dashboard",
+          "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The timestamp of when the dashboard was last updated by the user.\nThis field is excluded in List Dashboards responses.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The warehouse ID used to run the dashboard.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSchedule",
+      "description": "Update dashboard schedule.\n\nRequires the [Databricks SQL access](https://docs.databricks.com/security/auth/entitlements)\nentitlement. Grant Databricks SQL access in addition to Workspace access.",
+      "summary": "Update dashboard schedule.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/schedules/{schedule_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateScheduleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule",
+            "description": "The schedule to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Schedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the dashboard to which the schedule belongs.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "schedule_id",
+            "description": "UUID identifying the schedule.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "schedule",
+            "description": "The schedule to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Schedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "schedule",
+        "description": "The schedule to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Schedule",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "cron_schedule",
+              "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "cron_schedule",
+              "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "CronSchedule",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Schedule",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cron_schedule",
+            "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cron_schedule",
+            "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CronSchedule",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule",
+          "description": "The schedule to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Schedule",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "cron_schedule",
+                "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "cron_schedule",
+                "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "CronSchedule",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "A timestamp indicating when the schedule was created.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cron_schedule",
+          "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name for schedule.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "The etag for the schedule. Must be left empty on create, must be provided on updates to ensure\nthat the schedule has not been modified since the last read, and can be optionally provided on delete.",
+          "is_computed": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "pause_status",
+          "description": "The status indicates whether this schedule is paused or not.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SchedulePauseStatus",
+            "enum": [
+              {
+                "content": "PAUSED"
+              },
+              {
+                "content": "UNPAUSED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "A timestamp indicating when the schedule was last updated.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "The warehouse id to run the dashboard with for the schedule.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the dashboard to which the schedule belongs.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schedule_id",
+          "description": "UUID identifying the schedule.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cron_schedule",
+          "description": "The cron expression describing the frequency of the periodic refresh for this schedule.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

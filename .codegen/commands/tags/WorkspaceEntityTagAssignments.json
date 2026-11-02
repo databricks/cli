@@ -1,0 +1,1192 @@
+{
+  "id": "tags.WorkspaceEntityTagAssignments",
+  "name": "WorkspaceEntityTagAssignments",
+  "description": "Manage tag assignments on workspace-scoped objects.",
+  "package": {
+    "name": "tags"
+  },
+  "docs_group": "tags",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListTagAssignmentsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateTagAssignment",
+      "description": "Create a tag assignment",
+      "summary": "Create a tag assignment for an entity.",
+      "path": "/api/2.0/entity-tag-assignments",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateTagAssignmentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagAssignment",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagAssignment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tag_assignment",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "TagAssignment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "entity_type",
+              "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_id",
+              "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "entity_type",
+              "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_id",
+              "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "TagAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "tag_assignment",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TagAssignment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "entity_type",
+                "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_id",
+                "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "entity_type",
+                "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_id",
+                "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_value",
+          "description": "The value of the tag",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteTagAssignment",
+      "description": "Delete a tag assignment",
+      "summary": "Delete a tag assignment for an entity.",
+      "path": "/api/2.0/entity-tag-assignments/{entity_type}/{entity_id}/tags/{tag_key}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteTagAssignmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetTagAssignment",
+      "description": "Get a tag assignment",
+      "summary": "Get a tag assignment for an entity.",
+      "path": "/api/2.0/entity-tag-assignments/{entity_type}/{entity_id}/tags/{tag_key}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetTagAssignmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "TagAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListTagAssignments",
+      "description": "List the tag assignments for an entity",
+      "summary": "List tag assignments for an entity.",
+      "path": "/api/2.0/entity-tag-assignments/{entity_type}/{entity_id}/tags",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListTagAssignmentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListTagAssignmentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Optional. Maximum number of tag assignments to return in a single page",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page of tag assignments. Requests first page if absent.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page of tag assignments. Requests first page if absent.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateTagAssignment",
+      "description": "Update a tag assignment",
+      "summary": "Update a tag assignment for an entity.",
+      "path": "/api/2.0/entity-tag-assignments/{entity_type}/{entity_id}/tags/{tag_key}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateTagAssignmentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagAssignment",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "TagAssignment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tag_assignment",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "TagAssignment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "entity_type",
+              "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_id",
+              "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "entity_type",
+              "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_id",
+              "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "TagAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_id",
+            "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_assignment",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TagAssignment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "entity_type",
+                "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_id",
+                "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "entity_type",
+                "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_id",
+                "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_value",
+          "description": "The value of the tag",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of entity to which the tag is assigned. Allowed values are apps, dashboards, geniespaces, notebooks",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_id",
+          "description": "The identifier of the entity to which the tag is assigned. For apps, the entity_id is the app name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag. The characters , . : / - = and leading/trailing spaces are not allowed",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

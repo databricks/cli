@@ -1,0 +1,2380 @@
+{
+  "id": "catalog.ExternalMetadata",
+  "name": "ExternalMetadata",
+  "description": "External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.\n\nThese APIs provide a standardized way to create, update, retrieve, list, and delete external metadata objects. Fine-grained authorization ensures that only users with appropriate permissions can view and manage external metadata objects.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListExternalMetadataRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateExternalMetadata",
+      "description": "Creates a new external metadata object in the parent metastore if the caller is a metastore admin or has the **CREATE_EXTERNAL_METADATA** privilege.\nGrants **BROWSE** to all account users upon creation by default.",
+      "summary": "Create an external metadata object.",
+      "path": "/api/2.0/lineage-tracking/external-metadata",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateExternalMetadataRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "external_metadata",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalMetadata",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "external_metadata",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalMetadata",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "external_metadata",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ExternalMetadata",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "Name of the external metadata object.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "system_type",
+              "description": "Type of external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SystemType",
+                "enum": [
+                  {
+                    "content": "AMAZON_REDSHIFT"
+                  },
+                  {
+                    "content": "AZURE_SYNAPSE"
+                  },
+                  {
+                    "content": "CONFLUENT"
+                  },
+                  {
+                    "content": "DATABRICKS"
+                  },
+                  {
+                    "content": "GOOGLE_BIGQUERY"
+                  },
+                  {
+                    "content": "KAFKA"
+                  },
+                  {
+                    "content": "LOOKER"
+                  },
+                  {
+                    "content": "MICROSOFT_FABRIC"
+                  },
+                  {
+                    "content": "MICROSOFT_SQL_SERVER"
+                  },
+                  {
+                    "content": "MONGODB"
+                  },
+                  {
+                    "content": "MYSQL"
+                  },
+                  {
+                    "content": "ORACLE"
+                  },
+                  {
+                    "content": "OTHER"
+                  },
+                  {
+                    "content": "POSTGRESQL"
+                  },
+                  {
+                    "content": "POWER_BI"
+                  },
+                  {
+                    "content": "SALESFORCE"
+                  },
+                  {
+                    "content": "SAP"
+                  },
+                  {
+                    "content": "SERVICENOW"
+                  },
+                  {
+                    "content": "SNOWFLAKE"
+                  },
+                  {
+                    "content": "STREAM_NATIVE"
+                  },
+                  {
+                    "content": "TABLEAU"
+                  },
+                  {
+                    "content": "TERADATA"
+                  },
+                  {
+                    "content": "WORKDAY"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "Type of entity within the external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "Name of the external metadata object.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "system_type",
+              "description": "Type of external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SystemType",
+                "enum": [
+                  {
+                    "content": "AMAZON_REDSHIFT"
+                  },
+                  {
+                    "content": "AZURE_SYNAPSE"
+                  },
+                  {
+                    "content": "CONFLUENT"
+                  },
+                  {
+                    "content": "DATABRICKS"
+                  },
+                  {
+                    "content": "GOOGLE_BIGQUERY"
+                  },
+                  {
+                    "content": "KAFKA"
+                  },
+                  {
+                    "content": "LOOKER"
+                  },
+                  {
+                    "content": "MICROSOFT_FABRIC"
+                  },
+                  {
+                    "content": "MICROSOFT_SQL_SERVER"
+                  },
+                  {
+                    "content": "MONGODB"
+                  },
+                  {
+                    "content": "MYSQL"
+                  },
+                  {
+                    "content": "ORACLE"
+                  },
+                  {
+                    "content": "OTHER"
+                  },
+                  {
+                    "content": "POSTGRESQL"
+                  },
+                  {
+                    "content": "POWER_BI"
+                  },
+                  {
+                    "content": "SALESFORCE"
+                  },
+                  {
+                    "content": "SAP"
+                  },
+                  {
+                    "content": "SERVICENOW"
+                  },
+                  {
+                    "content": "SNOWFLAKE"
+                  },
+                  {
+                    "content": "STREAM_NATIVE"
+                  },
+                  {
+                    "content": "TABLEAU"
+                  },
+                  {
+                    "content": "TERADATA"
+                  },
+                  {
+                    "content": "WORKDAY"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "Type of entity within the external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ExternalMetadata",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "system_type",
+            "description": "Type of external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SystemType",
+              "enum": [
+                {
+                  "content": "AMAZON_REDSHIFT"
+                },
+                {
+                  "content": "AZURE_SYNAPSE"
+                },
+                {
+                  "content": "CONFLUENT"
+                },
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "GOOGLE_BIGQUERY"
+                },
+                {
+                  "content": "KAFKA"
+                },
+                {
+                  "content": "LOOKER"
+                },
+                {
+                  "content": "MICROSOFT_FABRIC"
+                },
+                {
+                  "content": "MICROSOFT_SQL_SERVER"
+                },
+                {
+                  "content": "MONGODB"
+                },
+                {
+                  "content": "MYSQL"
+                },
+                {
+                  "content": "ORACLE"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "POSTGRESQL"
+                },
+                {
+                  "content": "POWER_BI"
+                },
+                {
+                  "content": "SALESFORCE"
+                },
+                {
+                  "content": "SAP"
+                },
+                {
+                  "content": "SERVICENOW"
+                },
+                {
+                  "content": "SNOWFLAKE"
+                },
+                {
+                  "content": "STREAM_NATIVE"
+                },
+                {
+                  "content": "TABLEAU"
+                },
+                {
+                  "content": "TERADATA"
+                },
+                {
+                  "content": "WORKDAY"
+                }
+              ]
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "Type of entity within the external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "system_type",
+            "description": "Type of external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SystemType",
+              "enum": [
+                {
+                  "content": "AMAZON_REDSHIFT"
+                },
+                {
+                  "content": "AZURE_SYNAPSE"
+                },
+                {
+                  "content": "CONFLUENT"
+                },
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "GOOGLE_BIGQUERY"
+                },
+                {
+                  "content": "KAFKA"
+                },
+                {
+                  "content": "LOOKER"
+                },
+                {
+                  "content": "MICROSOFT_FABRIC"
+                },
+                {
+                  "content": "MICROSOFT_SQL_SERVER"
+                },
+                {
+                  "content": "MONGODB"
+                },
+                {
+                  "content": "MYSQL"
+                },
+                {
+                  "content": "ORACLE"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "POSTGRESQL"
+                },
+                {
+                  "content": "POWER_BI"
+                },
+                {
+                  "content": "SALESFORCE"
+                },
+                {
+                  "content": "SAP"
+                },
+                {
+                  "content": "SERVICENOW"
+                },
+                {
+                  "content": "SNOWFLAKE"
+                },
+                {
+                  "content": "STREAM_NATIVE"
+                },
+                {
+                  "content": "TABLEAU"
+                },
+                {
+                  "content": "TERADATA"
+                },
+                {
+                  "content": "WORKDAY"
+                }
+              ]
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "Type of entity within the external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "external_metadata",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalMetadata",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "Name of the external metadata object.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "system_type",
+                "description": "Type of external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SystemType",
+                  "enum": [
+                    {
+                      "content": "AMAZON_REDSHIFT"
+                    },
+                    {
+                      "content": "AZURE_SYNAPSE"
+                    },
+                    {
+                      "content": "CONFLUENT"
+                    },
+                    {
+                      "content": "DATABRICKS"
+                    },
+                    {
+                      "content": "GOOGLE_BIGQUERY"
+                    },
+                    {
+                      "content": "KAFKA"
+                    },
+                    {
+                      "content": "LOOKER"
+                    },
+                    {
+                      "content": "MICROSOFT_FABRIC"
+                    },
+                    {
+                      "content": "MICROSOFT_SQL_SERVER"
+                    },
+                    {
+                      "content": "MONGODB"
+                    },
+                    {
+                      "content": "MYSQL"
+                    },
+                    {
+                      "content": "ORACLE"
+                    },
+                    {
+                      "content": "OTHER"
+                    },
+                    {
+                      "content": "POSTGRESQL"
+                    },
+                    {
+                      "content": "POWER_BI"
+                    },
+                    {
+                      "content": "SALESFORCE"
+                    },
+                    {
+                      "content": "SAP"
+                    },
+                    {
+                      "content": "SERVICENOW"
+                    },
+                    {
+                      "content": "SNOWFLAKE"
+                    },
+                    {
+                      "content": "STREAM_NATIVE"
+                    },
+                    {
+                      "content": "TABLEAU"
+                    },
+                    {
+                      "content": "TERADATA"
+                    },
+                    {
+                      "content": "WORKDAY"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "Type of entity within the external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "Name of the external metadata object.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "system_type",
+                "description": "Type of external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SystemType",
+                  "enum": [
+                    {
+                      "content": "AMAZON_REDSHIFT"
+                    },
+                    {
+                      "content": "AZURE_SYNAPSE"
+                    },
+                    {
+                      "content": "CONFLUENT"
+                    },
+                    {
+                      "content": "DATABRICKS"
+                    },
+                    {
+                      "content": "GOOGLE_BIGQUERY"
+                    },
+                    {
+                      "content": "KAFKA"
+                    },
+                    {
+                      "content": "LOOKER"
+                    },
+                    {
+                      "content": "MICROSOFT_FABRIC"
+                    },
+                    {
+                      "content": "MICROSOFT_SQL_SERVER"
+                    },
+                    {
+                      "content": "MONGODB"
+                    },
+                    {
+                      "content": "MYSQL"
+                    },
+                    {
+                      "content": "ORACLE"
+                    },
+                    {
+                      "content": "OTHER"
+                    },
+                    {
+                      "content": "POSTGRESQL"
+                    },
+                    {
+                      "content": "POWER_BI"
+                    },
+                    {
+                      "content": "SALESFORCE"
+                    },
+                    {
+                      "content": "SAP"
+                    },
+                    {
+                      "content": "SERVICENOW"
+                    },
+                    {
+                      "content": "SNOWFLAKE"
+                    },
+                    {
+                      "content": "STREAM_NATIVE"
+                    },
+                    {
+                      "content": "TABLEAU"
+                    },
+                    {
+                      "content": "TERADATA"
+                    },
+                    {
+                      "content": "WORKDAY"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "Type of entity within the external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "columns",
+          "description": "List of columns associated with the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time at which this external metadata object was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Username of external metadata object creator.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "Type of entity within the external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the external metadata object.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Unique identifier of parent metastore.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the external metadata object.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Owner of the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "A map of key-value properties attached to the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "system_type",
+          "description": "Type of external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SystemType",
+            "enum": [
+              {
+                "content": "AMAZON_REDSHIFT"
+              },
+              {
+                "content": "AZURE_SYNAPSE"
+              },
+              {
+                "content": "CONFLUENT"
+              },
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "GOOGLE_BIGQUERY"
+              },
+              {
+                "content": "KAFKA"
+              },
+              {
+                "content": "LOOKER"
+              },
+              {
+                "content": "MICROSOFT_FABRIC"
+              },
+              {
+                "content": "MICROSOFT_SQL_SERVER"
+              },
+              {
+                "content": "MONGODB"
+              },
+              {
+                "content": "MYSQL"
+              },
+              {
+                "content": "ORACLE"
+              },
+              {
+                "content": "OTHER"
+              },
+              {
+                "content": "POSTGRESQL"
+              },
+              {
+                "content": "POWER_BI"
+              },
+              {
+                "content": "SALESFORCE"
+              },
+              {
+                "content": "SAP"
+              },
+              {
+                "content": "SERVICENOW"
+              },
+              {
+                "content": "SNOWFLAKE"
+              },
+              {
+                "content": "STREAM_NATIVE"
+              },
+              {
+                "content": "TABLEAU"
+              },
+              {
+                "content": "TERADATA"
+              },
+              {
+                "content": "WORKDAY"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time at which this external metadata object was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Username of user who last modified external metadata object.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "url",
+          "description": "URL associated with the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the external metadata object.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "system_type",
+          "description": "Type of external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SystemType",
+            "enum": [
+              {
+                "content": "AMAZON_REDSHIFT"
+              },
+              {
+                "content": "AZURE_SYNAPSE"
+              },
+              {
+                "content": "CONFLUENT"
+              },
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "GOOGLE_BIGQUERY"
+              },
+              {
+                "content": "KAFKA"
+              },
+              {
+                "content": "LOOKER"
+              },
+              {
+                "content": "MICROSOFT_FABRIC"
+              },
+              {
+                "content": "MICROSOFT_SQL_SERVER"
+              },
+              {
+                "content": "MONGODB"
+              },
+              {
+                "content": "MYSQL"
+              },
+              {
+                "content": "ORACLE"
+              },
+              {
+                "content": "OTHER"
+              },
+              {
+                "content": "POSTGRESQL"
+              },
+              {
+                "content": "POWER_BI"
+              },
+              {
+                "content": "SALESFORCE"
+              },
+              {
+                "content": "SAP"
+              },
+              {
+                "content": "SERVICENOW"
+              },
+              {
+                "content": "SNOWFLAKE"
+              },
+              {
+                "content": "STREAM_NATIVE"
+              },
+              {
+                "content": "TABLEAU"
+              },
+              {
+                "content": "TERADATA"
+              },
+              {
+                "content": "WORKDAY"
+              }
+            ]
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "Type of entity within the external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteExternalMetadata",
+      "description": "Deletes the external metadata object that matches the supplied name.\nThe caller must be a metastore admin, the owner of the external metadata object, or a user that has the **MANAGE** privilege.",
+      "summary": "Delete an external metadata object.",
+      "path": "/api/2.0/lineage-tracking/external-metadata/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteExternalMetadataRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetExternalMetadata",
+      "description": "Gets the specified external metadata object in a metastore.\nThe caller must be a metastore admin, the owner of the external metadata object, or a user that has the **BROWSE** privilege.",
+      "summary": "Get an external metadata object.",
+      "path": "/api/2.0/lineage-tracking/external-metadata/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetExternalMetadataRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExternalMetadata",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "system_type",
+            "description": "Type of external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SystemType",
+              "enum": [
+                {
+                  "content": "AMAZON_REDSHIFT"
+                },
+                {
+                  "content": "AZURE_SYNAPSE"
+                },
+                {
+                  "content": "CONFLUENT"
+                },
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "GOOGLE_BIGQUERY"
+                },
+                {
+                  "content": "KAFKA"
+                },
+                {
+                  "content": "LOOKER"
+                },
+                {
+                  "content": "MICROSOFT_FABRIC"
+                },
+                {
+                  "content": "MICROSOFT_SQL_SERVER"
+                },
+                {
+                  "content": "MONGODB"
+                },
+                {
+                  "content": "MYSQL"
+                },
+                {
+                  "content": "ORACLE"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "POSTGRESQL"
+                },
+                {
+                  "content": "POWER_BI"
+                },
+                {
+                  "content": "SALESFORCE"
+                },
+                {
+                  "content": "SAP"
+                },
+                {
+                  "content": "SERVICENOW"
+                },
+                {
+                  "content": "SNOWFLAKE"
+                },
+                {
+                  "content": "STREAM_NATIVE"
+                },
+                {
+                  "content": "TABLEAU"
+                },
+                {
+                  "content": "TERADATA"
+                },
+                {
+                  "content": "WORKDAY"
+                }
+              ]
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "Type of entity within the external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "system_type",
+            "description": "Type of external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SystemType",
+              "enum": [
+                {
+                  "content": "AMAZON_REDSHIFT"
+                },
+                {
+                  "content": "AZURE_SYNAPSE"
+                },
+                {
+                  "content": "CONFLUENT"
+                },
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "GOOGLE_BIGQUERY"
+                },
+                {
+                  "content": "KAFKA"
+                },
+                {
+                  "content": "LOOKER"
+                },
+                {
+                  "content": "MICROSOFT_FABRIC"
+                },
+                {
+                  "content": "MICROSOFT_SQL_SERVER"
+                },
+                {
+                  "content": "MONGODB"
+                },
+                {
+                  "content": "MYSQL"
+                },
+                {
+                  "content": "ORACLE"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "POSTGRESQL"
+                },
+                {
+                  "content": "POWER_BI"
+                },
+                {
+                  "content": "SALESFORCE"
+                },
+                {
+                  "content": "SAP"
+                },
+                {
+                  "content": "SERVICENOW"
+                },
+                {
+                  "content": "SNOWFLAKE"
+                },
+                {
+                  "content": "STREAM_NATIVE"
+                },
+                {
+                  "content": "TABLEAU"
+                },
+                {
+                  "content": "TERADATA"
+                },
+                {
+                  "content": "WORKDAY"
+                }
+              ]
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "Type of entity within the external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListExternalMetadata",
+      "description": "Gets an array of external metadata objects in the metastore.\nIf the caller is the metastore admin, all external metadata objects will be retrieved.\nOtherwise, only external metadata objects that the caller has **BROWSE** on will be retrieved.\nThere is no guarantee of a specific ordering of the elements in the array.",
+      "summary": "List external metadata objects.",
+      "path": "/api/2.0/lineage-tracking/external-metadata",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListExternalMetadataRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListExternalMetadataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Specifies the maximum number of external metadata objects to return in a single response.\nThe value must be less than or equal to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateExternalMetadata",
+      "description": "Updates the external metadata object that matches the supplied name. The caller can only update either the owner or other metadata fields in one request.\nThe caller must be a metastore admin, the owner of the external metadata object, or a user that has the **MODIFY** privilege.\nIf the caller is updating the owner, they must also have the **MANAGE** privilege.",
+      "summary": "Update an external metadata object.",
+      "path": "/api/2.0/lineage-tracking/external-metadata/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateExternalMetadataRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "external_metadata",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalMetadata",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "external_metadata",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ExternalMetadata",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "external_metadata",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ExternalMetadata",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "Name of the external metadata object.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "system_type",
+              "description": "Type of external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SystemType",
+                "enum": [
+                  {
+                    "content": "AMAZON_REDSHIFT"
+                  },
+                  {
+                    "content": "AZURE_SYNAPSE"
+                  },
+                  {
+                    "content": "CONFLUENT"
+                  },
+                  {
+                    "content": "DATABRICKS"
+                  },
+                  {
+                    "content": "GOOGLE_BIGQUERY"
+                  },
+                  {
+                    "content": "KAFKA"
+                  },
+                  {
+                    "content": "LOOKER"
+                  },
+                  {
+                    "content": "MICROSOFT_FABRIC"
+                  },
+                  {
+                    "content": "MICROSOFT_SQL_SERVER"
+                  },
+                  {
+                    "content": "MONGODB"
+                  },
+                  {
+                    "content": "MYSQL"
+                  },
+                  {
+                    "content": "ORACLE"
+                  },
+                  {
+                    "content": "OTHER"
+                  },
+                  {
+                    "content": "POSTGRESQL"
+                  },
+                  {
+                    "content": "POWER_BI"
+                  },
+                  {
+                    "content": "SALESFORCE"
+                  },
+                  {
+                    "content": "SAP"
+                  },
+                  {
+                    "content": "SERVICENOW"
+                  },
+                  {
+                    "content": "SNOWFLAKE"
+                  },
+                  {
+                    "content": "STREAM_NATIVE"
+                  },
+                  {
+                    "content": "TABLEAU"
+                  },
+                  {
+                    "content": "TERADATA"
+                  },
+                  {
+                    "content": "WORKDAY"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "Type of entity within the external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "Name of the external metadata object.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "system_type",
+              "description": "Type of external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SystemType",
+                "enum": [
+                  {
+                    "content": "AMAZON_REDSHIFT"
+                  },
+                  {
+                    "content": "AZURE_SYNAPSE"
+                  },
+                  {
+                    "content": "CONFLUENT"
+                  },
+                  {
+                    "content": "DATABRICKS"
+                  },
+                  {
+                    "content": "GOOGLE_BIGQUERY"
+                  },
+                  {
+                    "content": "KAFKA"
+                  },
+                  {
+                    "content": "LOOKER"
+                  },
+                  {
+                    "content": "MICROSOFT_FABRIC"
+                  },
+                  {
+                    "content": "MICROSOFT_SQL_SERVER"
+                  },
+                  {
+                    "content": "MONGODB"
+                  },
+                  {
+                    "content": "MYSQL"
+                  },
+                  {
+                    "content": "ORACLE"
+                  },
+                  {
+                    "content": "OTHER"
+                  },
+                  {
+                    "content": "POSTGRESQL"
+                  },
+                  {
+                    "content": "POWER_BI"
+                  },
+                  {
+                    "content": "SALESFORCE"
+                  },
+                  {
+                    "content": "SAP"
+                  },
+                  {
+                    "content": "SERVICENOW"
+                  },
+                  {
+                    "content": "SNOWFLAKE"
+                  },
+                  {
+                    "content": "STREAM_NATIVE"
+                  },
+                  {
+                    "content": "TABLEAU"
+                  },
+                  {
+                    "content": "TERADATA"
+                  },
+                  {
+                    "content": "WORKDAY"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "Type of entity within the external system.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ExternalMetadata",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "system_type",
+            "description": "Type of external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SystemType",
+              "enum": [
+                {
+                  "content": "AMAZON_REDSHIFT"
+                },
+                {
+                  "content": "AZURE_SYNAPSE"
+                },
+                {
+                  "content": "CONFLUENT"
+                },
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "GOOGLE_BIGQUERY"
+                },
+                {
+                  "content": "KAFKA"
+                },
+                {
+                  "content": "LOOKER"
+                },
+                {
+                  "content": "MICROSOFT_FABRIC"
+                },
+                {
+                  "content": "MICROSOFT_SQL_SERVER"
+                },
+                {
+                  "content": "MONGODB"
+                },
+                {
+                  "content": "MYSQL"
+                },
+                {
+                  "content": "ORACLE"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "POSTGRESQL"
+                },
+                {
+                  "content": "POWER_BI"
+                },
+                {
+                  "content": "SALESFORCE"
+                },
+                {
+                  "content": "SAP"
+                },
+                {
+                  "content": "SERVICENOW"
+                },
+                {
+                  "content": "SNOWFLAKE"
+                },
+                {
+                  "content": "STREAM_NATIVE"
+                },
+                {
+                  "content": "TABLEAU"
+                },
+                {
+                  "content": "TERADATA"
+                },
+                {
+                  "content": "WORKDAY"
+                }
+              ]
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "Type of entity within the external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the external metadata object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "system_type",
+            "description": "Type of external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SystemType",
+              "enum": [
+                {
+                  "content": "AMAZON_REDSHIFT"
+                },
+                {
+                  "content": "AZURE_SYNAPSE"
+                },
+                {
+                  "content": "CONFLUENT"
+                },
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "GOOGLE_BIGQUERY"
+                },
+                {
+                  "content": "KAFKA"
+                },
+                {
+                  "content": "LOOKER"
+                },
+                {
+                  "content": "MICROSOFT_FABRIC"
+                },
+                {
+                  "content": "MICROSOFT_SQL_SERVER"
+                },
+                {
+                  "content": "MONGODB"
+                },
+                {
+                  "content": "MYSQL"
+                },
+                {
+                  "content": "ORACLE"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "POSTGRESQL"
+                },
+                {
+                  "content": "POWER_BI"
+                },
+                {
+                  "content": "SALESFORCE"
+                },
+                {
+                  "content": "SAP"
+                },
+                {
+                  "content": "SERVICENOW"
+                },
+                {
+                  "content": "SNOWFLAKE"
+                },
+                {
+                  "content": "STREAM_NATIVE"
+                },
+                {
+                  "content": "TABLEAU"
+                },
+                {
+                  "content": "TERADATA"
+                },
+                {
+                  "content": "WORKDAY"
+                }
+              ]
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "Type of entity within the external system.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "external_metadata",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExternalMetadata",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "Name of the external metadata object.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "system_type",
+                "description": "Type of external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SystemType",
+                  "enum": [
+                    {
+                      "content": "AMAZON_REDSHIFT"
+                    },
+                    {
+                      "content": "AZURE_SYNAPSE"
+                    },
+                    {
+                      "content": "CONFLUENT"
+                    },
+                    {
+                      "content": "DATABRICKS"
+                    },
+                    {
+                      "content": "GOOGLE_BIGQUERY"
+                    },
+                    {
+                      "content": "KAFKA"
+                    },
+                    {
+                      "content": "LOOKER"
+                    },
+                    {
+                      "content": "MICROSOFT_FABRIC"
+                    },
+                    {
+                      "content": "MICROSOFT_SQL_SERVER"
+                    },
+                    {
+                      "content": "MONGODB"
+                    },
+                    {
+                      "content": "MYSQL"
+                    },
+                    {
+                      "content": "ORACLE"
+                    },
+                    {
+                      "content": "OTHER"
+                    },
+                    {
+                      "content": "POSTGRESQL"
+                    },
+                    {
+                      "content": "POWER_BI"
+                    },
+                    {
+                      "content": "SALESFORCE"
+                    },
+                    {
+                      "content": "SAP"
+                    },
+                    {
+                      "content": "SERVICENOW"
+                    },
+                    {
+                      "content": "SNOWFLAKE"
+                    },
+                    {
+                      "content": "STREAM_NATIVE"
+                    },
+                    {
+                      "content": "TABLEAU"
+                    },
+                    {
+                      "content": "TERADATA"
+                    },
+                    {
+                      "content": "WORKDAY"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "Type of entity within the external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "Name of the external metadata object.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "system_type",
+                "description": "Type of external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SystemType",
+                  "enum": [
+                    {
+                      "content": "AMAZON_REDSHIFT"
+                    },
+                    {
+                      "content": "AZURE_SYNAPSE"
+                    },
+                    {
+                      "content": "CONFLUENT"
+                    },
+                    {
+                      "content": "DATABRICKS"
+                    },
+                    {
+                      "content": "GOOGLE_BIGQUERY"
+                    },
+                    {
+                      "content": "KAFKA"
+                    },
+                    {
+                      "content": "LOOKER"
+                    },
+                    {
+                      "content": "MICROSOFT_FABRIC"
+                    },
+                    {
+                      "content": "MICROSOFT_SQL_SERVER"
+                    },
+                    {
+                      "content": "MONGODB"
+                    },
+                    {
+                      "content": "MYSQL"
+                    },
+                    {
+                      "content": "ORACLE"
+                    },
+                    {
+                      "content": "OTHER"
+                    },
+                    {
+                      "content": "POSTGRESQL"
+                    },
+                    {
+                      "content": "POWER_BI"
+                    },
+                    {
+                      "content": "SALESFORCE"
+                    },
+                    {
+                      "content": "SAP"
+                    },
+                    {
+                      "content": "SERVICENOW"
+                    },
+                    {
+                      "content": "SNOWFLAKE"
+                    },
+                    {
+                      "content": "STREAM_NATIVE"
+                    },
+                    {
+                      "content": "TABLEAU"
+                    },
+                    {
+                      "content": "TERADATA"
+                    },
+                    {
+                      "content": "WORKDAY"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "Type of entity within the external system.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the external metadata object.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "columns",
+          "description": "List of columns associated with the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time at which this external metadata object was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Username of external metadata object creator.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "Type of entity within the external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the external metadata object.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "Unique identifier of parent metastore.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the external metadata object.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Owner of the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "A map of key-value properties attached to the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "system_type",
+          "description": "Type of external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SystemType",
+            "enum": [
+              {
+                "content": "AMAZON_REDSHIFT"
+              },
+              {
+                "content": "AZURE_SYNAPSE"
+              },
+              {
+                "content": "CONFLUENT"
+              },
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "GOOGLE_BIGQUERY"
+              },
+              {
+                "content": "KAFKA"
+              },
+              {
+                "content": "LOOKER"
+              },
+              {
+                "content": "MICROSOFT_FABRIC"
+              },
+              {
+                "content": "MICROSOFT_SQL_SERVER"
+              },
+              {
+                "content": "MONGODB"
+              },
+              {
+                "content": "MYSQL"
+              },
+              {
+                "content": "ORACLE"
+              },
+              {
+                "content": "OTHER"
+              },
+              {
+                "content": "POSTGRESQL"
+              },
+              {
+                "content": "POWER_BI"
+              },
+              {
+                "content": "SALESFORCE"
+              },
+              {
+                "content": "SAP"
+              },
+              {
+                "content": "SERVICENOW"
+              },
+              {
+                "content": "SNOWFLAKE"
+              },
+              {
+                "content": "STREAM_NATIVE"
+              },
+              {
+                "content": "TABLEAU"
+              },
+              {
+                "content": "TERADATA"
+              },
+              {
+                "content": "WORKDAY"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time at which this external metadata object was last modified.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Username of user who last modified external metadata object.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "url",
+          "description": "URL associated with the external metadata object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the external metadata object.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "system_type",
+          "description": "Type of external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SystemType",
+            "enum": [
+              {
+                "content": "AMAZON_REDSHIFT"
+              },
+              {
+                "content": "AZURE_SYNAPSE"
+              },
+              {
+                "content": "CONFLUENT"
+              },
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "GOOGLE_BIGQUERY"
+              },
+              {
+                "content": "KAFKA"
+              },
+              {
+                "content": "LOOKER"
+              },
+              {
+                "content": "MICROSOFT_FABRIC"
+              },
+              {
+                "content": "MICROSOFT_SQL_SERVER"
+              },
+              {
+                "content": "MONGODB"
+              },
+              {
+                "content": "MYSQL"
+              },
+              {
+                "content": "ORACLE"
+              },
+              {
+                "content": "OTHER"
+              },
+              {
+                "content": "POSTGRESQL"
+              },
+              {
+                "content": "POWER_BI"
+              },
+              {
+                "content": "SALESFORCE"
+              },
+              {
+                "content": "SAP"
+              },
+              {
+                "content": "SERVICENOW"
+              },
+              {
+                "content": "SNOWFLAKE"
+              },
+              {
+                "content": "STREAM_NATIVE"
+              },
+              {
+                "content": "TABLEAU"
+              },
+              {
+                "content": "TERADATA"
+              },
+              {
+                "content": "WORKDAY"
+              }
+            ]
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "Type of entity within the external system.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

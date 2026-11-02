@@ -1,0 +1,469 @@
+{
+  "id": "marketplace.ConsumerInstallations",
+  "name": "ConsumerInstallations",
+  "description": "Installations are entities that allow consumers to interact with Databricks Marketplace listings.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListAllInstallationsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Install payload associated with a Databricks Marketplace listing.",
+      "summary": "Install from a listing.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/installations",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateInstallationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Installation",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "accepted_consumer_terms",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ConsumerTerms",
+            "is_object": true
+          }
+        },
+        {
+          "name": "catalog_name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recipient_type",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DeltaSharingRecipientType",
+            "enum": [
+              {
+                "content": "DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS"
+              },
+              {
+                "content": "DELTA_SHARING_RECIPIENT_TYPE_OPEN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "repo_detail",
+          "description": "for git repo installations",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RepoInstallation",
+            "is_object": true
+          }
+        },
+        {
+          "name": "share_name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Uninstall an installation associated with a Databricks Marketplace listing.",
+      "summary": "Uninstall from a listing.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/installations/{installation_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteInstallationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "installation_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "installation_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteInstallationResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "installation_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "installation_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List all installations across all listings.",
+      "summary": "List all installations.",
+      "path": "/api/2.1/marketplace-consumer/installations",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAllInstallationsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAllInstallationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListListingInstallations",
+      "description": "List all installations for a particular listing.",
+      "summary": "List installations for a listing.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/installations",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListInstallationsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListInstallationsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "This is a update API that will update the part of the fields defined in the installation table as well\nas interact with external services according to the fields not included in the installation table\n1. the token will be rotate if the rotateToken flag is true\n2. the token will be forcibly rotate if the rotateToken flag is true and the tokenInfo field is empty",
+      "summary": "Update an installation.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/installations/{installation_id}",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateInstallationRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "installation_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "installation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "InstallationDetail",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "installation_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "installation",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "InstallationDetail",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateInstallationResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "installation",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "InstallationDetail",
+            "is_object": true
+          }
+        },
+        {
+          "name": "installation_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rotate_token",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "installation_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

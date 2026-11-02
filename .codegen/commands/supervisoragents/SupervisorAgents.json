@@ -1,0 +1,2823 @@
+{
+  "id": "supervisoragents.SupervisorAgents",
+  "name": "SupervisorAgents",
+  "description": "Manage legacy Supervisor Agents and related resources.",
+  "package": {
+    "name": "supervisoragents"
+  },
+  "docs_group": "agentbricks",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListExamplesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateExample",
+      "description": "Creates an example for a Supervisor Agent.",
+      "summary": "Create an example for a Supervisor Agent.",
+      "path": "/api/2.1/{parent=supervisor-agents/*}/examples",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateExampleRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this example will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "example",
+            "description": "The example to create under the parent Supervisor Agent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this example will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "example",
+            "description": "The example to create under the parent Supervisor Agent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "example",
+        "description": "The example to create under the parent Supervisor Agent.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Example",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "guidelines",
+              "description": "Guidelines for answering the question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "guidelines",
+              "description": "Guidelines for answering the question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Example",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "guidelines",
+            "description": "Guidelines for answering the question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "guidelines",
+            "description": "Guidelines for answering the question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "example",
+          "description": "The example to create under the parent Supervisor Agent.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Example",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "guidelines",
+                "description": "Guidelines for answering the question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "guidelines",
+                "description": "Guidelines for answering the question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource where this example will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "example_id",
+          "description": "The universally unique identifier (UUID) of the example.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "guidelines",
+          "description": "Guidelines for answering the question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource where this example will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "guidelines",
+          "description": "Guidelines for answering the question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSupervisorAgent",
+      "description": "Creates a new Supervisor Agent.",
+      "summary": "Create a Supervisor Agent.",
+      "path": "/api/2.1/supervisor-agents",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateSupervisorAgentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "supervisor_agent",
+            "description": "The Supervisor Agent to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SupervisorAgent",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "supervisor_agent",
+            "description": "The Supervisor Agent to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SupervisorAgent",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "supervisor_agent",
+        "description": "The Supervisor Agent to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "SupervisorAgent",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Supervisor Agent, unique at workspace level.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Supervisor Agent, unique at workspace level.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "SupervisorAgent",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Supervisor Agent, unique at workspace level.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Supervisor Agent, unique at workspace level.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "supervisor_agent",
+          "description": "The Supervisor Agent to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SupervisorAgent",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Supervisor Agent, unique at workspace level.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Supervisor Agent, unique at workspace level.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Creation timestamp.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The creator of the Supervisor Agent.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this agent can do (user-facing).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the Supervisor Agent, unique at workspace level.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_name",
+          "description": "The name of the supervisor agent's serving endpoint.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "experiment_id",
+          "description": "The MLflow experiment ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Deprecated: Use supervisor_agent_id instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instructions",
+          "description": "Optional natural-language instructions for the supervisor agent.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the SupervisorAgent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "supervisor_agent_id",
+          "description": "The universally unique identifier (UUID) of the Supervisor Agent.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "display_name",
+          "description": "The display name of the Supervisor Agent, unique at workspace level.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateTool",
+      "description": "Creates a Tool under a Supervisor Agent. Specify one of \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"app\", \"volume\", \"dashboard\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\" in the request body. The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+      "summary": "Create a Tool.",
+      "path": "/api/2.1/{parent=supervisor-agents/*}/tools",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateToolRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this tool will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tool",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Tool",
+              "is_object": true
+            }
+          },
+          {
+            "name": "tool_id",
+            "description": "The ID to use for the tool, which will become the final component of\nthe tool's resource name.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource where this tool will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tool_id",
+            "description": "The ID to use for the tool, which will become the final component of\nthe tool's resource name.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tool",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Tool",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tool",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Tool",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "tool_type",
+              "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "tool_type",
+              "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Tool",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tool_type",
+            "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tool_type",
+            "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "description": "Parent resource where this tool will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Tool",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "tool_type",
+                "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "tool_type",
+                "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "tool_id",
+          "description": "The ID to use for the tool, which will become the final component of\nthe tool's resource name.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "app",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "App",
+            "is_object": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this tool does (user-facing).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "genie_space",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GenieSpace",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Deprecated: Use tool_id instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "knowledge_assistant",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistant",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool_id",
+          "description": "User specified id of the Tool.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool_type",
+          "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "uc_connection",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UcConnection",
+            "is_object": true
+          }
+        },
+        {
+          "name": "uc_function",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UcFunction",
+            "is_object": true
+          }
+        },
+        {
+          "name": "volume",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Volume",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource where this tool will be created.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool_id",
+          "description": "The ID to use for the tool, which will become the final component of\nthe tool's resource name.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool_type",
+          "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteExample",
+      "description": "Deletes an example from a Supervisor Agent.",
+      "summary": "Delete an example from a Supervisor Agent.",
+      "path": "/api/2.1/{name=supervisor-agents/*/examples/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteExampleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to delete.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to delete.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the example to delete.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the example to delete.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSupervisorAgent",
+      "description": "Deletes a Supervisor Agent.",
+      "summary": "Delete a Supervisor Agent.",
+      "path": "/api/2.1/{name=supervisor-agents/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteSupervisorAgentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteTool",
+      "description": "Deletes a Tool.",
+      "summary": "Delete a Tool.",
+      "path": "/api/2.1/{name=supervisor-agents/*/tools/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteToolRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetExample",
+      "description": "Gets an example from a Supervisor Agent.",
+      "summary": "Get an example from a Supervisor Agent.",
+      "path": "/api/2.1/{name=supervisor-agents/*/examples/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetExampleRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Example",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "guidelines",
+            "description": "Guidelines for answering the question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "guidelines",
+            "description": "Guidelines for answering the question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the example.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the example.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get supervisor agent permission levels.",
+      "path": "/api/2.0/permissions/supervisor-agents/{supervisor_agent_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetSupervisorAgentPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetSupervisorAgentPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a supervisor agent. Supervisor agents can inherit permissions from their root object.",
+      "summary": "Get supervisor agent permissions.",
+      "path": "/api/2.0/permissions/supervisor-agents/{supervisor_agent_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetSupervisorAgentPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SupervisorAgentPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSupervisorAgent",
+      "description": "Gets a Supervisor Agent.",
+      "summary": "Get a Supervisor Agent.",
+      "path": "/api/2.1/{name=supervisor-agents/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetSupervisorAgentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SupervisorAgent",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Supervisor Agent, unique at workspace level.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Supervisor Agent, unique at workspace level.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Supervisor Agent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetTool",
+      "description": "Gets a Tool.",
+      "summary": "Get a Tool.",
+      "path": "/api/2.1/{name=supervisor-agents/*/tools/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetToolRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Tool",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tool_type",
+            "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tool_type",
+            "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the Tool.\nFormat: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListExamples",
+      "description": "Lists examples under a Supervisor Agent.",
+      "summary": "List examples for a Supervisor Agent.",
+      "path": "/api/2.1/{parent=supervisor-agents/*}/examples",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListExamplesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListExamplesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of examples to return.\nIf unspecified, at most 100 examples will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListExamples` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListExamples` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSupervisorAgents",
+      "description": "Lists Supervisor Agents.",
+      "summary": "List Supervisor Agents.",
+      "path": "/api/2.1/supervisor-agents",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListSupervisorAgentsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListSupervisorAgentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of supervisor agents to return.\nIf unspecified, at most 100 supervisor agents will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListSupervisorAgents` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListSupervisorAgents` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListTools",
+      "description": "Lists Tools under a Supervisor Agent.",
+      "summary": "List Tools.",
+      "path": "/api/2.1/{parent=supervisor-agents/*}/tools",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListToolsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListToolsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource to list from.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set supervisor agent permissions.",
+      "path": "/api/2.0/permissions/supervisor-agents/{supervisor_agent_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "SupervisorAgentPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SupervisorAgentPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SupervisorAgentAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "SupervisorAgentAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateExample",
+      "description": "Updates an example in a Supervisor Agent.",
+      "summary": "Update an example in a Supervisor Agent.",
+      "path": "/api/2.1/{name=supervisor-agents/*/examples/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateExampleRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to update.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "example",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the example to update.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "example",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Example",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "example",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Example",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "guidelines",
+              "description": "Guidelines for answering the question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "question",
+              "description": "The example question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "guidelines",
+              "description": "Guidelines for answering the question.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Example",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "guidelines",
+            "description": "Guidelines for answering the question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "question",
+            "description": "The example question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "guidelines",
+            "description": "Guidelines for answering the question.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "example",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Example",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "guidelines",
+                "description": "Guidelines for answering the question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "question",
+                "description": "The example question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "guidelines",
+                "description": "Guidelines for answering the question.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the example to update.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "example_id",
+          "description": "The universally unique identifier (UUID) of the example.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "guidelines",
+          "description": "Guidelines for answering the question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the example to update.\nFormat: supervisor-agents/{supervisor_agent_id}/examples/{example_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Comma-delimited list of fields to update on the example.\nAllowed values: `question`, `guidelines`.\nExamples:\n- `question`\n- `question,guidelines`",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "question",
+          "description": "The example question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "guidelines",
+          "description": "Guidelines for answering the question.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a supervisor agent. Supervisor agents can inherit permissions from their root object.",
+      "summary": "Update supervisor agent permissions.",
+      "path": "/api/2.0/permissions/supervisor-agents/{supervisor_agent_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "SupervisorAgentPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "supervisor_agent_id",
+            "description": "The supervisor agent for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SupervisorAgentPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SupervisorAgentAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "SupervisorAgentAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "supervisor_agent_id",
+          "description": "The supervisor agent for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSupervisorAgent",
+      "description": "Updates a Supervisor Agent. The fields that are required depend on the paths specified in `update_mask`.\nOnly fields included in the mask will be updated.",
+      "summary": "Update a Supervisor Agent.",
+      "path": "/api/2.1/{name=supervisor-agents/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateSupervisorAgentRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the SupervisorAgent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "supervisor_agent",
+            "description": "The SupervisorAgent to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SupervisorAgent",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask for fields to be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of the SupervisorAgent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask for fields to be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "supervisor_agent",
+            "description": "The SupervisorAgent to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SupervisorAgent",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "supervisor_agent",
+        "description": "The SupervisorAgent to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "SupervisorAgent",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Supervisor Agent, unique at workspace level.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The display name of the Supervisor Agent, unique at workspace level.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "SupervisorAgent",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Supervisor Agent, unique at workspace level.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The display name of the Supervisor Agent, unique at workspace level.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The resource name of the SupervisorAgent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "supervisor_agent",
+          "description": "The SupervisorAgent to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SupervisorAgent",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Supervisor Agent, unique at workspace level.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The display name of the Supervisor Agent, unique at workspace level.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask for fields to be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Creation timestamp.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The creator of the Supervisor Agent.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this agent can do (user-facing).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the Supervisor Agent, unique at workspace level.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_name",
+          "description": "The name of the supervisor agent's serving endpoint.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "experiment_id",
+          "description": "The MLflow experiment ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Deprecated: Use supervisor_agent_id instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "instructions",
+          "description": "Optional natural-language instructions for the supervisor agent.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the SupervisorAgent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "supervisor_agent_id",
+          "description": "The universally unique identifier (UUID) of the Supervisor Agent.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of the SupervisorAgent.\nFormat: supervisor-agents/{supervisor_agent_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask for fields to be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The display name of the Supervisor Agent, unique at workspace level.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateTool",
+      "description": "Updates a Tool. Only the `description` field can be updated.\nTo change immutable fields such as tool type, spec, or tool ID, delete the tool and recreate it.",
+      "summary": "Update a Tool.",
+      "path": "/api/2.1/{name=supervisor-agents/*/tools/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateToolRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tool",
+            "description": "The Tool to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Tool",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask for fields to be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask for fields to be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tool",
+            "description": "The Tool to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Tool",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tool",
+        "description": "The Tool to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Tool",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "tool_type",
+              "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "tool_type",
+              "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Tool",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tool_type",
+            "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tool_type",
+            "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool",
+          "description": "The Tool to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Tool",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "tool_type",
+                "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "tool_type",
+                "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask for fields to be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "app",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "App",
+            "is_object": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of what this tool does (user-facing).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "genie_space",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GenieSpace",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Deprecated: Use tool_id instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "knowledge_assistant",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "KnowledgeAssistant",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool_id",
+          "description": "User specified id of the Tool.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tool_type",
+          "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "uc_connection",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UcConnection",
+            "is_object": true
+          }
+        },
+        {
+          "name": "uc_function",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "UcFunction",
+            "is_object": true
+          }
+        },
+        {
+          "name": "volume",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Volume",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name:\nsupervisor-agents/{supervisor_agent_id}/tools/{tool_id}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask for fields to be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "tool_type",
+          "description": "Tool type. Must be one of: \"genie_space\", \"knowledge_assistant\", \"uc_function\", \"uc_connection\", \"uc_mcp\", \"app\", \"volume\", \"dashboard\", \"serving_endpoint\", \"table\", \"vector_search_index\", \"catalog\", \"schema\", \"supervisor_agent\", \"databricks_web_search\", \"skill\". The legacy values \"lakeview_dashboard\", \"uc_table\", and \"web_search\" are also accepted and remain equivalent to \"dashboard\", \"table\", and \"databricks_web_search\" respectively. The \"databricks_web_search\" tool_type maps to the `web_search` spec field.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

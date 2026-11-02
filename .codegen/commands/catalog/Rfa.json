@@ -1,0 +1,427 @@
+{
+  "id": "catalog.Rfa",
+  "name": "Rfa",
+  "description": "Request for Access enables users to request access for Unity Catalog securables.\n\nThese APIs provide a standardized way for securable owners (or users with MANAGE privileges) to manage access request destinations.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "methods": [
+    {
+      "name": "BatchCreateAccessRequests",
+      "description": "Creates access requests for Unity Catalog permissions for a specified principal on a securable object.\nThis Batch API can take in multiple principals, securable objects,\nand permissions as the input and returns the access request destinations for each.\nPrincipals must be unique across the API call.\n\nThe supported securable types are: \"metastore\", \"catalog\", \"schema\", \"table\",\n\"external_location\", \"connection\", \"credential\", \"function\", \"registered_model\", and \"volume\".",
+      "summary": "Create Access Requests.",
+      "path": "/api/3.0/rfa/requests",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "BatchCreateAccessRequestsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "BatchCreateAccessRequestsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "requests",
+          "description": "A list of individual access requests, where each request corresponds to\na set of permissions being requested on a list of securables for a specified principal.\n\nAt most 30 requests per API call.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CreateAccessRequestList",
+            "array_value": {
+              "pascal_name": "CreateAccessRequest",
+              "is_object": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetAccessRequestDestinations",
+      "description": "Gets an array of access request destinations for the specified securable.\nAny caller can see URL destinations or the destinations on the metastore.\nOtherwise, only those with **BROWSE** permissions on the securable can see destinations.\n\nThe supported securable types are: \"metastore\", \"catalog\", \"schema\", \"table\",\n\"external_location\", \"connection\", \"credential\", \"function\", \"registered_model\", and \"volume\".",
+      "summary": "Get Access Request Destinations.",
+      "path": "/api/3.0/rfa/destinations/{securable_type}/{full_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetAccessRequestDestinationsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "securable_type",
+            "description": "The type of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "The full name of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "securable_type",
+            "description": "The type of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "full_name",
+            "description": "The full name of the securable.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AccessRequestDestinations",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "securable",
+            "description": "The securable for which the access request destinations are being modified or read.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Securable",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "securable",
+            "description": "The securable for which the access request destinations are being modified or read.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Securable",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "The full name of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "The type of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "securable_type",
+          "description": "The type of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The full name of the securable.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateAccessRequestDestinations",
+      "description": "Updates the access request destinations for the given securable.\nThe caller must be a metastore admin, the owner of the securable, or a user that has the **MANAGE** privilege on the securable in order to assign destinations.\nA maximum of 5 emails and 5 external notification destinations (Slack, Microsoft Teams, Generic Webhook, and Databricks App Slack/Teams destinations) can be assigned to a securable.\nIf a URL destination is assigned, no other destinations can be set.\n\nThe supported securable types are: \"metastore\", \"catalog\", \"schema\", \"table\",\n\"external_location\", \"connection\", \"credential\", \"function\", \"registered_model\", and \"volume\".",
+      "summary": "Update Access Request Destinations.",
+      "path": "/api/3.0/rfa/destinations",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateAccessRequestDestinationsRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "access_request_destinations",
+            "description": "The access request destinations to assign to the securable.\nFor each destination, a **destination_id** and **destination_type** must be defined.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AccessRequestDestinations",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "access_request_destinations",
+            "description": "The access request destinations to assign to the securable.\nFor each destination, a **destination_id** and **destination_type** must be defined.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AccessRequestDestinations",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "access_request_destinations",
+        "description": "The access request destinations to assign to the securable.\nFor each destination, a **destination_id** and **destination_type** must be defined.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "AccessRequestDestinations",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "securable",
+              "description": "The securable for which the access request destinations are being modified or read.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "Securable",
+                "is_object": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "securable",
+              "description": "The securable for which the access request destinations are being modified or read.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "Securable",
+                "is_object": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "AccessRequestDestinations",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "securable",
+            "description": "The securable for which the access request destinations are being modified or read.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Securable",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "securable",
+            "description": "The securable for which the access request destinations are being modified or read.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Securable",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "access_request_destinations",
+          "description": "The access request destinations to assign to the securable.\nFor each destination, a **destination_id** and **destination_type** must be defined.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AccessRequestDestinations",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "securable",
+                "description": "The securable for which the access request destinations are being modified or read.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "Securable",
+                  "is_object": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "securable",
+                "description": "The securable for which the access request destinations are being modified or read.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "Securable",
+                  "is_object": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "are_any_destinations_hidden",
+          "description": "Indicates whether any destinations are hidden from the caller due to a lack of permissions.\nThis value is true if the caller does not have permission to see all destinations.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "destination_source_securable",
+          "description": "The source securable from which the destinations are inherited. Either the same value as securable (if destination\nis set directly on the securable) or the nearest parent securable with destinations set.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Securable",
+            "is_object": true
+          }
+        },
+        {
+          "name": "destinations",
+          "description": "The access request destinations for the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "NotificationDestinationList",
+            "array_value": {
+              "pascal_name": "NotificationDestination",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The full name of the securable. Redundant with the name in the securable object, but necessary for Terraform integration",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable",
+          "description": "The securable for which the access request destinations are being modified or read.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Securable",
+            "is_object": true
+          }
+        },
+        {
+          "name": "securable_type",
+          "description": "The type of the securable. Redundant with the type in the securable object, but necessary for Terraform integration",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "securable",
+          "description": "The securable for which the access request destinations are being modified or read.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Securable",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

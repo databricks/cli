@@ -1,0 +1,196 @@
+{
+  "id": "settings.WorkspaceNetworkConfiguration",
+  "name": "WorkspaceNetworkConfiguration",
+  "description": "These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace. Each workspace is always associated with exactly one network policy that controls which network destinations can be accessed from the Databricks environment. By default, workspaces are associated with the 'default-policy' network policy. You cannot create or delete a workspace's network option, only update it to associate the workspace with a different policy",
+  "package": {
+    "name": "settings"
+  },
+  "is_accounts": true,
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "GetWorkspaceNetworkOptionRpc",
+      "description": "Gets the network option for a workspace. Every workspace has exactly one network policy binding,\nwith 'default-policy' used if no explicit assignment exists.",
+      "summary": "Get workspace network option.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}/network",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceNetworkOptionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceNetworkOption",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateWorkspaceNetworkOptionRpc",
+      "description": "Updates the network option for a workspace. This operation associates the workspace with the specified network policy.\nTo revert to the default policy, specify 'default-policy' as the network_policy_id.",
+      "summary": "Update workspace network option.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}/network",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateWorkspaceNetworkOptionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "workspace_network_option",
+            "description": "The network option details for the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceNetworkOption",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_network_option",
+            "description": "The network option details for the workspace.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceNetworkOption",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_network_option",
+        "description": "The network option details for the workspace.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceNetworkOption",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "WorkspaceNetworkOption",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "workspace_network_option",
+          "description": "The network option details for the workspace.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceNetworkOption",
+            "is_object": true
+          }
+        },
+        {
+          "name": "network_policy_id",
+          "description": "The network policy ID to apply to the workspace. This controls the network access rules\nfor all serverless compute resources in the workspace. Each workspace can only be\nlinked to one policy at a time. If no policy is explicitly assigned,\nthe workspace will use 'default-policy'.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    }
+  ]
+}

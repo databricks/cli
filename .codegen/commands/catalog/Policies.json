@@ -1,0 +1,3252 @@
+{
+  "id": "catalog.Policies",
+  "name": "Policies",
+  "description": "Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog. With ABAC policies, access is controlled in a hierarchical and scalable manner, based on data attributes rather than specific resources, enabling more flexible and comprehensive access control. ABAC policies in Unity Catalog support conditions on securable properties, governance tags, and environment contexts. Callers must have the `MANAGE` privilege on a securable to view, create, update, or delete ABAC policies.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListPoliciesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreatePolicy",
+      "description": "Creates a new policy on a securable.\nThe new policy applies to the securable and all its descendants.",
+      "summary": "Create an ABAC policy.",
+      "path": "/api/2.1/unity-catalog/policies",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreatePolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "policy_info",
+            "description": "Required. The policy to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyInfo",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy_info",
+            "description": "Required. The policy to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyInfo",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "policy_info",
+        "description": "Required. The policy to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "PolicyInfo",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "to_principals",
+              "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "for_securable_type",
+              "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SecurableType",
+                "enum": [
+                  {
+                    "content": "AGENT_SERVICE"
+                  },
+                  {
+                    "content": "CATALOG"
+                  },
+                  {
+                    "content": "CLEAN_ROOM"
+                  },
+                  {
+                    "content": "CONNECTION"
+                  },
+                  {
+                    "content": "CREDENTIAL"
+                  },
+                  {
+                    "content": "EXTERNAL_LOCATION"
+                  },
+                  {
+                    "content": "EXTERNAL_METADATA"
+                  },
+                  {
+                    "content": "FUNCTION"
+                  },
+                  {
+                    "content": "MCP_SERVICE"
+                  },
+                  {
+                    "content": "METASTORE"
+                  },
+                  {
+                    "content": "MODEL"
+                  },
+                  {
+                    "content": "MODEL_PROVIDER_SERVICE"
+                  },
+                  {
+                    "content": "MODEL_SERVICE"
+                  },
+                  {
+                    "content": "PIPELINE"
+                  },
+                  {
+                    "content": "PROVIDER"
+                  },
+                  {
+                    "content": "RECIPIENT"
+                  },
+                  {
+                    "content": "SCHEMA"
+                  },
+                  {
+                    "content": "SHARE"
+                  },
+                  {
+                    "content": "SKILL"
+                  },
+                  {
+                    "content": "STAGING_TABLE"
+                  },
+                  {
+                    "content": "STORAGE_CREDENTIAL"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "policy_type",
+              "description": "Type of the policy. Required on create.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PolicyType",
+                "enum": [
+                  {
+                    "content": "POLICY_TYPE_COLUMN_MASK"
+                  },
+                  {
+                    "content": "POLICY_TYPE_DENY"
+                  },
+                  {
+                    "content": "POLICY_TYPE_GRANT"
+                  },
+                  {
+                    "content": "POLICY_TYPE_ROW_FILTER"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "to_principals",
+              "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "for_securable_type",
+              "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SecurableType",
+                "enum": [
+                  {
+                    "content": "AGENT_SERVICE"
+                  },
+                  {
+                    "content": "CATALOG"
+                  },
+                  {
+                    "content": "CLEAN_ROOM"
+                  },
+                  {
+                    "content": "CONNECTION"
+                  },
+                  {
+                    "content": "CREDENTIAL"
+                  },
+                  {
+                    "content": "EXTERNAL_LOCATION"
+                  },
+                  {
+                    "content": "EXTERNAL_METADATA"
+                  },
+                  {
+                    "content": "FUNCTION"
+                  },
+                  {
+                    "content": "MCP_SERVICE"
+                  },
+                  {
+                    "content": "METASTORE"
+                  },
+                  {
+                    "content": "MODEL"
+                  },
+                  {
+                    "content": "MODEL_PROVIDER_SERVICE"
+                  },
+                  {
+                    "content": "MODEL_SERVICE"
+                  },
+                  {
+                    "content": "PIPELINE"
+                  },
+                  {
+                    "content": "PROVIDER"
+                  },
+                  {
+                    "content": "RECIPIENT"
+                  },
+                  {
+                    "content": "SCHEMA"
+                  },
+                  {
+                    "content": "SHARE"
+                  },
+                  {
+                    "content": "SKILL"
+                  },
+                  {
+                    "content": "STAGING_TABLE"
+                  },
+                  {
+                    "content": "STORAGE_CREDENTIAL"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "policy_type",
+              "description": "Type of the policy. Required on create.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PolicyType",
+                "enum": [
+                  {
+                    "content": "POLICY_TYPE_COLUMN_MASK"
+                  },
+                  {
+                    "content": "POLICY_TYPE_DENY"
+                  },
+                  {
+                    "content": "POLICY_TYPE_GRANT"
+                  },
+                  {
+                    "content": "POLICY_TYPE_ROW_FILTER"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "PolicyInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "to_principals",
+            "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "for_securable_type",
+            "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SecurableType",
+              "enum": [
+                {
+                  "content": "AGENT_SERVICE"
+                },
+                {
+                  "content": "CATALOG"
+                },
+                {
+                  "content": "CLEAN_ROOM"
+                },
+                {
+                  "content": "CONNECTION"
+                },
+                {
+                  "content": "CREDENTIAL"
+                },
+                {
+                  "content": "EXTERNAL_LOCATION"
+                },
+                {
+                  "content": "EXTERNAL_METADATA"
+                },
+                {
+                  "content": "FUNCTION"
+                },
+                {
+                  "content": "MCP_SERVICE"
+                },
+                {
+                  "content": "METASTORE"
+                },
+                {
+                  "content": "MODEL"
+                },
+                {
+                  "content": "MODEL_PROVIDER_SERVICE"
+                },
+                {
+                  "content": "MODEL_SERVICE"
+                },
+                {
+                  "content": "PIPELINE"
+                },
+                {
+                  "content": "PROVIDER"
+                },
+                {
+                  "content": "RECIPIENT"
+                },
+                {
+                  "content": "SCHEMA"
+                },
+                {
+                  "content": "SHARE"
+                },
+                {
+                  "content": "SKILL"
+                },
+                {
+                  "content": "STAGING_TABLE"
+                },
+                {
+                  "content": "STORAGE_CREDENTIAL"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "policy_type",
+            "description": "Type of the policy. Required on create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyType",
+              "enum": [
+                {
+                  "content": "POLICY_TYPE_COLUMN_MASK"
+                },
+                {
+                  "content": "POLICY_TYPE_DENY"
+                },
+                {
+                  "content": "POLICY_TYPE_GRANT"
+                },
+                {
+                  "content": "POLICY_TYPE_ROW_FILTER"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "to_principals",
+            "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "for_securable_type",
+            "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SecurableType",
+              "enum": [
+                {
+                  "content": "AGENT_SERVICE"
+                },
+                {
+                  "content": "CATALOG"
+                },
+                {
+                  "content": "CLEAN_ROOM"
+                },
+                {
+                  "content": "CONNECTION"
+                },
+                {
+                  "content": "CREDENTIAL"
+                },
+                {
+                  "content": "EXTERNAL_LOCATION"
+                },
+                {
+                  "content": "EXTERNAL_METADATA"
+                },
+                {
+                  "content": "FUNCTION"
+                },
+                {
+                  "content": "MCP_SERVICE"
+                },
+                {
+                  "content": "METASTORE"
+                },
+                {
+                  "content": "MODEL"
+                },
+                {
+                  "content": "MODEL_PROVIDER_SERVICE"
+                },
+                {
+                  "content": "MODEL_SERVICE"
+                },
+                {
+                  "content": "PIPELINE"
+                },
+                {
+                  "content": "PROVIDER"
+                },
+                {
+                  "content": "RECIPIENT"
+                },
+                {
+                  "content": "SCHEMA"
+                },
+                {
+                  "content": "SHARE"
+                },
+                {
+                  "content": "SKILL"
+                },
+                {
+                  "content": "STAGING_TABLE"
+                },
+                {
+                  "content": "STORAGE_CREDENTIAL"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "policy_type",
+            "description": "Type of the policy. Required on create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyType",
+              "enum": [
+                {
+                  "content": "POLICY_TYPE_COLUMN_MASK"
+                },
+                {
+                  "content": "POLICY_TYPE_DENY"
+                },
+                {
+                  "content": "POLICY_TYPE_GRANT"
+                },
+                {
+                  "content": "POLICY_TYPE_ROW_FILTER"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "policy_info",
+          "description": "Required. The policy to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PolicyInfo",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "to_principals",
+                "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "for_securable_type",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SecurableType",
+                  "enum": [
+                    {
+                      "content": "AGENT_SERVICE"
+                    },
+                    {
+                      "content": "CATALOG"
+                    },
+                    {
+                      "content": "CLEAN_ROOM"
+                    },
+                    {
+                      "content": "CONNECTION"
+                    },
+                    {
+                      "content": "CREDENTIAL"
+                    },
+                    {
+                      "content": "EXTERNAL_LOCATION"
+                    },
+                    {
+                      "content": "EXTERNAL_METADATA"
+                    },
+                    {
+                      "content": "FUNCTION"
+                    },
+                    {
+                      "content": "MCP_SERVICE"
+                    },
+                    {
+                      "content": "METASTORE"
+                    },
+                    {
+                      "content": "MODEL"
+                    },
+                    {
+                      "content": "MODEL_PROVIDER_SERVICE"
+                    },
+                    {
+                      "content": "MODEL_SERVICE"
+                    },
+                    {
+                      "content": "PIPELINE"
+                    },
+                    {
+                      "content": "PROVIDER"
+                    },
+                    {
+                      "content": "RECIPIENT"
+                    },
+                    {
+                      "content": "SCHEMA"
+                    },
+                    {
+                      "content": "SHARE"
+                    },
+                    {
+                      "content": "SKILL"
+                    },
+                    {
+                      "content": "STAGING_TABLE"
+                    },
+                    {
+                      "content": "STORAGE_CREDENTIAL"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "policy_type",
+                "description": "Type of the policy. Required on create.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PolicyType",
+                  "enum": [
+                    {
+                      "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_DENY"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
+                    },
+                    {
+                      "content": "POLICY_TYPE_ROW_FILTER"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "to_principals",
+                "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "for_securable_type",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SecurableType",
+                  "enum": [
+                    {
+                      "content": "AGENT_SERVICE"
+                    },
+                    {
+                      "content": "CATALOG"
+                    },
+                    {
+                      "content": "CLEAN_ROOM"
+                    },
+                    {
+                      "content": "CONNECTION"
+                    },
+                    {
+                      "content": "CREDENTIAL"
+                    },
+                    {
+                      "content": "EXTERNAL_LOCATION"
+                    },
+                    {
+                      "content": "EXTERNAL_METADATA"
+                    },
+                    {
+                      "content": "FUNCTION"
+                    },
+                    {
+                      "content": "MCP_SERVICE"
+                    },
+                    {
+                      "content": "METASTORE"
+                    },
+                    {
+                      "content": "MODEL"
+                    },
+                    {
+                      "content": "MODEL_PROVIDER_SERVICE"
+                    },
+                    {
+                      "content": "MODEL_SERVICE"
+                    },
+                    {
+                      "content": "PIPELINE"
+                    },
+                    {
+                      "content": "PROVIDER"
+                    },
+                    {
+                      "content": "RECIPIENT"
+                    },
+                    {
+                      "content": "SCHEMA"
+                    },
+                    {
+                      "content": "SHARE"
+                    },
+                    {
+                      "content": "SKILL"
+                    },
+                    {
+                      "content": "STAGING_TABLE"
+                    },
+                    {
+                      "content": "STORAGE_CREDENTIAL"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "policy_type",
+                "description": "Type of the policy. Required on create.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PolicyType",
+                  "enum": [
+                    {
+                      "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_DENY"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
+                    },
+                    {
+                      "content": "POLICY_TYPE_ROW_FILTER"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "column_mask",
+          "description": "Options for column mask policies. Valid only if `policy_type` is `POLICY_TYPE_COLUMN_MASK`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ColumnMaskOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "Optional description of the policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_at",
+          "description": "Time at which the policy was created, in epoch milliseconds. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Username of the user who created the policy. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "deny",
+          "description": "Options for deny policies. Valid only if `policy_type` is `POLICY_TYPE_DENY`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DenyOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "except_principals",
+          "description": "Optional list of user or group names that should be excluded from the policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "for_securable_type",
+          "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SecurableType",
+            "enum": [
+              {
+                "content": "AGENT_SERVICE"
+              },
+              {
+                "content": "CATALOG"
+              },
+              {
+                "content": "CLEAN_ROOM"
+              },
+              {
+                "content": "CONNECTION"
+              },
+              {
+                "content": "CREDENTIAL"
+              },
+              {
+                "content": "EXTERNAL_LOCATION"
+              },
+              {
+                "content": "EXTERNAL_METADATA"
+              },
+              {
+                "content": "FUNCTION"
+              },
+              {
+                "content": "MCP_SERVICE"
+              },
+              {
+                "content": "METASTORE"
+              },
+              {
+                "content": "MODEL"
+              },
+              {
+                "content": "MODEL_PROVIDER_SERVICE"
+              },
+              {
+                "content": "MODEL_SERVICE"
+              },
+              {
+                "content": "PIPELINE"
+              },
+              {
+                "content": "PROVIDER"
+              },
+              {
+                "content": "RECIPIENT"
+              },
+              {
+                "content": "SCHEMA"
+              },
+              {
+                "content": "SHARE"
+              },
+              {
+                "content": "SKILL"
+              },
+              {
+                "content": "STAGING_TABLE"
+              },
+              {
+                "content": "STORAGE_CREDENTIAL"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "governed_tags",
+          "description": "Governed tag keys and values referenced by this policy's conditions and function arguments. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "GovernedTagReferenceList",
+            "array_value": {
+              "pascal_name": "GovernedTagReference",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "grant",
+          "description": "Options for grant policies. Valid only if `policy_type` is `POLICY_TYPE_GRANT`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GrantOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the policy. This field is output only and is generated by the system.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "match_columns",
+          "description": "Optional list of condition expressions used to match table columns.\nOnly valid when `for_securable_type` is `TABLE`.\nWhen specified, the policy only applies to tables whose columns satisfy all match conditions.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "MatchColumnList",
+            "array_value": {
+              "pascal_name": "MatchColumn",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the policy. Required on create and optional on update.\nTo rename the policy, set `name` to a different value on update.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Full name of the securable on which the policy is defined.\nRequired on create.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_type",
+          "description": "Type of the securable on which the policy is defined.\nOnly `CATALOG`, `SCHEMA` and `TABLE` are supported at this moment.\nRequired on create.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SecurableType",
+            "enum": [
+              {
+                "content": "AGENT_SERVICE"
+              },
+              {
+                "content": "CATALOG"
+              },
+              {
+                "content": "CLEAN_ROOM"
+              },
+              {
+                "content": "CONNECTION"
+              },
+              {
+                "content": "CREDENTIAL"
+              },
+              {
+                "content": "EXTERNAL_LOCATION"
+              },
+              {
+                "content": "EXTERNAL_METADATA"
+              },
+              {
+                "content": "FUNCTION"
+              },
+              {
+                "content": "MCP_SERVICE"
+              },
+              {
+                "content": "METASTORE"
+              },
+              {
+                "content": "MODEL"
+              },
+              {
+                "content": "MODEL_PROVIDER_SERVICE"
+              },
+              {
+                "content": "MODEL_SERVICE"
+              },
+              {
+                "content": "PIPELINE"
+              },
+              {
+                "content": "PROVIDER"
+              },
+              {
+                "content": "RECIPIENT"
+              },
+              {
+                "content": "SCHEMA"
+              },
+              {
+                "content": "SHARE"
+              },
+              {
+                "content": "SKILL"
+              },
+              {
+                "content": "STAGING_TABLE"
+              },
+              {
+                "content": "STORAGE_CREDENTIAL"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "policy_type",
+          "description": "Type of the policy. Required on create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PolicyType",
+            "enum": [
+              {
+                "content": "POLICY_TYPE_COLUMN_MASK"
+              },
+              {
+                "content": "POLICY_TYPE_DENY"
+              },
+              {
+                "content": "POLICY_TYPE_GRANT"
+              },
+              {
+                "content": "POLICY_TYPE_ROW_FILTER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "row_filter",
+          "description": "Options for row filter policies. Valid only if `policy_type` is `POLICY_TYPE_ROW_FILTER`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RowFilterOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "to_principals",
+          "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "updated_at",
+          "description": "Time at which the policy was last modified, in epoch milliseconds. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Username of the user who last modified the policy. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "when_condition",
+          "description": "Optional condition when the policy should take effect.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "to_principals",
+          "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "for_securable_type",
+          "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SecurableType",
+            "enum": [
+              {
+                "content": "AGENT_SERVICE"
+              },
+              {
+                "content": "CATALOG"
+              },
+              {
+                "content": "CLEAN_ROOM"
+              },
+              {
+                "content": "CONNECTION"
+              },
+              {
+                "content": "CREDENTIAL"
+              },
+              {
+                "content": "EXTERNAL_LOCATION"
+              },
+              {
+                "content": "EXTERNAL_METADATA"
+              },
+              {
+                "content": "FUNCTION"
+              },
+              {
+                "content": "MCP_SERVICE"
+              },
+              {
+                "content": "METASTORE"
+              },
+              {
+                "content": "MODEL"
+              },
+              {
+                "content": "MODEL_PROVIDER_SERVICE"
+              },
+              {
+                "content": "MODEL_SERVICE"
+              },
+              {
+                "content": "PIPELINE"
+              },
+              {
+                "content": "PROVIDER"
+              },
+              {
+                "content": "RECIPIENT"
+              },
+              {
+                "content": "SCHEMA"
+              },
+              {
+                "content": "SHARE"
+              },
+              {
+                "content": "SKILL"
+              },
+              {
+                "content": "STAGING_TABLE"
+              },
+              {
+                "content": "STORAGE_CREDENTIAL"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "policy_type",
+          "description": "Type of the policy. Required on create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PolicyType",
+            "enum": [
+              {
+                "content": "POLICY_TYPE_COLUMN_MASK"
+              },
+              {
+                "content": "POLICY_TYPE_DENY"
+              },
+              {
+                "content": "POLICY_TYPE_GRANT"
+              },
+              {
+                "content": "POLICY_TYPE_ROW_FILTER"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeletePolicy",
+      "description": "Delete an ABAC policy defined on a securable.",
+      "summary": "Delete an ABAC policy.",
+      "path": "/api/2.1/unity-catalog/policies/{on_securable_type}/{on_securable_fullname}/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeletePolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to delete the policy from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of the securable to delete the policy from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Required. The name of the policy to delete",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to delete the policy from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of the securable to delete the policy from.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Required. The name of the policy to delete",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeletePolicyResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The name of the policy to delete",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of the securable to delete the policy from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to delete the policy from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to delete the policy from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of the securable to delete the policy from.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Required. The name of the policy to delete",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPolicy",
+      "description": "Get the policy definition on a securable",
+      "summary": "Get an ABAC policy.",
+      "path": "/api/2.1/unity-catalog/policies/{on_securable_type}/{on_securable_fullname}/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to retrieve the policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of securable to retrieve policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Required. The name of the policy to retrieve.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to retrieve the policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of securable to retrieve policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Required. The name of the policy to retrieve.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PolicyInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "to_principals",
+            "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "for_securable_type",
+            "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SecurableType",
+              "enum": [
+                {
+                  "content": "AGENT_SERVICE"
+                },
+                {
+                  "content": "CATALOG"
+                },
+                {
+                  "content": "CLEAN_ROOM"
+                },
+                {
+                  "content": "CONNECTION"
+                },
+                {
+                  "content": "CREDENTIAL"
+                },
+                {
+                  "content": "EXTERNAL_LOCATION"
+                },
+                {
+                  "content": "EXTERNAL_METADATA"
+                },
+                {
+                  "content": "FUNCTION"
+                },
+                {
+                  "content": "MCP_SERVICE"
+                },
+                {
+                  "content": "METASTORE"
+                },
+                {
+                  "content": "MODEL"
+                },
+                {
+                  "content": "MODEL_PROVIDER_SERVICE"
+                },
+                {
+                  "content": "MODEL_SERVICE"
+                },
+                {
+                  "content": "PIPELINE"
+                },
+                {
+                  "content": "PROVIDER"
+                },
+                {
+                  "content": "RECIPIENT"
+                },
+                {
+                  "content": "SCHEMA"
+                },
+                {
+                  "content": "SHARE"
+                },
+                {
+                  "content": "SKILL"
+                },
+                {
+                  "content": "STAGING_TABLE"
+                },
+                {
+                  "content": "STORAGE_CREDENTIAL"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "policy_type",
+            "description": "Type of the policy. Required on create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyType",
+              "enum": [
+                {
+                  "content": "POLICY_TYPE_COLUMN_MASK"
+                },
+                {
+                  "content": "POLICY_TYPE_DENY"
+                },
+                {
+                  "content": "POLICY_TYPE_GRANT"
+                },
+                {
+                  "content": "POLICY_TYPE_ROW_FILTER"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "to_principals",
+            "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "for_securable_type",
+            "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SecurableType",
+              "enum": [
+                {
+                  "content": "AGENT_SERVICE"
+                },
+                {
+                  "content": "CATALOG"
+                },
+                {
+                  "content": "CLEAN_ROOM"
+                },
+                {
+                  "content": "CONNECTION"
+                },
+                {
+                  "content": "CREDENTIAL"
+                },
+                {
+                  "content": "EXTERNAL_LOCATION"
+                },
+                {
+                  "content": "EXTERNAL_METADATA"
+                },
+                {
+                  "content": "FUNCTION"
+                },
+                {
+                  "content": "MCP_SERVICE"
+                },
+                {
+                  "content": "METASTORE"
+                },
+                {
+                  "content": "MODEL"
+                },
+                {
+                  "content": "MODEL_PROVIDER_SERVICE"
+                },
+                {
+                  "content": "MODEL_SERVICE"
+                },
+                {
+                  "content": "PIPELINE"
+                },
+                {
+                  "content": "PROVIDER"
+                },
+                {
+                  "content": "RECIPIENT"
+                },
+                {
+                  "content": "SCHEMA"
+                },
+                {
+                  "content": "SHARE"
+                },
+                {
+                  "content": "SKILL"
+                },
+                {
+                  "content": "STAGING_TABLE"
+                },
+                {
+                  "content": "STORAGE_CREDENTIAL"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "policy_type",
+            "description": "Type of the policy. Required on create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyType",
+              "enum": [
+                {
+                  "content": "POLICY_TYPE_COLUMN_MASK"
+                },
+                {
+                  "content": "POLICY_TYPE_DENY"
+                },
+                {
+                  "content": "POLICY_TYPE_GRANT"
+                },
+                {
+                  "content": "POLICY_TYPE_ROW_FILTER"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The name of the policy to retrieve.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of securable to retrieve policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to retrieve the policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to retrieve the policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of securable to retrieve policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Required. The name of the policy to retrieve.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListPolicies",
+      "description": "List all policies defined on a securable.\nOptionally, the list can include inherited policies defined on the securable's parent schema or catalog.\n\nPAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List ABAC policies.",
+      "path": "/api/2.1/unity-catalog/policies/{on_securable_type}/{on_securable_fullname}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPoliciesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to list policies for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of securable to list policies for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to list policies for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of securable to list policies for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListPoliciesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_inherited",
+          "description": "Optional. Whether to include policies defined on parent securables.\nBy default, the inherited policies are not included.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Optional.  Maximum number of policies to return on a single page (page length).\n- When not set or set to 0, the page length is set to a server configured value (recommended);\n- When set to a value greater than 0, the page length is the minimum of this value and a server configured value;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of securable to list policies for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to list policies for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Optional. Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to list policies for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of securable to list policies for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Optional. Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdatePolicy",
+      "description": "Update an ABAC policy on a securable.",
+      "summary": "Update an ABAC policy.",
+      "path": "/api/2.1/unity-catalog/policies/{on_securable_type}/{on_securable_fullname}/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdatePolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to update the policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of the securable to update the policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Required. The name of the policy to update.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "policy_info",
+            "description": "Optional fields to update. This is the request body for updating a policy.\nUse `update_mask` field to specify which fields in the request is to be updated.\n- If `update_mask` is empty or \"*\", all specified fields will be updated.\n- If `update_mask` is specified, only the fields specified in the `update_mask` will be updated.\nIf a field is specified in `update_mask` and not set in the request, the field will be cleared.\nUsers can use the update mask to explicitly unset optional fields such as\n`exception_principals` and `when_condition`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyInfo",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "on_securable_type",
+            "description": "Required. The type of the securable to update the policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "on_securable_fullname",
+            "description": "Required. The fully qualified name of the securable to update the policy for.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Required. The name of the policy to update.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy_info",
+            "description": "Optional fields to update. This is the request body for updating a policy.\nUse `update_mask` field to specify which fields in the request is to be updated.\n- If `update_mask` is empty or \"*\", all specified fields will be updated.\n- If `update_mask` is specified, only the fields specified in the `update_mask` will be updated.\nIf a field is specified in `update_mask` and not set in the request, the field will be cleared.\nUsers can use the update mask to explicitly unset optional fields such as\n`exception_principals` and `when_condition`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyInfo",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "policy_info",
+        "description": "Optional fields to update. This is the request body for updating a policy.\nUse `update_mask` field to specify which fields in the request is to be updated.\n- If `update_mask` is empty or \"*\", all specified fields will be updated.\n- If `update_mask` is specified, only the fields specified in the `update_mask` will be updated.\nIf a field is specified in `update_mask` and not set in the request, the field will be cleared.\nUsers can use the update mask to explicitly unset optional fields such as\n`exception_principals` and `when_condition`.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "PolicyInfo",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "to_principals",
+              "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "for_securable_type",
+              "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SecurableType",
+                "enum": [
+                  {
+                    "content": "AGENT_SERVICE"
+                  },
+                  {
+                    "content": "CATALOG"
+                  },
+                  {
+                    "content": "CLEAN_ROOM"
+                  },
+                  {
+                    "content": "CONNECTION"
+                  },
+                  {
+                    "content": "CREDENTIAL"
+                  },
+                  {
+                    "content": "EXTERNAL_LOCATION"
+                  },
+                  {
+                    "content": "EXTERNAL_METADATA"
+                  },
+                  {
+                    "content": "FUNCTION"
+                  },
+                  {
+                    "content": "MCP_SERVICE"
+                  },
+                  {
+                    "content": "METASTORE"
+                  },
+                  {
+                    "content": "MODEL"
+                  },
+                  {
+                    "content": "MODEL_PROVIDER_SERVICE"
+                  },
+                  {
+                    "content": "MODEL_SERVICE"
+                  },
+                  {
+                    "content": "PIPELINE"
+                  },
+                  {
+                    "content": "PROVIDER"
+                  },
+                  {
+                    "content": "RECIPIENT"
+                  },
+                  {
+                    "content": "SCHEMA"
+                  },
+                  {
+                    "content": "SHARE"
+                  },
+                  {
+                    "content": "SKILL"
+                  },
+                  {
+                    "content": "STAGING_TABLE"
+                  },
+                  {
+                    "content": "STORAGE_CREDENTIAL"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "policy_type",
+              "description": "Type of the policy. Required on create.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PolicyType",
+                "enum": [
+                  {
+                    "content": "POLICY_TYPE_COLUMN_MASK"
+                  },
+                  {
+                    "content": "POLICY_TYPE_DENY"
+                  },
+                  {
+                    "content": "POLICY_TYPE_GRANT"
+                  },
+                  {
+                    "content": "POLICY_TYPE_ROW_FILTER"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "to_principals",
+              "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "List",
+                "array_value": {
+                  "is_string": true
+                }
+              }
+            },
+            {
+              "name": "for_securable_type",
+              "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "SecurableType",
+                "enum": [
+                  {
+                    "content": "AGENT_SERVICE"
+                  },
+                  {
+                    "content": "CATALOG"
+                  },
+                  {
+                    "content": "CLEAN_ROOM"
+                  },
+                  {
+                    "content": "CONNECTION"
+                  },
+                  {
+                    "content": "CREDENTIAL"
+                  },
+                  {
+                    "content": "EXTERNAL_LOCATION"
+                  },
+                  {
+                    "content": "EXTERNAL_METADATA"
+                  },
+                  {
+                    "content": "FUNCTION"
+                  },
+                  {
+                    "content": "MCP_SERVICE"
+                  },
+                  {
+                    "content": "METASTORE"
+                  },
+                  {
+                    "content": "MODEL"
+                  },
+                  {
+                    "content": "MODEL_PROVIDER_SERVICE"
+                  },
+                  {
+                    "content": "MODEL_SERVICE"
+                  },
+                  {
+                    "content": "PIPELINE"
+                  },
+                  {
+                    "content": "PROVIDER"
+                  },
+                  {
+                    "content": "RECIPIENT"
+                  },
+                  {
+                    "content": "SCHEMA"
+                  },
+                  {
+                    "content": "SHARE"
+                  },
+                  {
+                    "content": "SKILL"
+                  },
+                  {
+                    "content": "STAGING_TABLE"
+                  },
+                  {
+                    "content": "STORAGE_CREDENTIAL"
+                  },
+                  {
+                    "content": "TABLE"
+                  },
+                  {
+                    "content": "VOLUME"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "policy_type",
+              "description": "Type of the policy. Required on create.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PolicyType",
+                "enum": [
+                  {
+                    "content": "POLICY_TYPE_COLUMN_MASK"
+                  },
+                  {
+                    "content": "POLICY_TYPE_DENY"
+                  },
+                  {
+                    "content": "POLICY_TYPE_GRANT"
+                  },
+                  {
+                    "content": "POLICY_TYPE_ROW_FILTER"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "PolicyInfo",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "to_principals",
+            "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "for_securable_type",
+            "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SecurableType",
+              "enum": [
+                {
+                  "content": "AGENT_SERVICE"
+                },
+                {
+                  "content": "CATALOG"
+                },
+                {
+                  "content": "CLEAN_ROOM"
+                },
+                {
+                  "content": "CONNECTION"
+                },
+                {
+                  "content": "CREDENTIAL"
+                },
+                {
+                  "content": "EXTERNAL_LOCATION"
+                },
+                {
+                  "content": "EXTERNAL_METADATA"
+                },
+                {
+                  "content": "FUNCTION"
+                },
+                {
+                  "content": "MCP_SERVICE"
+                },
+                {
+                  "content": "METASTORE"
+                },
+                {
+                  "content": "MODEL"
+                },
+                {
+                  "content": "MODEL_PROVIDER_SERVICE"
+                },
+                {
+                  "content": "MODEL_SERVICE"
+                },
+                {
+                  "content": "PIPELINE"
+                },
+                {
+                  "content": "PROVIDER"
+                },
+                {
+                  "content": "RECIPIENT"
+                },
+                {
+                  "content": "SCHEMA"
+                },
+                {
+                  "content": "SHARE"
+                },
+                {
+                  "content": "SKILL"
+                },
+                {
+                  "content": "STAGING_TABLE"
+                },
+                {
+                  "content": "STORAGE_CREDENTIAL"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "policy_type",
+            "description": "Type of the policy. Required on create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyType",
+              "enum": [
+                {
+                  "content": "POLICY_TYPE_COLUMN_MASK"
+                },
+                {
+                  "content": "POLICY_TYPE_DENY"
+                },
+                {
+                  "content": "POLICY_TYPE_GRANT"
+                },
+                {
+                  "content": "POLICY_TYPE_ROW_FILTER"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "to_principals",
+            "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          },
+          {
+            "name": "for_securable_type",
+            "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SecurableType",
+              "enum": [
+                {
+                  "content": "AGENT_SERVICE"
+                },
+                {
+                  "content": "CATALOG"
+                },
+                {
+                  "content": "CLEAN_ROOM"
+                },
+                {
+                  "content": "CONNECTION"
+                },
+                {
+                  "content": "CREDENTIAL"
+                },
+                {
+                  "content": "EXTERNAL_LOCATION"
+                },
+                {
+                  "content": "EXTERNAL_METADATA"
+                },
+                {
+                  "content": "FUNCTION"
+                },
+                {
+                  "content": "MCP_SERVICE"
+                },
+                {
+                  "content": "METASTORE"
+                },
+                {
+                  "content": "MODEL"
+                },
+                {
+                  "content": "MODEL_PROVIDER_SERVICE"
+                },
+                {
+                  "content": "MODEL_SERVICE"
+                },
+                {
+                  "content": "PIPELINE"
+                },
+                {
+                  "content": "PROVIDER"
+                },
+                {
+                  "content": "RECIPIENT"
+                },
+                {
+                  "content": "SCHEMA"
+                },
+                {
+                  "content": "SHARE"
+                },
+                {
+                  "content": "SKILL"
+                },
+                {
+                  "content": "STAGING_TABLE"
+                },
+                {
+                  "content": "STORAGE_CREDENTIAL"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "policy_type",
+            "description": "Type of the policy. Required on create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PolicyType",
+              "enum": [
+                {
+                  "content": "POLICY_TYPE_COLUMN_MASK"
+                },
+                {
+                  "content": "POLICY_TYPE_DENY"
+                },
+                {
+                  "content": "POLICY_TYPE_GRANT"
+                },
+                {
+                  "content": "POLICY_TYPE_ROW_FILTER"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The name of the policy to update.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of the securable to update the policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to update the policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_info",
+          "description": "Optional fields to update. This is the request body for updating a policy.\nUse `update_mask` field to specify which fields in the request is to be updated.\n- If `update_mask` is empty or \"*\", all specified fields will be updated.\n- If `update_mask` is specified, only the fields specified in the `update_mask` will be updated.\nIf a field is specified in `update_mask` and not set in the request, the field will be cleared.\nUsers can use the update mask to explicitly unset optional fields such as\n`exception_principals` and `when_condition`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PolicyInfo",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "to_principals",
+                "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "for_securable_type",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SecurableType",
+                  "enum": [
+                    {
+                      "content": "AGENT_SERVICE"
+                    },
+                    {
+                      "content": "CATALOG"
+                    },
+                    {
+                      "content": "CLEAN_ROOM"
+                    },
+                    {
+                      "content": "CONNECTION"
+                    },
+                    {
+                      "content": "CREDENTIAL"
+                    },
+                    {
+                      "content": "EXTERNAL_LOCATION"
+                    },
+                    {
+                      "content": "EXTERNAL_METADATA"
+                    },
+                    {
+                      "content": "FUNCTION"
+                    },
+                    {
+                      "content": "MCP_SERVICE"
+                    },
+                    {
+                      "content": "METASTORE"
+                    },
+                    {
+                      "content": "MODEL"
+                    },
+                    {
+                      "content": "MODEL_PROVIDER_SERVICE"
+                    },
+                    {
+                      "content": "MODEL_SERVICE"
+                    },
+                    {
+                      "content": "PIPELINE"
+                    },
+                    {
+                      "content": "PROVIDER"
+                    },
+                    {
+                      "content": "RECIPIENT"
+                    },
+                    {
+                      "content": "SCHEMA"
+                    },
+                    {
+                      "content": "SHARE"
+                    },
+                    {
+                      "content": "SKILL"
+                    },
+                    {
+                      "content": "STAGING_TABLE"
+                    },
+                    {
+                      "content": "STORAGE_CREDENTIAL"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "policy_type",
+                "description": "Type of the policy. Required on create.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PolicyType",
+                  "enum": [
+                    {
+                      "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_DENY"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
+                    },
+                    {
+                      "content": "POLICY_TYPE_ROW_FILTER"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "to_principals",
+                "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "List",
+                  "array_value": {
+                    "is_string": true
+                  }
+                }
+              },
+              {
+                "name": "for_securable_type",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "SecurableType",
+                  "enum": [
+                    {
+                      "content": "AGENT_SERVICE"
+                    },
+                    {
+                      "content": "CATALOG"
+                    },
+                    {
+                      "content": "CLEAN_ROOM"
+                    },
+                    {
+                      "content": "CONNECTION"
+                    },
+                    {
+                      "content": "CREDENTIAL"
+                    },
+                    {
+                      "content": "EXTERNAL_LOCATION"
+                    },
+                    {
+                      "content": "EXTERNAL_METADATA"
+                    },
+                    {
+                      "content": "FUNCTION"
+                    },
+                    {
+                      "content": "MCP_SERVICE"
+                    },
+                    {
+                      "content": "METASTORE"
+                    },
+                    {
+                      "content": "MODEL"
+                    },
+                    {
+                      "content": "MODEL_PROVIDER_SERVICE"
+                    },
+                    {
+                      "content": "MODEL_SERVICE"
+                    },
+                    {
+                      "content": "PIPELINE"
+                    },
+                    {
+                      "content": "PROVIDER"
+                    },
+                    {
+                      "content": "RECIPIENT"
+                    },
+                    {
+                      "content": "SCHEMA"
+                    },
+                    {
+                      "content": "SHARE"
+                    },
+                    {
+                      "content": "SKILL"
+                    },
+                    {
+                      "content": "STAGING_TABLE"
+                    },
+                    {
+                      "content": "STORAGE_CREDENTIAL"
+                    },
+                    {
+                      "content": "TABLE"
+                    },
+                    {
+                      "content": "VOLUME"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "policy_type",
+                "description": "Type of the policy. Required on create.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PolicyType",
+                  "enum": [
+                    {
+                      "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_DENY"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
+                    },
+                    {
+                      "content": "POLICY_TYPE_ROW_FILTER"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Optional. The update mask field for specifying user intentions on which\nfields to update in the request.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "column_mask",
+          "description": "Options for column mask policies. Valid only if `policy_type` is `POLICY_TYPE_COLUMN_MASK`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ColumnMaskOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "Optional description of the policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_at",
+          "description": "Time at which the policy was created, in epoch milliseconds. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "Username of the user who created the policy. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "deny",
+          "description": "Options for deny policies. Valid only if `policy_type` is `POLICY_TYPE_DENY`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DenyOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "except_principals",
+          "description": "Optional list of user or group names that should be excluded from the policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "for_securable_type",
+          "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SecurableType",
+            "enum": [
+              {
+                "content": "AGENT_SERVICE"
+              },
+              {
+                "content": "CATALOG"
+              },
+              {
+                "content": "CLEAN_ROOM"
+              },
+              {
+                "content": "CONNECTION"
+              },
+              {
+                "content": "CREDENTIAL"
+              },
+              {
+                "content": "EXTERNAL_LOCATION"
+              },
+              {
+                "content": "EXTERNAL_METADATA"
+              },
+              {
+                "content": "FUNCTION"
+              },
+              {
+                "content": "MCP_SERVICE"
+              },
+              {
+                "content": "METASTORE"
+              },
+              {
+                "content": "MODEL"
+              },
+              {
+                "content": "MODEL_PROVIDER_SERVICE"
+              },
+              {
+                "content": "MODEL_SERVICE"
+              },
+              {
+                "content": "PIPELINE"
+              },
+              {
+                "content": "PROVIDER"
+              },
+              {
+                "content": "RECIPIENT"
+              },
+              {
+                "content": "SCHEMA"
+              },
+              {
+                "content": "SHARE"
+              },
+              {
+                "content": "SKILL"
+              },
+              {
+                "content": "STAGING_TABLE"
+              },
+              {
+                "content": "STORAGE_CREDENTIAL"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "governed_tags",
+          "description": "Governed tag keys and values referenced by this policy's conditions and function arguments. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "GovernedTagReferenceList",
+            "array_value": {
+              "pascal_name": "GovernedTagReference",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "grant",
+          "description": "Options for grant policies. Valid only if `policy_type` is `POLICY_TYPE_GRANT`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GrantOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the policy. This field is output only and is generated by the system.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "match_columns",
+          "description": "Optional list of condition expressions used to match table columns.\nOnly valid when `for_securable_type` is `TABLE`.\nWhen specified, the policy only applies to tables whose columns satisfy all match conditions.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "MatchColumnList",
+            "array_value": {
+              "pascal_name": "MatchColumn",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the policy. Required on create and optional on update.\nTo rename the policy, set `name` to a different value on update.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Full name of the securable on which the policy is defined.\nRequired on create.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_type",
+          "description": "Type of the securable on which the policy is defined.\nOnly `CATALOG`, `SCHEMA` and `TABLE` are supported at this moment.\nRequired on create.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SecurableType",
+            "enum": [
+              {
+                "content": "AGENT_SERVICE"
+              },
+              {
+                "content": "CATALOG"
+              },
+              {
+                "content": "CLEAN_ROOM"
+              },
+              {
+                "content": "CONNECTION"
+              },
+              {
+                "content": "CREDENTIAL"
+              },
+              {
+                "content": "EXTERNAL_LOCATION"
+              },
+              {
+                "content": "EXTERNAL_METADATA"
+              },
+              {
+                "content": "FUNCTION"
+              },
+              {
+                "content": "MCP_SERVICE"
+              },
+              {
+                "content": "METASTORE"
+              },
+              {
+                "content": "MODEL"
+              },
+              {
+                "content": "MODEL_PROVIDER_SERVICE"
+              },
+              {
+                "content": "MODEL_SERVICE"
+              },
+              {
+                "content": "PIPELINE"
+              },
+              {
+                "content": "PROVIDER"
+              },
+              {
+                "content": "RECIPIENT"
+              },
+              {
+                "content": "SCHEMA"
+              },
+              {
+                "content": "SHARE"
+              },
+              {
+                "content": "SKILL"
+              },
+              {
+                "content": "STAGING_TABLE"
+              },
+              {
+                "content": "STORAGE_CREDENTIAL"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "policy_type",
+          "description": "Type of the policy. Required on create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PolicyType",
+            "enum": [
+              {
+                "content": "POLICY_TYPE_COLUMN_MASK"
+              },
+              {
+                "content": "POLICY_TYPE_DENY"
+              },
+              {
+                "content": "POLICY_TYPE_GRANT"
+              },
+              {
+                "content": "POLICY_TYPE_ROW_FILTER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "row_filter",
+          "description": "Options for row filter policies. Valid only if `policy_type` is `POLICY_TYPE_ROW_FILTER`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RowFilterOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "to_principals",
+          "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "updated_at",
+          "description": "Time at which the policy was last modified, in epoch milliseconds. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "Username of the user who last modified the policy. Output only.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "when_condition",
+          "description": "Optional condition when the policy should take effect.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "on_securable_type",
+          "description": "Required. The type of the securable to update the policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "on_securable_fullname",
+          "description": "Required. The fully qualified name of the securable to update the policy for.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Required. The name of the policy to update.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "to_principals",
+          "description": "List of user or group names that the policy applies to.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "for_securable_type",
+          "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SecurableType",
+            "enum": [
+              {
+                "content": "AGENT_SERVICE"
+              },
+              {
+                "content": "CATALOG"
+              },
+              {
+                "content": "CLEAN_ROOM"
+              },
+              {
+                "content": "CONNECTION"
+              },
+              {
+                "content": "CREDENTIAL"
+              },
+              {
+                "content": "EXTERNAL_LOCATION"
+              },
+              {
+                "content": "EXTERNAL_METADATA"
+              },
+              {
+                "content": "FUNCTION"
+              },
+              {
+                "content": "MCP_SERVICE"
+              },
+              {
+                "content": "METASTORE"
+              },
+              {
+                "content": "MODEL"
+              },
+              {
+                "content": "MODEL_PROVIDER_SERVICE"
+              },
+              {
+                "content": "MODEL_SERVICE"
+              },
+              {
+                "content": "PIPELINE"
+              },
+              {
+                "content": "PROVIDER"
+              },
+              {
+                "content": "RECIPIENT"
+              },
+              {
+                "content": "SCHEMA"
+              },
+              {
+                "content": "SHARE"
+              },
+              {
+                "content": "SKILL"
+              },
+              {
+                "content": "STAGING_TABLE"
+              },
+              {
+                "content": "STORAGE_CREDENTIAL"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "policy_type",
+          "description": "Type of the policy. Required on create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PolicyType",
+            "enum": [
+              {
+                "content": "POLICY_TYPE_COLUMN_MASK"
+              },
+              {
+                "content": "POLICY_TYPE_DENY"
+              },
+              {
+                "content": "POLICY_TYPE_GRANT"
+              },
+              {
+                "content": "POLICY_TYPE_ROW_FILTER"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

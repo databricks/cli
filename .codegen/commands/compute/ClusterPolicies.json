@@ -1,0 +1,672 @@
+{
+  "id": "compute.ClusterPolicies",
+  "name": "ClusterPolicies",
+  "description": "You can use cluster policies to control users' ability to configure clusters based on a set of rules.\nThese rules specify which attributes or attribute values can be used during cluster creation.\nCluster policies have ACLs that limit their use to specific users and groups.\n\nWith cluster policies, you can:\n- Auto-install cluster libraries on the next restart by listing them in the policy's \"libraries\" field (Public Preview).\n- Limit users to creating clusters with the prescribed settings.\n- Simplify the user interface, enabling more users to create clusters, by fixing and hiding some fields.\n- Manage costs by setting limits on attributes that impact the hourly rate.\n\nCluster policy permissions limit which policies a user can select in the Policy drop-down when the user creates a cluster:\n- A user who has unrestricted cluster create permission can select the Unrestricted policy and create fully-configurable clusters.\n- A user who has both unrestricted cluster create permission and access to cluster policies can select the Unrestricted policy and policies they have access to.\n- A user that has access to only cluster policies, can select the policies they have access to.\n\nIf no policies exist in the workspace, the Policy drop-down doesn't appear.\nOnly admin users can create, edit, and delete policies. Admin users also have access to all policies.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "PolicyNameToPolicyIdMap"
+    },
+    "request": {
+      "pascal_name": "ListClusterPoliciesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new policy with prescribed settings.",
+      "summary": "Create a new policy.",
+      "path": "/api/2.0/policies/clusters/create",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreatePolicy",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CreatePolicyResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "definition",
+          "description": "Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Additional human-readable description of the cluster policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "libraries",
+          "description": "A list of libraries to be installed on the next cluster restart that uses this policy. The maximum number of libraries is 500.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LibraryList",
+            "array_value": {
+              "pascal_name": "Library",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "max_clusters_per_user",
+          "description": "Max number of clusters per user that can be active using this policy. If not present, there is no max limit.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Cluster Policy name requested by the user. This has to be unique. Length must be between 1 and 100\ncharacters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_family_definition_overrides",
+          "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_family_id",
+          "description": "ID of the policy family. The cluster policy's policy definition inherits the policy\nfamily's policy definition.\n\nCannot be used with `definition`. Use `policy_family_definition_overrides` instead to\ncustomize the policy definition.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete a policy for a cluster. Clusters governed by this policy can still run, but cannot be edited.",
+      "summary": "Delete a cluster policy.",
+      "path": "/api/2.0/policies/clusters/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeletePolicy",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "The ID of the policy to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy_id",
+            "description": "The ID of the policy to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeletePolicyResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "policy_id",
+          "description": "The ID of the policy to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "The ID of the policy to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edit",
+      "description": "Update an existing policy for cluster. This operation may make some clusters governed by the previous policy invalid.",
+      "summary": "Update a cluster policy.",
+      "path": "/api/2.0/policies/clusters/edit",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EditPolicy",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "The ID of the policy to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy_id",
+            "description": "The ID of the policy to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EditPolicyResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "definition",
+          "description": "Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Additional human-readable description of the cluster policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "libraries",
+          "description": "A list of libraries to be installed on the next cluster restart that uses this policy. The maximum number of libraries is 500.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LibraryList",
+            "array_value": {
+              "pascal_name": "Library",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "max_clusters_per_user",
+          "description": "Max number of clusters per user that can be active using this policy. If not present, there is no max limit.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Cluster Policy name requested by the user. This has to be unique. Length must be between 1 and 100\ncharacters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_family_definition_overrides",
+          "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_family_id",
+          "description": "ID of the policy family. The cluster policy's policy definition inherits the policy\nfamily's policy definition.\n\nCannot be used with `definition`. Use `policy_family_definition_overrides` instead to\ncustomize the policy definition.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The ID of the policy to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "The ID of the policy to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a cluster policy entity. Creation and editing is available to admins only.",
+      "summary": "Get a cluster policy.",
+      "path": "/api/2.0/policies/clusters/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetClusterPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "Canonical unique identifier for the Cluster Policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "policy_id",
+            "description": "Canonical unique identifier for the Cluster Policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Policy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy_id",
+          "description": "Canonical unique identifier for the Cluster Policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "Canonical unique identifier for the Cluster Policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get cluster policy permission levels.",
+      "path": "/api/2.0/permissions/cluster-policies/{cluster_policy_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetClusterPolicyPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetClusterPolicyPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a cluster policy. Cluster policies can inherit permissions from their root object.",
+      "summary": "Get cluster policy permissions.",
+      "path": "/api/2.0/permissions/cluster-policies/{cluster_policy_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetClusterPolicyPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterPolicyPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Returns a list of policies accessible by the requesting user.",
+      "summary": "List cluster policies.",
+      "path": "/api/2.0/policies/clusters/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListClusterPoliciesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListPoliciesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "sort_column",
+          "description": "The cluster policy attribute to sort by.\n* `POLICY_CREATION_TIME` - Sort result list by policy creation time.\n* `POLICY_NAME` - Sort result list by policy name.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ListSortColumn",
+            "enum": [
+              {
+                "content": "POLICY_CREATION_TIME"
+              },
+              {
+                "content": "POLICY_NAME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sort_order",
+          "description": "The order in which the policies get listed.\n* `DESC` - Sort result list in descending order.\n* `ASC` - Sort result list in ascending order.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ListSortOrder",
+            "enum": [
+              {
+                "content": "ASC"
+              },
+              {
+                "content": "DESC"
+              }
+            ]
+          }
+        }
+      ],
+      "pagination": {}
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set cluster policy permissions.",
+      "path": "/api/2.0/permissions/cluster-policies/{cluster_policy_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ClusterPolicyPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterPolicyPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ClusterPolicyAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ClusterPolicyAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a cluster policy. Cluster policies can inherit permissions from their root object.",
+      "summary": "Update cluster policy permissions.",
+      "path": "/api/2.0/permissions/cluster-policies/{cluster_policy_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ClusterPolicyPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_policy_id",
+            "description": "The cluster policy for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterPolicyPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ClusterPolicyAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "ClusterPolicyAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_policy_id",
+          "description": "The cluster policy for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "id": "sharing.RecipientActivation",
+  "name": "RecipientActivation",
+  "description": "The Recipient Activation API is only applicable in the open sharing model where the\nrecipient object has the authentication type of `TOKEN`. The data recipient follows\nthe activation link shared by the data provider to download the credential file that\nincludes the access token. The recipient will then use the credential file to establish\na secure connection with the provider to receive the shared data.\n\nNote that you can download the credential file only once. Recipients should treat the\ndownloaded credential as a secret and must not share it outside of their organization.",
+  "package": {
+    "name": "sharing"
+  },
+  "docs_group": "sharing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "GetActivationUrlInfo",
+      "description": "Gets an activation URL for a share.",
+      "summary": "Get a share activation URL.",
+      "path": "/api/2.1/unity-catalog/public/data_sharing_activation_info/{activation_url}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetActivationUrlInfoRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "activation_url",
+            "description": "The one time activation url. It also accepts activation token.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "activation_url",
+            "description": "The one time activation url. It also accepts activation token.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetActivationUrlInfoResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "activation_url",
+          "description": "The one time activation url. It also accepts activation token.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "activation_url",
+          "description": "The one time activation url. It also accepts activation token.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RetrieveToken",
+      "description": "Retrieve access token with an activation url.\nThis is a public API without any authentication.",
+      "summary": "Get an access token.",
+      "path": "/api/2.1/unity-catalog/public/data_sharing_activation/{activation_url}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RetrieveTokenRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "activation_url",
+            "description": "The one time activation url. It also accepts activation token.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "activation_url",
+            "description": "The one time activation url. It also accepts activation token.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RetrieveTokenResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "activation_url",
+          "description": "The one time activation url. It also accepts activation token.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "activation_url",
+          "description": "The one time activation url. It also accepts activation token.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

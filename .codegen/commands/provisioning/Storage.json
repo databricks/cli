@@ -1,0 +1,241 @@
+{
+  "id": "provisioning.Storage",
+  "name": "Storage",
+  "description": "These APIs manage storage configurations for this workspace. A root storage S3 bucket in\nyour account is required to store objects like cluster logs, notebook revisions, and job\nresults. You can also use the root storage S3 bucket for storage of non-production DBFS\ndata. A storage configuration encapsulates this bucket information, and its ID is used when\ncreating a new workspace.",
+  "package": {
+    "name": "provisioning"
+  },
+  "is_accounts": true,
+  "docs_group": "provisioning",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a Databricks storage configuration for an account.",
+      "summary": "Create a storage configuration.",
+      "path": "/api/2.0/accounts/{account_id}/storage-configurations",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateStorageConfigurationRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "storage_configuration_name",
+            "description": "The human-readable name of the storage configuration.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "root_bucket_info",
+            "description": "Root S3 bucket information.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RootBucketInfo",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "storage_configuration_name",
+            "description": "The human-readable name of the storage configuration.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "root_bucket_info",
+            "description": "Root S3 bucket information.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RootBucketInfo",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StorageConfiguration",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "role_arn",
+          "description": "Optional IAM role that is used to access the workspace catalog which is created during workspace creation\nfor UC by Default. If a storage configuration with this field populated is used to create a workspace,\nthen a workspace catalog is created together with the workspace. The workspace catalog shares the root\nbucket with internal workspace storage (including DBFS root) but uses a dedicated bucket path prefix.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "root_bucket_info",
+          "description": "Root S3 bucket information.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RootBucketInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "storage_configuration_name",
+          "description": "The human-readable name of the storage configuration.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a Databricks storage configuration. You cannot delete a storage configuration that is associated with any workspace.",
+      "summary": "Delete a storage configuration.",
+      "path": "/api/2.0/accounts/{account_id}/storage-configurations/{storage_configuration_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteStorageRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "storage_configuration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "storage_configuration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StorageConfiguration",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "storage_configuration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "storage_configuration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a Databricks storage configuration for an account, both specified by ID.",
+      "summary": "Get a storage configuration.",
+      "path": "/api/2.0/accounts/{account_id}/storage-configurations/{storage_configuration_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetStorageRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "storage_configuration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "storage_configuration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StorageConfiguration",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "storage_configuration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "storage_configuration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists Databricks storage configurations for an account, specified by ID.",
+      "summary": "List storage configurations.",
+      "path": "/api/2.0/accounts/{account_id}/storage-configurations",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListStorageRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "StorageConfigurationList",
+        "array_value": {
+          "pascal_name": "StorageConfiguration",
+          "is_object": true
+        }
+      }
+    }
+  ]
+}

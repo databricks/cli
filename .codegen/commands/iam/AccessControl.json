@@ -1,0 +1,225 @@
+{
+  "id": "iam.AccessControl",
+  "name": "AccessControl",
+  "description": "Rule based Access Control for Databricks Resources.",
+  "package": {
+    "name": "iam"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "iam",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "methods": [
+    {
+      "name": "CheckPolicy",
+      "description": "Check access policy to a resource.",
+      "summary": "Check access policy to a resource.",
+      "path": "/api/2.0/access-control/check-policy-v2",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CheckPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "actor",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "Actor",
+              "is_object": true
+            }
+          },
+          {
+            "name": "permission",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "resource",
+            "description": "Ex: (servicePrincipal/use, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e)\nEx: (servicePrincipal.ruleSet/update, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e/ruleSets/default)",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "consistency_token",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "ConsistencyToken",
+              "is_object": true
+            }
+          },
+          {
+            "name": "authz_identity",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "RequestAuthzIdentity",
+              "enum": [
+                {
+                  "content": "REQUEST_AUTHZ_IDENTITY_SERVICE_IDENTITY"
+                },
+                {
+                  "content": "REQUEST_AUTHZ_IDENTITY_USER_CONTEXT"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "actor",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "Actor",
+              "is_object": true
+            }
+          },
+          {
+            "name": "permission",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "resource",
+            "description": "Ex: (servicePrincipal/use, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e)\nEx: (servicePrincipal.ruleSet/update, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e/ruleSets/default)",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "consistency_token",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "ConsistencyToken",
+              "is_object": true
+            }
+          },
+          {
+            "name": "authz_identity",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "RequestAuthzIdentity",
+              "enum": [
+                {
+                  "content": "REQUEST_AUTHZ_IDENTITY_SERVICE_IDENTITY"
+                },
+                {
+                  "content": "REQUEST_AUTHZ_IDENTITY_USER_CONTEXT"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CheckPolicyResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "consistency_token",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ConsistencyToken",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "consistency_token",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ConsistencyToken",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "actor",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "pascal_name": "Actor",
+            "is_object": true
+          }
+        },
+        {
+          "name": "authz_identity",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "pascal_name": "RequestAuthzIdentity",
+            "enum": [
+              {
+                "content": "REQUEST_AUTHZ_IDENTITY_SERVICE_IDENTITY"
+              },
+              {
+                "content": "REQUEST_AUTHZ_IDENTITY_USER_CONTEXT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "consistency_token",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ConsistencyToken",
+            "is_object": true
+          }
+        },
+        {
+          "name": "permission",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "resource",
+          "description": "Ex: (servicePrincipal/use, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e)\nEx: (servicePrincipal.ruleSet/update, accounts/\u003caccount-id\u003e/servicePrincipals/\u003csp-id\u003e/ruleSets/default)",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "resource_info",
+          "is_query": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ResourceInfo",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,927 @@
+{
+  "id": "workspace.Workspace",
+  "name": "Workspace",
+  "description": "The Workspace API allows you to list, import, export, and delete workspace objects such as\nnotebooks, files, folders, and dashboards. Additionally, it provides endpoints to manage\npermissions for any workspace object.\n\nA notebook is a web-based interface to a document that contains runnable code,\nvisualizations, and explanatory text.",
+  "package": {
+    "name": "workspace"
+  },
+  "docs_group": "workspace",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "ObjectInfoPathToObjectIdMap"
+    },
+    "request": {
+      "pascal_name": "ListWorkspaceRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Deletes an object or a directory (and optionally recursively deletes all objects in the directory).\n* If `path` does not exist, this call returns an error `RESOURCE_DOES_NOT_EXIST`.\n* If `path` is a non-empty directory and `recursive` is set to `false`, this call returns an error `DIRECTORY_NOT_EMPTY`.\n\nObject deletion cannot be undone and deleting a directory recursively is not atomic.",
+      "summary": "Delete a workspace object.",
+      "path": "/api/2.0/workspace/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "Delete",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the notebook or directory.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the notebook or directory.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "path",
+          "description": "The absolute path of the notebook or directory.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recursive",
+          "description": "The flag that specifies whether to delete the object recursively. It is `false` by default.\nPlease note this deleting directory is not atomic. If it fails in the middle, some of objects\nunder this directory may be deleted and cannot be undone.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "path",
+          "description": "The absolute path of the notebook or directory.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Export",
+      "description": "Exports an object or the contents of an entire directory.\n\nIf `path` does not exist, this call returns an error `RESOURCE_DOES_NOT_EXIST`.\n\nIf the exported data would exceed size limit, this call returns `MAX_NOTEBOOK_SIZE_EXCEEDED`.\nCurrently, this API does not support exporting a library.",
+      "summary": "Export a workspace object.",
+      "path": "/api/2.0/workspace/export",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ExportRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the object or directory. Exporting a directory is only supported for the `DBC`, `SOURCE`, and `AUTO` format.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the object or directory. Exporting a directory is only supported for the `DBC`, `SOURCE`, and `AUTO` format.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExportResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "format",
+          "description": "This specifies the format of the exported file. By default, this is `SOURCE`.\n\nThe value is case sensitive.\n\n- `SOURCE`: The notebook is exported as source code. Directory exports will not include non-notebook entries.\n- `HTML`: The notebook is exported as an HTML file.\n- `JUPYTER`: The notebook is exported as a Jupyter/IPython Notebook file.\n- `DBC`: The notebook is exported in Databricks archive format. Directory exports will not include non-notebook entries.\n- `R_MARKDOWN`: The notebook is exported to R Markdown format.\n- `AUTO`: The object or directory is exported depending on the objects type. Directory exports will include notebooks and workspace files.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ExportFormat",
+            "enum": [
+              {
+                "content": "AUTO"
+              },
+              {
+                "content": "DBC"
+              },
+              {
+                "content": "HTML"
+              },
+              {
+                "content": "JUPYTER"
+              },
+              {
+                "content": "RAW"
+              },
+              {
+                "content": "R_MARKDOWN"
+              },
+              {
+                "content": "SOURCE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "path",
+          "description": "The absolute path of the object or directory. Exporting a directory is only supported for the `DBC`, `SOURCE`, and `AUTO` format.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "path",
+          "description": "The absolute path of the object or directory. Exporting a directory is only supported for the `DBC`, `SOURCE`, and `AUTO` format.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get workspace object permission levels.",
+      "path": "/api/2.0/permissions/{workspace_object_type}/{workspace_object_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceObjectPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetWorkspaceObjectPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a workspace object. Workspace objects can inherit permissions from their parent objects or root object.",
+      "summary": "Get workspace object permissions.",
+      "path": "/api/2.0/permissions/{workspace_object_type}/{workspace_object_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceObjectPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceObjectPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetStatus",
+      "description": "Gets the status of an object or a directory.\nIf `path` does not exist, this call returns an error `RESOURCE_DOES_NOT_EXIST`.",
+      "summary": "Get status.",
+      "path": "/api/2.0/workspace/get-status",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetStatusRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the notebook or directory.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the notebook or directory.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ObjectInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "path",
+          "description": "The absolute path of the notebook or directory.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "path",
+          "description": "The absolute path of the notebook or directory.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Import",
+      "description": "Imports a workspace object (for example, a notebook or file) or the contents of an entire directory.\nIf `path` already exists and `overwrite` is set to `false`, this call returns an error `RESOURCE_ALREADY_EXISTS`.\nTo import a directory, you can use either the `DBC` format or the `SOURCE` format with the `language` field unset.\nTo import a single file as `SOURCE`, you must set the `language` field.\nZip files within directories are not supported.",
+      "summary": "Import a workspace object.",
+      "path": "/api/2.0/workspace/import",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "Import",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the object or directory. Importing a directory is only supported for the `DBC` and `SOURCE` formats.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the object or directory. Importing a directory is only supported for the `DBC` and `SOURCE` formats.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ImportResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "content",
+          "description": "The base64-encoded content. This has a limit of 10 MB.\n\nIf the limit (10MB) is exceeded, exception with error code **MAX_NOTEBOOK_SIZE_EXCEEDED** is thrown.\nThis parameter might be absent, and instead a posted file is used.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "format",
+          "description": "This specifies the format of the file to be imported.\n\nThe value is case sensitive.\n\n- `AUTO`: The item is imported depending on an analysis of the item's extension and\nthe header content provided in the request. If the item is imported as a notebook,\nthen the item's extension is automatically removed.\n- `SOURCE`: The notebook or directory is imported as source code.\n- `HTML`: The notebook is imported as an HTML file.\n- `JUPYTER`: The notebook is imported as a Jupyter/IPython Notebook file.\n- `DBC`: The notebook is imported in Databricks archive format. Required for directories.\n- `R_MARKDOWN`: The notebook is imported from R Markdown format.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ImportFormat",
+            "enum": [
+              {
+                "content": "AUTO"
+              },
+              {
+                "content": "DBC"
+              },
+              {
+                "content": "HTML"
+              },
+              {
+                "content": "JUPYTER"
+              },
+              {
+                "content": "RAW"
+              },
+              {
+                "content": "R_MARKDOWN"
+              },
+              {
+                "content": "SOURCE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "language",
+          "description": "The language of the object. This value is set only if the object type is `NOTEBOOK`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Language",
+            "enum": [
+              {
+                "content": "PYTHON"
+              },
+              {
+                "content": "R"
+              },
+              {
+                "content": "SCALA"
+              },
+              {
+                "content": "SQL"
+              }
+            ]
+          }
+        },
+        {
+          "name": "overwrite",
+          "description": "The flag that specifies whether to overwrite existing object. It is `false` by default.\nFor `DBC` format, `overwrite` is not supported since it may contain a directory.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The absolute path of the object or directory. Importing a directory is only supported for the `DBC` and `SOURCE` formats.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "path",
+          "description": "The absolute path of the object or directory. Importing a directory is only supported for the `DBC` and `SOURCE` formats.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists the contents of a directory, or the object if it is not a directory.\nIf the input path does not exist, this call returns an error `RESOURCE_DOES_NOT_EXIST`.",
+      "summary": "List contents.",
+      "path": "/api/2.0/workspace/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListWorkspaceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the notebook or directory.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the notebook or directory.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "notebooks_modified_after",
+          "description": "UTC timestamp in milliseconds",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "The absolute path of the notebook or directory.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "path",
+          "description": "The absolute path of the notebook or directory.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {}
+    },
+    {
+      "name": "Mkdirs",
+      "description": "Creates the specified directory (and necessary parent directories if they do not exist).\nIf there is an object (not a directory) at any prefix of the input path, this call returns\nan error `RESOURCE_ALREADY_EXISTS`.\n\nNote that if this operation fails it may have succeeded in creating some of the necessary parent directories.",
+      "summary": "Create a directory.",
+      "path": "/api/2.0/workspace/mkdirs",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "Mkdirs",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the directory. If the parent directories do not exist, it will also create them.\nIf the directory already exists, this command will do nothing and succeed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "path",
+            "description": "The absolute path of the directory. If the parent directories do not exist, it will also create them.\nIf the directory already exists, this command will do nothing and succeed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MkdirsResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "path",
+          "description": "The absolute path of the directory. If the parent directories do not exist, it will also create them.\nIf the directory already exists, this command will do nothing and succeed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "path",
+          "description": "The absolute path of the directory. If the parent directories do not exist, it will also create them.\nIf the directory already exists, this command will do nothing and succeed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their parent objects or root object.",
+      "summary": "Set workspace object permissions.",
+      "path": "/api/2.0/permissions/{workspace_object_type}/{workspace_object_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "WorkspaceObjectPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceObjectPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceObjectAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "WorkspaceObjectAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a workspace object. Workspace objects can inherit permissions from their parent objects or root object.",
+      "summary": "Update workspace object permissions.",
+      "path": "/api/2.0/permissions/{workspace_object_type}/{workspace_object_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "WorkspaceObjectPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_object_type",
+            "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_object_id",
+            "description": "The workspace object for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceObjectPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceObjectAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "WorkspaceObjectAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_object_type",
+          "description": "The workspace object type for which to get or manage permissions. Could be one of the following: alerts, alertsv2, dashboards, dbsql-dashboards, directories, experiments, files, genie, notebooks, queries",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_object_id",
+          "description": "The workspace object for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

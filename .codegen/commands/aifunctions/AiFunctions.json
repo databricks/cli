@@ -1,0 +1,319 @@
+{
+  "id": "aifunctions.AiFunctions",
+  "name": "AiFunctions",
+  "description": "Transform and enrich data with AI on Databricks.",
+  "package": {
+    "name": "aifunctions"
+  },
+  "docs_group": "aifunctions",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "AiClassify",
+      "description": "Classifies content according to a set of provided labels. For REST API requests, the default rate limit is 1,200 requests per minute per workspace. Contact your Databricks account team to request a higher limit.",
+      "summary": "Classify text into labels.",
+      "path": "/api/2.0/ai-functions/ai-classify",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "AiClassifyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "content",
+            "description": "The content to classify. It accepts a plain string or the response object of [ai_parse_document](:method:AiFunctions/AiParseDocument).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          },
+          {
+            "name": "labels",
+            "description": "The label set to classify as. Either a JSON array of label strings (e.g. [\"spam\", \"not_spam\"]), or a JSON object mapping each label to a description (e.g. {\"spam\": \"unsolicited bulk message\", \"not_spam\": \"a legitimate message\"}). Accepts 2 to 500 labels, each 1 to 100 characters.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "content",
+            "description": "The content to classify. It accepts a plain string or the response object of [ai_parse_document](:method:AiFunctions/AiParseDocument).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          },
+          {
+            "name": "labels",
+            "description": "The label set to classify as. Either a JSON array of label strings (e.g. [\"spam\", \"not_spam\"]), or a JSON object mapping each label to a description (e.g. {\"spam\": \"unsolicited bulk message\", \"not_spam\": \"a legitimate message\"}). Accepts 2 to 500 labels, each 1 to 100 characters.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AiClassifyResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "content",
+          "description": "The content to classify. It accepts a plain string or the response object of [ai_parse_document](:method:AiFunctions/AiParseDocument).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {}
+        },
+        {
+          "name": "labels",
+          "description": "The label set to classify as. Either a JSON array of label strings (e.g. [\"spam\", \"not_spam\"]), or a JSON object mapping each label to a description (e.g. {\"spam\": \"unsolicited bulk message\", \"not_spam\": \"a legitimate message\"}). Accepts 2 to 500 labels, each 1 to 100 characters.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {}
+        },
+        {
+          "name": "options",
+          "description": "Function options. Omitted fields fall back to their documented defaults.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiClassifyOptions",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "AiDecide",
+      "description": "Turn text and structured data into decisions your application can use. Define questions and criteria to choose an option, estimate a probability, or assign a score given a provided state.",
+      "summary": "Get fast structured decisions.",
+      "path": "/api/2.0/ai-functions/ai-decide",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "AiDecideRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "state",
+            "description": "A string, JSON object, or array containing the content, related context, and examples needed to answer the provided questions. For example, provide a support message, a conversation, or records describing the current state of an application. All questions receive this same state.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          },
+          {
+            "name": "questions",
+            "description": "A JSON object mapping question IDs to their definitions. Each ID must contain non-whitespace text; its answer is returned with the same ID in `response.answers`.\n\nEach definition is an object with the required fields `type` and `instructions`. The `criteria` field is optional for the type `noul` but is required for the types `choice` and `score`.\n\nThe `instructions` field describes the judgment to make and can be a string, object, or array. Use an object or array to include supporting context alongside the instructions.\n\nThe `type` can be one of:\n\n- `choice`: Selects one option from a defined set. Requires `criteria` to be an object mapping 1 to 255 nonempty option names to descriptions. The criteria description can be a string, object, array, or null when the name needs no additional detail. For example:\n\n```json\n{\n\"team\": {\n\"type\": \"choice\",\n\"instructions\": \"Which team should handle this ticket?\",\n\"criteria\": {\n\"billing\": \"Payments, charges, and refunds\",\n\"technical_support\": null\n}\n}\n}\n```\n\n- `noul`: Estimates the probability that the answer to a true-or-false question is true. `criteria` can take the fields `true` or `false`, or both, with descriptions that are strings, objects, or arrays. Omit `criteria` to use the question alone. The instructions or at least one criteria description must contain non-whitespace text, a nonempty object, or a nonempty array. For example, both of the following are valid:\n\n```json\n{\n\"escalate\": {\n\"type\": \"noul\",\n\"instructions\": \"Does this ticket need escalation?\",\n\"criteria\": {\n\"true\": \"Suspected fraud or an exception to standard policy\",\n\"false\": \"A routine issue frontline support can resolve\"\n}\n}\n}\n```\n\nor\n\n```json\n{\n\"escalate\": {\n\"type\": \"noul\",\n\"instructions\": \"Does this ticket need escalation?\"\n}\n}\n```\n\n- `score`: Rates the state on an ordered scale. Requires `criteria` to be an array of 2 to 10 level descriptions, ordered from low to high. Descriptions must contain non-whitespace text, a nonempty object, or a nonempty array. Array positions define levels starting at 0. For example:\n\n```json\n{\n\"urgency\": {\n\"type\": \"score\",\n\"instructions\": \"How urgent is this ticket?\",\n\"criteria\": [\n\"Routine: can wait a few days\",\n\"Time-sensitive: needs attention today\",\n\"Critical: needs immediate action\"\n]\n}\n}\n```",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "state",
+            "description": "A string, JSON object, or array containing the content, related context, and examples needed to answer the provided questions. For example, provide a support message, a conversation, or records describing the current state of an application. All questions receive this same state.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          },
+          {
+            "name": "questions",
+            "description": "A JSON object mapping question IDs to their definitions. Each ID must contain non-whitespace text; its answer is returned with the same ID in `response.answers`.\n\nEach definition is an object with the required fields `type` and `instructions`. The `criteria` field is optional for the type `noul` but is required for the types `choice` and `score`.\n\nThe `instructions` field describes the judgment to make and can be a string, object, or array. Use an object or array to include supporting context alongside the instructions.\n\nThe `type` can be one of:\n\n- `choice`: Selects one option from a defined set. Requires `criteria` to be an object mapping 1 to 255 nonempty option names to descriptions. The criteria description can be a string, object, array, or null when the name needs no additional detail. For example:\n\n```json\n{\n\"team\": {\n\"type\": \"choice\",\n\"instructions\": \"Which team should handle this ticket?\",\n\"criteria\": {\n\"billing\": \"Payments, charges, and refunds\",\n\"technical_support\": null\n}\n}\n}\n```\n\n- `noul`: Estimates the probability that the answer to a true-or-false question is true. `criteria` can take the fields `true` or `false`, or both, with descriptions that are strings, objects, or arrays. Omit `criteria` to use the question alone. The instructions or at least one criteria description must contain non-whitespace text, a nonempty object, or a nonempty array. For example, both of the following are valid:\n\n```json\n{\n\"escalate\": {\n\"type\": \"noul\",\n\"instructions\": \"Does this ticket need escalation?\",\n\"criteria\": {\n\"true\": \"Suspected fraud or an exception to standard policy\",\n\"false\": \"A routine issue frontline support can resolve\"\n}\n}\n}\n```\n\nor\n\n```json\n{\n\"escalate\": {\n\"type\": \"noul\",\n\"instructions\": \"Does this ticket need escalation?\"\n}\n}\n```\n\n- `score`: Rates the state on an ordered scale. Requires `criteria` to be an array of 2 to 10 level descriptions, ordered from low to high. Descriptions must contain non-whitespace text, a nonempty object, or a nonempty array. Array positions define levels starting at 0. For example:\n\n```json\n{\n\"urgency\": {\n\"type\": \"score\",\n\"instructions\": \"How urgent is this ticket?\",\n\"criteria\": [\n\"Routine: can wait a few days\",\n\"Time-sensitive: needs attention today\",\n\"Critical: needs immediate action\"\n]\n}\n}\n```",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AiDecideResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "options",
+          "description": "Function options. Omitted fields fall back to their documented defaults.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiDecideOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "questions",
+          "description": "A JSON object mapping question IDs to their definitions. Each ID must contain non-whitespace text; its answer is returned with the same ID in `response.answers`.\n\nEach definition is an object with the required fields `type` and `instructions`. The `criteria` field is optional for the type `noul` but is required for the types `choice` and `score`.\n\nThe `instructions` field describes the judgment to make and can be a string, object, or array. Use an object or array to include supporting context alongside the instructions.\n\nThe `type` can be one of:\n\n- `choice`: Selects one option from a defined set. Requires `criteria` to be an object mapping 1 to 255 nonempty option names to descriptions. The criteria description can be a string, object, array, or null when the name needs no additional detail. For example:\n\n```json\n{\n\"team\": {\n\"type\": \"choice\",\n\"instructions\": \"Which team should handle this ticket?\",\n\"criteria\": {\n\"billing\": \"Payments, charges, and refunds\",\n\"technical_support\": null\n}\n}\n}\n```\n\n- `noul`: Estimates the probability that the answer to a true-or-false question is true. `criteria` can take the fields `true` or `false`, or both, with descriptions that are strings, objects, or arrays. Omit `criteria` to use the question alone. The instructions or at least one criteria description must contain non-whitespace text, a nonempty object, or a nonempty array. For example, both of the following are valid:\n\n```json\n{\n\"escalate\": {\n\"type\": \"noul\",\n\"instructions\": \"Does this ticket need escalation?\",\n\"criteria\": {\n\"true\": \"Suspected fraud or an exception to standard policy\",\n\"false\": \"A routine issue frontline support can resolve\"\n}\n}\n}\n```\n\nor\n\n```json\n{\n\"escalate\": {\n\"type\": \"noul\",\n\"instructions\": \"Does this ticket need escalation?\"\n}\n}\n```\n\n- `score`: Rates the state on an ordered scale. Requires `criteria` to be an array of 2 to 10 level descriptions, ordered from low to high. Descriptions must contain non-whitespace text, a nonempty object, or a nonempty array. Array positions define levels starting at 0. For example:\n\n```json\n{\n\"urgency\": {\n\"type\": \"score\",\n\"instructions\": \"How urgent is this ticket?\",\n\"criteria\": [\n\"Routine: can wait a few days\",\n\"Time-sensitive: needs attention today\",\n\"Critical: needs immediate action\"\n]\n}\n}\n```",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {}
+        },
+        {
+          "name": "state",
+          "description": "A string, JSON object, or array containing the content, related context, and examples needed to answer the provided questions. For example, provide a support message, a conversation, or records describing the current state of an application. All questions receive this same state.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {}
+        }
+      ]
+    },
+    {
+      "name": "AiExtract",
+      "description": "Extracts structured data from text and documents according to a provided schema. For REST API requests, the default rate limit is 120 requests per minute per workspace. Contact your Databricks account team to request a higher limit.",
+      "summary": "Extract structured data from text.",
+      "path": "/api/2.0/ai-functions/ai-extract",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "AiExtractRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "content",
+            "description": "The text to extract from. It accepts a plain string or the response object of [ai_parse_document](:method:AiFunctions/AiParseDocument).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          },
+          {
+            "name": "schema",
+            "description": "The extraction schema defining the fields to extract. Either a JSON array of field names, assumed to be strings (e.g. [\"company\", \"valuation\"]), or a JSON object mapping each field to its type/description/nullability (e.g. {\"company\": {\"type\": \"string\", \"description\": \"the company name\"}}). Accepts up to 256 fields, 12 levels of nesting, and 500 enum values. Supported field types are string, integer, number, boolean, and enum.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "content",
+            "description": "The text to extract from. It accepts a plain string or the response object of [ai_parse_document](:method:AiFunctions/AiParseDocument).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          },
+          {
+            "name": "schema",
+            "description": "The extraction schema defining the fields to extract. Either a JSON array of field names, assumed to be strings (e.g. [\"company\", \"valuation\"]), or a JSON object mapping each field to its type/description/nullability (e.g. {\"company\": {\"type\": \"string\", \"description\": \"the company name\"}}). Accepts up to 256 fields, 12 levels of nesting, and 500 enum values. Supported field types are string, integer, number, boolean, and enum.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {}
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AiExtractResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "content",
+          "description": "The text to extract from. It accepts a plain string or the response object of [ai_parse_document](:method:AiFunctions/AiParseDocument).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {}
+        },
+        {
+          "name": "options",
+          "description": "Function options. Omitted fields fall back to their documented defaults.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiExtractOptions",
+            "is_object": true
+          }
+        },
+        {
+          "name": "schema",
+          "description": "The extraction schema defining the fields to extract. Either a JSON array of field names, assumed to be strings (e.g. [\"company\", \"valuation\"]), or a JSON object mapping each field to its type/description/nullability (e.g. {\"company\": {\"type\": \"string\", \"description\": \"the company name\"}}). Accepts up to 256 fields, 12 levels of nesting, and 500 enum values. Supported field types are string, integer, number, boolean, and enum.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {}
+        }
+      ]
+    },
+    {
+      "name": "AiParseDocument",
+      "description": "Parse structured content from unstructured documents.",
+      "summary": "Parse documents into structured content.",
+      "path": "/api/2.0/ai-functions/ai-parse-document",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "AiParseDocumentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "content",
+            "description": "The document to parse. The REST API accepts a Unity Catalog volume path to the source file or a base64 data URL containing the file bytes (for example, data:application/pdf;base64,\u003cencoded-file-bytes\u003e or data:image/jpeg;base64,\u003cencoded-file-bytes\u003e). Supported formats: PDF, DOCX, DOC, PPTX, PPT, JPG, JPEG, PNG, TIFF. Accepts up to 100 pages and 100 MB per document.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "content",
+            "description": "The document to parse. The REST API accepts a Unity Catalog volume path to the source file or a base64 data URL containing the file bytes (for example, data:application/pdf;base64,\u003cencoded-file-bytes\u003e or data:image/jpeg;base64,\u003cencoded-file-bytes\u003e). Supported formats: PDF, DOCX, DOC, PPTX, PPT, JPG, JPEG, PNG, TIFF. Accepts up to 100 pages and 100 MB per document.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AiParseDocumentResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "content",
+          "description": "The document to parse. The REST API accepts a Unity Catalog volume path to the source file or a base64 data URL containing the file bytes (for example, data:application/pdf;base64,\u003cencoded-file-bytes\u003e or data:image/jpeg;base64,\u003cencoded-file-bytes\u003e). Supported formats: PDF, DOCX, DOC, PPTX, PPT, JPG, JPEG, PNG, TIFF. Accepts up to 100 pages and 100 MB per document.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "Function options. Omitted fields fall back to their documented defaults.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AiParseDocumentOptions",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "content",
+          "description": "The document to parse. The REST API accepts a Unity Catalog volume path to the source file or a base64 data URL containing the file bytes (for example, data:application/pdf;base64,\u003cencoded-file-bytes\u003e or data:image/jpeg;base64,\u003cencoded-file-bytes\u003e). Supported formats: PDF, DOCX, DOC, PPTX, PPT, JPG, JPEG, PNG, TIFF. Accepts up to 100 pages and 100 MB per document.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,691 @@
+{
+  "id": "workspace.Repos",
+  "name": "Repos",
+  "description": "The Repos API allows users to manage their git repos. Users can use the API to access all\nrepos that they have manage permissions on.\n\nDatabricks Repos is a visual Git client in Databricks. It supports common Git operations\nsuch a cloning a repository, committing and pushing, pulling, branch management, and visual\ncomparison of diffs when committing.\n\nWithin Repos you can develop code in notebooks or other files and follow data science and\nengineering code development best practices using Git for version control, collaboration,\nand CI/CD.",
+  "package": {
+    "name": "workspace"
+  },
+  "docs_group": "workspace",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "RepoInfoPathToIdMap"
+    },
+    "request": {
+      "pascal_name": "ListReposRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a repo in the workspace and links it to the remote Git repo specified.\nNote that repos created programmatically must be linked to a remote Git repo, unlike repos\ncreated in the browser.",
+      "summary": "Create a repo.",
+      "path": "/api/2.0/repos",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateRepoRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "url",
+            "description": "URL of the Git repository to be linked.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "provider",
+            "description": "Git provider. This field is case-insensitive. The available Git providers are `gitHub`,\n`bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps Services, including\nMicrosoft Entra ID authentication), `gitHubEnterprise`, `bitbucketServer` (Bitbucket\nData Center), `gitLabEnterpriseEdition` (GitLab Self-Managed), and `awsCodeCommit`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "url",
+            "description": "URL of the Git repository to be linked.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "provider",
+            "description": "Git provider. This field is case-insensitive. The available Git providers are `gitHub`,\n`bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps Services, including\nMicrosoft Entra ID authentication), `gitHubEnterprise`, `bitbucketServer` (Bitbucket\nData Center), `gitLabEnterpriseEdition` (GitLab Self-Managed), and `awsCodeCommit`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateRepoResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "git_credential_id",
+          "description": "Git credential ID to use when cloning the repository. The Git credential must be\nconfigured for the current user.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Desired path for the repo in the workspace. Almost any path in the workspace can be chosen.\nIf repo is created in `/Repos`, path must be in the format `/Repos/{folder}/{repo-name}`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "provider",
+          "description": "Git provider. This field is case-insensitive. The available Git providers are `gitHub`,\n`bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps Services, including\nMicrosoft Entra ID authentication), `gitHubEnterprise`, `bitbucketServer` (Bitbucket\nData Center), `gitLabEnterpriseEdition` (GitLab Self-Managed), and `awsCodeCommit`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "sparse_checkout",
+          "description": "If specified, the repo will be created with sparse checkout enabled. You cannot enable/disable\nsparse checkout after the repo is created.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SparseCheckout",
+            "is_object": true
+          }
+        },
+        {
+          "name": "url",
+          "description": "URL of the Git repository to be linked.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "url",
+          "description": "URL of the Git repository to be linked.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "provider",
+          "description": "Git provider. This field is case-insensitive. The available Git providers are `gitHub`,\n`bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps Services, including\nMicrosoft Entra ID authentication), `gitHubEnterprise`, `bitbucketServer` (Bitbucket\nData Center), `gitLabEnterpriseEdition` (GitLab Self-Managed), and `awsCodeCommit`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes the specified repo.",
+      "summary": "Delete a repo.",
+      "path": "/api/2.0/repos/{repo_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteRepoRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "repo_id",
+            "description": "The ID for the corresponding repo to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "repo_id",
+            "description": "The ID for the corresponding repo to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteRepoResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "repo_id",
+          "description": "The ID for the corresponding repo to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "repo_id",
+          "description": "The ID for the corresponding repo to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Returns the repo with the given repo ID.",
+      "summary": "Get a repo.",
+      "path": "/api/2.0/repos/{repo_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRepoRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "repo_id",
+            "description": "ID of the Git folder (repo) object in the workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "repo_id",
+            "description": "ID of the Git folder (repo) object in the workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetRepoResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "repo_id",
+          "description": "ID of the Git folder (repo) object in the workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "repo_id",
+          "description": "ID of the Git folder (repo) object in the workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get repo permission levels.",
+      "path": "/api/2.0/permissions/repos/{repo_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRepoPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetRepoPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a repo. Repos can inherit permissions from their root object.",
+      "summary": "Get repo permissions.",
+      "path": "/api/2.0/permissions/repos/{repo_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRepoPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RepoPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Returns repos that the calling user has Manage permissions on.\nUse `next_page_token` to iterate through additional pages.\n\nDeprecated: This operation does not return a complete list of the repos in the workspace, because\nrepos with the Git CLI enabled are not included in its results. Instead, use the Repos and\nWorkspace APIs to find repos and their associated metadata in the workspace.",
+      "summary": "Get repos.",
+      "path": "/api/2.0/repos",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListReposRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListReposResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "next_page_token",
+          "description": "Token used to get the next page of results. If not specified, returns the first page of\nresults as well as a next page token if there are more results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path_prefix",
+          "description": "Filters repos that have paths starting with the given path prefix.\nIf not provided or when provided an effectively empty prefix (`/` or `/Workspace`)\nGit folders (repos) from `/Workspace/Repos` will be served.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "next_page_token",
+            "description": "Token used to get the next page of results. If not specified, returns the first page of\nresults as well as a next page token if there are more results.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set repo permissions.",
+      "path": "/api/2.0/permissions/repos/{repo_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RepoPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RepoPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RepoAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "RepoAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the repo to a different branch or tag, or updates the repo to the latest commit on\nthe same branch.",
+      "summary": "Update a repo.",
+      "path": "/api/2.0/repos/{repo_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateRepoRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "repo_id",
+            "description": "ID of the Git folder (repo) object in the workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "repo_id",
+            "description": "ID of the Git folder (repo) object in the workspace.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateRepoResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "branch",
+          "description": "Branch that the local version of the repo is checked out to.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "dangerously_force_discard_all",
+          "description": "WARNING: DESTRUCTIVE AND IRREVERSIBLE. If true, permanently deletes ALL uncommitted\nchanges in the Git folder — staged, unstaged, and untracked files — before updating.\nLost data CANNOT be recovered.\n\nNEVER use this on Git folders where users author or edit files. This flag is intended\nONLY for automated jobs that treat the Git folder as a read-only mirror of a remote\nbranch and need to force-sync it. If any user has uncommitted work in the Git folder,\nthat work will be permanently destroyed without warning.\n\nLocal commits that have been made but not yet pushed to the remote are preserved.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "git_credential_id",
+          "description": "Git credential ID to use for this update operation. The Git credential must be\nconfigured for the current user.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "repo_id",
+          "description": "ID of the Git folder (repo) object in the workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "sparse_checkout",
+          "description": "If specified, update the sparse checkout settings. The update will fail if sparse checkout is\nnot enabled for the repo.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SparseCheckoutUpdate",
+            "is_object": true
+          }
+        },
+        {
+          "name": "tag",
+          "description": "Tag that the local version of the repo is checked out to. Updating the repo to a tag puts\nthe repo in a detached HEAD state. Before committing new changes, you must update the repo to\na branch instead of the detached HEAD.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "repo_id",
+          "description": "ID of the Git folder (repo) object in the workspace.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a repo. Repos can inherit permissions from their root object.",
+      "summary": "Update repo permissions.",
+      "path": "/api/2.0/permissions/repos/{repo_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RepoPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "repo_id",
+            "description": "The repo for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RepoPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RepoAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "RepoAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "repo_id",
+          "description": "The repo for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

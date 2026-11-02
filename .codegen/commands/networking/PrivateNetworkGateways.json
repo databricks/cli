@@ -1,0 +1,1227 @@
+{
+  "id": "networking.PrivateNetworkGateways",
+  "name": "PrivateNetworkGateways",
+  "description": "These APIs manage private network gateways under network connectivity configurations.",
+  "package": {
+    "name": "networking"
+  },
+  "is_accounts": true,
+  "is_hidden_cli": true,
+  "docs_group": "provisioning",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListPrivateNetworkGatewaysRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreatePrivateNetworkGateway",
+      "description": "Creates a private network gateway.",
+      "summary": "Create a private network gateway.",
+      "path": "/api/networking/v1/{parent=accounts/*/network-connectivity-configs/*}/private-network-gateways",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreatePrivateNetworkGatewayRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The network connectivity configuration that will contain the gateway.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_network_gateway",
+            "description": "The gateway to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGateway",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The network connectivity configuration that will contain the gateway.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "private_network_gateway",
+            "description": "The gateway to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGateway",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "private_network_gateway",
+        "description": "The gateway to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "PrivateNetworkGateway",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The human-readable name of the gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "traffic_mode",
+              "description": "The traffic routed through this gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                "enum": [
+                  {
+                    "content": "ALL_TRAFFIC"
+                  },
+                  {
+                    "content": "SPECIFIC_DESTINATIONS"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The human-readable name of the gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "traffic_mode",
+              "description": "The traffic routed through this gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                "enum": [
+                  {
+                    "content": "ALL_TRAFFIC"
+                  },
+                  {
+                    "content": "SPECIFIC_DESTINATIONS"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Operation",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "description": "The network connectivity configuration that will contain the gateway.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_network_gateway",
+          "description": "The gateway to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGateway",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The human-readable name of the gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "traffic_mode",
+                "description": "The traffic routed through this gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                  "enum": [
+                    {
+                      "content": "ALL_TRAFFIC"
+                    },
+                    {
+                      "content": "SPECIFIC_DESTINATIONS"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The human-readable name of the gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "traffic_mode",
+                "description": "The traffic routed through this gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                  "enum": [
+                    {
+                      "content": "ALL_TRAFFIC"
+                    },
+                    {
+                      "content": "SPECIFIC_DESTINATIONS"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "request_id",
+          "description": "A unique identifier for this request. The request is idempotent when this is provided.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "aws_cloud_connection",
+          "description": "The AWS connection used by the gateway.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayAwsCloudConnection",
+            "is_object": true
+          }
+        },
+        {
+          "name": "azure_cloud_connection",
+          "description": "The Azure connection used by the gateway.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayAzureCloudConnection",
+            "is_object": true
+          }
+        },
+        {
+          "name": "bandwidth_tier_gigabits_per_second",
+          "description": "The provisioned bandwidth tier for an Azure gateway, in gigabits per second.\nRequired when creating an Azure gateway.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "The time when the gateway was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "destinations",
+          "description": "The destinations routed through this gateway.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayDestinationList",
+            "array_value": {
+              "pascal_name": "PrivateNetworkGatewayDestination",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The human-readable name of the gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "error_message",
+          "description": "The failure reason when the gateway is in the FAILED state.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway, in the form\n`accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_dns_resolvers",
+          "description": "The DNS resolvers used for private name resolution.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayPrivateDnsResolverList",
+            "array_value": {
+              "pascal_name": "PrivateNetworkGatewayPrivateDnsResolver",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current lifecycle state of the gateway.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayGatewayState",
+            "enum": [
+              {
+                "content": "CREATING"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "ESTABLISHED"
+              },
+              {
+                "content": "FAILED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "traffic_mode",
+          "description": "The traffic routed through this gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayTrafficMode",
+            "enum": [
+              {
+                "content": "ALL_TRAFFIC"
+              },
+              {
+                "content": "SPECIFIC_DESTINATIONS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The time when the gateway was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The network connectivity configuration that will contain the gateway.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The human-readable name of the gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "traffic_mode",
+          "description": "The traffic routed through this gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayTrafficMode",
+            "enum": [
+              {
+                "content": "ALL_TRAFFIC"
+              },
+              {
+                "content": "SPECIFIC_DESTINATIONS"
+              }
+            ]
+          }
+        }
+      ],
+      "long_running_operation": {
+        "get_operation": {
+          "kebab_name": "get-private-network-gateway-operation",
+          "pascal_name": "GetPrivateNetworkGatewayOperation",
+          "request": {
+            "pascal_name": "GetOperationRequest"
+          }
+        },
+        "response_type": {}
+      }
+    },
+    {
+      "name": "DeletePrivateNetworkGateway",
+      "description": "Permanently deletes a private network gateway.",
+      "summary": "Delete a private network gateway.",
+      "path": "/api/networking/v1/{name=accounts/*/network-connectivity-configs/*/private-network-gateways/*}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeletePrivateNetworkGatewayRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The canonical resource name of the gateway.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The canonical resource name of the gateway.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPrivateNetworkGateway",
+      "description": "Gets a private network gateway.",
+      "summary": "Get a private network gateway.",
+      "path": "/api/networking/v1/{name=accounts/*/network-connectivity-configs/*/private-network-gateways/*}",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetPrivateNetworkGatewayRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The canonical resource name of the gateway.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The canonical resource name of the gateway.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PrivateNetworkGateway",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable name of the gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "traffic_mode",
+            "description": "The traffic routed through this gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGatewayTrafficMode",
+              "enum": [
+                {
+                  "content": "ALL_TRAFFIC"
+                },
+                {
+                  "content": "SPECIFIC_DESTINATIONS"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable name of the gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "traffic_mode",
+            "description": "The traffic routed through this gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGatewayTrafficMode",
+              "enum": [
+                {
+                  "content": "ALL_TRAFFIC"
+                },
+                {
+                  "content": "SPECIFIC_DESTINATIONS"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPrivateNetworkGatewayOperation",
+      "description": "Gets the status of a private network gateway create operation.",
+      "summary": "Get a private network gateway operation.",
+      "path": "/api/networking/v1/{name=accounts/*/network-connectivity-configs/*/private-network-gateways/*/operations/*}",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetOperationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the operation resource.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the operation resource.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Operation",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the operation resource.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the operation resource.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListPrivateNetworkGateways",
+      "description": "Lists private network gateways under a network connectivity configuration.",
+      "summary": "List private network gateways.",
+      "path": "/api/networking/v1/{parent=accounts/*/network-connectivity-configs/*}/private-network-gateways",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListPrivateNetworkGatewaysRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The network connectivity configuration containing the gateways.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The network connectivity configuration containing the gateways.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListPrivateNetworkGatewaysResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_token",
+          "description": "An opaque token returned by a previous list request.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The network connectivity configuration containing the gateways.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The network connectivity configuration containing the gateways.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "An opaque token returned by a previous list request.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdatePrivateNetworkGateway",
+      "description": "Updates a private network gateway.",
+      "summary": "Update a private network gateway.",
+      "path": "/api/networking/v1/{name=accounts/*/network-connectivity-configs/*/private-network-gateways/*}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdatePrivateNetworkGatewayRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The canonical resource name of the gateway, in the form\n`accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "private_network_gateway",
+            "description": "The gateway containing the desired mutable field values.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGateway",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The canonical resource name of the gateway, in the form\n`accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "private_network_gateway",
+            "description": "The gateway containing the desired mutable field values.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGateway",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "private_network_gateway",
+        "description": "The gateway containing the desired mutable field values.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "PrivateNetworkGateway",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The human-readable name of the gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "traffic_mode",
+              "description": "The traffic routed through this gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                "enum": [
+                  {
+                    "content": "ALL_TRAFFIC"
+                  },
+                  {
+                    "content": "SPECIFIC_DESTINATIONS"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The human-readable name of the gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "traffic_mode",
+              "description": "The traffic routed through this gateway.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                "enum": [
+                  {
+                    "content": "ALL_TRAFFIC"
+                  },
+                  {
+                    "content": "SPECIFIC_DESTINATIONS"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "PrivateNetworkGateway",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable name of the gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "traffic_mode",
+            "description": "The traffic routed through this gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGatewayTrafficMode",
+              "enum": [
+                {
+                  "content": "ALL_TRAFFIC"
+                },
+                {
+                  "content": "SPECIFIC_DESTINATIONS"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable name of the gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "traffic_mode",
+            "description": "The traffic routed through this gateway.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateNetworkGatewayTrafficMode",
+              "enum": [
+                {
+                  "content": "ALL_TRAFFIC"
+                },
+                {
+                  "content": "SPECIFIC_DESTINATIONS"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway, in the form\n`accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_network_gateway",
+          "description": "The gateway containing the desired mutable field values.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGateway",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The human-readable name of the gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "traffic_mode",
+                "description": "The traffic routed through this gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                  "enum": [
+                    {
+                      "content": "ALL_TRAFFIC"
+                    },
+                    {
+                      "content": "SPECIFIC_DESTINATIONS"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The human-readable name of the gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "traffic_mode",
+                "description": "The traffic routed through this gateway.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "PrivateNetworkGatewayTrafficMode",
+                  "enum": [
+                    {
+                      "content": "ALL_TRAFFIC"
+                    },
+                    {
+                      "content": "SPECIFIC_DESTINATIONS"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "aws_cloud_connection",
+          "description": "The AWS connection used by the gateway.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayAwsCloudConnection",
+            "is_object": true
+          }
+        },
+        {
+          "name": "azure_cloud_connection",
+          "description": "The Azure connection used by the gateway.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayAzureCloudConnection",
+            "is_object": true
+          }
+        },
+        {
+          "name": "bandwidth_tier_gigabits_per_second",
+          "description": "The provisioned bandwidth tier for an Azure gateway, in gigabits per second.\nRequired when creating an Azure gateway.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "The time when the gateway was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "destinations",
+          "description": "The destinations routed through this gateway.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayDestinationList",
+            "array_value": {
+              "pascal_name": "PrivateNetworkGatewayDestination",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The human-readable name of the gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "error_message",
+          "description": "The failure reason when the gateway is in the FAILED state.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway, in the form\n`accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_dns_resolvers",
+          "description": "The DNS resolvers used for private name resolution.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayPrivateDnsResolverList",
+            "array_value": {
+              "pascal_name": "PrivateNetworkGatewayPrivateDnsResolver",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current lifecycle state of the gateway.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayGatewayState",
+            "enum": [
+              {
+                "content": "CREATING"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "ESTABLISHED"
+              },
+              {
+                "content": "FAILED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "traffic_mode",
+          "description": "The traffic routed through this gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayTrafficMode",
+            "enum": [
+              {
+                "content": "ALL_TRAFFIC"
+              },
+              {
+                "content": "SPECIFIC_DESTINATIONS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The time when the gateway was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The canonical resource name of the gateway, in the form\n`accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The human-readable name of the gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "traffic_mode",
+          "description": "The traffic routed through this gateway.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateNetworkGatewayTrafficMode",
+            "enum": [
+              {
+                "content": "ALL_TRAFFIC"
+              },
+              {
+                "content": "SPECIFIC_DESTINATIONS"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

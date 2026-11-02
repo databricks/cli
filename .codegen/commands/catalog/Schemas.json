@@ -1,0 +1,520 @@
+{
+  "id": "catalog.Schemas",
+  "name": "Schemas",
+  "description": "A schema (also called a database) is the second layer of Unity Catalog’s three-level\nnamespace. A schema organizes tables, views, and functions. To access (or list) a table or view in\na schema, users must have the USE_SCHEMA data permission on the schema and its parent catalog,\nand they must have the SELECT permission on the table or view.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListSchemasRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new schema for catalog in the Metastore.\nThe caller must be a metastore admin, or have the **CREATE_SCHEMA** privilege in the parent catalog.",
+      "summary": "Create a schema.",
+      "path": "/api/2.1/unity-catalog/schemas",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateSchema",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of schema, relative to parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of schema, relative to parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "catalog_name",
+            "description": "Name of parent catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SchemaInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_max_retention_hours",
+          "description": "Custom maximum retention period in hours for the schema.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of schema, relative to parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "A map of key-value properties attached to the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "storage_root",
+          "description": "Storage root URL for managed tables within schema.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of schema, relative to parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "catalog_name",
+          "description": "Name of parent catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes the specified schema from the parent catalog.\nThe caller must be the owner of the schema or an owner of the parent catalog.",
+      "summary": "Delete a schema.",
+      "path": "/api/2.1/unity-catalog/schemas/{full_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteSchemaRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "Force deletion even if the schema is not empty.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of the schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets the specified schema within the metastore.\nThe caller must be a metastore admin, the owner of the schema, or a user that has the **USE_SCHEMA** privilege on the schema.",
+      "summary": "Get a schema.",
+      "path": "/api/2.1/unity-catalog/schemas/{full_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetSchemaRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SchemaInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "Full name of the schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include schemas in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of schemas for a catalog in the metastore.\nIf the caller is the metastore admin or the owner of the parent catalog, all schemas for the catalog will be retrieved.\nOtherwise, only schemas owned by the caller (or for which the caller has the **USE_SCHEMA** privilege) will be retrieved.\nThere is no guarantee of a specific ordering of the elements in the array.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List schemas.",
+      "path": "/api/2.1/unity-catalog/schemas",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListSchemasRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Parent catalog for schemas of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "catalog_name",
+            "description": "Parent catalog for schemas of interest.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSchemasResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "Parent catalog for schemas of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include schemas in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of schemas to return.\nIf not set, all the schemas are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "catalog_name",
+          "description": "Parent catalog for schemas of interest.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of schemas to return.\nIf not set, all the schemas are returned (not recommended).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates a schema for a catalog. The caller must be the owner of the schema or a metastore admin.\nIf the caller is a metastore admin, only the __owner__ field can be changed in the update.\nIf the __name__ field must be updated, the caller must be a metastore admin or have the **CREATE_SCHEMA** privilege on the parent catalog.",
+      "summary": "Update a schema.",
+      "path": "/api/2.1/unity-catalog/schemas/{full_name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateSchema",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "Full name of the schema.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SchemaInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_max_retention_hours",
+          "description": "Custom maximum retention period in hours for the schema.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "enable_predictive_optimization",
+          "description": "Whether predictive optimization should be enabled for this object and objects under it.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EnablePredictiveOptimization",
+            "enum": [
+              {
+                "content": "DISABLE"
+              },
+              {
+                "content": "ENABLE"
+              },
+              {
+                "content": "INHERIT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "Full name of the schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the schema.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of current owner of schema.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "A map of key-value properties attached to the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "Full name of the schema.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

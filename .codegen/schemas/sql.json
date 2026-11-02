@@ -1,0 +1,4939 @@
+{
+  "sql.AccessControl": {
+    "fields": {
+      "group_name": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "description": "* `CAN_VIEW`: Can view the query\n* `CAN_RUN`: Can run the query\n* `CAN_EDIT`: Can edit the query\n* `CAN_MANAGE`: Can manage the query",
+        "ref": "sql.PermissionLevel",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.Aggregation": {
+    "enum": [
+      "SUM",
+      "COUNT",
+      "COUNT_DISTINCT",
+      "AVG",
+      "MEDIAN",
+      "MIN",
+      "MAX",
+      "STDDEV"
+    ],
+    "enum_launch_stages": {
+      "AVG": "GA",
+      "COUNT": "GA",
+      "COUNT_DISTINCT": "GA",
+      "MAX": "GA",
+      "MEDIAN": "GA",
+      "MIN": "GA",
+      "STDDEV": "GA",
+      "SUM": "GA"
+    }
+  },
+  "sql.Alert": {
+    "fields": {
+      "condition": {
+        "description": "Trigger conditions of the alert.",
+        "ref": "sql.AlertCondition",
+        "launch_stage": "GA"
+      },
+      "create_time": {
+        "description": "The timestamp indicating when the alert was created.",
+        "launch_stage": "GA"
+      },
+      "custom_body": {
+        "description": "Custom body of alert notification, if it exists. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "custom_subject": {
+        "description": "Custom subject of alert notification, if it exists. This can include email subject entries and Slack notification headers, for example. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name of the alert.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "UUID identifying the alert.",
+        "launch_stage": "GA"
+      },
+      "lifecycle_state": {
+        "description": "The workspace state of the alert. Used for tracking trashed status.",
+        "ref": "sql.LifecycleState",
+        "launch_stage": "GA"
+      },
+      "notify_on_ok": {
+        "description": "Whether to notify alert subscribers when alert returns back to normal.",
+        "launch_stage": "GA"
+      },
+      "owner_user_name": {
+        "description": "The owner's username. This field is set to \"Unavailable\" if the user has been deleted.",
+        "launch_stage": "GA"
+      },
+      "parent_path": {
+        "description": "The workspace path of the folder containing the alert.",
+        "launch_stage": "GA"
+      },
+      "query_id": {
+        "description": "UUID of the query attached to the alert.",
+        "launch_stage": "GA"
+      },
+      "seconds_to_retrigger": {
+        "description": "Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "Current state of the alert's trigger status. This field is set to UNKNOWN if the alert has not yet been evaluated or ran into an error during the last evaluation.",
+        "ref": "sql.AlertState",
+        "launch_stage": "GA"
+      },
+      "trigger_time": {
+        "description": "Timestamp when the alert was last triggered, if the alert has been triggered before.",
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "The timestamp indicating when the alert was updated.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertCondition": {
+    "fields": {
+      "empty_result_state": {
+        "description": "Alert state if result is empty.",
+        "ref": "sql.AlertState",
+        "launch_stage": "GA"
+      },
+      "op": {
+        "description": "Operator used for comparison in alert evaluation.",
+        "ref": "sql.AlertOperator",
+        "launch_stage": "GA"
+      },
+      "operand": {
+        "description": "Name of the column from the query result to use for comparison in alert evaluation.",
+        "ref": "sql.AlertConditionOperand",
+        "launch_stage": "GA"
+      },
+      "threshold": {
+        "description": "Threshold value used for comparison in alert evaluation.",
+        "ref": "sql.AlertConditionThreshold",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertConditionOperand": {
+    "fields": {
+      "column": {
+        "ref": "sql.AlertOperandColumn",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertConditionThreshold": {
+    "fields": {
+      "value": {
+        "ref": "sql.AlertOperandValue",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertEvaluationState": {
+    "description": "UNSPECIFIED - default unspecify value for proto enum, do not use it in the code\nUNKNOWN - alert not yet evaluated\nTRIGGERED - alert is triggered\nOK - alert is not triggered\nERROR - alert evaluation failed",
+    "enum": [
+      "UNKNOWN",
+      "TRIGGERED",
+      "OK",
+      "ERROR"
+    ],
+    "enum_launch_stages": {
+      "ERROR": "GA",
+      "OK": "GA",
+      "TRIGGERED": "GA",
+      "UNKNOWN": "GA"
+    }
+  },
+  "sql.AlertLifecycleState": {
+    "enum": [
+      "ACTIVE",
+      "DELETED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "DELETED": "GA"
+    }
+  },
+  "sql.AlertOperandColumn": {
+    "fields": {
+      "name": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertOperandValue": {
+    "fields": {
+      "bool_value": {
+        "launch_stage": "GA"
+      },
+      "double_value": {
+        "launch_stage": "GA"
+      },
+      "string_value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertOperator": {
+    "enum": [
+      "GREATER_THAN",
+      "GREATER_THAN_OR_EQUAL",
+      "LESS_THAN",
+      "LESS_THAN_OR_EQUAL",
+      "EQUAL",
+      "NOT_EQUAL",
+      "IS_NULL"
+    ],
+    "enum_launch_stages": {
+      "EQUAL": "GA",
+      "GREATER_THAN": "GA",
+      "GREATER_THAN_OR_EQUAL": "GA",
+      "IS_NULL": "GA",
+      "LESS_THAN": "GA",
+      "LESS_THAN_OR_EQUAL": "GA",
+      "NOT_EQUAL": "GA"
+    }
+  },
+  "sql.AlertOptions": {
+    "description": "Alert configuration options.",
+    "fields": {
+      "column": {
+        "description": "Name of column in the query result to compare in alert evaluation.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "custom_body": {
+        "description": "Custom body of alert notification, if it exists. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "custom_subject": {
+        "description": "Custom subject of alert notification, if it exists. This includes email subject, Slack notification header, etc. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "empty_result_state": {
+        "description": "State that alert evaluates to when query result is empty.",
+        "ref": "sql.AlertOptionsEmptyResultState",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "muted": {
+        "description": "Whether or not the alert is muted. If an alert is muted, it will not notify users and notification destinations when triggered.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "op": {
+        "description": "Operator used to compare in alert evaluation: `\u003e`, `\u003e=`, `\u003c`, `\u003c=`, `==`, `!=`",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "value": {
+        "description": "Value used to compare in alert evaluation. Supported types include strings (eg. 'foobar'), floats (eg. 123.4), and booleans (true).",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "sql.AlertOptionsEmptyResultState": {
+    "description": "State that alert evaluates to when query result is empty.",
+    "enum": [
+      "ok",
+      "triggered",
+      "unknown"
+    ],
+    "enum_launch_stages": {
+      "ok": "PUBLIC_PREVIEW",
+      "triggered": "PUBLIC_PREVIEW",
+      "unknown": "PUBLIC_PREVIEW"
+    }
+  },
+  "sql.AlertQuery": {
+    "fields": {
+      "created_at": {
+        "description": "The timestamp when this query was created.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "data_source_id": {
+        "description": "Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. [Learn more](https://docs.databricks.com/api/workspace/datasources/list)",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Query ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "is_archived": {
+        "description": "Indicates whether the query is trashed. Trashed queries can't be used in dashboards, or appear in search results. If this boolean is `true`, the `options` property for this query includes a `moved_to_trash_at` timestamp. Trashed queries are permanently deleted after 30 days.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "is_draft": {
+        "description": "Whether the query is a draft. Draft queries only appear in list views for their owners. Visualizations from draft queries cannot appear on dashboards.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "is_safe": {
+        "description": "Text parameter types are not safe from SQL injection for all types of data source. Set this Boolean parameter to `true` if a query either does not use any text type parameters or uses a data source type where text type parameters are handled safely.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "The title of this query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "options": {
+        "ref": "sql.QueryOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "query": {
+        "description": "The text of the query to be run.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "tags": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "updated_at": {
+        "description": "The timestamp at which this query was last updated.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "user_id": {
+        "description": "The ID of the user who owns the query.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "sql.AlertState": {
+    "enum": [
+      "UNKNOWN",
+      "OK",
+      "TRIGGERED"
+    ],
+    "enum_launch_stages": {
+      "OK": "GA",
+      "TRIGGERED": "GA",
+      "UNKNOWN": "GA"
+    }
+  },
+  "sql.AlertStatementParameter": {
+    "description": "A named parameter bound to the alert query. Only flat, named scalar parameters are\nsupported; complex types such as ARRAY, MAP, and STRUCT are not.",
+    "fields": {
+      "name": {
+        "description": "The name of the parameter. Reference it in the query text as `:name`. Required, must be\nnon-empty, and must be unique across the alert's parameters.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "type": {
+        "description": "The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given\nthe type is assumed to be `STRING`. Complex types such as `ARRAY`, `MAP`, and `STRUCT` are not supported.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "value": {
+        "description": "The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.AlertV2": {
+    "fields": {
+      "create_time": {
+        "description": "The timestamp indicating when the alert was created.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "custom_description": {
+        "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "custom_summary": {
+        "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "custom_template_format": {
+        "description": "The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
+        "ref": "sql.CustomTemplateFormat",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "display_name": {
+        "description": "The display name of the alert.",
+        "launch_stage": "GA"
+      },
+      "effective_run_as": {
+        "description": "The actual identity that will be used to execute the alert.\nThis is an output-only field that shows the resolved run-as identity after applying\npermissions and defaults.",
+        "ref": "sql.AlertV2RunAs",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "evaluation": {
+        "ref": "sql.AlertV2Evaluation",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "The canonical identifier of the alert to retrieve information about.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "lifecycle_state": {
+        "description": "Indicates whether the query is trashed.",
+        "ref": "sql.AlertLifecycleState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "owner_user_name": {
+        "description": "The owner's username. This field is set to \"Unavailable\" if the user has been deleted.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "parameters": {
+        "description": "A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.\n\nReference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.\nEach parameter consists of a name, a value, and optionally a type. To represent a NULL\nvalue, the `value` field may be omitted or set to `null` explicitly. If the `type` field\nis omitted, the value is interpreted as a string.\n\nIf the type is given, parameters will be checked for type correctness according\nto the given type. A value is correct if the provided string can be converted to\nthe requested type using the `cast` function. The exact semantics are described in\nthe section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL",
+          "UNORDERED_LIST"
+        ]
+      },
+      "parent_path": {
+        "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query_text": {
+        "description": "Text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "run_as": {
+        "description": "Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
+        "ref": "sql.AlertV2RunAs",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "run_as_user_name": {
+        "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+        "deprecated": true,
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "schedule": {
+        "ref": "sql.CronSchedule",
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "The timestamp indicating when the alert was updated.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "warehouse_id": {
+        "description": "ID of the SQL warehouse attached to the alert.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertV2Evaluation": {
+    "fields": {
+      "comparison_operator": {
+        "description": "Operator used for comparison in alert evaluation.",
+        "ref": "sql.ComparisonOperator",
+        "launch_stage": "GA"
+      },
+      "empty_result_state": {
+        "description": "Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
+        "ref": "sql.AlertEvaluationState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "last_evaluated_at": {
+        "description": "Timestamp of the last evaluation.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "notification": {
+        "description": "User or Notification Destination to notify when alert is triggered.",
+        "ref": "sql.AlertV2Notification",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "source": {
+        "description": "Source column from result to use to evaluate alert",
+        "ref": "sql.AlertV2OperandColumn",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "Latest state of alert evaluation.",
+        "ref": "sql.AlertEvaluationState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "threshold": {
+        "description": "Threshold to user for alert evaluation, can be a column or a value.",
+        "ref": "sql.AlertV2Operand",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.AlertV2Notification": {
+    "fields": {
+      "notify_on_ok": {
+        "description": "Whether to notify alert subscribers when alert returns back to normal.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "retrigger_seconds": {
+        "description": "Number of seconds an alert waits after being triggered before it is allowed to send another notification.\nIf set to 0 or omitted, the alert will not send any further notifications after the first trigger\nSetting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "subscriptions": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL",
+          "UNORDERED_LIST"
+        ]
+      }
+    }
+  },
+  "sql.AlertV2Operand": {
+    "fields": {
+      "column": {
+        "ref": "sql.AlertV2OperandColumn",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "value": {
+        "ref": "sql.AlertV2OperandValue",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.AlertV2OperandColumn": {
+    "fields": {
+      "aggregation": {
+        "description": "If not set, the behavior is equivalent to using `First row` in the UI.",
+        "ref": "sql.Aggregation",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "display": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.AlertV2OperandValue": {
+    "fields": {
+      "bool_value": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "double_value": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "string_value": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.AlertV2RunAs": {
+    "fields": {
+      "service_principal_name": {
+        "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "user_name": {
+        "description": "The email of an active workspace user. Can only set this field to their own email.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.AlertV2Subscription": {
+    "fields": {
+      "destination_id": {
+        "launch_stage": "GA"
+      },
+      "user_email": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.BaseChunkInfo": {
+    "fields": {
+      "byte_count": {
+        "description": "The number of bytes in the result chunk. This field is not available when using `INLINE`\ndisposition.",
+        "launch_stage": "GA"
+      },
+      "chunk_index": {
+        "description": "The position within the sequence of result set chunks.",
+        "launch_stage": "GA"
+      },
+      "row_count": {
+        "description": "The number of rows within the result chunk.",
+        "launch_stage": "GA"
+      },
+      "row_offset": {
+        "description": "The starting row offset within the result set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CancelExecutionRequest": {},
+  "sql.Channel": {
+    "description": "Configures the channel name and DBSQL version of the warehouse. CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified.",
+    "fields": {
+      "dbsql_version": {
+        "launch_stage": "GA"
+      },
+      "name": {
+        "ref": "sql.ChannelName",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ChannelInfo": {
+    "description": "Details about a Channel.",
+    "fields": {
+      "dbsql_version": {
+        "description": "DB SQL Version the Channel is mapped to.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the channel",
+        "ref": "sql.ChannelName",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ChannelName": {
+    "enum": [
+      "CHANNEL_NAME_PREVIEW",
+      "CHANNEL_NAME_CURRENT",
+      "CHANNEL_NAME_PREVIOUS",
+      "CHANNEL_NAME_CUSTOM"
+    ],
+    "enum_launch_stages": {
+      "CHANNEL_NAME_CURRENT": "GA",
+      "CHANNEL_NAME_CUSTOM": "GA",
+      "CHANNEL_NAME_PREVIEW": "GA",
+      "CHANNEL_NAME_PREVIOUS": "GA"
+    }
+  },
+  "sql.ClientConfig": {
+    "fields": {
+      "allow_custom_js_visualizations": {
+        "description": "allow_custom_js_visualizations is not supported/implemneted.",
+        "deprecated": true,
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "allow_downloads": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "allow_external_shares": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "allow_subscriptions": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "date_format": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "date_time_format": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "disable_publish": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "enable_legacy_autodetect_types": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "feature_show_permissions_control": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "hide_plotly_mode_bar": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.ColumnInfo": {
+    "fields": {
+      "name": {
+        "description": "The name of the column.",
+        "launch_stage": "GA"
+      },
+      "position": {
+        "description": "The ordinal position of the column (starting at position 0).",
+        "launch_stage": "GA"
+      },
+      "type_interval_type": {
+        "description": "The format of the interval type.",
+        "launch_stage": "GA"
+      },
+      "type_name": {
+        "description": "The name of the base data type. This doesn't include details for complex types such as STRUCT, MAP or ARRAY.",
+        "ref": "sql.ColumnInfoTypeName",
+        "launch_stage": "GA"
+      },
+      "type_precision": {
+        "description": "Specifies the number of digits in a number. This applies to the DECIMAL type.",
+        "launch_stage": "GA"
+      },
+      "type_scale": {
+        "description": "Specifies the number of digits to the right of the decimal point in a number. This applies to the DECIMAL type.",
+        "launch_stage": "GA"
+      },
+      "type_text": {
+        "description": "The full SQL type specification.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ColumnInfoTypeName": {
+    "description": "The name of the base data type. This doesn't include details for complex types such as STRUCT, MAP or ARRAY.",
+    "enum": [
+      "BOOLEAN",
+      "BYTE",
+      "SHORT",
+      "INT",
+      "LONG",
+      "FLOAT",
+      "DOUBLE",
+      "DATE",
+      "TIMESTAMP",
+      "STRING",
+      "BINARY",
+      "DECIMAL",
+      "INTERVAL",
+      "ARRAY",
+      "STRUCT",
+      "MAP",
+      "CHAR",
+      "NULL",
+      "USER_DEFINED_TYPE"
+    ],
+    "enum_launch_stages": {
+      "ARRAY": "GA",
+      "BINARY": "GA",
+      "BOOLEAN": "GA",
+      "BYTE": "GA",
+      "CHAR": "GA",
+      "DATE": "GA",
+      "DECIMAL": "GA",
+      "DOUBLE": "GA",
+      "FLOAT": "GA",
+      "INT": "GA",
+      "INTERVAL": "GA",
+      "LONG": "GA",
+      "MAP": "GA",
+      "NULL": "GA",
+      "SHORT": "GA",
+      "STRING": "GA",
+      "STRUCT": "GA",
+      "TIMESTAMP": "GA",
+      "USER_DEFINED_TYPE": "GA"
+    }
+  },
+  "sql.ComparisonOperator": {
+    "enum": [
+      "LESS_THAN",
+      "GREATER_THAN",
+      "EQUAL",
+      "NOT_EQUAL",
+      "GREATER_THAN_OR_EQUAL",
+      "LESS_THAN_OR_EQUAL",
+      "IS_NULL",
+      "IS_NOT_NULL"
+    ],
+    "enum_launch_stages": {
+      "EQUAL": "GA",
+      "GREATER_THAN": "GA",
+      "GREATER_THAN_OR_EQUAL": "GA",
+      "IS_NOT_NULL": "GA",
+      "IS_NULL": "GA",
+      "LESS_THAN": "GA",
+      "LESS_THAN_OR_EQUAL": "GA",
+      "NOT_EQUAL": "GA"
+    }
+  },
+  "sql.CreateAlert": {
+    "fields": {
+      "name": {
+        "description": "Name of the alert.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "options": {
+        "description": "Alert configuration options.",
+        "ref": "sql.AlertOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "parent": {
+        "description": "The identifier of the workspace folder containing the object.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "query_id": {
+        "description": "Query ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "rearm": {
+        "description": "Number of seconds after being triggered before the alert rearms itself and can be triggered again. If `null`, alert will never be triggered again.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "sql.CreateAlertRequest": {
+    "fields": {
+      "alert": {
+        "ref": "sql.CreateAlertRequestAlert",
+        "launch_stage": "GA"
+      },
+      "auto_resolve_display_name": {
+        "description": "If true, automatically resolve alert display name conflicts. Otherwise, fail the request if the alert's display name conflicts with an existing alert's display name.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CreateAlertRequestAlert": {
+    "fields": {
+      "condition": {
+        "description": "Trigger conditions of the alert.",
+        "ref": "sql.AlertCondition",
+        "launch_stage": "GA"
+      },
+      "custom_body": {
+        "description": "Custom body of alert notification, if it exists. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "custom_subject": {
+        "description": "Custom subject of alert notification, if it exists. This can include email subject entries and Slack notification headers, for example. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name of the alert.",
+        "launch_stage": "GA"
+      },
+      "notify_on_ok": {
+        "description": "Whether to notify alert subscribers when alert returns back to normal.",
+        "launch_stage": "GA"
+      },
+      "parent_path": {
+        "description": "The workspace path of the folder containing the alert.",
+        "launch_stage": "GA"
+      },
+      "query_id": {
+        "description": "UUID of the query attached to the alert.",
+        "launch_stage": "GA"
+      },
+      "seconds_to_retrigger": {
+        "description": "Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CreateAlertV2Request": {
+    "fields": {
+      "alert": {
+        "ref": "sql.AlertV2",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CreateDefaultWarehouseOverrideRequest": {
+    "fields": {
+      "default_warehouse_override": {
+        "description": "Required. The default warehouse override to create.",
+        "ref": "sql.DefaultWarehouseOverride",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "default_warehouse_override_id": {
+        "description": "Required. The ID to use for the override, which will become the final component\nof the override's resource name.\nCan be a numeric user ID or the literal string \"me\" for the current user.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "sql.CreateQueryRequest": {
+    "fields": {
+      "auto_resolve_display_name": {
+        "description": "If true, automatically resolve query display name conflicts. Otherwise, fail the request if the query's display name conflicts with an existing query's display name.",
+        "launch_stage": "GA"
+      },
+      "query": {
+        "ref": "sql.CreateQueryRequestQuery",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CreateQueryRequestQuery": {
+    "fields": {
+      "apply_auto_limit": {
+        "description": "Whether to apply a 1000 row limit to the query result.",
+        "launch_stage": "GA"
+      },
+      "catalog": {
+        "description": "Name of the catalog where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "List of query parameter definitions.",
+        "launch_stage": "GA"
+      },
+      "parent_path": {
+        "description": "Workspace path of the workspace folder containing the object.",
+        "launch_stage": "GA"
+      },
+      "query_text": {
+        "description": "Text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "run_as_mode": {
+        "description": "Sets the \"Run as\" role for the object.",
+        "ref": "sql.RunAsMode",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "Name of the schema where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "ID of the SQL warehouse attached to the query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CreateQueryVisualizationsLegacyRequest": {
+    "description": "Add visualization to a query",
+    "fields": {
+      "description": {
+        "description": "A short description of this visualization. This is not displayed in the UI.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "name": {
+        "description": "The name of the visualization that appears on dashboards and the query screen.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "options": {
+        "description": "The options object varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization settings in JSON.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "query_id": {
+        "description": "The identifier returned by :method:queries/create",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "type": {
+        "description": "The type of visualization: chart, table, pivot table, and so on.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.CreateVisualizationRequest": {
+    "fields": {
+      "visualization": {
+        "ref": "sql.CreateVisualizationRequestVisualization",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.CreateVisualizationRequestVisualization": {
+    "fields": {
+      "display_name": {
+        "description": "The display name of the visualization.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "query_id": {
+        "description": "UUID of the query that the visualization is attached to.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "serialized_options": {
+        "description": "The visualization options varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization options directly.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "serialized_query_plan": {
+        "description": "The visualization query plan varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying the visualization query plan directly.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "type": {
+        "description": "The type of visualization: counter, table, funnel, and so on.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.CreateWarehouseRequest": {
+    "description": "Creates a new SQL warehouse.",
+    "fields": {
+      "auto_stop_mins": {
+        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "Channel Details",
+        "ref": "sql.Channel",
+        "launch_stage": "GA"
+      },
+      "cluster_size": {
+        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+        "launch_stage": "GA"
+      },
+      "creator_name": {
+        "description": "warehouse creator name",
+        "launch_stage": "GA"
+      },
+      "customer_version_label": {
+        "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "enable_photon": {
+        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
+        "launch_stage": "GA"
+      },
+      "enable_serverless_compute": {
+        "description": "Configures whether the warehouse should use serverless compute",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "Deprecated. Instance profile used to pass IAM role to the cluster",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "max_dbu": {
+        "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "max_num_clusters": {
+        "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
+        "launch_stage": "GA"
+      },
+      "min_num_clusters": {
+        "description": "Minimum number of available clusters that will be maintained for this SQL\nwarehouse. Increasing this will ensure that a larger number of clusters are\nalways running and therefore may reduce the cold start time for new\nqueries. This is similar to reserved vs. revocable cores in a resource\nmanager.\n\nSupported values:\n- Must be \u003e 0\n- Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+        "launch_stage": "GA"
+      },
+      "reyden_cluster_size_multiplier": {
+        "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "spot_instance_policy": {
+        "description": "Configurations whether the endpoint should use spot instances.",
+        "ref": "sql.SpotInstancePolicy",
+        "launch_stage": "GA"
+      },
+      "statement_timeout": {
+        "description": "Warehouse statement timeout in seconds.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tags": {
+        "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
+        "ref": "sql.EndpointTags",
+        "launch_stage": "GA"
+      },
+      "warehouse_type": {
+        "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+        "ref": "sql.CreateWarehouseRequestWarehouseType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CreateWarehouseRequestWarehouseType": {
+    "enum": [
+      "TYPE_UNSPECIFIED",
+      "CLASSIC",
+      "PRO",
+      "REALTIME"
+    ],
+    "enum_launch_stages": {
+      "CLASSIC": "GA",
+      "PRO": "GA",
+      "REALTIME": "PRIVATE_PREVIEW",
+      "TYPE_UNSPECIFIED": "GA"
+    }
+  },
+  "sql.CreateWarehouseResponse": {
+    "fields": {
+      "id": {
+        "description": "Id for the SQL warehouse.\nThis value is unique across all SQL warehouses.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CreateWidget": {
+    "fields": {
+      "dashboard_id": {
+        "description": "Dashboard ID returned by :method:dashboards/create.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "options": {
+        "ref": "sql.WidgetOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "text": {
+        "description": "If this is a textbox widget, the application displays this text. This field is ignored if the widget contains a visualization in the `visualization` field.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "visualization_id": {
+        "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "width": {
+        "description": "Width of a widget",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.CronSchedule": {
+    "fields": {
+      "pause_status": {
+        "description": "Indicate whether this schedule is paused or not.",
+        "ref": "sql.SchedulePauseStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "quartz_cron_schedule": {
+        "description": "A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
+        "launch_stage": "GA"
+      },
+      "timezone_id": {
+        "description": "A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.CustomTemplateFormat": {
+    "description": "Rendering format for the `custom_summary` and `custom_description` templates.",
+    "enum": [
+      "HTML",
+      "MARKDOWN"
+    ],
+    "enum_launch_stages": {
+      "HTML": "PUBLIC_BETA",
+      "MARKDOWN": "PUBLIC_BETA"
+    }
+  },
+  "sql.Dashboard": {
+    "description": "A JSON representing a dashboard containing widgets of visualizations and text boxes.",
+    "fields": {
+      "can_edit": {
+        "description": "Whether the authenticated user can edit the query definition.",
+        "launch_stage": "GA"
+      },
+      "created_at": {
+        "description": "Timestamp when this dashboard was created.",
+        "launch_stage": "GA"
+      },
+      "dashboard_filters_enabled": {
+        "description": "In the web application, query filters that share a name are coupled to a single selection box if this value is `true`.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "The ID for this dashboard.",
+        "launch_stage": "GA"
+      },
+      "is_archived": {
+        "description": "Indicates whether a dashboard is trashed. Trashed dashboards won't appear in list views.  If this boolean is `true`, the `options` property for this dashboard includes a `moved_to_trash_at` timestamp. Items in trash are permanently deleted after 30 days.",
+        "launch_stage": "GA"
+      },
+      "is_draft": {
+        "description": "Whether a dashboard is a draft. Draft dashboards only appear in list views for their owners.",
+        "launch_stage": "GA"
+      },
+      "is_favorite": {
+        "description": "Indicates whether this query object appears in the current user's favorites list. This flag determines whether the star icon for favorites is selected.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The title of the dashboard that appears in list views and at the top of the dashboard page.",
+        "launch_stage": "GA"
+      },
+      "options": {
+        "ref": "sql.DashboardOptions",
+        "launch_stage": "GA"
+      },
+      "parent": {
+        "description": "The identifier of the workspace folder containing the object.",
+        "launch_stage": "GA"
+      },
+      "permission_tier": {
+        "description": "* `CAN_VIEW`: Can view the query\n* `CAN_RUN`: Can run the query\n* `CAN_EDIT`: Can edit the query\n* `CAN_MANAGE`: Can manage the query",
+        "ref": "sql.PermissionLevel",
+        "launch_stage": "GA"
+      },
+      "slug": {
+        "description": "URL slug. Usually mirrors the query name with dashes (`-`) instead of spaces. Appears in the URL for this query.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      },
+      "updated_at": {
+        "description": "Timestamp when this dashboard was last updated.",
+        "launch_stage": "GA"
+      },
+      "user": {
+        "ref": "sql.User",
+        "launch_stage": "GA"
+      },
+      "user_id": {
+        "description": "The ID of the user who owns the dashboard.",
+        "launch_stage": "GA"
+      },
+      "widgets": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.DashboardEditContent": {
+    "fields": {
+      "name": {
+        "description": "The title of this dashboard that appears in list views and at the top of the dashboard page.",
+        "launch_stage": "GA"
+      },
+      "run_as_role": {
+        "description": "Sets the **Run as** role for the object. Must be set to one of `\"viewer\"` (signifying \"run as viewer\" behavior) or `\"owner\"` (signifying \"run as owner\" behavior)",
+        "ref": "sql.RunAsRole",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.DashboardOptions": {
+    "fields": {
+      "moved_to_trash_at": {
+        "description": "The timestamp when this dashboard was moved to trash. Only present when the `is_archived` property is `true`. Trashed items are deleted after thirty days.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.DataSource": {
+    "description": "A JSON object representing a DBSQL data source / SQL warehouse.",
+    "fields": {
+      "id": {
+        "description": "Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. [Learn more](https://docs.databricks.com/api/workspace/datasources/list)",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The string name of this data source / SQL warehouse as it appears in the Databricks SQL web application.",
+        "launch_stage": "GA"
+      },
+      "pause_reason": {
+        "description": "Reserved for internal use.",
+        "launch_stage": "GA"
+      },
+      "paused": {
+        "description": "Reserved for internal use.",
+        "launch_stage": "GA"
+      },
+      "supports_auto_limit": {
+        "description": "Reserved for internal use.",
+        "launch_stage": "GA"
+      },
+      "syntax": {
+        "description": "Reserved for internal use.",
+        "launch_stage": "GA"
+      },
+      "type": {
+        "description": "The type of data source. For SQL warehouses, this will be `databricks_internal`.",
+        "launch_stage": "GA"
+      },
+      "view_only": {
+        "description": "Reserved for internal use.",
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "The ID of the associated SQL warehouse, if this data source is backed by a SQL warehouse.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.DatePrecision": {
+    "enum": [
+      "DAY_PRECISION",
+      "MINUTE_PRECISION",
+      "SECOND_PRECISION"
+    ],
+    "enum_launch_stages": {
+      "DAY_PRECISION": "GA",
+      "MINUTE_PRECISION": "GA",
+      "SECOND_PRECISION": "GA"
+    }
+  },
+  "sql.DateRange": {
+    "fields": {
+      "end": {
+        "launch_stage": "GA"
+      },
+      "start": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.DateRangeValue": {
+    "fields": {
+      "date_range_value": {
+        "description": "Manually specified date-time range value.",
+        "ref": "sql.DateRange",
+        "launch_stage": "GA"
+      },
+      "dynamic_date_range_value": {
+        "description": "Dynamic date-time range value based on current date-time.",
+        "ref": "sql.DateRangeValueDynamicDateRange",
+        "launch_stage": "GA"
+      },
+      "precision": {
+        "description": "Date-time precision to format the value into when the query is run. Defaults to DAY_PRECISION (YYYY-MM-DD).",
+        "ref": "sql.DatePrecision",
+        "launch_stage": "GA"
+      },
+      "start_day_of_week": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.DateRangeValueDynamicDateRange": {
+    "enum": [
+      "TODAY",
+      "YESTERDAY",
+      "THIS_WEEK",
+      "THIS_MONTH",
+      "THIS_YEAR",
+      "LAST_WEEK",
+      "LAST_MONTH",
+      "LAST_YEAR",
+      "LAST_HOUR",
+      "LAST_8_HOURS",
+      "LAST_24_HOURS",
+      "LAST_7_DAYS",
+      "LAST_14_DAYS",
+      "LAST_30_DAYS",
+      "LAST_60_DAYS",
+      "LAST_90_DAYS",
+      "LAST_12_MONTHS"
+    ],
+    "enum_launch_stages": {
+      "LAST_12_MONTHS": "GA",
+      "LAST_14_DAYS": "GA",
+      "LAST_24_HOURS": "GA",
+      "LAST_30_DAYS": "GA",
+      "LAST_60_DAYS": "GA",
+      "LAST_7_DAYS": "GA",
+      "LAST_8_HOURS": "GA",
+      "LAST_90_DAYS": "GA",
+      "LAST_HOUR": "GA",
+      "LAST_MONTH": "GA",
+      "LAST_WEEK": "GA",
+      "LAST_YEAR": "GA",
+      "THIS_MONTH": "GA",
+      "THIS_WEEK": "GA",
+      "THIS_YEAR": "GA",
+      "TODAY": "GA",
+      "YESTERDAY": "GA"
+    }
+  },
+  "sql.DateValue": {
+    "fields": {
+      "date_value": {
+        "description": "Manually specified date-time value.",
+        "launch_stage": "GA"
+      },
+      "dynamic_date_value": {
+        "description": "Dynamic date-time value based on current date-time.",
+        "ref": "sql.DateValueDynamicDate",
+        "launch_stage": "GA"
+      },
+      "precision": {
+        "description": "Date-time precision to format the value into when the query is run. Defaults to DAY_PRECISION (YYYY-MM-DD).",
+        "ref": "sql.DatePrecision",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.DateValueDynamicDate": {
+    "enum": [
+      "NOW",
+      "YESTERDAY"
+    ],
+    "enum_launch_stages": {
+      "NOW": "GA",
+      "YESTERDAY": "GA"
+    }
+  },
+  "sql.DefaultWarehouseOverride": {
+    "description": "Represents a per-user default warehouse override configuration.\nThis resource allows users or administrators to customize how a user's\ndefault warehouse is selected for SQL operations.\nIf no override exists for a user, the workspace default warehouse will be used.",
+    "fields": {
+      "default_warehouse_override_id": {
+        "description": "The ID component of the resource name (user ID).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The resource name of the default warehouse override.\nFormat: default-warehouse-overrides/{default_warehouse_override_id}",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "type": {
+        "description": "The type of override behavior.",
+        "ref": "sql.DefaultWarehouseOverrideType",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "warehouse_id": {
+        "description": "The specific warehouse ID when type is CUSTOM.\nNot set for LAST_SELECTED type.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.DefaultWarehouseOverrideType": {
+    "description": "Type of default warehouse override behavior.",
+    "enum": [
+      "LAST_SELECTED",
+      "CUSTOM"
+    ],
+    "enum_launch_stages": {
+      "CUSTOM": "PUBLIC_BETA",
+      "LAST_SELECTED": "PUBLIC_BETA"
+    }
+  },
+  "sql.DeleteAlertsLegacyRequest": {},
+  "sql.DeleteDashboardRequest": {},
+  "sql.DeleteDashboardWidgetRequest": {},
+  "sql.DeleteDefaultWarehouseOverrideRequest": {},
+  "sql.DeleteQueriesLegacyRequest": {},
+  "sql.DeleteQueryVisualizationsLegacyRequest": {},
+  "sql.DeleteResponse": {},
+  "sql.DeleteVisualizationRequest": {},
+  "sql.DeleteWarehouseRequest": {},
+  "sql.DeleteWarehouseResponse": {},
+  "sql.Disposition": {
+    "enum": [
+      "INLINE",
+      "EXTERNAL_LINKS"
+    ],
+    "enum_launch_stages": {
+      "EXTERNAL_LINKS": "GA",
+      "INLINE": "GA"
+    }
+  },
+  "sql.EditAlert": {
+    "fields": {
+      "name": {
+        "description": "Name of the alert.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "options": {
+        "description": "Alert configuration options.",
+        "ref": "sql.AlertOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "query_id": {
+        "description": "Query ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "rearm": {
+        "description": "Number of seconds after being triggered before the alert rearms itself and can be triggered again. If `null`, alert will never be triggered again.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "sql.EditWarehouseRequest": {
+    "description": "This is an incremental edit functionality, so all fields except id are optional. If a field is set, the corresponding\nconfiguration in the SQL warehouse is modified. If a field is unset, the existing configuration value in the SQL\nwarehouse is retained. Thus, this API is not idempotent.",
+    "fields": {
+      "auto_stop_mins": {
+        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "Channel Details",
+        "ref": "sql.Channel",
+        "launch_stage": "GA"
+      },
+      "cluster_size": {
+        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+        "launch_stage": "GA"
+      },
+      "creator_name": {
+        "description": "warehouse creator name",
+        "launch_stage": "GA"
+      },
+      "customer_version_label": {
+        "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "enable_photon": {
+        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
+        "launch_stage": "GA"
+      },
+      "enable_serverless_compute": {
+        "description": "Configures whether the warehouse should use serverless compute",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "Deprecated. Instance profile used to pass IAM role to the cluster",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "max_dbu": {
+        "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "max_num_clusters": {
+        "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
+        "launch_stage": "GA"
+      },
+      "min_num_clusters": {
+        "description": "Minimum number of available clusters that will be maintained for this SQL\nwarehouse. Increasing this will ensure that a larger number of clusters are\nalways running and therefore may reduce the cold start time for new\nqueries. This is similar to reserved vs. revocable cores in a resource\nmanager.\n\nSupported values:\n- Must be \u003e 0\n- Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+        "launch_stage": "GA"
+      },
+      "reyden_cluster_size_multiplier": {
+        "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "spot_instance_policy": {
+        "description": "Configurations whether the endpoint should use spot instances.",
+        "ref": "sql.SpotInstancePolicy",
+        "launch_stage": "GA"
+      },
+      "statement_timeout": {
+        "description": "Warehouse statement timeout in seconds.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tags": {
+        "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
+        "ref": "sql.EndpointTags",
+        "launch_stage": "GA"
+      },
+      "warehouse_type": {
+        "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+        "ref": "sql.EditWarehouseRequestWarehouseType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.EditWarehouseRequestWarehouseType": {
+    "enum": [
+      "TYPE_UNSPECIFIED",
+      "CLASSIC",
+      "PRO",
+      "REALTIME"
+    ],
+    "enum_launch_stages": {
+      "CLASSIC": "GA",
+      "PRO": "GA",
+      "REALTIME": "PRIVATE_PREVIEW",
+      "TYPE_UNSPECIFIED": "GA"
+    }
+  },
+  "sql.EditWarehouseResponse": {},
+  "sql.Empty": {
+    "description": "Represents an empty message, similar to google.protobuf.Empty, which is not available in the firm\nright now."
+  },
+  "sql.EndpointConfPair": {
+    "fields": {
+      "key": {
+        "launch_stage": "GA"
+      },
+      "value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.EndpointHealth": {
+    "fields": {
+      "details": {
+        "description": "Details about errors that are causing current degraded/failed status.",
+        "launch_stage": "GA"
+      },
+      "failure_reason": {
+        "description": "The reason for failure to bring up clusters for this warehouse. This is available when status is 'FAILED' and sometimes when it is DEGRADED.",
+        "ref": "sql.TerminationReason",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "description": "Deprecated. split into summary and details for security",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Health status of the endpoint.",
+        "ref": "sql.Status",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "summary": {
+        "description": "A short summary of the health status in case of degraded/failed warehouses.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.EndpointInfo": {
+    "fields": {
+      "auto_stop_mins": {
+        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "Channel Details",
+        "ref": "sql.Channel",
+        "launch_stage": "GA"
+      },
+      "cluster_size": {
+        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+        "launch_stage": "GA"
+      },
+      "creator_name": {
+        "description": "warehouse creator name",
+        "launch_stage": "GA"
+      },
+      "customer_version_label": {
+        "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "enable_photon": {
+        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
+        "launch_stage": "GA"
+      },
+      "enable_serverless_compute": {
+        "description": "Configures whether the warehouse should use serverless compute",
+        "launch_stage": "GA"
+      },
+      "health": {
+        "description": "Optional health status. Assume the warehouse is healthy if this field is not set.",
+        "ref": "sql.EndpointHealth",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "unique identifier for warehouse",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "instance_profile_arn": {
+        "description": "Deprecated. Instance profile used to pass IAM role to the cluster",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "jdbc_url": {
+        "description": "the jdbc connection string for this warehouse",
+        "launch_stage": "GA"
+      },
+      "max_dbu": {
+        "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "max_num_clusters": {
+        "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
+        "launch_stage": "GA"
+      },
+      "min_num_clusters": {
+        "description": "Minimum number of available clusters that will be maintained for this SQL\nwarehouse. Increasing this will ensure that a larger number of clusters are\nalways running and therefore may reduce the cold start time for new\nqueries. This is similar to reserved vs. revocable cores in a resource\nmanager.\n\nSupported values:\n- Must be \u003e 0\n- Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+        "launch_stage": "GA"
+      },
+      "num_active_sessions": {
+        "description": "Deprecated. current number of active sessions for the warehouse",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "num_clusters": {
+        "description": "current number of clusters running for the service",
+        "launch_stage": "GA"
+      },
+      "odbc_params": {
+        "description": "ODBC parameters for the SQL warehouse",
+        "ref": "sql.OdbcParams",
+        "launch_stage": "GA"
+      },
+      "reyden_cluster_size_multiplier": {
+        "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "spot_instance_policy": {
+        "description": "Configurations whether the endpoint should use spot instances.",
+        "ref": "sql.SpotInstancePolicy",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "state of the endpoint",
+        "ref": "sql.State",
+        "launch_stage": "GA"
+      },
+      "statement_timeout": {
+        "description": "Warehouse statement timeout in seconds.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tags": {
+        "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
+        "ref": "sql.EndpointTags",
+        "launch_stage": "GA"
+      },
+      "warehouse_type": {
+        "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+        "ref": "sql.EndpointInfoWarehouseType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.EndpointInfoWarehouseType": {
+    "enum": [
+      "TYPE_UNSPECIFIED",
+      "CLASSIC",
+      "PRO",
+      "REALTIME"
+    ],
+    "enum_launch_stages": {
+      "CLASSIC": "GA",
+      "PRO": "GA",
+      "REALTIME": "PRIVATE_PREVIEW",
+      "TYPE_UNSPECIFIED": "GA"
+    }
+  },
+  "sql.EndpointTagPair": {
+    "fields": {
+      "key": {
+        "launch_stage": "GA"
+      },
+      "value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.EndpointTags": {
+    "fields": {
+      "custom_tags": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.EnumValue": {
+    "fields": {
+      "enum_options": {
+        "description": "List of valid query parameter values, newline delimited.",
+        "launch_stage": "GA"
+      },
+      "multi_values_options": {
+        "description": "If specified, allows multiple values to be selected for this parameter.",
+        "ref": "sql.MultiValuesOptions",
+        "launch_stage": "GA"
+      },
+      "values": {
+        "description": "List of selected query parameter values.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ExecuteStatementRequest": {
+    "fields": {
+      "byte_limit": {
+        "description": "Applies the given byte limit to the statement's result size. Byte counts are based on internal data\nrepresentations and might not match the final size in the requested `format`. If the result was truncated due to\nthe byte limit, then `truncated` in the response is set to `true`.\nWhen using `EXTERNAL_LINKS` disposition, a default `byte_limit` of 100 GiB is applied if `byte_limit` is not\nexplicitly set.",
+        "launch_stage": "GA"
+      },
+      "catalog": {
+        "description": "Sets default catalog for statement execution, similar to\n[`USE CATALOG`](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-catalog.html)\nin SQL.",
+        "launch_stage": "GA"
+      },
+      "disposition": {
+        "description": "The fetch disposition provides two modes of fetching results: `INLINE` and `EXTERNAL_LINKS`.\n\nStatements executed with `INLINE` disposition will return result data inline, in `JSON_ARRAY` format, in a series\nof chunks. If a given statement produces a result set with a size larger than 25 MiB,\nthat statement execution is aborted, and no result set will be available.\n\n**NOTE**\nByte limits are computed based upon internal representations of the result set data, and might not match the sizes\nvisible in JSON responses.\n\nStatements executed with `EXTERNAL_LINKS` disposition will return result data as external links: URLs that point\nto cloud storage internal to the workspace. Using `EXTERNAL_LINKS` disposition allows statements to generate\narbitrarily sized result sets for fetching up to 100 GiB. The resulting links have two important properties:\n\n1. They point to resources _external_ to the Databricks compute; therefore any associated authentication\ninformation (typically a personal access token, OAuth token, or similar) _must be removed_ when fetching from\nthese links.\n\n2. These are short-lived cloud-storage URLs\nwith a specific expiration, indicated in the response. The behavior when attempting to use an expired link is\ncloud specific.",
+        "ref": "sql.Disposition",
+        "launch_stage": "GA"
+      },
+      "format": {
+        "description": "Statement execution supports three result formats: `JSON_ARRAY` (default), `ARROW_STREAM`, and `CSV`.\n\nImportant: The formats `ARROW_STREAM` and `CSV` are supported only with `EXTERNAL_LINKS` disposition.\n`JSON_ARRAY` is supported in `INLINE` and `EXTERNAL_LINKS` disposition.\n\nWhen specifying `format=JSON_ARRAY`, result data will be formatted as an array of arrays of values, where each\nvalue is either the *string representation* of a value, or `null`.\nFor example, the output of `SELECT concat('id-', id) AS strCol, id AS intCol, null AS nullCol FROM range(3)` would\nlook like this:\n\n```\n[\n[ \"id-1\", \"1\", null ],\n[ \"id-2\", \"2\", null ],\n[ \"id-3\", \"3\", null ],\n]\n```\n\nWhen specifying `format=JSON_ARRAY` and `disposition=EXTERNAL_LINKS`, each chunk in the result contains compact\nJSON with no indentation or extra whitespace.\n\nWhen specifying `format=ARROW_STREAM` and `disposition=EXTERNAL_LINKS`, each chunk in the result will be formatted\nas Apache Arrow Stream. See the\n[Apache Arrow streaming format](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format).\n\nWhen specifying `format=CSV` and `disposition=EXTERNAL_LINKS`, each chunk in the result will be a CSV according to\n[RFC 4180](https://www.rfc-editor.org/rfc/rfc4180) standard.\nAll the columns values will have *string representation* similar to the `JSON_ARRAY` format, and `null` values will\nbe encoded as “null”.\nOnly the first chunk in the result would contain a header row with column names.\nFor example, the output of `SELECT concat('id-', id) AS strCol, id AS intCol, null as nullCol FROM range(3)` would\nlook like this:\n\n```\nstrCol,intCol,nullCol\nid-1,1,null\nid-2,2,null\nid-3,3,null\n```",
+        "ref": "sql.Format",
+        "launch_stage": "GA"
+      },
+      "on_wait_timeout": {
+        "description": "When `wait_timeout \u003e 0s`, the call will block up to the specified time. If the statement execution doesn't\nfinish within this time, `on_wait_timeout` determines whether the execution should continue or be canceled.\nWhen set to `CONTINUE`, the statement execution continues asynchronously and the call returns a statement ID\nwhich can be used for polling with :method:statementexecution/getStatement. When set to `CANCEL`,\nthe statement execution is canceled and the call returns with a `CANCELED` state.",
+        "ref": "sql.ExecuteStatementRequestOnWaitTimeout",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "A list of parameters to pass into a SQL statement containing parameter markers. A\nparameter consists of a name, a value, and optionally a type. To represent a NULL\nvalue, the `value` field may be omitted or set to `null` explicitly. If the `type` field\nis omitted, the value is interpreted as a string.\n\nIf the type is given, parameters will be checked for type correctness according\nto the given type. A value is correct if the provided string can be converted to\nthe requested type using the `cast` function. The exact semantics are described in\nthe section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.\n\nFor example, the following statement contains two parameters, `my_name` and `my_date`:\n\n```\nSELECT * FROM my_table WHERE name = :my_name AND date = :my_date\n```\n\nThe parameters can be passed in the request body as follows:\n\n`\n{\n...,\n\"statement\": \"SELECT * FROM my_table WHERE name = :my_name AND date = :my_date\",\n\"parameters\": [\n{ \"name\": \"my_name\", \"value\": \"the name\" },\n{ \"name\": \"my_date\", \"value\": \"2020-01-01\", \"type\": \"DATE\" }\n]\n}\n`\n\nCurrently, positional parameters denoted by a `?` marker are not supported by the\nDatabricks SQL Statement Execution API.\n\nAlso see the section [Parameter markers](https://docs.databricks.com/sql/language-manual/sql-ref-parameter-marker.html) of the SQL language reference.",
+        "launch_stage": "GA"
+      },
+      "query_tags": {
+        "description": "An array of query tags to annotate a SQL statement. A query tag\nconsists of a non-empty key and, optionally, a value. To represent a NULL\nvalue, either omit the `value` field or manually set it to `null` or white space.\nRefer to the SQL language reference for the format specification of query tags.\nThere's no significance to the order of tags. Only one value per key will be recorded.\nA sequence in excess of 20 query tags will be coerced to 20.\nExample:\n\n{\n...,\n\"query_tags\": [\n{ \"key\": \"team\", \"value\": \"eng\" },\n{ \"key\": \"some key only tag\" }\n]\n}",
+        "launch_stage": "GA"
+      },
+      "row_limit": {
+        "description": "Applies the given row limit to the statement's result set, but unlike the `LIMIT` clause in SQL,\nit also sets the `truncated` field in the response to indicate whether the result was trimmed due to the limit or\nnot.",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "Sets default schema for statement execution, similar to\n[`USE SCHEMA`](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-schema.html)\nin SQL.",
+        "launch_stage": "GA"
+      },
+      "statement": {
+        "description": "The SQL statement to execute. The statement can optionally be parameterized, see `parameters`.\nThe maximum query text size is 16 MiB.",
+        "launch_stage": "GA"
+      },
+      "wait_timeout": {
+        "description": "The time in seconds the call will wait for the statement's result set as `Ns`, where `N` can be set to 0 or to a\nvalue between 5 and 50.\n\nWhen set to `0s`, the statement will execute in asynchronous mode and the call will not wait for the execution to\nfinish. In this case, the call returns directly with `PENDING` state and a statement ID which can be used for\npolling with :method:statementexecution/getStatement.\n\nWhen set between 5 and 50 seconds, the call will behave synchronously up to this timeout and wait for the statement\nexecution to finish. If the execution finishes within this time, the call returns immediately with a manifest and\nresult data (or a `FAILED` state in case of an execution error). If the statement takes longer to execute,\n`on_wait_timeout` determines what should happen after the timeout is reached.",
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "Warehouse upon which to execute a statement. See also\n[What are SQL warehouses?](https://docs.databricks.com/sql/admin/warehouse-type.html)",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ExecuteStatementRequestOnWaitTimeout": {
+    "description": "When `wait_timeout \u003e 0s`, the call will block up to the specified time. If the statement execution doesn't\nfinish within this time, `on_wait_timeout` determines whether the execution should continue or be canceled.\nWhen set to `CONTINUE`, the statement execution continues asynchronously and the call returns a statement ID\nwhich can be used for polling with :method:statementexecution/getStatement. When set to `CANCEL`,\nthe statement execution is canceled and the call returns with a `CANCELED` state.",
+    "enum": [
+      "CONTINUE",
+      "CANCEL"
+    ],
+    "enum_launch_stages": {
+      "CANCEL": "GA",
+      "CONTINUE": "GA"
+    }
+  },
+  "sql.ExternalLink": {
+    "fields": {
+      "byte_count": {
+        "description": "The number of bytes in the result chunk. This field is not available when using `INLINE`\ndisposition.",
+        "launch_stage": "GA"
+      },
+      "chunk_index": {
+        "description": "The position within the sequence of result set chunks.",
+        "launch_stage": "GA"
+      },
+      "expiration": {
+        "description": "Indicates the date-time that the given external link will expire and\nbecomes invalid, after which point a new `external_link` must be requested.",
+        "launch_stage": "GA"
+      },
+      "external_link": {
+        "description": "A short-lived cloud-storage URL pointing to a chunk of result data, hosted by an external service, with a short\nexpiration time (\u003c= 15 minutes). As this URL contains a temporary credential, it should be considered sensitive\nand the client should not expose this URL in a log.",
+        "launch_stage": "GA"
+      },
+      "http_headers": {
+        "description": "HTTP headers that must be included with a GET request to the `external_link`.\nEach header is provided as a key-value pair.\nHeaders are typically used to pass a decryption key to the external service.\nThe values of these headers should be considered sensitive and the client should not expose\nthese values in a log.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "next_chunk_index": {
+        "description": "When fetching, provides the `chunk_index` for the _next_ chunk. If absent, indicates there are no\nmore chunks. The next chunk can be fetched with a\n:method:statementexecution/getstatementresultchunkn request.",
+        "launch_stage": "GA"
+      },
+      "next_chunk_internal_link": {
+        "description": "When fetching, provides a link to fetch the _next_ chunk. If absent, indicates there are no more\nchunks. This link is an absolute `path` to be joined with your `$DATABRICKS_HOST`, and should be\ntreated as an opaque link. This is an alternative to using `next_chunk_index`.",
+        "launch_stage": "GA"
+      },
+      "row_count": {
+        "description": "The number of rows within the result chunk.",
+        "launch_stage": "GA"
+      },
+      "row_offset": {
+        "description": "The starting row offset within the result set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ExternalQuerySource": {
+    "fields": {
+      "alert_id": {
+        "description": "The canonical identifier for this SQL alert",
+        "launch_stage": "GA"
+      },
+      "dashboard_id": {
+        "description": "The canonical identifier for this Lakeview dashboard",
+        "launch_stage": "GA"
+      },
+      "genie_space_id": {
+        "description": "The canonical identifier for this Genie space",
+        "launch_stage": "GA"
+      },
+      "job_info": {
+        "ref": "sql.ExternalQuerySourceJobInfo",
+        "launch_stage": "GA"
+      },
+      "legacy_dashboard_id": {
+        "description": "The canonical identifier for this legacy dashboard",
+        "launch_stage": "GA"
+      },
+      "notebook_id": {
+        "description": "The canonical identifier for this notebook",
+        "launch_stage": "GA"
+      },
+      "sql_query_id": {
+        "description": "The canonical identifier for this SQL query",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ExternalQuerySourceJobInfo": {
+    "fields": {
+      "job_id": {
+        "description": "The canonical identifier for this job.",
+        "launch_stage": "GA"
+      },
+      "job_run_id": {
+        "description": "The canonical identifier of the run. This ID is unique across all runs of all jobs.",
+        "launch_stage": "GA"
+      },
+      "job_task_run_id": {
+        "description": "The canonical identifier of the task run.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.Format": {
+    "enum": [
+      "JSON_ARRAY",
+      "ARROW_STREAM",
+      "CSV"
+    ],
+    "enum_launch_stages": {
+      "ARROW_STREAM": "GA",
+      "CSV": "GA",
+      "JSON_ARRAY": "GA"
+    }
+  },
+  "sql.GetAlertRequest": {},
+  "sql.GetAlertV2Request": {},
+  "sql.GetAlertsLegacyRequest": {},
+  "sql.GetConfigRequest": {},
+  "sql.GetDashboardRequest": {},
+  "sql.GetDbsqlPermissionRequest": {},
+  "sql.GetDefaultWarehouseOverrideRequest": {},
+  "sql.GetQueriesLegacyRequest": {},
+  "sql.GetQueryRequest": {},
+  "sql.GetResponse": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "description": "An object's type and UUID, separated by a forward slash (/) character.",
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "description": "A singular noun object type.",
+        "ref": "sql.ObjectType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.GetStatementRequest": {},
+  "sql.GetStatementResultChunkNRequest": {},
+  "sql.GetWarehousePermissionLevelsRequest": {},
+  "sql.GetWarehousePermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.GetWarehousePermissionsRequest": {},
+  "sql.GetWarehouseRequest": {},
+  "sql.GetWarehouseResponse": {
+    "fields": {
+      "auto_stop_mins": {
+        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
+        "launch_stage": "GA"
+      },
+      "channel": {
+        "description": "Channel Details",
+        "ref": "sql.Channel",
+        "launch_stage": "GA"
+      },
+      "cluster_size": {
+        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+        "launch_stage": "GA"
+      },
+      "creator_name": {
+        "description": "warehouse creator name",
+        "launch_stage": "GA"
+      },
+      "customer_version_label": {
+        "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "enable_photon": {
+        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
+        "launch_stage": "GA"
+      },
+      "enable_serverless_compute": {
+        "description": "Configures whether the warehouse should use serverless compute",
+        "launch_stage": "GA"
+      },
+      "health": {
+        "description": "Optional health status. Assume the warehouse is healthy if this field is not set.",
+        "ref": "sql.EndpointHealth",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "id": {
+        "description": "unique identifier for warehouse",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "instance_profile_arn": {
+        "description": "Deprecated. Instance profile used to pass IAM role to the cluster",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "jdbc_url": {
+        "description": "the jdbc connection string for this warehouse",
+        "launch_stage": "GA"
+      },
+      "max_dbu": {
+        "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "max_num_clusters": {
+        "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
+        "launch_stage": "GA"
+      },
+      "min_num_clusters": {
+        "description": "Minimum number of available clusters that will be maintained for this SQL\nwarehouse. Increasing this will ensure that a larger number of clusters are\nalways running and therefore may reduce the cold start time for new\nqueries. This is similar to reserved vs. revocable cores in a resource\nmanager.\n\nSupported values:\n- Must be \u003e 0\n- Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+        "launch_stage": "GA"
+      },
+      "num_active_sessions": {
+        "description": "Deprecated. current number of active sessions for the warehouse",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "num_clusters": {
+        "description": "current number of clusters running for the service",
+        "launch_stage": "GA"
+      },
+      "odbc_params": {
+        "description": "ODBC parameters for the SQL warehouse",
+        "ref": "sql.OdbcParams",
+        "launch_stage": "GA"
+      },
+      "reyden_cluster_size_multiplier": {
+        "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "spot_instance_policy": {
+        "description": "Configurations whether the endpoint should use spot instances.",
+        "ref": "sql.SpotInstancePolicy",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "state of the endpoint",
+        "ref": "sql.State",
+        "launch_stage": "GA"
+      },
+      "statement_timeout": {
+        "description": "Warehouse statement timeout in seconds.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tags": {
+        "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
+        "ref": "sql.EndpointTags",
+        "launch_stage": "GA"
+      },
+      "warehouse_type": {
+        "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+        "ref": "sql.GetWarehouseResponseWarehouseType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.GetWarehouseResponseWarehouseType": {
+    "enum": [
+      "TYPE_UNSPECIFIED",
+      "CLASSIC",
+      "PRO",
+      "REALTIME"
+    ],
+    "enum_launch_stages": {
+      "CLASSIC": "GA",
+      "PRO": "GA",
+      "REALTIME": "PRIVATE_PREVIEW",
+      "TYPE_UNSPECIFIED": "GA"
+    }
+  },
+  "sql.GetWorkspaceWarehouseConfigRequest": {},
+  "sql.GetWorkspaceWarehouseConfigResponse": {
+    "fields": {
+      "channel": {
+        "description": "Optional: Channel selection details",
+        "ref": "sql.Channel",
+        "launch_stage": "GA"
+      },
+      "config_param": {
+        "description": "Deprecated: Use sql_configuration_parameters",
+        "ref": "sql.RepeatedEndpointConfPairs",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "data_access_config": {
+        "description": "Spark confs for external hive metastore configuration\nJSON serialized size must be less than \u003c= 512K",
+        "launch_stage": "GA"
+      },
+      "enable_serverless_compute": {
+        "description": "Deprecated: only setting this to true is allowed.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "enabled_warehouse_types": {
+        "description": "List of Warehouse Types allowed in this workspace (limits allowed value of\nthe type field in CreateWarehouse and EditWarehouse). Note: Some types\ncannot be disabled, they don't need to be specified\nin SetWorkspaceWarehouseConfig.\nNote: Disabling a type may cause existing warehouses to be converted to\nanother type. Used by frontend to save specific type availability in the\nwarehouse create and edit form UI.",
+        "launch_stage": "GA"
+      },
+      "global_param": {
+        "description": "Deprecated: Use sql_configuration_parameters",
+        "ref": "sql.RepeatedEndpointConfPairs",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "google_service_account": {
+        "description": "GCP only: Google Service Account used to pass to cluster to access Google\nCloud Storage",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "AWS Only: The instance profile used to pass an IAM role to the SQL\nwarehouses. This configuration is also applied to the workspace's\nserverless compute for notebooks and jobs.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "security_policy": {
+        "description": "Security policy for warehouses",
+        "ref": "sql.GetWorkspaceWarehouseConfigResponseSecurityPolicy",
+        "launch_stage": "GA"
+      },
+      "sql_configuration_parameters": {
+        "description": "SQL configuration parameters",
+        "ref": "sql.RepeatedEndpointConfPairs",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.GetWorkspaceWarehouseConfigResponseSecurityPolicy": {
+    "description": "Security policy to be used for warehouses",
+    "enum": [
+      "NONE",
+      "DATA_ACCESS_CONTROL",
+      "PASSTHROUGH"
+    ],
+    "enum_launch_stages": {
+      "DATA_ACCESS_CONTROL": "GA",
+      "NONE": "GA",
+      "PASSTHROUGH": "GA"
+    }
+  },
+  "sql.LegacyAlert": {
+    "fields": {
+      "created_at": {
+        "description": "Timestamp when the alert was created.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "id": {
+        "description": "Alert ID.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "last_triggered_at": {
+        "description": "Timestamp when the alert was last triggered.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "Name of the alert.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "options": {
+        "description": "Alert configuration options.",
+        "ref": "sql.AlertOptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "parent": {
+        "description": "The identifier of the workspace folder containing the object.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "query": {
+        "ref": "sql.AlertQuery",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "rearm": {
+        "description": "Number of seconds after being triggered before the alert rearms itself and can be triggered again. If `null`, alert will never be triggered again.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "state": {
+        "description": "State of the alert. Possible values are: `unknown` (yet to be evaluated), `triggered` (evaluated and fulfilled trigger conditions), or `ok` (evaluated and did not fulfill trigger conditions).",
+        "ref": "sql.LegacyAlertState",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "updated_at": {
+        "description": "Timestamp when the alert was last updated.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "user": {
+        "ref": "sql.User",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "sql.LegacyAlertState": {
+    "enum": [
+      "ok",
+      "triggered",
+      "unknown"
+    ],
+    "enum_launch_stages": {
+      "ok": "PUBLIC_PREVIEW",
+      "triggered": "PUBLIC_PREVIEW",
+      "unknown": "PUBLIC_PREVIEW"
+    }
+  },
+  "sql.LegacyQuery": {
+    "fields": {
+      "can_edit": {
+        "description": "Describes whether the authenticated user is allowed to edit the definition of this query.",
+        "launch_stage": "GA"
+      },
+      "created_at": {
+        "description": "The timestamp when this query was created.",
+        "launch_stage": "GA"
+      },
+      "data_source_id": {
+        "description": "Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. [Learn more](https://docs.databricks.com/api/workspace/datasources/list)",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "Query ID.",
+        "launch_stage": "GA"
+      },
+      "is_archived": {
+        "description": "Indicates whether the query is trashed. Trashed queries can't be used in dashboards, or appear in search results. If this boolean is `true`, the `options` property for this query includes a `moved_to_trash_at` timestamp. Trashed queries are permanently deleted after 30 days.",
+        "launch_stage": "GA"
+      },
+      "is_draft": {
+        "description": "Whether the query is a draft. Draft queries only appear in list views for their owners. Visualizations from draft queries cannot appear on dashboards.",
+        "launch_stage": "GA"
+      },
+      "is_favorite": {
+        "description": "Whether this query object appears in the current user's favorites list. This flag determines whether the star icon for favorites is selected.",
+        "launch_stage": "GA"
+      },
+      "is_safe": {
+        "description": "Text parameter types are not safe from SQL injection for all types of data source. Set this Boolean parameter to `true` if a query either does not use any text type parameters or uses a data source type where text type parameters are handled safely.",
+        "launch_stage": "GA"
+      },
+      "last_modified_by": {
+        "ref": "sql.User",
+        "launch_stage": "GA"
+      },
+      "last_modified_by_id": {
+        "description": "The ID of the user who last saved changes to this query.",
+        "launch_stage": "GA"
+      },
+      "latest_query_data_id": {
+        "description": "If there is a cached result for this query and user, this field includes the query result ID. If this query uses parameters, this field is always null.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The title of this query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "GA"
+      },
+      "options": {
+        "ref": "sql.QueryOptions",
+        "launch_stage": "GA"
+      },
+      "parent": {
+        "description": "The identifier of the workspace folder containing the object.",
+        "launch_stage": "GA"
+      },
+      "permission_tier": {
+        "description": "* `CAN_VIEW`: Can view the query\n* `CAN_RUN`: Can run the query\n* `CAN_EDIT`: Can edit the query\n* `CAN_MANAGE`: Can manage the query",
+        "ref": "sql.PermissionLevel",
+        "launch_stage": "GA"
+      },
+      "query": {
+        "description": "The text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "query_hash": {
+        "description": "A SHA-256 hash of the query text along with the authenticated user ID.",
+        "launch_stage": "GA"
+      },
+      "run_as_role": {
+        "description": "Sets the **Run as** role for the object. Must be set to one of `\"viewer\"` (signifying \"run as viewer\" behavior) or `\"owner\"` (signifying \"run as owner\" behavior)",
+        "ref": "sql.RunAsRole",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      },
+      "updated_at": {
+        "description": "The timestamp at which this query was last updated.",
+        "launch_stage": "GA"
+      },
+      "user": {
+        "ref": "sql.User",
+        "launch_stage": "GA"
+      },
+      "user_id": {
+        "description": "The ID of the user who owns the query.",
+        "launch_stage": "GA"
+      },
+      "visualizations": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.LegacyVisualization": {
+    "description": "The visualization description API changes frequently and is unsupported. You can duplicate a visualization by copying description objects received _from the API_ and then using them to create a new one with a POST request to the same endpoint. Databricks does not recommend constructing ad-hoc visualizations entirely in JSON.",
+    "fields": {
+      "created_at": {
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "A short description of this visualization. This is not displayed in the UI.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "The UUID for this visualization.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of the visualization that appears on dashboards and the query screen.",
+        "launch_stage": "GA"
+      },
+      "options": {
+        "description": "The options object varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization settings in JSON.",
+        "launch_stage": "GA"
+      },
+      "query": {
+        "ref": "sql.LegacyQuery",
+        "launch_stage": "GA"
+      },
+      "type": {
+        "description": "The type of visualization: chart, table, pivot table, and so on.",
+        "launch_stage": "GA"
+      },
+      "updated_at": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.LifecycleState": {
+    "enum": [
+      "ACTIVE",
+      "TRASHED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "TRASHED": "GA"
+    }
+  },
+  "sql.ListAlertsRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListAlertsResponse": {
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "GA"
+      },
+      "results": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListAlertsResponseAlert": {
+    "fields": {
+      "condition": {
+        "description": "Trigger conditions of the alert.",
+        "ref": "sql.AlertCondition",
+        "launch_stage": "GA"
+      },
+      "create_time": {
+        "description": "The timestamp indicating when the alert was created.",
+        "launch_stage": "GA"
+      },
+      "custom_body": {
+        "description": "Custom body of alert notification, if it exists. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "custom_subject": {
+        "description": "Custom subject of alert notification, if it exists. This can include email subject entries and Slack notification headers, for example. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name of the alert.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "UUID identifying the alert.",
+        "launch_stage": "GA"
+      },
+      "lifecycle_state": {
+        "description": "The workspace state of the alert. Used for tracking trashed status.",
+        "ref": "sql.LifecycleState",
+        "launch_stage": "GA"
+      },
+      "notify_on_ok": {
+        "description": "Whether to notify alert subscribers when alert returns back to normal.",
+        "launch_stage": "GA"
+      },
+      "owner_user_name": {
+        "description": "The owner's username. This field is set to \"Unavailable\" if the user has been deleted.",
+        "launch_stage": "GA"
+      },
+      "query_id": {
+        "description": "UUID of the query attached to the alert.",
+        "launch_stage": "GA"
+      },
+      "seconds_to_retrigger": {
+        "description": "Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "Current state of the alert's trigger status. This field is set to UNKNOWN if the alert has not yet been evaluated or ran into an error during the last evaluation.",
+        "ref": "sql.AlertState",
+        "launch_stage": "GA"
+      },
+      "trigger_time": {
+        "description": "Timestamp when the alert was last triggered, if the alert has been triggered before.",
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "The timestamp indicating when the alert was updated.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListAlertsV2Request": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.ListAlertsV2Response": {
+    "fields": {
+      "alerts": {
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListDashboardsRequest": {
+    "fields": {
+      "order": {
+        "description": "Name of dashboard attribute to order by.",
+        "ref": "sql.ListOrder",
+        "launch_stage": "GA"
+      },
+      "page": {
+        "description": "Page number to retrieve.",
+        "launch_stage": "GA"
+      },
+      "page_size": {
+        "description": "Number of dashboards to return per page.",
+        "launch_stage": "GA"
+      },
+      "q": {
+        "description": "Full text search term.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListDefaultWarehouseOverridesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The maximum number of overrides to return. The service may return fewer than\nthis value.\nIf unspecified, at most 100 overrides will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListDefaultWarehouseOverrides` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListDefaultWarehouseOverrides`\nmust match the call that provided the page token.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.ListDefaultWarehouseOverridesResponse": {
+    "description": "Response message for ListDefaultWarehouseOverrides.",
+    "fields": {
+      "default_warehouse_overrides": {
+        "description": "The default warehouse overrides in the workspace.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "sql.ListOrder": {
+    "enum": [
+      "created_at",
+      "name"
+    ],
+    "enum_launch_stages": {
+      "created_at": "GA",
+      "name": "GA"
+    }
+  },
+  "sql.ListQueriesLegacyRequest": {
+    "fields": {
+      "order": {
+        "description": "Name of query attribute to order by. Default sort order is ascending. Append a dash (`-`) to order descending instead.\n\n- `name`: The name of the query.\n\n- `created_at`: The timestamp the query was created.\n\n- `runtime`: The time it took to run this query. This is blank for parameterized queries. A blank value is treated as the highest value for sorting.\n\n- `executed_at`: The timestamp when the query was last run.\n\n- `created_by`: The user name of the user that created the query.",
+        "launch_stage": "GA"
+      },
+      "page": {
+        "description": "Page number to retrieve.",
+        "launch_stage": "GA"
+      },
+      "page_size": {
+        "description": "Number of queries to return per page.",
+        "launch_stage": "GA"
+      },
+      "q": {
+        "description": "Full text search term",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListQueriesRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListQueriesResponse": {
+    "fields": {
+      "has_next_page": {
+        "description": "Whether there is another page of results.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results.",
+        "launch_stage": "GA"
+      },
+      "res": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListQueryHistoryRequest": {
+    "fields": {
+      "filter_by": {
+        "description": "An optional filter object to limit query history results. Accepts parameters such as user IDs, endpoint IDs, and statuses to narrow the returned data.\nIn a URL, the parameters of this filter are specified with dot notation. For example: `filter_by.statement_ids`.",
+        "ref": "sql.QueryFilter",
+        "launch_stage": "GA"
+      },
+      "include_metrics": {
+        "description": "Whether to include the query metrics with each query.\nOnly use this for a small subset of queries (max_results).\nDefaults to false.",
+        "launch_stage": "GA"
+      },
+      "max_results": {
+        "description": "Limit the number of results returned in one page. Must be less than 1000 and the default is 100.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A token that can be used to get the next page of results. The token can contains characters that need to be encoded before using it in a URL.\nFor example, the character '+' needs to be replaced by %2B. This field is optional.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListQueryObjectsResponse": {
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "GA"
+      },
+      "results": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListQueryObjectsResponseQuery": {
+    "fields": {
+      "apply_auto_limit": {
+        "description": "Whether to apply a 1000 row limit to the query result.",
+        "launch_stage": "GA"
+      },
+      "catalog": {
+        "description": "Name of the catalog where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "create_time": {
+        "description": "Timestamp when this query was created.",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "UUID identifying the query.",
+        "launch_stage": "GA"
+      },
+      "last_modifier_user_name": {
+        "description": "Username of the user who last saved changes to this query.",
+        "launch_stage": "GA"
+      },
+      "lifecycle_state": {
+        "description": "Indicates whether the query is trashed.",
+        "ref": "sql.LifecycleState",
+        "launch_stage": "GA"
+      },
+      "owner_user_name": {
+        "description": "Username of the user that owns the query.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "List of query parameter definitions.",
+        "launch_stage": "GA"
+      },
+      "query_text": {
+        "description": "Text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "run_as_mode": {
+        "description": "Sets the \"Run as\" role for the object.",
+        "ref": "sql.RunAsMode",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "Name of the schema where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "Timestamp when this query was last updated.",
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "ID of the SQL warehouse attached to the query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListRequest": {},
+  "sql.ListResponse": {
+    "fields": {
+      "count": {
+        "description": "The total number of dashboards.",
+        "launch_stage": "GA"
+      },
+      "page": {
+        "description": "The current page being displayed.",
+        "launch_stage": "GA"
+      },
+      "page_size": {
+        "description": "The number of dashboards per page.",
+        "launch_stage": "GA"
+      },
+      "results": {
+        "description": "List of dashboards returned.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListVisualizationsForQueryRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "page_token": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.ListVisualizationsForQueryResponse": {
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "results": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.ListWarehousesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "The max number of warehouses to return.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListWarehouses` call.\nProvide this to retrieve the subsequent page; otherwise the first\nwill be retrieved.\n\nWhen paginating, all other parameters provided to `ListWarehouses` must match\nthe call that provided the page token.",
+        "launch_stage": "GA"
+      },
+      "run_as_user_id": {
+        "description": "Deprecated: this field is ignored by the server.\nService Principal which will be used to fetch the list of endpoints.\nIf not specified, SQL Gateway will use the user from the session header.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ListWarehousesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "GA"
+      },
+      "warehouses": {
+        "description": "A list of warehouses and their configurations.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.MultiValuesOptions": {
+    "fields": {
+      "prefix": {
+        "description": "Character that prefixes each selected parameter value.",
+        "launch_stage": "GA"
+      },
+      "separator": {
+        "description": "Character that separates each selected parameter value. Defaults to a comma.",
+        "launch_stage": "GA"
+      },
+      "suffix": {
+        "description": "Character that suffixes each selected parameter value.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.NumericValue": {
+    "fields": {
+      "value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ObjectType": {
+    "description": "A singular noun object type.",
+    "enum": [
+      "alert",
+      "dashboard",
+      "data_source",
+      "query"
+    ],
+    "enum_launch_stages": {
+      "alert": "GA",
+      "dashboard": "GA",
+      "data_source": "GA",
+      "query": "GA"
+    }
+  },
+  "sql.ObjectTypePlural": {
+    "description": "Always a plural of the object type.",
+    "enum": [
+      "alerts",
+      "dashboards",
+      "data_sources",
+      "queries"
+    ],
+    "enum_launch_stages": {
+      "alerts": "GA",
+      "dashboards": "GA",
+      "data_sources": "GA",
+      "queries": "GA"
+    }
+  },
+  "sql.OdbcParams": {
+    "fields": {
+      "hostname": {
+        "launch_stage": "GA"
+      },
+      "path": {
+        "launch_stage": "GA"
+      },
+      "port": {
+        "launch_stage": "GA"
+      },
+      "protocol": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.OwnableObjectType": {
+    "enum": [
+      "alert",
+      "dashboard",
+      "query"
+    ],
+    "enum_launch_stages": {
+      "alert": "GA",
+      "dashboard": "GA",
+      "query": "GA"
+    }
+  },
+  "sql.Parameter": {
+    "fields": {
+      "enumOptions": {
+        "description": "List of valid parameter values, newline delimited. Only applies for dropdown list parameters.",
+        "launch_stage": "GA"
+      },
+      "multiValuesOptions": {
+        "description": "If specified, allows multiple values to be selected for this parameter. Only applies to dropdown list and query-based dropdown list parameters.",
+        "ref": "sql.MultiValuesOptions",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The literal parameter marker that appears between double curly braces in the query text.",
+        "launch_stage": "GA"
+      },
+      "queryId": {
+        "description": "The UUID of the query that provides the parameter values. Only applies for query-based dropdown list parameters.",
+        "launch_stage": "GA"
+      },
+      "title": {
+        "description": "The text displayed in a parameter picking widget.",
+        "launch_stage": "GA"
+      },
+      "type": {
+        "description": "Parameters can have several different types.",
+        "ref": "sql.ParameterType",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "The default value for this parameter.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ParameterType": {
+    "enum": [
+      "datetime",
+      "enum",
+      "number",
+      "query",
+      "text"
+    ],
+    "enum_launch_stages": {
+      "datetime": "GA",
+      "enum": "GA",
+      "number": "GA",
+      "query": "GA",
+      "text": "GA"
+    }
+  },
+  "sql.PermissionLevel": {
+    "description": "* `CAN_VIEW`: Can view the query\n* `CAN_RUN`: Can run the query\n* `CAN_EDIT`: Can edit the query\n* `CAN_MANAGE`: Can manage the query",
+    "enum": [
+      "CAN_EDIT",
+      "CAN_MANAGE",
+      "CAN_RUN",
+      "CAN_VIEW"
+    ],
+    "enum_launch_stages": {
+      "CAN_EDIT": "GA",
+      "CAN_MANAGE": "GA",
+      "CAN_RUN": "GA",
+      "CAN_VIEW": "GA"
+    },
+    "enum_descriptions": {
+      "CAN_EDIT": "Can edit the query",
+      "CAN_MANAGE": "Can manage the query",
+      "CAN_RUN": "Can run the query",
+      "CAN_VIEW": "Can view the query"
+    }
+  },
+  "sql.PlansState": {
+    "description": "Possible Reasons for which we have not saved plans in the database",
+    "enum": [
+      "IGNORED_SMALL_DURATION",
+      "IGNORED_LARGE_PLANS_SIZE",
+      "EXISTS",
+      "UNKNOWN",
+      "EMPTY",
+      "IGNORED_SPARK_PLAN_TYPE"
+    ],
+    "enum_launch_stages": {
+      "EMPTY": "GA",
+      "EXISTS": "GA",
+      "IGNORED_LARGE_PLANS_SIZE": "GA",
+      "IGNORED_SMALL_DURATION": "GA",
+      "IGNORED_SPARK_PLAN_TYPE": "GA",
+      "UNKNOWN": "GA"
+    }
+  },
+  "sql.Query": {
+    "fields": {
+      "apply_auto_limit": {
+        "description": "Whether to apply a 1000 row limit to the query result.",
+        "launch_stage": "GA"
+      },
+      "catalog": {
+        "description": "Name of the catalog where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "create_time": {
+        "description": "Timestamp when this query was created.",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "UUID identifying the query.",
+        "launch_stage": "GA"
+      },
+      "last_modifier_user_name": {
+        "description": "Username of the user who last saved changes to this query.",
+        "launch_stage": "GA"
+      },
+      "lifecycle_state": {
+        "description": "Indicates whether the query is trashed.",
+        "ref": "sql.LifecycleState",
+        "launch_stage": "GA"
+      },
+      "owner_user_name": {
+        "description": "Username of the user that owns the query.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "List of query parameter definitions.",
+        "launch_stage": "GA"
+      },
+      "parent_path": {
+        "description": "Workspace path of the workspace folder containing the object.",
+        "launch_stage": "GA"
+      },
+      "query_text": {
+        "description": "Text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "run_as_mode": {
+        "description": "Sets the \"Run as\" role for the object.",
+        "ref": "sql.RunAsMode",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "Name of the schema where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "Timestamp when this query was last updated.",
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "ID of the SQL warehouse attached to the query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryBackedValue": {
+    "fields": {
+      "multi_values_options": {
+        "description": "If specified, allows multiple values to be selected for this parameter.",
+        "ref": "sql.MultiValuesOptions",
+        "launch_stage": "GA"
+      },
+      "query_id": {
+        "description": "UUID of the query that provides the parameter values.",
+        "launch_stage": "GA"
+      },
+      "values": {
+        "description": "List of selected query parameter values.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryEditContent": {
+    "fields": {
+      "data_source_id": {
+        "description": "Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. [Learn more](https://docs.databricks.com/api/workspace/datasources/list)",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The title of this query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "GA"
+      },
+      "options": {
+        "description": "Exclusively used for storing a list parameter definitions. A parameter is an object with `title`, `name`, `type`, and `value` properties. The `value` field here is the default value. It can be overridden at runtime.",
+        "launch_stage": "GA"
+      },
+      "query": {
+        "description": "The text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "run_as_role": {
+        "description": "Sets the **Run as** role for the object. Must be set to one of `\"viewer\"` (signifying \"run as viewer\" behavior) or `\"owner\"` (signifying \"run as owner\" behavior)",
+        "ref": "sql.RunAsRole",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryFilter": {
+    "fields": {
+      "query_start_time_range": {
+        "description": "A range filter for query submitted time. The time range must be less than or equal to 30 days.",
+        "ref": "sql.TimeRange",
+        "launch_stage": "GA"
+      },
+      "statement_ids": {
+        "description": "A list of statement IDs.",
+        "launch_stage": "GA"
+      },
+      "statuses": {
+        "description": "A list of statuses (QUEUED, RUNNING, CANCELED, FAILED, FINISHED) to match query results. Corresponds to\nthe `status` field in the response.\nFiltering for multiple statuses is not recommended. Instead, opt to filter by a single status\nmultiple times and then combine the results.",
+        "launch_stage": "GA"
+      },
+      "user_ids": {
+        "description": "A list of user IDs who ran the queries.",
+        "launch_stage": "GA"
+      },
+      "warehouse_ids": {
+        "description": "A list of warehouse IDs.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryInfo": {
+    "fields": {
+      "cache_query_id": {
+        "description": "The ID of the cached query if this result retrieved from cache",
+        "launch_stage": "GA"
+      },
+      "channel_used": {
+        "description": "SQL Warehouse channel information at the time of query execution",
+        "ref": "sql.ChannelInfo",
+        "launch_stage": "GA"
+      },
+      "client_application": {
+        "description": "Client application that ran the statement. For example: Databricks SQL Editor, Tableau, and Power BI.\nThis field is derived from information provided by client applications. While values are expected to\nremain static over time, this cannot be guaranteed.",
+        "launch_stage": "GA"
+      },
+      "duration": {
+        "description": "Total time of the statement execution. This value does not include the time taken to retrieve the results, which\ncan result in a discrepancy between this value and the start-to-finish wall-clock time.",
+        "launch_stage": "GA"
+      },
+      "endpoint_id": {
+        "description": "Alias for `warehouse_id`.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "error_message": {
+        "description": "Message describing why the query could not complete.",
+        "launch_stage": "GA"
+      },
+      "executed_as_user_id": {
+        "description": "The ID of the user whose credentials were used to run the query.",
+        "launch_stage": "GA"
+      },
+      "executed_as_user_name": {
+        "description": "The email address or username of the user whose credentials were used to run the query.",
+        "launch_stage": "GA"
+      },
+      "execution_end_time_ms": {
+        "description": "The time execution of the query ended.",
+        "launch_stage": "GA"
+      },
+      "is_final": {
+        "description": "Whether more updates for the query are expected.",
+        "launch_stage": "GA"
+      },
+      "lookup_key": {
+        "description": "A key that can be used to look up query details.",
+        "launch_stage": "GA"
+      },
+      "metrics": {
+        "description": "Metrics about query execution.",
+        "ref": "sql.QueryMetrics",
+        "launch_stage": "GA"
+      },
+      "plans_state": {
+        "description": "Whether plans exist for the execution, or the reason why they are missing",
+        "ref": "sql.PlansState",
+        "launch_stage": "GA"
+      },
+      "query_end_time_ms": {
+        "description": "The time the query ended.",
+        "launch_stage": "GA"
+      },
+      "query_id": {
+        "description": "The query ID.",
+        "launch_stage": "GA"
+      },
+      "query_source": {
+        "description": "A struct that contains key-value pairs representing Databricks entities that were involved in the execution\nof this statement, such as jobs, notebooks, or dashboards. This field only records Databricks entities.",
+        "ref": "sql.ExternalQuerySource",
+        "launch_stage": "GA"
+      },
+      "query_start_time_ms": {
+        "description": "The time the query started.",
+        "launch_stage": "GA"
+      },
+      "query_tags": {
+        "description": "A query execution can be optionally annotated with query tags",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "query_text": {
+        "description": "The text of the query.",
+        "launch_stage": "GA"
+      },
+      "rows_produced": {
+        "description": "The number of results returned by the query.",
+        "launch_stage": "GA"
+      },
+      "session_id": {
+        "description": "The spark session UUID that query ran on.\nThis is either the Spark Connect, DBSQL, or SDP session ID.",
+        "launch_stage": "GA"
+      },
+      "spark_ui_url": {
+        "description": "URL to the Spark UI query plan.",
+        "launch_stage": "GA"
+      },
+      "statement_type": {
+        "description": "Type of statement for this query",
+        "ref": "sql.QueryStatementType",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Query status with one the following values:\n\n- `QUEUED`: Query has been received and queued.\n- `RUNNING`: Query has started.\n- `CANCELED`: Query has been cancelled by the user.\n- `FAILED`: Query has failed.\n- `FINISHED`: Query has completed.",
+        "ref": "sql.QueryStatus",
+        "launch_stage": "GA"
+      },
+      "user_id": {
+        "description": "The ID of the user who ran the query.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "The email address or username of the user who ran the query.",
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "Warehouse ID.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryList": {
+    "fields": {
+      "count": {
+        "description": "The total number of queries.",
+        "launch_stage": "GA"
+      },
+      "page": {
+        "description": "The page number that is currently displayed.",
+        "launch_stage": "GA"
+      },
+      "page_size": {
+        "description": "The number of queries per page.",
+        "launch_stage": "GA"
+      },
+      "results": {
+        "description": "List of queries returned.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryMetrics": {
+    "description": "A query metric that encapsulates a set of measurements for a single query.\nMetrics come from the driver and are stored in the history service database.",
+    "fields": {
+      "compilation_time_ms": {
+        "description": "Time spent loading metadata and optimizing the query, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "execution_time_ms": {
+        "description": "Time spent executing the query, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "network_sent_bytes": {
+        "description": "Total amount of data sent over the network between executor nodes during shuffle, in bytes.",
+        "launch_stage": "GA"
+      },
+      "overloading_queue_start_timestamp": {
+        "description": "Timestamp of when the query was enqueued waiting while the warehouse was at max load.\nThis field is optional and will not appear if the query skipped the overloading queue.",
+        "launch_stage": "GA"
+      },
+      "photon_total_time_ms": {
+        "description": "Total execution time for all individual Photon query engine tasks in the query, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "projected_remaining_task_total_time_ms": {
+        "description": "projected remaining work to be done aggregated across all stages in the query, in milliseconds",
+        "launch_stage": "GA"
+      },
+      "projected_remaining_wallclock_time_ms": {
+        "description": "projected lower bound on remaining total task time based on projected_remaining_task_total_time_ms / maximum concurrency",
+        "launch_stage": "GA"
+      },
+      "provisioning_queue_start_timestamp": {
+        "description": "Timestamp of when the query was enqueued waiting for a cluster to be provisioned for the warehouse.\nThis field is optional and will not appear if the query skipped the provisioning queue.",
+        "launch_stage": "GA"
+      },
+      "pruned_bytes": {
+        "description": "Total number of file bytes in all tables not read due to pruning",
+        "launch_stage": "GA"
+      },
+      "pruned_files_count": {
+        "description": "Total number of files from all tables not read due to pruning",
+        "launch_stage": "GA"
+      },
+      "query_compilation_start_timestamp": {
+        "description": "Timestamp of when the underlying compute started compilation of the query.",
+        "launch_stage": "GA"
+      },
+      "read_bytes": {
+        "description": "Total size of data read by the query, in bytes.",
+        "launch_stage": "GA"
+      },
+      "read_cache_bytes": {
+        "description": "Size of persistent data read from the cache, in bytes.",
+        "launch_stage": "GA"
+      },
+      "read_files_bytes": {
+        "description": "Total number of file bytes in all tables read",
+        "launch_stage": "GA"
+      },
+      "read_files_count": {
+        "description": "Number of files read after pruning",
+        "launch_stage": "GA"
+      },
+      "read_partitions_count": {
+        "description": "Number of partitions read after pruning.",
+        "launch_stage": "GA"
+      },
+      "read_remote_bytes": {
+        "description": "Size of persistent data read from cloud object storage on your cloud tenant, in bytes.",
+        "launch_stage": "GA"
+      },
+      "remaining_task_count": {
+        "description": "number of remaining tasks to complete\nthis is based on the current status and could be bigger or smaller in the future based on future updates",
+        "launch_stage": "GA"
+      },
+      "result_fetch_time_ms": {
+        "description": "Time spent fetching the query results after the execution finished, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "result_from_cache": {
+        "description": "`true` if the query result was fetched from cache, `false` otherwise.",
+        "launch_stage": "GA"
+      },
+      "rows_produced_count": {
+        "description": "Total number of rows returned by the query.",
+        "launch_stage": "GA"
+      },
+      "rows_read_count": {
+        "description": "Total number of rows read by the query.",
+        "launch_stage": "GA"
+      },
+      "runnable_tasks": {
+        "description": "number of remaining tasks to complete, calculated by autoscaler StatementAnalysis.scala\ndeprecated: use remaining_task_count instead",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "spill_to_disk_bytes": {
+        "description": "Size of data temporarily written to disk while executing the query, in bytes.",
+        "launch_stage": "GA"
+      },
+      "task_time_over_time_range": {
+        "description": "sum of task times completed in a range of wall clock time, approximated to a configurable number of points\naggregated over all stages and jobs in the query (based on task_total_time_ms)",
+        "ref": "sql.TaskTimeOverRange",
+        "launch_stage": "GA"
+      },
+      "task_total_time_ms": {
+        "description": "Sum of execution time for all of the query’s tasks, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "total_time_ms": {
+        "description": "Total execution time of the query from the client’s point of view, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "work_to_be_done": {
+        "description": "remaining work to be done across all stages in the query, calculated by autoscaler StatementAnalysis.scala, in milliseconds\ndeprecated: using projected_remaining_task_total_time_ms instead",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "write_remote_bytes": {
+        "description": "Size pf persistent data written to cloud object storage in your cloud tenant, in bytes.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryOptions": {
+    "fields": {
+      "catalog": {
+        "description": "The name of the catalog to execute this query in.",
+        "launch_stage": "GA"
+      },
+      "moved_to_trash_at": {
+        "description": "The timestamp when this query was moved to trash. Only present when the `is_archived` property is `true`. Trashed items are deleted after thirty days.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "The name of the schema to execute this query in.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryParameter": {
+    "fields": {
+      "date_range_value": {
+        "description": "Date-range query parameter value. Can only specify one of `dynamic_date_range_value` or `date_range_value`.",
+        "ref": "sql.DateRangeValue",
+        "launch_stage": "GA"
+      },
+      "date_value": {
+        "description": "Date query parameter value. Can only specify one of `dynamic_date_value` or `date_value`.",
+        "ref": "sql.DateValue",
+        "launch_stage": "GA"
+      },
+      "enum_value": {
+        "description": "Dropdown query parameter value.",
+        "ref": "sql.EnumValue",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Literal parameter marker that appears between double curly braces in the query text.",
+        "launch_stage": "GA"
+      },
+      "numeric_value": {
+        "description": "Numeric query parameter value.",
+        "ref": "sql.NumericValue",
+        "launch_stage": "GA"
+      },
+      "query_backed_value": {
+        "description": "Query-based dropdown query parameter value.",
+        "ref": "sql.QueryBackedValue",
+        "launch_stage": "GA"
+      },
+      "text_value": {
+        "description": "Text query parameter value.",
+        "ref": "sql.TextValue",
+        "launch_stage": "GA"
+      },
+      "title": {
+        "description": "Text displayed in the user-facing parameter widget in the UI.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryPostContent": {
+    "fields": {
+      "data_source_id": {
+        "description": "Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. [Learn more](https://docs.databricks.com/api/workspace/datasources/list)",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The title of this query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "GA"
+      },
+      "options": {
+        "description": "Exclusively used for storing a list parameter definitions. A parameter is an object with `title`, `name`, `type`, and `value` properties. The `value` field here is the default value. It can be overridden at runtime.",
+        "launch_stage": "GA"
+      },
+      "parent": {
+        "description": "The identifier of the workspace folder containing the object.",
+        "launch_stage": "GA"
+      },
+      "query": {
+        "description": "The text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "run_as_role": {
+        "description": "Sets the **Run as** role for the object. Must be set to one of `\"viewer\"` (signifying \"run as viewer\" behavior) or `\"owner\"` (signifying \"run as owner\" behavior)",
+        "ref": "sql.RunAsRole",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.QueryStatementType": {
+    "enum": [
+      "OTHER",
+      "ALTER",
+      "ANALYZE",
+      "COPY",
+      "CREATE",
+      "DELETE",
+      "DESCRIBE",
+      "DROP",
+      "EXPLAIN",
+      "GRANT",
+      "INSERT",
+      "MERGE",
+      "OPTIMIZE",
+      "REFRESH",
+      "REPLACE",
+      "REVOKE",
+      "SELECT",
+      "SET",
+      "SHOW",
+      "TRUNCATE",
+      "UPDATE",
+      "USE"
+    ],
+    "enum_launch_stages": {
+      "ALTER": "GA",
+      "ANALYZE": "GA",
+      "COPY": "GA",
+      "CREATE": "GA",
+      "DELETE": "GA",
+      "DESCRIBE": "GA",
+      "DROP": "GA",
+      "EXPLAIN": "GA",
+      "GRANT": "GA",
+      "INSERT": "GA",
+      "MERGE": "GA",
+      "OPTIMIZE": "GA",
+      "OTHER": "GA",
+      "REFRESH": "GA",
+      "REPLACE": "GA",
+      "REVOKE": "GA",
+      "SELECT": "GA",
+      "SET": "GA",
+      "SHOW": "GA",
+      "TRUNCATE": "GA",
+      "UPDATE": "GA",
+      "USE": "GA"
+    }
+  },
+  "sql.QueryStatus": {
+    "description": "Statuses which are also used by OperationStatus in runtime.\nWhen adding a new QueryStatus, make sure to update com.databricks.sqlgateway.history.QueryStatusOrdering",
+    "enum": [
+      "QUEUED",
+      "STARTED",
+      "COMPILING",
+      "COMPILED",
+      "RUNNING",
+      "CANCELED",
+      "FAILED",
+      "FINISHED"
+    ],
+    "enum_launch_stages": {
+      "CANCELED": "GA",
+      "COMPILED": "GA",
+      "COMPILING": "GA",
+      "FAILED": "GA",
+      "FINISHED": "GA",
+      "QUEUED": "GA",
+      "RUNNING": "GA",
+      "STARTED": "GA"
+    }
+  },
+  "sql.QueryTag": {
+    "description": "* A query execution can be annotated with an optional key-value pair to\nallow users to attribute the executions by key and optional value to filter by.\nQueryTag is the user-facing representation.",
+    "fields": {
+      "key": {
+        "launch_stage": "GA"
+      },
+      "value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.RepeatedEndpointConfPairs": {
+    "fields": {
+      "config_pair": {
+        "description": "Deprecated: Use configuration_pairs",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "configuration_pairs": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.RestoreDashboardRequest": {},
+  "sql.RestoreQueriesLegacyRequest": {},
+  "sql.RestoreResponse": {},
+  "sql.ResultData": {
+    "description": "Contains the result data of a single chunk when using `INLINE` disposition. When using\n`EXTERNAL_LINKS` disposition, the array `external_links` is used instead to provide\nshort-lived cloud-storage URLs to the result data\nin cloud storage. Exactly one of these alternatives is used. (While the `external_links`\narray prepares the API to return multiple links in a single response. Currently only a single\nlink is returned.)",
+    "fields": {
+      "byte_count": {
+        "description": "The number of bytes in the result chunk. This field is not available when using `INLINE`\ndisposition.",
+        "launch_stage": "GA"
+      },
+      "chunk_index": {
+        "description": "The position within the sequence of result set chunks.",
+        "launch_stage": "GA"
+      },
+      "data_array": {
+        "description": "The `JSON_ARRAY` format is an array of arrays of values, where each non-null value is\nformatted as a string. Null values are encoded as JSON `null`.",
+        "launch_stage": "GA"
+      },
+      "external_links": {
+        "launch_stage": "GA"
+      },
+      "next_chunk_index": {
+        "description": "When fetching, provides the `chunk_index` for the _next_ chunk. If absent, indicates there are no\nmore chunks. The next chunk can be fetched with a\n:method:statementexecution/getstatementresultchunkn request.",
+        "launch_stage": "GA"
+      },
+      "next_chunk_internal_link": {
+        "description": "When fetching, provides a link to fetch the _next_ chunk. If absent, indicates there are no more\nchunks. This link is an absolute `path` to be joined with your `$DATABRICKS_HOST`, and should be\ntreated as an opaque link. This is an alternative to using `next_chunk_index`.",
+        "launch_stage": "GA"
+      },
+      "row_count": {
+        "description": "The number of rows within the result chunk.",
+        "launch_stage": "GA"
+      },
+      "row_offset": {
+        "description": "The starting row offset within the result set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ResultManifest": {
+    "description": "The result manifest provides schema and metadata for the result set.",
+    "fields": {
+      "chunks": {
+        "description": "Array of result set chunk metadata.",
+        "launch_stage": "GA"
+      },
+      "format": {
+        "ref": "sql.Format",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "ref": "sql.ResultSchema",
+        "launch_stage": "GA"
+      },
+      "total_byte_count": {
+        "description": "The total number of bytes in the result set. This field is not available when using `INLINE`\ndisposition.",
+        "launch_stage": "GA"
+      },
+      "total_chunk_count": {
+        "description": "The total number of chunks that the result set has been divided into.",
+        "launch_stage": "GA"
+      },
+      "total_row_count": {
+        "description": "The total number of rows in the result set.",
+        "launch_stage": "GA"
+      },
+      "truncated": {
+        "description": "Indicates whether the result is truncated due to `row_limit` or `byte_limit`.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ResultSchema": {
+    "description": "The schema is an ordered list of column descriptions.",
+    "fields": {
+      "column_count": {
+        "launch_stage": "GA"
+      },
+      "columns": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.RunAsMode": {
+    "enum": [
+      "OWNER",
+      "VIEWER"
+    ],
+    "enum_launch_stages": {
+      "OWNER": "GA",
+      "VIEWER": "GA"
+    }
+  },
+  "sql.RunAsRole": {
+    "enum": [
+      "owner",
+      "viewer"
+    ],
+    "enum_launch_stages": {
+      "owner": "GA",
+      "viewer": "GA"
+    }
+  },
+  "sql.SchedulePauseStatus": {
+    "enum": [
+      "UNPAUSED",
+      "PAUSED"
+    ],
+    "enum_launch_stages": {
+      "PAUSED": "GA",
+      "UNPAUSED": "GA"
+    }
+  },
+  "sql.ServiceError": {
+    "fields": {
+      "error_code": {
+        "ref": "sql.ServiceErrorCode",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "description": "A brief summary of the error condition.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.ServiceErrorCode": {
+    "enum": [
+      "UNKNOWN",
+      "INTERNAL_ERROR",
+      "TEMPORARILY_UNAVAILABLE",
+      "IO_ERROR",
+      "BAD_REQUEST",
+      "SERVICE_UNDER_MAINTENANCE",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE",
+      "DEADLINE_EXCEEDED",
+      "CANCELLED",
+      "RESOURCE_EXHAUSTED",
+      "ABORTED",
+      "NOT_FOUND",
+      "ALREADY_EXISTS",
+      "UNAUTHENTICATED"
+    ],
+    "enum_launch_stages": {
+      "ABORTED": "GA",
+      "ALREADY_EXISTS": "GA",
+      "BAD_REQUEST": "GA",
+      "CANCELLED": "GA",
+      "DEADLINE_EXCEEDED": "GA",
+      "INTERNAL_ERROR": "GA",
+      "IO_ERROR": "GA",
+      "NOT_FOUND": "GA",
+      "RESOURCE_EXHAUSTED": "GA",
+      "SERVICE_UNDER_MAINTENANCE": "GA",
+      "TEMPORARILY_UNAVAILABLE": "GA",
+      "UNAUTHENTICATED": "GA",
+      "UNKNOWN": "GA",
+      "WORKSPACE_TEMPORARILY_UNAVAILABLE": "GA"
+    }
+  },
+  "sql.SetRequest": {
+    "description": "Set object ACL",
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.SetResponse": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "description": "An object's type and UUID, separated by a forward slash (/) character.",
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "description": "A singular noun object type.",
+        "ref": "sql.ObjectType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.SetWorkspaceWarehouseConfigRequest": {
+    "description": "Sets the workspace level warehouse configuration that is shared by all SQL warehouses in this workspace.\n\nThis is idempotent.",
+    "fields": {
+      "channel": {
+        "description": "Optional: Channel selection details",
+        "ref": "sql.Channel",
+        "launch_stage": "GA"
+      },
+      "config_param": {
+        "description": "Deprecated: Use sql_configuration_parameters",
+        "ref": "sql.RepeatedEndpointConfPairs",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "data_access_config": {
+        "description": "Spark confs for external hive metastore configuration\nJSON serialized size must be less than \u003c= 512K",
+        "launch_stage": "GA"
+      },
+      "enable_serverless_compute": {
+        "description": "Deprecated: only setting this to true is allowed.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "enabled_warehouse_types": {
+        "description": "List of Warehouse Types allowed in this workspace (limits allowed value of\nthe type field in CreateWarehouse and EditWarehouse). Note: Some types\ncannot be disabled, they don't need to be specified\nin SetWorkspaceWarehouseConfig.\nNote: Disabling a type may cause existing warehouses to be converted to\nanother type. Used by frontend to save specific type availability in the\nwarehouse create and edit form UI.",
+        "launch_stage": "GA"
+      },
+      "global_param": {
+        "description": "Deprecated: Use sql_configuration_parameters",
+        "ref": "sql.RepeatedEndpointConfPairs",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "google_service_account": {
+        "description": "GCP only: Google Service Account used to pass to cluster to access Google\nCloud Storage",
+        "launch_stage": "GA"
+      },
+      "instance_profile_arn": {
+        "description": "AWS Only: The instance profile used to pass an IAM role to the SQL\nwarehouses. This configuration is also applied to the workspace's\nserverless compute for notebooks and jobs.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "security_policy": {
+        "description": "Security policy for warehouses",
+        "ref": "sql.SetWorkspaceWarehouseConfigRequestSecurityPolicy",
+        "launch_stage": "GA"
+      },
+      "sql_configuration_parameters": {
+        "description": "SQL configuration parameters",
+        "ref": "sql.RepeatedEndpointConfPairs",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.SetWorkspaceWarehouseConfigRequestSecurityPolicy": {
+    "description": "Security policy to be used for warehouses",
+    "enum": [
+      "NONE",
+      "DATA_ACCESS_CONTROL",
+      "PASSTHROUGH"
+    ],
+    "enum_launch_stages": {
+      "DATA_ACCESS_CONTROL": "GA",
+      "NONE": "GA",
+      "PASSTHROUGH": "GA"
+    }
+  },
+  "sql.SetWorkspaceWarehouseConfigResponse": {},
+  "sql.SpotInstancePolicy": {
+    "description": "EndpointSpotInstancePolicy configures whether the endpoint should use spot\ninstances.\n\nThe breakdown of how the EndpointSpotInstancePolicy converts to per cloud\nconfigurations is:\n\n- AWS, COST_OPTIMIZED: On Demand Driver with Spot Executors.\n- AWS, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.\n- AZURE, COST_OPTIMIZED: On Demand Driver and Executors.\n- AZURE, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.",
+    "enum": [
+      "POLICY_UNSPECIFIED",
+      "COST_OPTIMIZED",
+      "RELIABILITY_OPTIMIZED"
+    ],
+    "enum_launch_stages": {
+      "COST_OPTIMIZED": "GA",
+      "POLICY_UNSPECIFIED": "GA",
+      "RELIABILITY_OPTIMIZED": "GA"
+    }
+  },
+  "sql.StartRequest": {
+    "description": "Starts a SQL warehouse.\nThis API is idempotent."
+  },
+  "sql.StartWarehouseResponse": {},
+  "sql.State": {
+    "description": "*\nState of a warehouse.",
+    "enum": [
+      "STARTING",
+      "RUNNING",
+      "STOPPING",
+      "STOPPED",
+      "DELETING",
+      "DELETED"
+    ],
+    "enum_launch_stages": {
+      "DELETED": "GA",
+      "DELETING": "GA",
+      "RUNNING": "GA",
+      "STARTING": "GA",
+      "STOPPED": "GA",
+      "STOPPING": "GA"
+    }
+  },
+  "sql.StatementParameterListItem": {
+    "fields": {
+      "name": {
+        "description": "The name of a parameter marker to be substituted in the statement.",
+        "launch_stage": "GA"
+      },
+      "type": {
+        "description": "The data type, given as a string. For example: `INT`, `STRING`, `DECIMAL(10,2)`.\nIf no type is given the type is assumed to be `STRING`. Complex types, such as\n`ARRAY`, `MAP`, and `STRUCT` are not supported. For valid types, refer to the\nsection [Data types](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.",
+        "launch_stage": "GA"
+      },
+      "value": {
+        "description": "The value to substitute, represented as a string. If omitted, the value is interpreted as NULL.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.StatementResponse": {
+    "fields": {
+      "manifest": {
+        "ref": "sql.ResultManifest",
+        "launch_stage": "GA"
+      },
+      "result": {
+        "ref": "sql.ResultData",
+        "launch_stage": "GA"
+      },
+      "statement_id": {
+        "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "ref": "sql.StatementStatus",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.StatementState": {
+    "enum": [
+      "PENDING",
+      "RUNNING",
+      "SUCCEEDED",
+      "FAILED",
+      "CANCELED",
+      "CLOSED"
+    ],
+    "enum_launch_stages": {
+      "CANCELED": "GA",
+      "CLOSED": "GA",
+      "FAILED": "GA",
+      "PENDING": "GA",
+      "RUNNING": "GA",
+      "SUCCEEDED": "GA"
+    }
+  },
+  "sql.StatementStatus": {
+    "description": "The status response includes execution state and if relevant, error information.",
+    "fields": {
+      "error": {
+        "ref": "sql.ServiceError",
+        "launch_stage": "GA"
+      },
+      "sql_state": {
+        "description": "SQLSTATE error code returned when the statement execution fails.\nOnly populated when the statement status is `FAILED`.",
+        "launch_stage": "GA"
+      },
+      "state": {
+        "description": "Statement execution state:\n- `PENDING`: waiting for warehouse\n- `RUNNING`: running\n- `SUCCEEDED`: execution was successful, result data available for fetch\n- `FAILED`: execution failed; reason for failure described in accompanying error message\n- `CANCELED`: user canceled; can come from explicit cancel call, or timeout with\n`on_wait_timeout=CANCEL`\n- `CLOSED`: execution successful, and statement closed; result no longer available for fetch",
+        "ref": "sql.StatementState",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.Status": {
+    "enum": [
+      "HEALTHY",
+      "DEGRADED",
+      "FAILED"
+    ],
+    "enum_launch_stages": {
+      "DEGRADED": "GA",
+      "FAILED": "GA",
+      "HEALTHY": "GA"
+    }
+  },
+  "sql.StopRequest": {
+    "description": "Stops a SQL warehouse.\nThis API is idempotent."
+  },
+  "sql.StopWarehouseResponse": {},
+  "sql.Success": {
+    "fields": {
+      "message": {
+        "ref": "sql.SuccessMessage",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.SuccessMessage": {
+    "enum": [
+      "Success"
+    ],
+    "enum_launch_stages": {
+      "Success": "GA"
+    }
+  },
+  "sql.TaskTimeOverRange": {
+    "fields": {
+      "entries": {
+        "launch_stage": "GA"
+      },
+      "interval": {
+        "description": "interval length for all entries (difference in start time and end time of an entry range)\nthe same for all entries\nstart time of first interval is query_start_time_ms",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.TaskTimeOverRangeEntry": {
+    "fields": {
+      "task_completed_time_ms": {
+        "description": "total task completion time in this time range, aggregated over all stages and jobs in the query",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.TerminationReason": {
+    "fields": {
+      "code": {
+        "description": "status code indicating why the cluster was terminated",
+        "ref": "sql.TerminationReasonCode",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "list of parameters that provide additional information about why the cluster was terminated",
+        "launch_stage": "GA"
+      },
+      "type": {
+        "description": "type of the termination",
+        "ref": "sql.TerminationReasonType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.TerminationReasonCode": {
+    "description": "The status code indicating why the cluster was terminated.",
+    "enum": [
+      "UNKNOWN",
+      "USER_REQUEST",
+      "JOB_FINISHED",
+      "INACTIVITY",
+      "CLOUD_PROVIDER_SHUTDOWN",
+      "COMMUNICATION_LOST",
+      "CLOUD_PROVIDER_LAUNCH_FAILURE",
+      "INIT_SCRIPT_FAILURE",
+      "SPARK_STARTUP_FAILURE",
+      "INVALID_ARGUMENT",
+      "UNEXPECTED_LAUNCH_FAILURE",
+      "INTERNAL_ERROR",
+      "INSTANCE_UNREACHABLE",
+      "REQUEST_REJECTED",
+      "TRIAL_EXPIRED",
+      "DRIVER_UNREACHABLE",
+      "SPARK_ERROR",
+      "DRIVER_UNRESPONSIVE",
+      "METASTORE_COMPONENT_UNHEALTHY",
+      "DBFS_COMPONENT_UNHEALTHY",
+      "EXECUTION_COMPONENT_UNHEALTHY",
+      "AZURE_RESOURCE_MANAGER_THROTTLING",
+      "AZURE_RESOURCE_PROVIDER_THROTTLING",
+      "NETWORK_CONFIGURATION_FAILURE",
+      "CONTAINER_LAUNCH_FAILURE",
+      "INSTANCE_POOL_CLUSTER_FAILURE",
+      "SKIPPED_SLOW_NODES",
+      "ATTACH_PROJECT_FAILURE",
+      "UPDATE_INSTANCE_PROFILE_FAILURE",
+      "DATABASE_CONNECTION_FAILURE",
+      "REQUEST_THROTTLED",
+      "SELF_BOOTSTRAP_FAILURE",
+      "GLOBAL_INIT_SCRIPT_FAILURE",
+      "SLOW_IMAGE_DOWNLOAD",
+      "INVALID_SPARK_IMAGE",
+      "NPIP_TUNNEL_TOKEN_FAILURE",
+      "HIVE_METASTORE_PROVISIONING_FAILURE",
+      "AZURE_INVALID_DEPLOYMENT_TEMPLATE",
+      "AZURE_UNEXPECTED_DEPLOYMENT_TEMPLATE_FAILURE",
+      "SUBNET_EXHAUSTED_FAILURE",
+      "BOOTSTRAP_TIMEOUT",
+      "STORAGE_DOWNLOAD_FAILURE",
+      "CONTROL_PLANE_REQUEST_FAILURE",
+      "BOOTSTRAP_TIMEOUT_CLOUD_PROVIDER_EXCEPTION",
+      "AWS_INSUFFICIENT_INSTANCE_CAPACITY_FAILURE",
+      "DOCKER_IMAGE_PULL_FAILURE",
+      "AZURE_VNET_CONFIGURATION_FAILURE",
+      "NPIP_TUNNEL_SETUP_FAILURE",
+      "AWS_AUTHORIZATION_FAILURE",
+      "NEPHOS_RESOURCE_MANAGEMENT",
+      "STS_CLIENT_SETUP_FAILURE",
+      "SECURITY_DAEMON_REGISTRATION_EXCEPTION",
+      "AWS_REQUEST_LIMIT_EXCEEDED",
+      "AWS_INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET_FAILURE",
+      "AWS_UNSUPPORTED_FAILURE",
+      "AZURE_QUOTA_EXCEEDED_EXCEPTION",
+      "AZURE_OPERATION_NOT_ALLOWED_EXCEPTION",
+      "NFS_MOUNT_FAILURE",
+      "K8S_AUTOSCALING_FAILURE",
+      "K8S_DBR_CLUSTER_LAUNCH_TIMEOUT",
+      "SPARK_IMAGE_DOWNLOAD_FAILURE",
+      "AZURE_VM_EXTENSION_FAILURE",
+      "WORKSPACE_CANCELLED_ERROR",
+      "AWS_MAX_SPOT_INSTANCE_COUNT_EXCEEDED_FAILURE",
+      "TEMPORARILY_UNAVAILABLE",
+      "WORKER_SETUP_FAILURE",
+      "IP_EXHAUSTION_FAILURE",
+      "GCP_QUOTA_EXCEEDED",
+      "CLOUD_PROVIDER_RESOURCE_STOCKOUT",
+      "GCP_SERVICE_ACCOUNT_DELETED",
+      "AZURE_BYOK_KEY_PERMISSION_FAILURE",
+      "SPOT_INSTANCE_TERMINATION",
+      "AZURE_EPHEMERAL_DISK_FAILURE",
+      "ABUSE_DETECTED",
+      "IMAGE_PULL_PERMISSION_DENIED",
+      "WORKSPACE_CONFIGURATION_ERROR",
+      "SECRET_RESOLUTION_ERROR",
+      "UNSUPPORTED_INSTANCE_TYPE",
+      "CLOUD_PROVIDER_DISK_SETUP_FAILURE",
+      "SSH_BOOTSTRAP_FAILURE",
+      "AWS_INACCESSIBLE_KMS_KEY_FAILURE",
+      "INIT_CONTAINER_NOT_FINISHED",
+      "SPARK_IMAGE_DOWNLOAD_THROTTLED",
+      "SPARK_IMAGE_NOT_FOUND",
+      "CLUSTER_OPERATION_THROTTLED",
+      "CLUSTER_OPERATION_TIMEOUT",
+      "SERVERLESS_LONG_RUNNING_TERMINATED",
+      "AZURE_PACKED_DEPLOYMENT_PARTIAL_FAILURE",
+      "INVALID_WORKER_IMAGE_FAILURE",
+      "WORKSPACE_UPDATE",
+      "INVALID_AWS_PARAMETER",
+      "DRIVER_OUT_OF_DISK",
+      "DRIVER_OUT_OF_MEMORY",
+      "DRIVER_LAUNCH_TIMEOUT",
+      "DRIVER_UNEXPECTED_FAILURE",
+      "UNEXPECTED_POD_RECREATION",
+      "GCP_INACCESSIBLE_KMS_KEY_FAILURE",
+      "GCP_KMS_KEY_PERMISSION_DENIED",
+      "DRIVER_EVICTION",
+      "USER_INITIATED_VM_TERMINATION",
+      "GCP_IAM_TIMEOUT",
+      "AWS_RESOURCE_QUOTA_EXCEEDED",
+      "CLOUD_ACCOUNT_SETUP_FAILURE",
+      "AWS_INVALID_KEY_PAIR",
+      "DRIVER_POD_CREATION_FAILURE",
+      "MAINTENANCE_MODE",
+      "INTERNAL_CAPACITY_FAILURE",
+      "EXECUTOR_POD_UNSCHEDULED",
+      "STORAGE_DOWNLOAD_FAILURE_SLOW",
+      "STORAGE_DOWNLOAD_FAILURE_THROTTLED",
+      "DYNAMIC_SPARK_CONF_SIZE_EXCEEDED",
+      "AWS_INSTANCE_PROFILE_UPDATE_FAILURE",
+      "INSTANCE_POOL_NOT_FOUND",
+      "INSTANCE_POOL_MAX_CAPACITY_REACHED",
+      "AWS_INVALID_KMS_KEY_STATE",
+      "GCP_INSUFFICIENT_CAPACITY",
+      "GCP_API_RATE_QUOTA_EXCEEDED",
+      "GCP_RESOURCE_QUOTA_EXCEEDED",
+      "GCP_IP_SPACE_EXHAUSTED",
+      "GCP_SERVICE_ACCOUNT_ACCESS_DENIED",
+      "GCP_SERVICE_ACCOUNT_NOT_FOUND",
+      "GCP_FORBIDDEN",
+      "GCP_NOT_FOUND",
+      "RESOURCE_USAGE_BLOCKED",
+      "DATA_ACCESS_CONFIG_CHANGED",
+      "ACCESS_TOKEN_FAILURE",
+      "INVALID_INSTANCE_PLACEMENT_PROTOCOL",
+      "BUDGET_POLICY_RESOLUTION_FAILURE",
+      "IN_PENALTY_BOX",
+      "DISASTER_RECOVERY_REPLICATION",
+      "BOOTSTRAP_TIMEOUT_DUE_TO_MISCONFIG",
+      "INSTANCE_UNREACHABLE_DUE_TO_MISCONFIG",
+      "STORAGE_DOWNLOAD_FAILURE_DUE_TO_MISCONFIG",
+      "CONTROL_PLANE_REQUEST_FAILURE_DUE_TO_MISCONFIG",
+      "CLOUD_PROVIDER_LAUNCH_FAILURE_DUE_TO_MISCONFIG",
+      "GCP_SUBNET_NOT_READY",
+      "CLOUD_OPERATION_CANCELLED",
+      "CLOUD_PROVIDER_INSTANCE_NOT_LAUNCHED",
+      "GCP_TRUSTED_IMAGE_PROJECTS_VIOLATED",
+      "BUDGET_POLICY_LIMIT_ENFORCEMENT_ACTIVATED",
+      "EOS_SPARK_IMAGE",
+      "NO_MATCHED_K8S",
+      "LAZY_ALLOCATION_TIMEOUT",
+      "DRIVER_NODE_UNREACHABLE",
+      "SECRET_CREATION_FAILURE",
+      "POD_SCHEDULING_FAILURE",
+      "POD_ASSIGNMENT_FAILURE",
+      "ALLOCATION_TIMEOUT",
+      "ALLOCATION_TIMEOUT_NO_UNALLOCATED_CLUSTERS",
+      "ALLOCATION_TIMEOUT_NO_MATCHED_CLUSTERS",
+      "ALLOCATION_TIMEOUT_NO_READY_CLUSTERS",
+      "ALLOCATION_TIMEOUT_NO_WARMED_UP_CLUSTERS",
+      "ALLOCATION_TIMEOUT_NODE_DAEMON_NOT_READY",
+      "ALLOCATION_TIMEOUT_NO_HEALTHY_CLUSTERS",
+      "NETVISOR_SETUP_TIMEOUT",
+      "NO_MATCHED_K8S_TESTING_TAG",
+      "CLOUD_PROVIDER_RESOURCE_STOCKOUT_DUE_TO_MISCONFIG",
+      "GKE_BASED_CLUSTER_TERMINATION",
+      "ALLOCATION_TIMEOUT_NO_HEALTHY_AND_WARMED_UP_CLUSTERS",
+      "DOCKER_INVALID_OS_EXCEPTION",
+      "DOCKER_CONTAINER_CREATION_EXCEPTION",
+      "DOCKER_IMAGE_TOO_LARGE_FOR_INSTANCE_EXCEPTION",
+      "DNS_RESOLUTION_ERROR",
+      "GCP_DENIED_BY_ORG_POLICY",
+      "SECRET_PERMISSION_DENIED",
+      "NETWORK_CHECK_NIC_FAILURE",
+      "NETWORK_CHECK_DNS_SERVER_FAILURE",
+      "NETWORK_CHECK_STORAGE_FAILURE",
+      "NETWORK_CHECK_METADATA_ENDPOINT_FAILURE",
+      "NETWORK_CHECK_CONTROL_PLANE_FAILURE",
+      "NETWORK_CHECK_MULTIPLE_COMPONENTS_FAILURE",
+      "DRIVER_UNHEALTHY",
+      "USAGE_POLICY_ENTITLEMENT_DENIED",
+      "K8S_ACTIVE_POD_QUOTA_EXCEEDED",
+      "CLOUD_ACCOUNT_POD_QUOTA_EXCEEDED",
+      "NETWORK_CHECK_NIC_FAILURE_DUE_TO_MISCONFIG",
+      "NETWORK_CHECK_DNS_SERVER_FAILURE_DUE_TO_MISCONFIG",
+      "NETWORK_CHECK_STORAGE_FAILURE_DUE_TO_MISCONFIG",
+      "NETWORK_CHECK_METADATA_ENDPOINT_FAILURE_DUE_TO_MISCONFIG",
+      "NETWORK_CHECK_CONTROL_PLANE_FAILURE_DUE_TO_MISCONFIG",
+      "NETWORK_CHECK_MULTIPLE_COMPONENTS_FAILURE_DUE_TO_MISCONFIG",
+      "DBR_IMAGE_RESOLUTION_FAILURE",
+      "CONTROL_PLANE_CONNECTION_FAILURE",
+      "CONTROL_PLANE_CONNECTION_FAILURE_DUE_TO_MISCONFIG",
+      "RATE_LIMITED",
+      "MTLS_PORT_CONNECTIVITY_FAILURE",
+      "HIVEMETASTORE_CONNECTIVITY_FAILURE"
+    ],
+    "enum_launch_stages": {
+      "ABUSE_DETECTED": "GA",
+      "ACCESS_TOKEN_FAILURE": "GA",
+      "ALLOCATION_TIMEOUT": "GA",
+      "ALLOCATION_TIMEOUT_NODE_DAEMON_NOT_READY": "GA",
+      "ALLOCATION_TIMEOUT_NO_HEALTHY_AND_WARMED_UP_CLUSTERS": "GA",
+      "ALLOCATION_TIMEOUT_NO_HEALTHY_CLUSTERS": "GA",
+      "ALLOCATION_TIMEOUT_NO_MATCHED_CLUSTERS": "GA",
+      "ALLOCATION_TIMEOUT_NO_READY_CLUSTERS": "GA",
+      "ALLOCATION_TIMEOUT_NO_UNALLOCATED_CLUSTERS": "GA",
+      "ALLOCATION_TIMEOUT_NO_WARMED_UP_CLUSTERS": "GA",
+      "ATTACH_PROJECT_FAILURE": "GA",
+      "AWS_AUTHORIZATION_FAILURE": "GA",
+      "AWS_INACCESSIBLE_KMS_KEY_FAILURE": "GA",
+      "AWS_INSTANCE_PROFILE_UPDATE_FAILURE": "GA",
+      "AWS_INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET_FAILURE": "GA",
+      "AWS_INSUFFICIENT_INSTANCE_CAPACITY_FAILURE": "GA",
+      "AWS_INVALID_KEY_PAIR": "GA",
+      "AWS_INVALID_KMS_KEY_STATE": "GA",
+      "AWS_MAX_SPOT_INSTANCE_COUNT_EXCEEDED_FAILURE": "GA",
+      "AWS_REQUEST_LIMIT_EXCEEDED": "GA",
+      "AWS_RESOURCE_QUOTA_EXCEEDED": "GA",
+      "AWS_UNSUPPORTED_FAILURE": "GA",
+      "AZURE_BYOK_KEY_PERMISSION_FAILURE": "GA",
+      "AZURE_EPHEMERAL_DISK_FAILURE": "GA",
+      "AZURE_INVALID_DEPLOYMENT_TEMPLATE": "GA",
+      "AZURE_OPERATION_NOT_ALLOWED_EXCEPTION": "GA",
+      "AZURE_PACKED_DEPLOYMENT_PARTIAL_FAILURE": "GA",
+      "AZURE_QUOTA_EXCEEDED_EXCEPTION": "GA",
+      "AZURE_RESOURCE_MANAGER_THROTTLING": "GA",
+      "AZURE_RESOURCE_PROVIDER_THROTTLING": "GA",
+      "AZURE_UNEXPECTED_DEPLOYMENT_TEMPLATE_FAILURE": "GA",
+      "AZURE_VM_EXTENSION_FAILURE": "GA",
+      "AZURE_VNET_CONFIGURATION_FAILURE": "GA",
+      "BOOTSTRAP_TIMEOUT": "GA",
+      "BOOTSTRAP_TIMEOUT_CLOUD_PROVIDER_EXCEPTION": "GA",
+      "BOOTSTRAP_TIMEOUT_DUE_TO_MISCONFIG": "GA",
+      "BUDGET_POLICY_LIMIT_ENFORCEMENT_ACTIVATED": "GA",
+      "BUDGET_POLICY_RESOLUTION_FAILURE": "GA",
+      "CLOUD_ACCOUNT_POD_QUOTA_EXCEEDED": "GA",
+      "CLOUD_ACCOUNT_SETUP_FAILURE": "GA",
+      "CLOUD_OPERATION_CANCELLED": "GA",
+      "CLOUD_PROVIDER_DISK_SETUP_FAILURE": "GA",
+      "CLOUD_PROVIDER_INSTANCE_NOT_LAUNCHED": "GA",
+      "CLOUD_PROVIDER_LAUNCH_FAILURE": "GA",
+      "CLOUD_PROVIDER_LAUNCH_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "CLOUD_PROVIDER_RESOURCE_STOCKOUT": "GA",
+      "CLOUD_PROVIDER_RESOURCE_STOCKOUT_DUE_TO_MISCONFIG": "GA",
+      "CLOUD_PROVIDER_SHUTDOWN": "GA",
+      "CLUSTER_OPERATION_THROTTLED": "GA",
+      "CLUSTER_OPERATION_TIMEOUT": "GA",
+      "COMMUNICATION_LOST": "GA",
+      "CONTAINER_LAUNCH_FAILURE": "GA",
+      "CONTROL_PLANE_CONNECTION_FAILURE": "GA",
+      "CONTROL_PLANE_CONNECTION_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "CONTROL_PLANE_REQUEST_FAILURE": "GA",
+      "CONTROL_PLANE_REQUEST_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "DATABASE_CONNECTION_FAILURE": "GA",
+      "DATA_ACCESS_CONFIG_CHANGED": "GA",
+      "DBFS_COMPONENT_UNHEALTHY": "GA",
+      "DBR_IMAGE_RESOLUTION_FAILURE": "GA",
+      "DISASTER_RECOVERY_REPLICATION": "GA",
+      "DNS_RESOLUTION_ERROR": "GA",
+      "DOCKER_CONTAINER_CREATION_EXCEPTION": "GA",
+      "DOCKER_IMAGE_PULL_FAILURE": "GA",
+      "DOCKER_IMAGE_TOO_LARGE_FOR_INSTANCE_EXCEPTION": "GA",
+      "DOCKER_INVALID_OS_EXCEPTION": "GA",
+      "DRIVER_EVICTION": "GA",
+      "DRIVER_LAUNCH_TIMEOUT": "GA",
+      "DRIVER_NODE_UNREACHABLE": "GA",
+      "DRIVER_OUT_OF_DISK": "GA",
+      "DRIVER_OUT_OF_MEMORY": "GA",
+      "DRIVER_POD_CREATION_FAILURE": "GA",
+      "DRIVER_UNEXPECTED_FAILURE": "GA",
+      "DRIVER_UNHEALTHY": "GA",
+      "DRIVER_UNREACHABLE": "GA",
+      "DRIVER_UNRESPONSIVE": "GA",
+      "DYNAMIC_SPARK_CONF_SIZE_EXCEEDED": "GA",
+      "EOS_SPARK_IMAGE": "GA",
+      "EXECUTION_COMPONENT_UNHEALTHY": "GA",
+      "EXECUTOR_POD_UNSCHEDULED": "GA",
+      "GCP_API_RATE_QUOTA_EXCEEDED": "GA",
+      "GCP_DENIED_BY_ORG_POLICY": "GA",
+      "GCP_FORBIDDEN": "GA",
+      "GCP_IAM_TIMEOUT": "GA",
+      "GCP_INACCESSIBLE_KMS_KEY_FAILURE": "GA",
+      "GCP_INSUFFICIENT_CAPACITY": "GA",
+      "GCP_IP_SPACE_EXHAUSTED": "GA",
+      "GCP_KMS_KEY_PERMISSION_DENIED": "GA",
+      "GCP_NOT_FOUND": "GA",
+      "GCP_QUOTA_EXCEEDED": "GA",
+      "GCP_RESOURCE_QUOTA_EXCEEDED": "GA",
+      "GCP_SERVICE_ACCOUNT_ACCESS_DENIED": "GA",
+      "GCP_SERVICE_ACCOUNT_DELETED": "GA",
+      "GCP_SERVICE_ACCOUNT_NOT_FOUND": "GA",
+      "GCP_SUBNET_NOT_READY": "GA",
+      "GCP_TRUSTED_IMAGE_PROJECTS_VIOLATED": "GA",
+      "GKE_BASED_CLUSTER_TERMINATION": "GA",
+      "GLOBAL_INIT_SCRIPT_FAILURE": "GA",
+      "HIVEMETASTORE_CONNECTIVITY_FAILURE": "GA",
+      "HIVE_METASTORE_PROVISIONING_FAILURE": "GA",
+      "IMAGE_PULL_PERMISSION_DENIED": "GA",
+      "INACTIVITY": "GA",
+      "INIT_CONTAINER_NOT_FINISHED": "GA",
+      "INIT_SCRIPT_FAILURE": "GA",
+      "INSTANCE_POOL_CLUSTER_FAILURE": "GA",
+      "INSTANCE_POOL_MAX_CAPACITY_REACHED": "GA",
+      "INSTANCE_POOL_NOT_FOUND": "GA",
+      "INSTANCE_UNREACHABLE": "GA",
+      "INSTANCE_UNREACHABLE_DUE_TO_MISCONFIG": "GA",
+      "INTERNAL_CAPACITY_FAILURE": "GA",
+      "INTERNAL_ERROR": "GA",
+      "INVALID_ARGUMENT": "GA",
+      "INVALID_AWS_PARAMETER": "GA",
+      "INVALID_INSTANCE_PLACEMENT_PROTOCOL": "GA",
+      "INVALID_SPARK_IMAGE": "GA",
+      "INVALID_WORKER_IMAGE_FAILURE": "GA",
+      "IN_PENALTY_BOX": "GA",
+      "IP_EXHAUSTION_FAILURE": "GA",
+      "JOB_FINISHED": "GA",
+      "K8S_ACTIVE_POD_QUOTA_EXCEEDED": "GA",
+      "K8S_AUTOSCALING_FAILURE": "GA",
+      "K8S_DBR_CLUSTER_LAUNCH_TIMEOUT": "GA",
+      "LAZY_ALLOCATION_TIMEOUT": "GA",
+      "MAINTENANCE_MODE": "GA",
+      "METASTORE_COMPONENT_UNHEALTHY": "GA",
+      "MTLS_PORT_CONNECTIVITY_FAILURE": "GA",
+      "NEPHOS_RESOURCE_MANAGEMENT": "GA",
+      "NETVISOR_SETUP_TIMEOUT": "GA",
+      "NETWORK_CHECK_CONTROL_PLANE_FAILURE": "GA",
+      "NETWORK_CHECK_CONTROL_PLANE_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "NETWORK_CHECK_DNS_SERVER_FAILURE": "GA",
+      "NETWORK_CHECK_DNS_SERVER_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "NETWORK_CHECK_METADATA_ENDPOINT_FAILURE": "GA",
+      "NETWORK_CHECK_METADATA_ENDPOINT_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "NETWORK_CHECK_MULTIPLE_COMPONENTS_FAILURE": "GA",
+      "NETWORK_CHECK_MULTIPLE_COMPONENTS_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "NETWORK_CHECK_NIC_FAILURE": "GA",
+      "NETWORK_CHECK_NIC_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "NETWORK_CHECK_STORAGE_FAILURE": "GA",
+      "NETWORK_CHECK_STORAGE_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "NETWORK_CONFIGURATION_FAILURE": "GA",
+      "NFS_MOUNT_FAILURE": "GA",
+      "NO_MATCHED_K8S": "GA",
+      "NO_MATCHED_K8S_TESTING_TAG": "GA",
+      "NPIP_TUNNEL_SETUP_FAILURE": "GA",
+      "NPIP_TUNNEL_TOKEN_FAILURE": "GA",
+      "POD_ASSIGNMENT_FAILURE": "GA",
+      "POD_SCHEDULING_FAILURE": "GA",
+      "RATE_LIMITED": "GA",
+      "REQUEST_REJECTED": "GA",
+      "REQUEST_THROTTLED": "GA",
+      "RESOURCE_USAGE_BLOCKED": "GA",
+      "SECRET_CREATION_FAILURE": "GA",
+      "SECRET_PERMISSION_DENIED": "GA",
+      "SECRET_RESOLUTION_ERROR": "GA",
+      "SECURITY_DAEMON_REGISTRATION_EXCEPTION": "GA",
+      "SELF_BOOTSTRAP_FAILURE": "GA",
+      "SERVERLESS_LONG_RUNNING_TERMINATED": "GA",
+      "SKIPPED_SLOW_NODES": "GA",
+      "SLOW_IMAGE_DOWNLOAD": "GA",
+      "SPARK_ERROR": "GA",
+      "SPARK_IMAGE_DOWNLOAD_FAILURE": "GA",
+      "SPARK_IMAGE_DOWNLOAD_THROTTLED": "GA",
+      "SPARK_IMAGE_NOT_FOUND": "GA",
+      "SPARK_STARTUP_FAILURE": "GA",
+      "SPOT_INSTANCE_TERMINATION": "GA",
+      "SSH_BOOTSTRAP_FAILURE": "GA",
+      "STORAGE_DOWNLOAD_FAILURE": "GA",
+      "STORAGE_DOWNLOAD_FAILURE_DUE_TO_MISCONFIG": "GA",
+      "STORAGE_DOWNLOAD_FAILURE_SLOW": "GA",
+      "STORAGE_DOWNLOAD_FAILURE_THROTTLED": "GA",
+      "STS_CLIENT_SETUP_FAILURE": "GA",
+      "SUBNET_EXHAUSTED_FAILURE": "GA",
+      "TEMPORARILY_UNAVAILABLE": "GA",
+      "TRIAL_EXPIRED": "GA",
+      "UNEXPECTED_LAUNCH_FAILURE": "GA",
+      "UNEXPECTED_POD_RECREATION": "GA",
+      "UNKNOWN": "GA",
+      "UNSUPPORTED_INSTANCE_TYPE": "GA",
+      "UPDATE_INSTANCE_PROFILE_FAILURE": "GA",
+      "USAGE_POLICY_ENTITLEMENT_DENIED": "GA",
+      "USER_INITIATED_VM_TERMINATION": "GA",
+      "USER_REQUEST": "GA",
+      "WORKER_SETUP_FAILURE": "GA",
+      "WORKSPACE_CANCELLED_ERROR": "GA",
+      "WORKSPACE_CONFIGURATION_ERROR": "GA",
+      "WORKSPACE_UPDATE": "GA"
+    }
+  },
+  "sql.TerminationReasonType": {
+    "description": "type of the termination",
+    "enum": [
+      "SUCCESS",
+      "CLIENT_ERROR",
+      "SERVICE_FAULT",
+      "CLOUD_FAILURE"
+    ],
+    "enum_launch_stages": {
+      "CLIENT_ERROR": "GA",
+      "CLOUD_FAILURE": "GA",
+      "SERVICE_FAULT": "GA",
+      "SUCCESS": "GA"
+    }
+  },
+  "sql.TextValue": {
+    "fields": {
+      "value": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.TimeRange": {
+    "fields": {
+      "end_time_ms": {
+        "description": "The end time in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "start_time_ms": {
+        "description": "The start time in milliseconds.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.TransferOwnershipObjectId": {
+    "fields": {
+      "new_owner": {
+        "description": "Email address for the new owner, who must exist in the workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.TransferOwnershipRequest": {
+    "fields": {
+      "new_owner": {
+        "description": "Email address for the new owner, who must exist in the workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.TrashAlertRequest": {},
+  "sql.TrashAlertV2Request": {
+    "fields": {
+      "purge": {
+        "description": "Whether to permanently delete the alert. If not set, the alert will only be soft deleted.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sql.TrashQueryRequest": {},
+  "sql.UpdateAlertRequest": {
+    "fields": {
+      "alert": {
+        "ref": "sql.UpdateAlertRequestAlert",
+        "launch_stage": "GA"
+      },
+      "auto_resolve_display_name": {
+        "description": "If true, automatically resolve alert display name conflicts. Otherwise, fail the request if the alert's display name conflicts with an existing alert's display name.",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.UpdateAlertRequestAlert": {
+    "fields": {
+      "condition": {
+        "description": "Trigger conditions of the alert.",
+        "ref": "sql.AlertCondition",
+        "launch_stage": "GA"
+      },
+      "custom_body": {
+        "description": "Custom body of alert notification, if it exists. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "custom_subject": {
+        "description": "Custom subject of alert notification, if it exists. This can include email subject entries and Slack notification headers, for example. See [here](https://docs.databricks.com/sql/user/alerts/index.html) for custom templating instructions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name of the alert.",
+        "launch_stage": "GA"
+      },
+      "notify_on_ok": {
+        "description": "Whether to notify alert subscribers when alert returns back to normal.",
+        "launch_stage": "GA"
+      },
+      "owner_user_name": {
+        "description": "The owner's username. This field is set to \"Unavailable\" if the user has been deleted.",
+        "launch_stage": "GA"
+      },
+      "query_id": {
+        "description": "UUID of the query attached to the alert.",
+        "launch_stage": "GA"
+      },
+      "seconds_to_retrigger": {
+        "description": "Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.UpdateAlertV2Request": {
+    "fields": {
+      "alert": {
+        "ref": "sql.AlertV2",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.UpdateDefaultWarehouseOverrideRequest": {
+    "fields": {
+      "allow_missing": {
+        "description": "If set to true, and the override is not found, a new override will be created.\nIn this situation, `update_mask` is ignored and all fields are applied.\nDefaults to false.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "default_warehouse_override": {
+        "description": "Required. The default warehouse override to update.\nThe name field must be set in the format: default-warehouse-overrides/{default_warehouse_override_id}\nThe default_warehouse_override_id can be a numeric user ID or the literal string \"me\" for the current user.",
+        "ref": "sql.DefaultWarehouseOverride",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Required. Field mask specifying which fields to update.\nOnly the fields specified in the mask will be updated.\nUse \"*\" to update all fields.\nWhen allow_missing is true, this field is ignored and all fields are applied.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "sql.UpdateQueryRequest": {
+    "fields": {
+      "auto_resolve_display_name": {
+        "description": "If true, automatically resolve alert display name conflicts. Otherwise, fail the request if the alert's display name conflicts with an existing alert's display name.",
+        "launch_stage": "GA"
+      },
+      "query": {
+        "ref": "sql.UpdateQueryRequestQuery",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.UpdateQueryRequestQuery": {
+    "fields": {
+      "apply_auto_limit": {
+        "description": "Whether to apply a 1000 row limit to the query result.",
+        "launch_stage": "GA"
+      },
+      "catalog": {
+        "description": "Name of the catalog where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "General description that conveys additional information about this query such as usage notes.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the query that appears in list views, widget headings, and on the query page.",
+        "launch_stage": "GA"
+      },
+      "owner_user_name": {
+        "description": "Username of the user that owns the query.",
+        "launch_stage": "GA"
+      },
+      "parameters": {
+        "description": "List of query parameter definitions.",
+        "launch_stage": "GA"
+      },
+      "query_text": {
+        "description": "Text of the query to be run.",
+        "launch_stage": "GA"
+      },
+      "run_as_mode": {
+        "description": "Sets the \"Run as\" role for the object.",
+        "ref": "sql.RunAsMode",
+        "launch_stage": "GA"
+      },
+      "schema": {
+        "description": "Name of the schema where this query will be executed.",
+        "launch_stage": "GA"
+      },
+      "tags": {
+        "launch_stage": "GA"
+      },
+      "warehouse_id": {
+        "description": "ID of the SQL warehouse attached to the query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.UpdateResponse": {},
+  "sql.UpdateVisualizationRequest": {
+    "fields": {
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "visualization": {
+        "ref": "sql.UpdateVisualizationRequestVisualization",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.UpdateVisualizationRequestVisualization": {
+    "fields": {
+      "display_name": {
+        "description": "The display name of the visualization.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "serialized_options": {
+        "description": "The visualization options varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization options directly.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "serialized_query_plan": {
+        "description": "The visualization query plan varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying the visualization query plan directly.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "type": {
+        "description": "The type of visualization: counter, table, funnel, and so on.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.UpdateWidgetRequest": {
+    "fields": {
+      "dashboard_id": {
+        "description": "Dashboard ID returned by :method:dashboards/create.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "options": {
+        "ref": "sql.WidgetOptions",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "text": {
+        "description": "If this is a textbox widget, the application displays this text. This field is ignored if the widget contains a visualization in the `visualization` field.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "visualization_id": {
+        "description": "Query Visualization ID returned by :method:queryvisualizations/create.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "width": {
+        "description": "Width of a widget",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.User": {
+    "fields": {
+      "email": {
+        "launch_stage": "GA"
+      },
+      "id": {
+        "launch_stage": "GA"
+      },
+      "name": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.Visualization": {
+    "fields": {
+      "create_time": {
+        "description": "The timestamp indicating when the visualization was created.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "display_name": {
+        "description": "The display name of the visualization.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "id": {
+        "description": "UUID identifying the visualization.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "query_id": {
+        "description": "UUID of the query that the visualization is attached to.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "serialized_options": {
+        "description": "The visualization options varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization options directly.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "serialized_query_plan": {
+        "description": "The visualization query plan varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying the visualization query plan directly.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "type": {
+        "description": "The type of visualization: counter, table, funnel, and so on.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "update_time": {
+        "description": "The timestamp indicating when the visualization was updated.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sql.WarehouseAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "sql.WarehousePermissionLevel",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WarehouseAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WarehousePermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "GA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "sql.WarehousePermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WarehousePermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_MANAGE",
+      "IS_OWNER",
+      "CAN_USE",
+      "CAN_MONITOR",
+      "CAN_VIEW"
+    ]
+  },
+  "sql.WarehousePermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WarehousePermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "sql.WarehousePermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WarehousePermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WarehouseTypePair": {
+    "description": "*\nConfiguration values to enable or disable the access to specific warehouse\ntypes in the workspace.",
+    "fields": {
+      "enabled": {
+        "description": "If set to false the specific warehouse type will not be allowed as a\nvalue for warehouse_type in CreateWarehouse and EditWarehouse",
+        "launch_stage": "GA"
+      },
+      "warehouse_type": {
+        "ref": "sql.WarehouseTypePairWarehouseType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WarehouseTypePairWarehouseType": {
+    "enum": [
+      "TYPE_UNSPECIFIED",
+      "CLASSIC",
+      "PRO",
+      "REALTIME"
+    ],
+    "enum_launch_stages": {
+      "CLASSIC": "GA",
+      "PRO": "GA",
+      "REALTIME": "PRIVATE_PREVIEW",
+      "TYPE_UNSPECIFIED": "GA"
+    }
+  },
+  "sql.Widget": {
+    "fields": {
+      "id": {
+        "description": "The unique ID for this widget.",
+        "launch_stage": "GA"
+      },
+      "options": {
+        "ref": "sql.WidgetOptions",
+        "launch_stage": "GA"
+      },
+      "visualization": {
+        "description": "The visualization description API changes frequently and is unsupported. You can duplicate a visualization by copying description objects received _from the API_ and then using them to create a new one with a POST request to the same endpoint. Databricks does not recommend constructing ad-hoc visualizations entirely in JSON.",
+        "ref": "sql.LegacyVisualization",
+        "launch_stage": "GA"
+      },
+      "width": {
+        "description": "Unused field.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WidgetOptions": {
+    "fields": {
+      "created_at": {
+        "description": "Timestamp when this object was created",
+        "launch_stage": "GA"
+      },
+      "description": {
+        "description": "Custom description of the widget",
+        "launch_stage": "GA"
+      },
+      "isHidden": {
+        "description": "Whether this widget is hidden on the dashboard.",
+        "launch_stage": "GA"
+      },
+      "parameterMappings": {
+        "description": "How parameters used by the visualization in this widget relate to other widgets on the dashboard. Databricks does not recommend modifying this definition in JSON.",
+        "launch_stage": "GA"
+      },
+      "position": {
+        "description": "Coordinates of this widget on a dashboard. This portion of the API changes frequently and is unsupported.",
+        "ref": "sql.WidgetPosition",
+        "launch_stage": "GA"
+      },
+      "title": {
+        "description": "Custom title of the widget",
+        "launch_stage": "GA"
+      },
+      "updated_at": {
+        "description": "Timestamp of the last time this object was updated.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "sql.WidgetPosition": {
+    "description": "Coordinates of this widget on a dashboard. This portion of the API changes frequently and is unsupported.",
+    "fields": {
+      "autoHeight": {
+        "description": "reserved for internal use",
+        "launch_stage": "GA"
+      },
+      "col": {
+        "description": "column in the dashboard grid. Values start with 0",
+        "launch_stage": "GA"
+      },
+      "row": {
+        "description": "row in the dashboard grid. Values start with 0",
+        "launch_stage": "GA"
+      },
+      "sizeX": {
+        "description": "width of the widget measured in dashboard grid cells",
+        "launch_stage": "GA"
+      },
+      "sizeY": {
+        "description": "height of the widget measured in dashboard grid cells",
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

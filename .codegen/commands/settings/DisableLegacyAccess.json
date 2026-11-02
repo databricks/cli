@@ -1,0 +1,245 @@
+{
+  "id": "settings.DisableLegacyAccess",
+  "name": "DisableLegacyAccess",
+  "description": "'Disabling legacy access' has the following impacts:\n\n1. Disables direct access to Hive Metastores from the workspace. However, you can still access a Hive Metastore through Hive Metastore federation.\n2. Disables fallback mode on external location access from the workspace.\n3. Disables Databricks Runtime versions prior to 13.3LTS.",
+  "package": {
+    "name": "settings"
+  },
+  "has_parent": true,
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "parent_service_id": "settings.Settings",
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Deletes legacy access disablement status.",
+      "summary": "Delete Legacy Access Disablement Status.",
+      "path": "/api/2.0/settings/types/disable_legacy_access/names/default",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteDisableLegacyAccessRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DeleteDisableLegacyAccessResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Retrieves legacy access disablement Status.",
+      "summary": "Retrieve Legacy Access Disablement Status.",
+      "path": "/api/2.0/settings/types/disable_legacy_access/names/default",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetDisableLegacyAccessRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DisableLegacyAccess",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "disable_legacy_access",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "BooleanMessage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "disable_legacy_access",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "BooleanMessage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates legacy access disablement status.",
+      "summary": "Update Legacy Access Disablement Status.",
+      "path": "/api/2.0/settings/types/disable_legacy_access/names/default",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateDisableLegacyAccessRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DisableLegacyAccess",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DisableLegacyAccess",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DisableLegacyAccess",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "disable_legacy_access",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "BooleanMessage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "disable_legacy_access",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "BooleanMessage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "field_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "setting",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DisableLegacyAccess",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

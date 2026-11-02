@@ -1,0 +1,364 @@
+{
+  "id": "marketplace.ProviderFiles",
+  "name": "ProviderFiles",
+  "description": "Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "FileInfoDisplayNameToIdMap"
+    },
+    "request": {
+      "pascal_name": "ListFilesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a file. Currently, only provider icons and attached notebooks are supported.",
+      "summary": "Create a file.",
+      "path": "/api/2.0/marketplace-provider/files",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateFileRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "file_parent",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FileParent",
+              "is_object": true
+            }
+          },
+          {
+            "name": "marketplace_file_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MarketplaceFileType",
+              "enum": [
+                {
+                  "content": "APP"
+                },
+                {
+                  "content": "EMBEDDED_NOTEBOOK"
+                },
+                {
+                  "content": "PROVIDER_ICON"
+                }
+              ]
+            }
+          },
+          {
+            "name": "mime_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "file_parent",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FileParent",
+              "is_object": true
+            }
+          },
+          {
+            "name": "marketplace_file_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "MarketplaceFileType",
+              "enum": [
+                {
+                  "content": "APP"
+                },
+                {
+                  "content": "EMBEDDED_NOTEBOOK"
+                },
+                {
+                  "content": "PROVIDER_ICON"
+                }
+              ]
+            }
+          },
+          {
+            "name": "mime_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateFileResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "display_name",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "file_parent",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FileParent",
+            "is_object": true
+          }
+        },
+        {
+          "name": "marketplace_file_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "MarketplaceFileType",
+            "enum": [
+              {
+                "content": "APP"
+              },
+              {
+                "content": "EMBEDDED_NOTEBOOK"
+              },
+              {
+                "content": "PROVIDER_ICON"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mime_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete a file",
+      "summary": "Delete a file.",
+      "path": "/api/2.0/marketplace-provider/files/{file_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteFileRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "file_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "file_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteFileResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "file_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "file_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a file",
+      "summary": "Get a file.",
+      "path": "/api/2.0/marketplace-provider/files/{file_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetFileRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "file_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "file_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetFileResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "file_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "file_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List files attached to a parent entity.",
+      "summary": "List files.",
+      "path": "/api/2.0/marketplace-provider/files",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListFilesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "file_parent",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "FileParent",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "file_parent",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "pascal_name": "FileParent",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListFilesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "file_parent",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "pascal_name": "FileParent",
+            "is_object": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

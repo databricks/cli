@@ -1,0 +1,355 @@
+{
+  "id": "sql.Dashboards",
+  "name": "Dashboards",
+  "description": "In general, there is little need to modify dashboards using the API. However, it can be\nuseful to use dashboard objects to look-up a collection of related query IDs. The API can\nalso be used to duplicate multiple dashboards at once since you can get a dashboard\ndefinition with a GET request and then POST it to create a new one.\nDashboards can be scheduled using the `sql_task` type of the Jobs API, e.g. :method:jobs/create.\n\n**Warning**: This API is deprecated. Please use the AI/BI Dashboards API instead. [Learn more](https://docs.databricks.com/en/dashboards/)",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Moves a dashboard to the trash. Trashed dashboards do not appear in list views or searches, and cannot be shared.\n\n**Warning**: This API is deprecated. Please use the AI/BI Dashboards API instead. [Learn more](https://docs.databricks.com/en/dashboards/)",
+      "summary": "Remove a dashboard.",
+      "path": "/api/2.0/preview/sql/dashboards/{dashboard_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Returns a JSON representation of a dashboard object, including its visualization and query objects.\n\n**Warning**: This API is deprecated. Please use the AI/BI Dashboards API instead. [Learn more](https://docs.databricks.com/en/dashboards/)",
+      "summary": "Retrieve a definition.",
+      "path": "/api/2.0/preview/sql/dashboards/{dashboard_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Dashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Fetch a paginated list of dashboard objects.\n\n**Warning**: Calling this API concurrently 10 or more times could result in throttling, service degradation, or a temporary ban.\n\n**Warning**: This API is deprecated. Please use the AI/BI Dashboards API instead. [Learn more](https://docs.databricks.com/en/dashboards/)",
+      "summary": "Get dashboard objects.",
+      "path": "/api/2.0/preview/sql/dashboards",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListDashboardsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "order",
+          "description": "Name of dashboard attribute to order by.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ListOrder",
+            "enum": [
+              {
+                "content": "created_at"
+              },
+              {
+                "content": "name"
+              }
+            ]
+          }
+        },
+        {
+          "name": "page",
+          "description": "Page number to retrieve.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Number of dashboards to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "q",
+          "description": "Full text search term.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "offset": {
+          "name": "page",
+          "description": "Page number to retrieve.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        "limit": {
+          "name": "page_size",
+          "description": "Number of dashboards to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Restore",
+      "description": "A restored dashboard appears in list views and searches and can be shared.\n\n**Warning**: This API is deprecated. Please use the AI/BI Dashboards API instead. [Learn more](https://docs.databricks.com/en/dashboards/)",
+      "summary": "Restore a dashboard.",
+      "path": "/api/2.0/preview/sql/dashboards/trash/{dashboard_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RestoreDashboardRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RestoreResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Modify this dashboard definition. This operation only affects attributes of the dashboard object. It does not add, modify, or remove widgets.\n\n**Note**: You cannot undo this operation.\n\n**Warning**: This API is deprecated. Please use the AI/BI Dashboards API instead. [Learn more](https://docs.databricks.com/en/dashboards/)",
+      "summary": "Change a dashboard definition.",
+      "path": "/api/2.0/preview/sql/dashboards/{dashboard_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DashboardEditContent",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Dashboard",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The title of this dashboard that appears in list views and at the top of the dashboard page.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as_role",
+          "description": "Sets the **Run as** role for the object. Must be set to one of `\"viewer\"` (signifying \"run as viewer\" behavior) or `\"owner\"` (signifying \"run as owner\" behavior)",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RunAsRole",
+            "enum": [
+              {
+                "content": "owner"
+              },
+              {
+                "content": "viewer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tags",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

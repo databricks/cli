@@ -1,0 +1,1202 @@
+{
+  "cleanrooms.CleanRoom": {
+    "fields": {
+      "access_restricted": {
+        "description": "Whether clean room access is restricted due to [CSP](https://docs.databricks.com/en/security/privacy/security-profile.html)",
+        "ref": "cleanrooms.CleanRoomAccessRestricted",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "comment": {
+        "launch_stage": "GA"
+      },
+      "created_at": {
+        "description": "When the clean room was created, in epoch milliseconds.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "enable_shared_output": {
+        "description": "Whether allow task to write to shared output schema.\nWhen enabled, clean room task runs triggered by the current collaborator\ncan write to the run-scoped shared output schema which is accessible by all collaborators.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "local_collaborator_alias": {
+        "description": "The alias of the collaborator tied to the local clean room.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "The name of the clean room.\nIt should follow [UC securable naming requirements](https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements).",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "output_catalog": {
+        "description": "Output catalog of the clean room. It is an output only field. Output catalog is manipulated\nusing the separate CreateCleanRoomOutputCatalog API.",
+        "ref": "cleanrooms.CleanRoomOutputCatalog",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "owner": {
+        "description": "This is the Databricks username of the owner of the local clean room securable for permission management.",
+        "launch_stage": "GA"
+      },
+      "remote_detailed_info": {
+        "description": "Central clean room details. During creation, users need to specify\ncloud_vendor, region, and collaborators.global_metastore_id.\nThis field will not be filled in the ListCleanRooms call.",
+        "ref": "cleanrooms.CleanRoomRemoteDetail",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Clean room status.",
+        "ref": "cleanrooms.CleanRoomStatusEnum",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "updated_at": {
+        "description": "When the clean room was last updated, in epoch milliseconds.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAccessRestricted": {
+    "enum": [
+      "NO_RESTRICTION",
+      "CSP_MISMATCH"
+    ],
+    "enum_launch_stages": {
+      "CSP_MISMATCH": "GA",
+      "NO_RESTRICTION": "GA"
+    }
+  },
+  "cleanrooms.CleanRoomAsset": {
+    "description": "Metadata of the clean room asset",
+    "fields": {
+      "added_at": {
+        "description": "When the asset is added to the clean room, in epoch milliseconds.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "asset_type": {
+        "description": "The type of the asset.",
+        "ref": "cleanrooms.CleanRoomAssetAssetType",
+        "launch_stage": "GA"
+      },
+      "clean_room_name": {
+        "description": "The name of the clean room this asset belongs to.\nThis field is required for create operations and populated by the server for responses.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "foreign_table": {
+        "description": "Foreign table details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **FOREIGN_TABLE**",
+        "ref": "cleanrooms.CleanRoomAssetForeignTable",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "foreign_table_local_details": {
+        "description": "Local details for a foreign that are only available to its owner.\nPresent if and only if **asset_type** is **FOREIGN_TABLE**",
+        "ref": "cleanrooms.CleanRoomAssetForeignTableLocalDetails",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "jar_analysis": {
+        "description": "Jar analysis details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **JAR_ANALYSIS**",
+        "ref": "cleanrooms.CleanRoomAssetJarAnalysis",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+        "launch_stage": "GA"
+      },
+      "notebook": {
+        "description": "Notebook details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **NOTEBOOK_FILE**",
+        "ref": "cleanrooms.CleanRoomAssetNotebook",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "owner_collaborator_alias": {
+        "description": "The alias of the collaborator who owns this asset",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status": {
+        "description": "Status of the asset",
+        "ref": "cleanrooms.CleanRoomAssetStatusEnum",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "table": {
+        "description": "Table details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **TABLE** or **STREAMING_TABLE**",
+        "ref": "cleanrooms.CleanRoomAssetTable",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "table_local_details": {
+        "description": "Local details for a table that are only available to its owner.\nPresent if and only if **asset_type** is **TABLE** or **STREAMING_TABLE**",
+        "ref": "cleanrooms.CleanRoomAssetTableLocalDetails",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "view": {
+        "description": "View details available to all collaborators of the clean room.\nPresent if and only if **asset_type** is **VIEW** or **METRIC_VIEW**",
+        "ref": "cleanrooms.CleanRoomAssetView",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "view_local_details": {
+        "description": "Local details for a view that are only available to its owner.\nPresent if and only if **asset_type** is **VIEW** or **METRIC_VIEW**",
+        "ref": "cleanrooms.CleanRoomAssetViewLocalDetails",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "volume_local_details": {
+        "description": "Local details for a volume that are only available to its owner.\nPresent if and only if **asset_type** is **VOLUME**",
+        "ref": "cleanrooms.CleanRoomAssetVolumeLocalDetails",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetAssetType": {
+    "enum": [
+      "TABLE",
+      "NOTEBOOK_FILE",
+      "VOLUME",
+      "VIEW",
+      "FOREIGN_TABLE",
+      "JAR_ANALYSIS"
+    ],
+    "enum_launch_stages": {
+      "FOREIGN_TABLE": "GA",
+      "JAR_ANALYSIS": "PUBLIC_PREVIEW",
+      "NOTEBOOK_FILE": "GA",
+      "TABLE": "GA",
+      "VIEW": "GA",
+      "VOLUME": "GA"
+    }
+  },
+  "cleanrooms.CleanRoomAssetForeignTable": {
+    "fields": {
+      "columns": {
+        "description": "The metadata information of the columns in the foreign table",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetForeignTableLocalDetails": {
+    "fields": {
+      "local_name": {
+        "description": "The fully qualified name of the foreign table in its owner's local metastore,\nin the format of *catalog*.*schema*.*foreign_table_name*",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetJarAnalysis": {
+    "fields": {
+      "central_jar_file_paths": {
+        "description": "The full paths in central to the jar files that are added to the library during execution (e.g. /Volumes/creator/schema/volume/folder/my_jar_file.jar)\nOnly returned for the owner collaborator.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "description": {
+        "description": "Optional description of the jar analysis shown to all collaborators.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "environment_version": {
+        "description": "The serverless environment version used to execute the JAR analysis (e.g. \"4\").\nIf not specified, uses the service-configured JAR analysis default.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "etag": {
+        "description": "Server generated etag that represents the jar analysis version.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "main_class_name": {
+        "description": "The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library\nThe code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "review_state": {
+        "description": "Top-level status derived from all reviews.",
+        "ref": "cleanrooms.CleanRoomJarAnalysisReviewJarAnalysisReviewState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "reviews": {
+        "description": "All existing approvals or rejections.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "runner_collaborator_aliases": {
+        "description": "Collaborators that can run the jar.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetNotebook": {
+    "fields": {
+      "description": {
+        "description": "Optional description of the notebook shown to all collaborators.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "environment_version": {
+        "description": "The serverless environment version used to execute the notebook (e.g. \"4\").\nDefaults to \"2\" if not specified.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "etag": {
+        "description": "Server generated etag that represents the notebook version.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "notebook_content": {
+        "description": "Base 64 representation of the notebook contents.\nThis is the same format as returned by [workspace/export](https://docs.databricks.com/api/workspace/workspace/export) with the format of **HTML**.",
+        "launch_stage": "GA"
+      },
+      "review_state": {
+        "description": "Top-level status derived from all reviews",
+        "ref": "cleanrooms.CleanRoomNotebookReviewNotebookReviewState",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "reviews": {
+        "description": "All existing approvals or rejections",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "runner_collaborator_aliases": {
+        "description": "Aliases of collaborators that can run the notebook.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetStatusEnum": {
+    "enum": [
+      "ACTIVE",
+      "PERMISSION_DENIED",
+      "PENDING"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "PENDING": "GA",
+      "PERMISSION_DENIED": "GA"
+    }
+  },
+  "cleanrooms.CleanRoomAssetTable": {
+    "fields": {
+      "columns": {
+        "description": "The metadata information of the columns in the table",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetTableLocalDetails": {
+    "fields": {
+      "local_name": {
+        "description": "The fully qualified name of the table in its owner's local metastore,\nin the format of *catalog*.*schema*.*table_name*",
+        "launch_stage": "GA"
+      },
+      "partitions": {
+        "description": "Partition filtering specification for a shared table.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetView": {
+    "fields": {
+      "columns": {
+        "description": "The metadata information of the columns in the view",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetViewLocalDetails": {
+    "fields": {
+      "local_name": {
+        "description": "The fully qualified name of the view in its owner's local metastore,\nin the format of *catalog*.*schema*.*view_name*",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAssetVolumeLocalDetails": {
+    "fields": {
+      "local_name": {
+        "description": "The fully qualified name of the volume in its owner's local metastore,\nin the format of *catalog*.*schema*.*volume_name*",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAutoApprovalRule": {
+    "fields": {
+      "author_collaborator_alias": {
+        "description": "Collaborator alias of the author covered by the rule.\nOnly one of `author_collaborator_alias` and `author_scope` can be set.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "author_scope": {
+        "description": "Scope of authors covered by the rule.\nOnly one of `author_collaborator_alias` and `author_scope` can be set.",
+        "ref": "cleanrooms.CleanRoomAutoApprovalRuleAuthorScope",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "clean_room_name": {
+        "description": "The name of the clean room this auto-approval rule belongs to.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "created_at": {
+        "description": "Timestamp of when the rule was created, in epoch milliseconds.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "rule_id": {
+        "description": "A generated UUID identifying the rule.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "rule_owner_collaborator_alias": {
+        "description": "The owner of the rule to whom the rule applies.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "runner_collaborator_alias": {
+        "description": "Collaborator alias of the runner covered by the rule.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomAutoApprovalRuleAuthorScope": {
+    "enum": [
+      "ANY_AUTHOR"
+    ],
+    "enum_launch_stages": {
+      "ANY_AUTHOR": "PUBLIC_BETA"
+    }
+  },
+  "cleanrooms.CleanRoomCollaborator": {
+    "description": "Publicly visible clean room collaborator.",
+    "fields": {
+      "collaborator_alias": {
+        "description": "Collaborator alias specified by the clean room creator. It is unique across all collaborators of this clean room, and used to derive\nmultiple values internally such as catalog alias and clean room name for single metastore clean rooms.\nIt should follow [UC securable naming requirements](https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements).",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "display_name": {
+        "description": "Generated display name for the collaborator. In the case of a single metastore clean room, it is the clean\nroom name. For x-metastore clean rooms, it is the organization name of the metastore. It is not restricted to\nthese values and could change in the future",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "global_metastore_id": {
+        "description": "The global Unity Catalog metastore ID of the collaborator. The identifier is of format cloud:region:metastore-uuid.",
+        "launch_stage": "GA"
+      },
+      "invite_recipient_email": {
+        "description": "Email of the user who is receiving the clean room \"invitation\". It should be empty\nfor the creator of the clean room, and non-empty for the invitees of the clean room.\nIt is only returned in the output when clean room creator calls GET",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "invite_recipient_workspace_id": {
+        "description": "Workspace ID of the user who is receiving the clean room \"invitation\". Must be specified if\ninvite_recipient_email is specified.\nIt should be empty when the collaborator is the creator of the clean room.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "INPUT_ONLY"
+        ]
+      },
+      "organization_name": {
+        "description": "[Organization name](:method:metastores/list#metastores-delta_sharing_organization_name)\nconfigured in the metastore",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomJarAnalysisReview": {
+    "description": "This only applies to a JAR Analysis as a first-class asset in the Clean Room, and not to Volumes",
+    "fields": {
+      "comment": {
+        "description": "review comment",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "created_at_millis": {
+        "description": "timestamp of when the review was submitted",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "review_state": {
+        "description": "review outcome",
+        "ref": "cleanrooms.CleanRoomJarAnalysisReviewJarAnalysisReviewState",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "review_sub_reason": {
+        "description": "specified when the review was not explicitly made by a user",
+        "ref": "cleanrooms.CleanRoomJarAnalysisReviewJarAnalysisReviewSubReason",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "reviewer_collaborator_alias": {
+        "description": "collaborator alias of the reviewer",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomJarAnalysisReviewJarAnalysisReviewState": {
+    "enum": [
+      "APPROVED",
+      "REJECTED",
+      "PENDING"
+    ],
+    "enum_launch_stages": {
+      "APPROVED": "PUBLIC_PREVIEW",
+      "PENDING": "PUBLIC_PREVIEW",
+      "REJECTED": "PUBLIC_PREVIEW"
+    }
+  },
+  "cleanrooms.CleanRoomJarAnalysisReviewJarAnalysisReviewSubReason": {
+    "enum": [
+      "AUTO_APPROVED"
+    ],
+    "enum_launch_stages": {
+      "AUTO_APPROVED": "PUBLIC_PREVIEW"
+    }
+  },
+  "cleanrooms.CleanRoomNotebookReview": {
+    "fields": {
+      "comment": {
+        "description": "Review comment",
+        "launch_stage": "GA"
+      },
+      "created_at_millis": {
+        "description": "When the review was submitted, in epoch milliseconds",
+        "launch_stage": "GA"
+      },
+      "review_state": {
+        "description": "Review outcome",
+        "ref": "cleanrooms.CleanRoomNotebookReviewNotebookReviewState",
+        "launch_stage": "GA"
+      },
+      "review_sub_reason": {
+        "description": "Specified when the review was not explicitly made by a user",
+        "ref": "cleanrooms.CleanRoomNotebookReviewNotebookReviewSubReason",
+        "launch_stage": "GA"
+      },
+      "reviewer_collaborator_alias": {
+        "description": "Collaborator alias of the reviewer",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomNotebookReviewNotebookReviewState": {
+    "enum": [
+      "APPROVED",
+      "REJECTED",
+      "PENDING"
+    ],
+    "enum_launch_stages": {
+      "APPROVED": "GA",
+      "PENDING": "GA",
+      "REJECTED": "GA"
+    }
+  },
+  "cleanrooms.CleanRoomNotebookReviewNotebookReviewSubReason": {
+    "enum": [
+      "BACKFILLED",
+      "AUTO_APPROVED"
+    ],
+    "enum_launch_stages": {
+      "AUTO_APPROVED": "GA",
+      "BACKFILLED": "GA"
+    }
+  },
+  "cleanrooms.CleanRoomNotebookTaskRun": {
+    "description": "Stores information about a single task run.",
+    "fields": {
+      "collaborator_job_run_info": {
+        "description": "Job run info of the task in the runner's local workspace.\nThis field is only included in the LIST API.\nif the task was run within the same workspace the API is being called.\nIf the task run was in a different workspace under the same metastore, only the workspace_id is included.",
+        "ref": "cleanrooms.CollaboratorJobRunInfo",
+        "launch_stage": "GA"
+      },
+      "notebook_etag": {
+        "description": "Etag of the notebook executed in this task run, used to identify the notebook version.",
+        "launch_stage": "GA"
+      },
+      "notebook_job_run_state": {
+        "description": "State of the task run.",
+        "ref": "jobs.CleanRoomTaskRunState",
+        "launch_stage": "GA"
+      },
+      "notebook_name": {
+        "description": "Asset name of the notebook executed in this task run.",
+        "launch_stage": "GA"
+      },
+      "notebook_updated_at": {
+        "description": "The timestamp of when the notebook was last updated.",
+        "launch_stage": "GA"
+      },
+      "output_schema_expiration_time": {
+        "description": "Expiration time of the output schema of the task run (if any), in epoch milliseconds.",
+        "launch_stage": "GA"
+      },
+      "output_schema_name": {
+        "description": "Name of the output schema associated with the clean rooms notebook task run.",
+        "launch_stage": "GA"
+      },
+      "run_duration": {
+        "description": "Duration of the task run, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "shared_output_schema_expiration_time": {
+        "description": "Expiration time of the shared output schema of the task run (if any), in epoch milliseconds.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "shared_output_schema_name": {
+        "description": "Name of the shared output schema associated with the clean rooms notebook task run.\nThis schema is accessible by all collaborators when enable_shared_output is true.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "start_time": {
+        "description": "When the task run started, in epoch milliseconds.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomOutputCatalog": {
+    "fields": {
+      "catalog_name": {
+        "description": "The name of the output catalog in UC.\nIt should follow [UC securable naming requirements](https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements).\nThe field will always exist if status is CREATED.",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "ref": "cleanrooms.CleanRoomOutputCatalogOutputCatalogStatus",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomOutputCatalogOutputCatalogStatus": {
+    "enum": [
+      "NOT_ELIGIBLE",
+      "NOT_CREATED",
+      "CREATED"
+    ],
+    "enum_launch_stages": {
+      "CREATED": "GA",
+      "NOT_CREATED": "GA",
+      "NOT_ELIGIBLE": "GA"
+    }
+  },
+  "cleanrooms.CleanRoomRemoteDetail": {
+    "description": "Publicly visible central clean room details.",
+    "fields": {
+      "central_clean_room_id": {
+        "description": "Central clean room ID.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "cloud_vendor": {
+        "description": "Cloud vendor (aws,azure,gcp) of the central clean room.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "collaborators": {
+        "description": "Collaborators in the central clean room. There should one and only one collaborator\nin the list that satisfies the owner condition:\n\n1. It has the creator's global_metastore_id (determined by caller of CreateCleanRoom).\n\n2. Its invite_recipient_email is empty.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "compliance_security_profile": {
+        "ref": "cleanrooms.ComplianceSecurityProfile",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "Collaborator who creates the clean room.",
+        "ref": "cleanrooms.CleanRoomCollaborator",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "egress_network_policy": {
+        "description": "Egress network policy to apply to the central clean room workspace.",
+        "ref": "settings.EgressNetworkPolicy",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "enable_shared_output": {
+        "description": "Whether to enable shared output for the central clean room.\nWhen enabled, clean room task runs can write to the run-scoped shared output schema\nwhich is accessible by all collaborators.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "package_provider_collaborator_alias": {
+        "description": "Alias of the provider collaborator. If set, packaged clean rooms mode is enabled.\nThe consumer's experience is restricted: they can view notebook names and READMEs,\nadd their own data assets, and trigger runs, but cannot view notebook code,\nprovider data assets, or notebook run output.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "region": {
+        "description": "Region of the central clean room.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "cleanrooms.CleanRoomStatusEnum": {
+    "enum": [
+      "ACTIVE",
+      "PROVISIONING",
+      "DELETED",
+      "FAILED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "GA",
+      "DELETED": "GA",
+      "FAILED": "GA",
+      "PROVISIONING": "GA"
+    }
+  },
+  "cleanrooms.CleanRoomTaskRun": {
+    "description": "Stores information about a single task run.",
+    "fields": {
+      "analysis_details": {
+        "description": "Information about the analysis run (etag, updated at)",
+        "ref": "cleanrooms.CleanRoomTaskRunCleanRoomTaskAnalysisDetails",
+        "launch_stage": "GA"
+      },
+      "collaborator_job_run_info": {
+        "description": "Job run info of the task in the runner's local workspace.\nThis field is only included in the LIST API if the task was run within the same workspace the API is being called.\nIf the task run was in a different workspace under the same metastore, only the workspace_id is included.",
+        "ref": "cleanrooms.CollaboratorJobRunInfo",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "Name of the executable.",
+        "launch_stage": "GA"
+      },
+      "output_info": {
+        "description": "Information about run output",
+        "ref": "cleanrooms.CleanRoomTaskRunOutputInfo",
+        "launch_stage": "GA"
+      },
+      "run_duration": {
+        "description": "Duration of the task run, in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "shared_output_info": {
+        "description": "Information about shared output accessible by all collaborators.\nThis field is only populated when enable_shared_output is true.",
+        "ref": "cleanrooms.CleanRoomTaskRunOutputInfo",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "start_time": {
+        "description": "When the task run started, in epoch milliseconds.",
+        "launch_stage": "GA"
+      },
+      "task_run_state": {
+        "description": "State of the task run.",
+        "ref": "jobs.CleanRoomTaskRunState",
+        "launch_stage": "GA"
+      },
+      "task_type": {
+        "description": "The type of Clean Room task.",
+        "ref": "cleanrooms.CleanRoomTaskType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomTaskRunCleanRoomTaskAnalysisDetails": {
+    "fields": {
+      "etag": {
+        "description": "Etag of the asset executed in this task run, used to identify the asset version.",
+        "launch_stage": "GA"
+      },
+      "updated_at": {
+        "description": "The timestamp of when the asset was last updated.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomTaskRunOutputInfo": {
+    "fields": {
+      "output_schema_expiration_time": {
+        "description": "Expiration time of the output schema of the task run (if any), in epoch milliseconds.",
+        "launch_stage": "GA"
+      },
+      "output_schema_name": {
+        "description": "Name of the output schema associated with the clean room task run.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CleanRoomTaskType": {
+    "enum": [
+      "NOTEBOOK",
+      "JAR"
+    ],
+    "enum_launch_stages": {
+      "JAR": "GA",
+      "NOTEBOOK": "GA"
+    }
+  },
+  "cleanrooms.CollaboratorJobRunInfo": {
+    "fields": {
+      "collaborator_alias": {
+        "description": "Alias of the collaborator that triggered the task run.",
+        "launch_stage": "GA"
+      },
+      "collaborator_job_id": {
+        "description": "Job ID of the task run in the collaborator's workspace.",
+        "launch_stage": "GA"
+      },
+      "collaborator_job_run_id": {
+        "description": "Job run ID of the task run in the collaborator's workspace.",
+        "launch_stage": "GA"
+      },
+      "collaborator_task_run_id": {
+        "description": "Task run ID of the task run in the collaborator's workspace.",
+        "launch_stage": "GA"
+      },
+      "collaborator_workspace_id": {
+        "description": "ID of the collaborator's workspace that triggered the task run.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.ComplianceSecurityProfile": {
+    "description": "The compliance security profile used to process regulated data following compliance standards.",
+    "fields": {
+      "compliance_standards": {
+        "description": "The list of compliance standards that the compliance security profile is configured to enforce.",
+        "launch_stage": "GA"
+      },
+      "is_enabled": {
+        "description": "Whether the compliance security profile is enabled.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CreateCleanRoomAssetRequest": {
+    "fields": {
+      "asset": {
+        "ref": "cleanrooms.CleanRoomAsset",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CreateCleanRoomAssetReviewRequest": {
+    "fields": {
+      "jar_analysis_review": {
+        "ref": "cleanrooms.JarAnalysisVersionReview",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "notebook_review": {
+        "ref": "cleanrooms.NotebookVersionReview",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.CreateCleanRoomAssetReviewResponse": {
+    "fields": {
+      "jar_analysis_review_state": {
+        "description": "top-level status derived from all reviews",
+        "ref": "cleanrooms.CleanRoomJarAnalysisReviewJarAnalysisReviewState",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "jar_analysis_reviews": {
+        "description": "All existing jar analysis approvals or rejections",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "notebook_review_state": {
+        "description": "Top-level status derived from all reviews",
+        "ref": "cleanrooms.CleanRoomNotebookReviewNotebookReviewState",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "notebook_reviews": {
+        "description": "All existing notebook approvals or rejections",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.CreateCleanRoomAutoApprovalRuleRequest": {
+    "fields": {
+      "auto_approval_rule": {
+        "ref": "cleanrooms.CleanRoomAutoApprovalRule",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.CreateCleanRoomOutputCatalogRequest": {
+    "fields": {
+      "output_catalog": {
+        "ref": "cleanrooms.CleanRoomOutputCatalog",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CreateCleanRoomOutputCatalogResponse": {
+    "fields": {
+      "output_catalog": {
+        "ref": "cleanrooms.CleanRoomOutputCatalog",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.CreateCleanRoomRequest": {
+    "fields": {
+      "clean_room": {
+        "ref": "cleanrooms.CleanRoom",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.DeleteCleanRoomAssetRequest": {},
+  "cleanrooms.DeleteCleanRoomAssetResponse": {
+    "description": "Response for delete clean room request. Using an empty message since the generic Empty proto does not externd\nUnshadedMessageMarker."
+  },
+  "cleanrooms.DeleteCleanRoomAutoApprovalRuleRequest": {},
+  "cleanrooms.DeleteCleanRoomRequest": {},
+  "cleanrooms.GetCleanRoomAssetRequest": {},
+  "cleanrooms.GetCleanRoomAssetRevisionRequest": {},
+  "cleanrooms.GetCleanRoomAutoApprovalRuleRequest": {},
+  "cleanrooms.GetCleanRoomRequest": {},
+  "cleanrooms.JarAnalysisVersionReview": {
+    "fields": {
+      "comment": {
+        "description": "Review comment",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "etag": {
+        "description": "Etag identifying the jar analysis version, with its value being a hash of an internally-generated UUID",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "review_state": {
+        "description": "Review outcome",
+        "ref": "cleanrooms.CleanRoomJarAnalysisReviewJarAnalysisReviewState",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomAssetRevisionsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of asset revisions to return. Defaults to 10.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Opaque pagination token to go to next page based on the previous query.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomAssetRevisionsResponse": {
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "revisions": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomAssetsRequest": {
+    "fields": {
+      "page_token": {
+        "description": "Opaque pagination token to go to next page based on previous query.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomAssetsResponse": {
+    "fields": {
+      "assets": {
+        "description": "Assets in the clean room.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\npage_token should be set to this value for the next request (for the next page of results).",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomAutoApprovalRulesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of auto-approval rules to return. Defaults to 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Opaque pagination token to go to next page based on previous query.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomAutoApprovalRulesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\npage_token should be set to this value for the next request (for the next page of results).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "rules": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomNotebookTaskRunsRequest": {
+    "fields": {
+      "notebook_name": {
+        "description": "Notebook name",
+        "launch_stage": "GA"
+      },
+      "page_size": {
+        "description": "The maximum number of task runs to return. Currently ignored - all runs will be returned.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Opaque pagination token to go to next page based on previous query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomNotebookTaskRunsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\npage_token should be set to this value for the next request (for the next page of results).",
+        "launch_stage": "GA"
+      },
+      "runs": {
+        "description": "Name of the clean room.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomTaskRunsRequest": {
+    "fields": {
+      "name": {
+        "description": "Executable name.",
+        "launch_stage": "GA"
+      },
+      "page_size": {
+        "description": "The maximum number of task runs to return. Maximum value of 100.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Opaque pagination token to go to next page based on previous query.",
+        "launch_stage": "GA"
+      },
+      "task_type": {
+        "description": "Filter by the type of Clean Room task.",
+        "ref": "cleanrooms.CleanRoomTaskType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomTaskRunsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\npage_token should be set to this value for the next request (for the next page of results).",
+        "launch_stage": "GA"
+      },
+      "runs": {
+        "description": "Task runs in the clean room.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of clean rooms to return (i.e., the page length). Defaults to 100.",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "Opaque pagination token to go to next page based on previous query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.ListCleanRoomsResponse": {
+    "fields": {
+      "clean_rooms": {
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\npage_token should be set to this value for the next request (for the next page of results).",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.NotebookVersionReview": {
+    "fields": {
+      "comment": {
+        "description": "Review comment",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "etag": {
+        "description": "Etag identifying the notebook version",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "review_state": {
+        "description": "Review outcome",
+        "ref": "cleanrooms.CleanRoomNotebookReviewNotebookReviewState",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.UpdateCleanRoomAssetRequest": {
+    "fields": {
+      "asset": {
+        "description": "The asset to update.\nThe asset's `name` and `asset_type` fields are used to identify the asset to update.",
+        "ref": "cleanrooms.CleanRoomAsset",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "cleanrooms.UpdateCleanRoomAutoApprovalRuleRequest": {
+    "fields": {
+      "auto_approval_rule": {
+        "description": "The auto-approval rule to update. The rule_id field is used to identify the rule to update.",
+        "ref": "cleanrooms.CleanRoomAutoApprovalRule",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "cleanrooms.UpdateCleanRoomRequest": {
+    "fields": {
+      "clean_room": {
+        "ref": "cleanrooms.CleanRoom",
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

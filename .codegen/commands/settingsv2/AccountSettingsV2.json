@@ -1,0 +1,853 @@
+{
+  "id": "settingsv2.AccountSettingsV2",
+  "name": "AccountSettingsV2",
+  "description": "APIs to manage account level settings",
+  "package": {
+    "name": "settingsv2"
+  },
+  "is_accounts": true,
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListAccountSettingsMetadataRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "GetPublicAccountSetting",
+      "description": "Get a setting value at account level. See :method:settingsv2/listaccountsettingsmetadata for list of setting available via public APIs at account level.",
+      "summary": "Get an account setting.",
+      "path": "/api/2.1/accounts/{account_id}/settings/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPublicAccountSettingRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Setting",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPublicAccountUserPreference",
+      "description": "Get a user preference for a specific user.\nUser preferences are personal settings that allow individual customization without affecting other users.\nSee :method:settingsv2/listaccountuserpreferencesmetadata for list of user preferences available via public APIs.",
+      "summary": "Get a user preference.",
+      "path": "/api/2.1/accounts/{account_id}/users/{user_id}/settings/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetPublicAccountUserPreferenceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "user_id",
+            "description": "User ID of the user whose setting is being retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "User Setting name.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "user_id",
+            "description": "User ID of the user whose setting is being retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "User Setting name.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UserPreference",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "User Setting name.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "User ID of the user whose setting is being retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "user_id",
+          "description": "User ID of the user whose setting is being retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "User Setting name.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListAccountSettingsMetadata",
+      "description": "List valid setting keys and metadata. These settings are available to be referenced via\nGET :method:settingsv2/getpublicaccountsetting and\nPATCH :method:settingsv2/patchpublicaccountsetting APIs",
+      "summary": "List valid setting keys and their metadata.",
+      "path": "/api/2.1/accounts/{account_id}/settings-metadata",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAccountSettingsMetadataRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAccountSettingsMetadataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of settings to return. The service may return fewer than this value.\nIf unspecified, at most 200 settings will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListAccountSettingsMetadataRequest` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListAccountSettingsMetadataRequest` must match\nthe call that provided the page token.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListAccountSettingsMetadataRequest` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListAccountSettingsMetadataRequest` must match\nthe call that provided the page token.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListAccountUserPreferencesMetadata",
+      "description": "List valid user preferences and their metadata for a specific user.\nUser preferences are personal settings that allow individual customization without affecting other users.\nThese settings are available to be referenced via\nGET :method:settingsv2/getpublicaccountuserpreference and\nPATCH :method:settingsv2/patchpublicaccountuserpreference APIs",
+      "summary": "List user preferences and their metadata.",
+      "path": "/api/2.1/accounts/{account_id}/users/{user_id}/settings-metadata",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListAccountUserPreferencesMetadataRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "user_id",
+            "description": "User ID of the user whose settings metadata is being retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "user_id",
+            "description": "User ID of the user whose settings metadata is being retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListAccountUserPreferencesMetadataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of settings to return. The service may return fewer than this value.\nIf unspecified, at most 200 settings will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token, received from a previous `ListAccountUserPreferencesMetadataRequest` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListAccountUserPreferencesMetadataRequest` must match\nthe call that provided the page token.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "User ID of the user whose settings metadata is being retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "user_id",
+          "description": "User ID of the user whose settings metadata is being retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token, received from a previous `ListAccountUserPreferencesMetadataRequest` call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters provided to `ListAccountUserPreferencesMetadataRequest` must match\nthe call that provided the page token.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PatchPublicAccountSetting",
+      "description": "Patch a setting value at account level. See :method:settingsv2/listaccountsettingsmetadata for list of setting available via public APIs at account level.\nTo determine the correct field to include in a patch request, refer to the type field of the setting returned in the :method:settingsv2/listaccountsettingsmetadata response.\n\nNote: Page refresh is required for changes to take effect in UI.",
+      "summary": "Update an account setting.",
+      "path": "/api/2.1/accounts/{account_id}/settings/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "PatchPublicAccountSettingRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Setting",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Setting",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "setting",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Setting",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Setting",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "setting",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Setting",
+            "is_object": true
+          }
+        },
+        {
+          "name": "aibi_dashboard_embedding_access_policy",
+          "description": "Setting value for aibi_dashboard_embedding_access_policy setting. This is the setting value set by consumers, check effective_aibi_dashboard_embedding_access_policy for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AibiDashboardEmbeddingAccessPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "aibi_dashboard_embedding_approved_domains",
+          "description": "Setting value for aibi_dashboard_embedding_approved_domains setting. This is the setting value set by consumers, check effective_aibi_dashboard_embedding_approved_domains for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AibiDashboardEmbeddingApprovedDomains",
+            "is_object": true
+          }
+        },
+        {
+          "name": "allowed_apps_user_api_scopes",
+          "description": "Setting value for allowed_apps_user_api_scopes setting. This is the setting value set by consumers, check effective_allowed_apps_user_api_scopes for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AllowedAppsUserApiScopesMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "automatic_cluster_update_workspace",
+          "description": "Setting value for automatic_cluster_update_workspace setting. This is the setting value set by consumers, check effective_automatic_cluster_update_workspace for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ClusterAutoRestartMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "boolean_val",
+          "description": "Setting value for boolean type setting. This is the setting value set by consumers, check effective_boolean_val for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "BooleanMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "collaboration_platform_connectivity",
+          "description": "Setting value for collaboration_platform_connectivity setting. This is the setting value set by consumers, check effective_collaboration_platform_connectivity for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CollaborationPlatformConnectivityMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_aibi_dashboard_embedding_access_policy",
+          "description": "Effective setting value for aibi_dashboard_embedding_access_policy setting. This is the final effective value of setting. To set a value use aibi_dashboard_embedding_access_policy.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AibiDashboardEmbeddingAccessPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_aibi_dashboard_embedding_approved_domains",
+          "description": "Effective setting value for aibi_dashboard_embedding_approved_domains setting. This is the final effective value of setting. To set a value use aibi_dashboard_embedding_approved_domains.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AibiDashboardEmbeddingApprovedDomains",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_allowed_apps_user_api_scopes",
+          "description": "Effective setting value for allowed_apps_user_api_scopes setting. This is the final effective value of setting. To set a value use allowed_apps_user_api_scopes.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AllowedAppsUserApiScopesMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_automatic_cluster_update_workspace",
+          "description": "Effective setting value for automatic_cluster_update_workspace setting. This is the final effective value of setting. To set a value use automatic_cluster_update_workspace.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ClusterAutoRestartMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_boolean_val",
+          "description": "Effective setting value for boolean type setting. This is the final effective value of setting. To set a value use boolean_val.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "BooleanMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_collaboration_platform_connectivity",
+          "description": "Effective setting value for collaboration_platform_connectivity setting. This is the final effective value of setting. To set a value use collaboration_platform_connectivity.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CollaborationPlatformConnectivityMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_integer_val",
+          "description": "Effective setting value for integer type setting. This is the final effective value of setting. To set a value use integer_val.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IntegerMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_operational_email_custom_recipient",
+          "description": "Effective setting value for operational_email_custom_recipient setting. This is the final effective value of setting. To set a value use operational_email_custom_recipient.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "OperationalEmailCustomRecipientMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_personal_compute",
+          "description": "Effective setting value for personal_compute setting. This is the final effective value of setting. To set a value use personal_compute.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PersonalComputeMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_restrict_workspace_admins",
+          "description": "Effective setting value for restrict_workspace_admins setting. This is the final effective value of setting. To set a value use restrict_workspace_admins.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RestrictWorkspaceAdminsMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_string_val",
+          "description": "Effective setting value for string type setting. This is the final effective value of setting. To set a value use string_val.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "StringMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_workspace_label",
+          "description": "Effective setting value for workspace_label setting. This is the final effective value of setting. To set a value use workspace_label.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "WorkspaceLabelMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "integer_val",
+          "description": "Setting value for integer type setting. This is the setting value set by consumers, check effective_integer_val for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IntegerMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the setting.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "operational_email_custom_recipient",
+          "description": "Setting value for operational_email_custom_recipient setting. This is the setting value set by consumers, check effective_operational_email_custom_recipient for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "OperationalEmailCustomRecipientMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "personal_compute",
+          "description": "Setting value for personal_compute setting. This is the setting value set by consumers, check effective_personal_compute for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PersonalComputeMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "restrict_workspace_admins",
+          "description": "Setting value for restrict_workspace_admins setting. This is the setting value set by consumers, check effective_restrict_workspace_admins for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RestrictWorkspaceAdminsMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "string_val",
+          "description": "Setting value for string type setting. This is the setting value set by consumers, check effective_string_val for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "StringMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "workspace_label",
+          "description": "Setting value for workspace_label setting. This is the setting value set by consumers, check effective_workspace_label for final setting value.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "WorkspaceLabelMessage",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "PatchPublicAccountUserPreference",
+      "description": "Update a user preference for a specific user.\nUser preferences are personal settings that allow individual customization without affecting other users.\nSee :method:settingsv2/listaccountuserpreferencesmetadata for list of user preferences available via public APIs.\n\nNote: Page refresh is required for changes to take effect in UI.",
+      "summary": "Update a user preference.",
+      "path": "/api/2.1/accounts/{account_id}/users/{user_id}/settings/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "PatchPublicAccountUserPreferenceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "user_id",
+            "description": "User ID of the user whose setting is being updated.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserPreference",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "user_id",
+            "description": "User ID of the user whose setting is being updated.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "UserPreference",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "setting",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "UserPreference",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "UserPreference",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "setting",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "UserPreference",
+            "is_object": true
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "User ID of the user whose setting is being updated.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "boolean_val",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "BooleanMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_boolean_val",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "BooleanMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "effective_string_val",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "StringMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the setting.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "string_val",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "StringMessage",
+            "is_object": true
+          }
+        },
+        {
+          "name": "user_id",
+          "description": "User ID of the user.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "user_id",
+          "description": "User ID of the user whose setting is being updated.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

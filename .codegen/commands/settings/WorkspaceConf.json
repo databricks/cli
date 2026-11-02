@@ -1,0 +1,92 @@
+{
+  "id": "settings.WorkspaceConf",
+  "name": "WorkspaceConf",
+  "description": "This API allows updating known workspace settings for advanced users.",
+  "package": {
+    "name": "settings"
+  },
+  "docs_group": "settings",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "GetStatus",
+      "description": "Gets the configuration status for a workspace.",
+      "summary": "Check configuration status.",
+      "path": "/api/2.0/workspace-conf",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetStatusRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "keys",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "keys",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceConf",
+        "map_value": {
+          "is_string": true
+        }
+      },
+      "all_fields": [
+        {
+          "name": "keys",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "keys",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SetStatus",
+      "description": "Sets the configuration status for a workspace, including enabling or disabling it.",
+      "summary": "Enable/disable features.",
+      "path": "/api/2.0/workspace-conf",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "WorkspaceConf",
+        "map_value": {
+          "is_string": true
+        }
+      },
+      "response": {
+        "is_empty_response": true
+      }
+    }
+  ]
+}

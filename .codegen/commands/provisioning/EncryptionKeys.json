@@ -1,0 +1,271 @@
+{
+  "id": "provisioning.EncryptionKeys",
+  "name": "EncryptionKeys",
+  "description": "These APIs manage encryption key configurations for this workspace (optional). A key\nconfiguration encapsulates the AWS KMS key information and some information about how\nthe key configuration can be used. There are two possible uses for key configurations:\n\n* Managed services: A key configuration can be used to encrypt a workspace's notebook and\nsecret data in the control plane, as well as Databricks SQL queries and query history.\n* Storage: A key configuration can be used to encrypt a workspace's DBFS and EBS data in\nthe data plane.\n\nIn both of these cases, the key configuration's ID is used when creating a new workspace.\nThis Preview feature is available if your account is on the E2 version of the platform.\nUpdating a running workspace with workspace storage encryption requires that the workspace\nis on the E2 version of the platform. If you have an older workspace, it might not be on\nthe E2 version of the platform. If you are not sure, contact your Databricks representative.",
+  "package": {
+    "name": "provisioning"
+  },
+  "is_accounts": true,
+  "docs_group": "provisioning",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a customer-managed key configuration object for an account, specified by ID.\nThis operation uploads a reference to a customer-managed key to Databricks.\nIf the key is assigned as a workspace's customer-managed key for managed services,\nDatabricks uses the key to encrypt the workspaces notebooks and secrets in the control plane,\nin addition to Databricks SQL queries and query history. If it is specified as a\nworkspace's customer-managed key for workspace storage, the key encrypts the\nworkspace's root S3 bucket (which contains the workspace's root DBFS and system data)\nand, optionally, cluster EBS volume data.\n\n**Important**: Customer-managed keys are supported only for some deployment types,\nsubscription types, and AWS regions that currently support creation of Databricks workspaces.\n\nThis operation is available only if your account is on the E2 version of the\nplatform or on a select custom plan that allows multiple workspaces per account.\n\n**GCP only**: To create a customer-managed key on GCP, you must include the\n`X-Databricks-GCP-SA-Access-Token` HTTP header in your request. This header must contain\na Google Cloud OAuth access token with the `cloud-platform` scope. The Google identity\nassociated with the token must also have the `setIamPermissions` and `getIamPermissions`\nIAM permissions on the key resource. For details on obtaining this token, see\n[Authenticate with Google ID tokens](https://docs.databricks.com/gcp/en/dev-tools/auth/authentication-google-id.html).",
+      "summary": "Create encryption key configuration.",
+      "path": "/api/2.0/accounts/{account_id}/customer-managed-keys",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateCustomerManagedKeyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "use_cases",
+            "description": "The cases that the key can be used for.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KeyUseCaseList",
+              "array_value": {
+                "pascal_name": "KeyUseCase",
+                "enum": [
+                  {
+                    "content": "MANAGED_SERVICES"
+                  },
+                  {
+                    "content": "STORAGE"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "use_cases",
+            "description": "The cases that the key can be used for.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "KeyUseCaseList",
+              "array_value": {
+                "pascal_name": "KeyUseCase",
+                "enum": [
+                  {
+                    "content": "MANAGED_SERVICES"
+                  },
+                  {
+                    "content": "STORAGE"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomerManagedKey",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "aws_key_info",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CreateAwsKeyInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "azure_key_info",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CreateAzureKeyInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "gcp_key_info",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CreateGcpKeyInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "use_cases",
+          "description": "The cases that the key can be used for.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "KeyUseCaseList",
+            "array_value": {
+              "pascal_name": "KeyUseCase",
+              "enum": [
+                {
+                  "content": "MANAGED_SERVICES"
+                },
+                {
+                  "content": "STORAGE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a customer-managed key configuration object for an account. You cannot delete a configuration that is associated with a running workspace.",
+      "summary": "Delete encryption key configuration.",
+      "path": "/api/2.0/accounts/{account_id}/customer-managed-keys/{customer_managed_key_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteEncryptionKeyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "customer_managed_key_id",
+            "description": "Databricks encryption key configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "customer_managed_key_id",
+            "description": "Databricks encryption key configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomerManagedKey",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "customer_managed_key_id",
+          "description": "Databricks encryption key configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "customer_managed_key_id",
+          "description": "Databricks encryption key configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a customer-managed key configuration object for an account, specified by ID.\nThis operation uploads a reference to a customer-managed key to Databricks.\nIf assigned as a workspace's customer-managed key for managed services, Databricks uses the\nkey to encrypt the workspaces notebooks and secrets in the control plane, in addition to\nDatabricks SQL queries and query history. If it is specified as a workspace's\ncustomer-managed key for storage, the key encrypts the workspace's root S3 bucket\n(which contains the workspace's root DBFS and system data) and, optionally, cluster EBS volume data.\n\n**Important**: Customer-managed keys are supported only for some deployment types,\nsubscription types, and AWS regions.\n\nThis operation is available only if your account is on the E2 version of the platform.\",",
+      "summary": "Get encryption key configuration.",
+      "path": "/api/2.0/accounts/{account_id}/customer-managed-keys/{customer_managed_key_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetEncryptionKeyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "customer_managed_key_id",
+            "description": "Databricks encryption key configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "customer_managed_key_id",
+            "description": "Databricks encryption key configuration ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CustomerManagedKey",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "customer_managed_key_id",
+          "description": "Databricks encryption key configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "customer_managed_key_id",
+          "description": "Databricks encryption key configuration ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists Databricks customer-managed key configurations for an account.",
+      "summary": "List encryption key configuration.",
+      "path": "/api/2.0/accounts/{account_id}/customer-managed-keys",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListEncryptionKeysRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CustomerManagedKeyList",
+        "array_value": {
+          "pascal_name": "CustomerManagedKey",
+          "is_object": true
+        }
+      }
+    }
+  ]
+}

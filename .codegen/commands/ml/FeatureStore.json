@@ -1,0 +1,1036 @@
+{
+  "id": "ml.FeatureStore",
+  "name": "FeatureStore",
+  "description": "A feature store is a centralized repository that enables data scientists to find and share features. Using a feature store also ensures that the code used to compute feature values is the same during model training and when the model is used for inference.\n\nAn online store is a low-latency database used for feature lookup during real-time model inference or serve feature for real-time applications.",
+  "package": {
+    "name": "ml"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "ml",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListOnlineStoresRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateOnlineStore",
+      "description": "Create an Online Feature Store.",
+      "summary": "Create an Online Feature Store.",
+      "path": "/api/2.0/feature-store/online-stores",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateOnlineStoreRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "online_store",
+            "description": "Online store to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "OnlineStore",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "online_store",
+            "description": "Online store to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "OnlineStore",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "online_store",
+        "description": "Online store to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "OnlineStore",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the online store. This is the unique identifier for the online store.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "capacity",
+              "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the online store. This is the unique identifier for the online store.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "capacity",
+              "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "OnlineStore",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "capacity",
+            "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "capacity",
+            "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "online_store",
+          "description": "Online store to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "OnlineStore",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the online store. This is the unique identifier for the online store.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "capacity",
+                "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the online store. This is the unique identifier for the online store.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "capacity",
+                "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "capacity",
+          "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creation_time",
+          "description": "The timestamp when the online store was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The email of the creator of the online store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the online store. This is the unique identifier for the online store.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_replica_count",
+          "description": "The number of read replicas for the online store. Defaults to 0.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current state of the online store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "OnlineStoreState",
+            "enum": [
+              {
+                "content": "AVAILABLE"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "FAILING_OVER"
+              },
+              {
+                "content": "STARTING"
+              },
+              {
+                "content": "STOPPED"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The usage policy applied to the online store to track billing.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the online store. This is the unique identifier for the online store.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "capacity",
+          "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteOnlineStore",
+      "description": "Delete an Online Feature Store.",
+      "summary": "Delete an Online Feature Store.",
+      "path": "/api/2.0/feature-store/online-stores/{name}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteOnlineStoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the online store to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the online store to delete.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the online store to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the online store to delete.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteOnlineTable",
+      "description": "Delete online table.",
+      "summary": "Delete an online table.",
+      "path": "/api/2.0/feature-store/online-tables/{online_table_name}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteOnlineTableRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "online_table_name",
+            "description": "The full three-part (catalog, schema, table) name of the online table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "online_table_name",
+            "description": "The full three-part (catalog, schema, table) name of the online table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "online_table_name",
+          "description": "The full three-part (catalog, schema, table) name of the online table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "online_table_name",
+          "description": "The full three-part (catalog, schema, table) name of the online table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetOnlineStore",
+      "description": "Get an Online Feature Store.",
+      "summary": "Get an Online Feature Store.",
+      "path": "/api/2.0/feature-store/online-stores/{name}",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetOnlineStoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the online store to get.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the online store to get.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "OnlineStore",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "capacity",
+            "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "capacity",
+            "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the online store to get.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the online store to get.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListOnlineStores",
+      "description": "List Online Feature Stores.",
+      "summary": "List Online Feature Stores.",
+      "path": "/api/2.0/feature-store/online-stores",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListOnlineStoresRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListOnlineStoresResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of results to return. Defaults to 100 if not specified.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Pagination token to go to the next page based on a previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Pagination token to go to the next page based on a previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PublishTable",
+      "description": "Publish features.",
+      "summary": "Publish features.",
+      "path": "/api/2.0/feature-store/tables/{source_table_name}/publish",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "PublishTableRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "source_table_name",
+            "description": "The full three-part (catalog, schema, table) name of the source table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "publish_spec",
+            "description": "The specification for publishing the online table from the source table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PublishSpec",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "source_table_name",
+            "description": "The full three-part (catalog, schema, table) name of the source table.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "publish_spec",
+            "description": "The specification for publishing the online table from the source table.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PublishSpec",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PublishTableResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "publish_spec",
+          "description": "The specification for publishing the online table from the source table.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PublishSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "source_table_name",
+          "description": "The full three-part (catalog, schema, table) name of the source table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "source_table_name",
+          "description": "The full three-part (catalog, schema, table) name of the source table.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateOnlineStore",
+      "description": "Update an Online Feature Store.\n\nThis update is not guaranteed to be atomic: when a request changes multiple fields, some may\nbe applied while others fail. On a failed response, treat the update as partially applied and\nretry until it succeeds.",
+      "summary": "Update an Online Feature Store.",
+      "path": "/api/2.0/feature-store/online-stores/{name}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "UpdateOnlineStoreRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "online_store",
+            "description": "Online store to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "OnlineStore",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "online_store",
+            "description": "Online store to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "OnlineStore",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "online_store",
+        "description": "Online store to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "OnlineStore",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "name",
+              "description": "The name of the online store. This is the unique identifier for the online store.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "capacity",
+              "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "name",
+              "description": "The name of the online store. This is the unique identifier for the online store.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "capacity",
+              "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "OnlineStore",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "capacity",
+            "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the online store. This is the unique identifier for the online store.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "capacity",
+            "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the online store. This is the unique identifier for the online store.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "online_store",
+          "description": "Online store to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "OnlineStore",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "name",
+                "description": "The name of the online store. This is the unique identifier for the online store.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "capacity",
+                "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "name",
+                "description": "The name of the online store. This is the unique identifier for the online store.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "capacity",
+                "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "capacity",
+          "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creation_time",
+          "description": "The timestamp when the online store was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "The email of the creator of the online store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the online store. This is the unique identifier for the online store.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "read_replica_count",
+          "description": "The number of read replicas for the online store. Defaults to 0.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "The current state of the online store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "OnlineStoreState",
+            "enum": [
+              {
+                "content": "AVAILABLE"
+              },
+              {
+                "content": "DELETING"
+              },
+              {
+                "content": "FAILING_OVER"
+              },
+              {
+                "content": "STARTING"
+              },
+              {
+                "content": "STOPPED"
+              },
+              {
+                "content": "UPDATING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The usage policy applied to the online store to track billing.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the online store. This is the unique identifier for the online store.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "capacity",
+          "description": "The capacity of the online store. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

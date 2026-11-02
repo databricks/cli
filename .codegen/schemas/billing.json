@@ -1,0 +1,1004 @@
+{
+  "billing.ActionConfiguration": {
+    "fields": {
+      "action_configuration_id": {
+        "description": "Databricks action configuration ID.",
+        "launch_stage": "GA"
+      },
+      "action_type": {
+        "description": "The type of the action.",
+        "ref": "billing.ActionConfigurationType",
+        "launch_stage": "GA"
+      },
+      "target": {
+        "description": "Target for the action. For example, an email address.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.ActionConfigurationType": {
+    "description": "Type of action that a budget alert executes when its threshold is crossed.",
+    "enum": [
+      "EMAIL_NOTIFICATION",
+      "BLOCK_USAGE"
+    ],
+    "enum_launch_stages": {
+      "BLOCK_USAGE": "PUBLIC_BETA",
+      "EMAIL_NOTIFICATION": "GA"
+    }
+  },
+  "billing.AlertConfiguration": {
+    "fields": {
+      "action_configurations": {
+        "description": "Configured actions for this alert. These define what happens when an alert enters a triggered state.",
+        "launch_stage": "GA"
+      },
+      "alert_configuration_id": {
+        "description": "Databricks alert configuration ID.",
+        "launch_stage": "GA"
+      },
+      "principal_overrides": {
+        "description": "Per-principal threshold overrides for this alert. Only applies to per-user alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored for shared alerts.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "quantity_threshold": {
+        "description": "The threshold for the budget alert to determine if it is in a triggered state. The number is evaluated based on `quantity_type`.",
+        "launch_stage": "GA"
+      },
+      "quantity_type": {
+        "description": "The way to calculate cost for this budget alert. This is what `quantity_threshold` is measured in.",
+        "ref": "billing.AlertConfigurationQuantityType",
+        "launch_stage": "GA"
+      },
+      "scope_type": {
+        "description": "How the alert threshold is evaluated. Determines whether spend is tracked in aggregate or per individual user.",
+        "ref": "billing.AlertConfigurationScopeType",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "time_period": {
+        "description": "The time window of usage data for the budget.",
+        "ref": "billing.AlertConfigurationTimePeriod",
+        "launch_stage": "GA"
+      },
+      "trigger_type": {
+        "description": "The evaluation method to determine when this budget alert is in a triggered state.",
+        "ref": "billing.AlertConfigurationTriggerType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.AlertConfigurationQuantityType": {
+    "enum": [
+      "LIST_PRICE_DOLLARS_USD"
+    ],
+    "enum_launch_stages": {
+      "LIST_PRICE_DOLLARS_USD": "GA"
+    }
+  },
+  "billing.AlertConfigurationScopeType": {
+    "description": "Evaluation scope for an alert configuration.",
+    "enum": [
+      "ALERT_CONFIGURATION_SCOPE_TYPE_SHARED",
+      "ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER"
+    ],
+    "enum_launch_stages": {
+      "ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER": "PUBLIC_BETA",
+      "ALERT_CONFIGURATION_SCOPE_TYPE_SHARED": "PUBLIC_BETA"
+    }
+  },
+  "billing.AlertConfigurationTimePeriod": {
+    "enum": [
+      "MONTH"
+    ],
+    "enum_launch_stages": {
+      "MONTH": "GA"
+    }
+  },
+  "billing.AlertConfigurationTriggerType": {
+    "enum": [
+      "CUMULATIVE_SPENDING_EXCEEDED"
+    ],
+    "enum_launch_stages": {
+      "CUMULATIVE_SPENDING_EXCEEDED": "GA"
+    }
+  },
+  "billing.AlertSpendStatus": {
+    "description": "The calling user's spend against a single blocking threshold. Values may be omitted if live\nspend or threshold data is temporarily unavailable.",
+    "fields": {
+      "percent_consumed": {
+        "description": "Percentage of the threshold consumed, as a decimal string rounded down to one decimal place (for\nexample, \"68.4\" means 68.4%). May exceed 100 when spend is over the threshold. Returns \"0.0\" if\nthere's no spend, and is omitted if the threshold is $0. For shared thresholds, this is the\nonly value returned; the absolute `spend` and `threshold` dollar amounts are withheld.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "scope_type": {
+        "description": "Whether the threshold is evaluated per individual user\n(`ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`) or on the shared spend across all users\n(`ALERT_CONFIGURATION_SCOPE_TYPE_SHARED`).",
+        "ref": "billing.AlertConfigurationScopeType",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "spend": {
+        "description": "The calling user's live spend against this threshold, in USD at list price. Returns \"0\" if the\ncaller has no usage. Omitted for shared thresholds, where only `percent_consumed` is returned.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "threshold": {
+        "description": "The calling user's effective threshold, in USD at list price. The effective threshold is the\nactual threshold amount that applies to the user, after adjusting for any user or group\noverrides. Omitted for shared thresholds, where only `percent_consumed` is returned.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "time_period": {
+        "description": "The time window the threshold applies to, for example `MONTH`.",
+        "ref": "billing.AlertConfigurationTimePeriod",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "billing.BudgetConfiguration": {
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID.",
+        "launch_stage": "GA"
+      },
+      "alert_configurations": {
+        "description": "Alerts to configure when this budget is in a triggered state. Budgets must have at least one alert configuration.\nA budget can have up to four shared alerts per time period, each with a unique `quantity_threshold`.\nBudgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY` can also use per-user alerts, with optional `principal_overrides`.\nThese budgets can have at most one per-user alert per time period, and can use shared alerts, a per-user alert, or both.\nThe `BLOCK_USAGE` action is only supported on budgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`.\nAt most one shared alert per time period can have a `BLOCK_USAGE` action, and it must be the shared alert with the highest threshold in that period.",
+        "launch_stage": "GA"
+      },
+      "budget_configuration_id": {
+        "description": "Databricks budget configuration ID.",
+        "launch_stage": "GA"
+      },
+      "create_time": {
+        "description": "Creation time of this budget configuration.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Human-readable name of budget configuration. Max Length: 128",
+        "launch_stage": "GA"
+      },
+      "filter": {
+        "description": "Configured filters for this budget. These are applied to your account's usage to limit the scope of what is considered for this budget.\nLeave empty to include all usage for this account. All provided filters must be matched for usage to be included.",
+        "ref": "billing.BudgetConfigurationFilter",
+        "launch_stage": "GA"
+      },
+      "include_external_spend": {
+        "description": "Whether this budget tracks external pass-through spend (third-party costs billed through a Databricks product) in addition to internal Databricks spend.\nOnly applicable to Unity Gateway budgets, i.e. when `resource_type` is `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`. This field is immutable after create.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "resource_type": {
+        "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
+        "ref": "billing.BudgetResourceType",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_time": {
+        "description": "Update time of this budget configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.BudgetConfigurationFilter": {
+    "fields": {
+      "tags": {
+        "description": "A list of tag keys and values that will limit the budget to usage that includes those specific custom tags.\nTags are case-sensitive and should be entered exactly as they appear in your usage data.",
+        "launch_stage": "GA"
+      },
+      "workspace_id": {
+        "description": "If provided, usage must match with the provided Databricks workspace IDs.",
+        "ref": "billing.BudgetConfigurationFilterWorkspaceIdClause",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.BudgetConfigurationFilterClause": {
+    "fields": {
+      "operator": {
+        "ref": "billing.BudgetConfigurationFilterOperator",
+        "launch_stage": "GA"
+      },
+      "values": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.BudgetConfigurationFilterOperator": {
+    "enum": [
+      "IN"
+    ],
+    "enum_launch_stages": {
+      "IN": "GA"
+    }
+  },
+  "billing.BudgetConfigurationFilterTagClause": {
+    "fields": {
+      "key": {
+        "launch_stage": "GA"
+      },
+      "value": {
+        "ref": "billing.BudgetConfigurationFilterClause",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.BudgetConfigurationFilterWorkspaceIdClause": {
+    "fields": {
+      "operator": {
+        "ref": "billing.BudgetConfigurationFilterOperator",
+        "launch_stage": "GA"
+      },
+      "values": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.BudgetPolicy": {
+    "description": "Contains the BudgetPolicy details.",
+    "fields": {
+      "binding_workspace_ids": {
+        "description": "List of workspaces that this budget policy will be exclusively bound to.\nAn empty binding implies that this budget policy is open to any workspace in the account.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "custom_tags": {
+        "description": "A list of tags defined by the customer. At most 20 entries are allowed per policy.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "policy_id": {
+        "description": "The Id of the policy. This field is generated by Databricks and globally unique.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "policy_name": {
+        "description": "The name of the policy.\n- Must be unique among active policies.\n- Can contain only characters from the ISO 8859-1 (latin1) set.\n- Can't start with reserved keywords such as `databricks:default-policy`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "billing.BudgetResourceType": {
+    "description": "Resource scope for a budget configuration. Determines whether the budget tracks all\nresources or a specific resource.",
+    "enum": [
+      "BUDGET_RESOURCE_TYPE_ALL_RESOURCES",
+      "BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY"
+    ],
+    "enum_launch_stages": {
+      "BUDGET_RESOURCE_TYPE_ALL_RESOURCES": "PUBLIC_BETA",
+      "BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY": "PUBLIC_BETA"
+    }
+  },
+  "billing.BudgetSpendStatus": {
+    "description": "The calling user's live spend against the blocking thresholds of a single budget.",
+    "fields": {
+      "alert_spend_statuses": {
+        "description": "The calling user's spend against each blocking threshold on this budget, one entry per scope\ntype and time period. A blocking threshold is a threshold that, once reached, blocks further\nrequests through Unity Gateway.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "name": {
+        "description": "The resource name of this budget spend status, of the form\n`accounts/{account_id}/budget-spend-statuses/{budget_id}`.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "billing.CreateBillingUsageDashboardRequest": {
+    "fields": {
+      "dashboard_type": {
+        "description": "Workspace level usage dashboard shows usage data for the specified workspace ID. Global level usage dashboard shows usage data for all workspaces in the account.",
+        "ref": "billing.UsageDashboardType",
+        "launch_stage": "GA"
+      },
+      "major_version": {
+        "description": "The major version of the usage dashboard template to use. Defaults to VERSION_1.",
+        "ref": "billing.UsageDashboardMajorVersion",
+        "launch_stage": "GA"
+      },
+      "workspace_id": {
+        "description": "The workspace ID of the workspace in which the usage dashboard is created.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.CreateBillingUsageDashboardResponse": {
+    "fields": {
+      "dashboard_id": {
+        "description": "The unique id of the usage dashboard.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.CreateBudgetConfigurationBudget": {
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID.",
+        "launch_stage": "GA"
+      },
+      "alert_configurations": {
+        "description": "Alerts to configure when this budget is in a triggered state. Budgets must have at least one alert configuration.\nA budget can have up to four shared alerts per time period, each with a unique `quantity_threshold`.\nBudgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY` can also use per-user alerts, with optional `principal_overrides`.\nThese budgets can have at most one per-user alert per time period, and can use shared alerts, a per-user alert, or both.\nThe `BLOCK_USAGE` action is only supported on budgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`.\nAt most one shared alert per time period can have a `BLOCK_USAGE` action, and it must be the shared alert with the highest threshold in that period.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Human-readable name of budget configuration. Max Length: 128",
+        "launch_stage": "GA"
+      },
+      "filter": {
+        "description": "Configured filters for this budget. These are applied to your account's usage to limit the scope of what is considered for this budget.\nLeave empty to include all usage for this account. All provided filters must be matched for usage to be included.",
+        "ref": "billing.BudgetConfigurationFilter",
+        "launch_stage": "GA"
+      },
+      "include_external_spend": {
+        "description": "Whether this budget tracks external pass-through spend (third-party costs billed through a Databricks product) in addition to internal Databricks spend.\nOnly applicable to Unity Gateway budgets, i.e. when `resource_type` is `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`. This field is immutable after create.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "resource_type": {
+        "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
+        "ref": "billing.BudgetResourceType",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "billing.CreateBudgetConfigurationBudgetActionConfigurations": {
+    "fields": {
+      "action_type": {
+        "description": "The type of the action.",
+        "ref": "billing.ActionConfigurationType",
+        "launch_stage": "GA"
+      },
+      "target": {
+        "description": "Target for the action. For example, an email address.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.CreateBudgetConfigurationBudgetAlertConfigurations": {
+    "fields": {
+      "action_configurations": {
+        "description": "Configured actions for this alert. These define what happens when an alert enters a triggered state.",
+        "launch_stage": "GA"
+      },
+      "principal_overrides": {
+        "description": "Per-principal threshold overrides for this alert. Only applies to per-user alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored for shared alerts.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "quantity_threshold": {
+        "description": "The threshold for the budget alert to determine if it is in a triggered state. The number is evaluated based on `quantity_type`.",
+        "launch_stage": "GA"
+      },
+      "quantity_type": {
+        "description": "The way to calculate cost for this budget alert. This is what `quantity_threshold` is measured in.",
+        "ref": "billing.AlertConfigurationQuantityType",
+        "launch_stage": "GA"
+      },
+      "scope_type": {
+        "description": "How the alert threshold is evaluated. Determines whether spend is tracked in aggregate or per individual user.",
+        "ref": "billing.AlertConfigurationScopeType",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "time_period": {
+        "description": "The time window of usage data for the budget.",
+        "ref": "billing.AlertConfigurationTimePeriod",
+        "launch_stage": "GA"
+      },
+      "trigger_type": {
+        "description": "The evaluation method to determine when this budget alert is in a triggered state.",
+        "ref": "billing.AlertConfigurationTriggerType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.CreateBudgetConfigurationRequest": {
+    "fields": {
+      "budget": {
+        "description": "Properties of the new budget configuration.",
+        "ref": "billing.CreateBudgetConfigurationBudget",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.CreateBudgetConfigurationResponse": {
+    "fields": {
+      "budget": {
+        "description": "The created budget configuration.",
+        "ref": "billing.BudgetConfiguration",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.CreateBudgetPolicyRequest": {
+    "description": "A request to create a BudgetPolicy.",
+    "fields": {
+      "policy": {
+        "description": "The policy to create. `policy_id` needs to be empty as it will be generated\n`policy_name` must be provided, custom_tags may need to be provided\ndepending on the cloud provider. All other fields are optional.",
+        "ref": "billing.BudgetPolicy",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "request_id": {
+        "description": "A unique identifier for this request. Restricted to 36 ASCII characters.\nA random UUID is recommended.\nThis request is only idempotent if a `request_id` is provided.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "billing.CreateLogDeliveryConfigurationParams": {
+    "description": "*\nLog Delivery Configuration",
+    "fields": {
+      "config_name": {
+        "description": "The optional human-readable name of the log delivery configuration. Defaults to empty.",
+        "launch_stage": "GA"
+      },
+      "credentials_id": {
+        "description": "The ID for a method:credentials/create that represents the AWS IAM role with policy and trust relationship as described in the main billable usage documentation page. See [Configure billable usage delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html).",
+        "launch_stage": "GA"
+      },
+      "delivery_path_prefix": {
+        "description": "The optional delivery path prefix within Amazon S3 storage. Defaults to empty, which means that logs are delivered to the root of the bucket. This must be a valid S3 object key. This must not start or end with a slash character.",
+        "launch_stage": "GA"
+      },
+      "delivery_start_time": {
+        "description": "This field applies only if log_type is BILLABLE_USAGE. This is the optional start month and year for delivery, specified in YYYY-MM format. Defaults to current year and month. BILLABLE_USAGE logs are not available for usage before March 2019 (2019-03).",
+        "launch_stage": "GA"
+      },
+      "log_type": {
+        "description": "Log delivery type. Supported values are:\n* `BILLABLE_USAGE` — Configure [billable usage log delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html). For the CSV schema, see the [View billable usage](https://docs.databricks.com/administration-guide/account-settings/usage.html).\n* `AUDIT_LOGS` — Configure [audit log delivery](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html). For the JSON schema, see [Configure audit logging](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html)",
+        "ref": "billing.LogType",
+        "launch_stage": "GA"
+      },
+      "output_format": {
+        "description": "The file type of log delivery.\n* If `log_type` is `BILLABLE_USAGE`, this value must be `CSV`. Only the CSV (comma-separated values) format is supported. For the schema, see the [View billable usage](https://docs.databricks.com/administration-guide/account-settings/usage.html)\n* If `log_type` is `AUDIT_LOGS`, this value must be `JSON`. Only the JSON (JavaScript Object Notation) format is supported. For the schema, see the [Configuring audit logs](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html).",
+        "ref": "billing.OutputFormat",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Status of log delivery configuration. Set to `ENABLED` (enabled) or `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the configuration](#operation/patch-log-delivery-config-status) later. Deletion of a configuration is not supported, so disable a log delivery configuration that is no longer needed.",
+        "ref": "billing.LogDeliveryConfigStatus",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_id": {
+        "description": "The ID for a method:storage/create  that represents the S3 bucket with bucket policy as described in the main billable usage documentation page. See [Configure billable usage delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html).",
+        "launch_stage": "GA"
+      },
+      "workspace_ids_filter": {
+        "description": "Optional filter that specifies workspace IDs to deliver logs for. By default the workspace filter is empty and log delivery applies at the account level, delivering workspace-level logs for all workspaces in your account, plus account level logs. You can optionally set this field to an array of workspace IDs (each one is an `int64`) to which log delivery should apply, in which case only workspace-level logs relating to the specified workspaces are delivered. If you plan to use different log delivery configurations for different workspaces, set this field explicitly. Be aware that delivery configurations mentioning specific workspaces won't apply to new workspaces created in the future, and delivery won't include account level logs. For some types of Databricks deployments there is only one workspace per account ID, so this field is unnecessary.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.DeleteBudgetConfigurationRequest": {},
+  "billing.DeleteBudgetConfigurationResponse": {},
+  "billing.DeleteBudgetPolicyRequest": {},
+  "billing.DeliveryStatus": {
+    "description": "*\nThe status string for log delivery. Possible values are:\n`CREATED`: There were no log delivery attempts since the config was created.\n`SUCCEEDED`: The latest attempt of log delivery has succeeded completely.\n`USER_FAILURE`: The latest attempt of log delivery failed because of misconfiguration of customer provided permissions on role or storage.\n`SYSTEM_FAILURE`: The latest attempt of log delivery failed because of an Databricks internal error. Contact support if it doesn't go away soon.\n`NOT_FOUND`: The log delivery status as the configuration has been disabled since the release of this feature or there are no workspaces in the account.",
+    "enum": [
+      "CREATED",
+      "SUCCEEDED",
+      "USER_FAILURE",
+      "SYSTEM_FAILURE",
+      "NOT_FOUND"
+    ],
+    "enum_launch_stages": {
+      "CREATED": "GA",
+      "NOT_FOUND": "GA",
+      "SUCCEEDED": "GA",
+      "SYSTEM_FAILURE": "GA",
+      "USER_FAILURE": "GA"
+    }
+  },
+  "billing.DownloadRequest": {
+    "fields": {
+      "end_month": {
+        "description": "Format: `YYYY-MM`. Last month to return billable usage logs for.\nThis field is required.",
+        "launch_stage": "GA"
+      },
+      "personal_data": {
+        "description": "Specify whether to include personally identifiable information in\nthe billable usage logs, for example the email addresses of cluster\ncreators. Handle this information with care. Defaults to false.",
+        "launch_stage": "GA"
+      },
+      "start_month": {
+        "description": "Format specification for month in the format `YYYY-MM`. This is\nused to specify billable usage `start_month` and `end_month`\nproperties. **Note**: Billable usage logs are unavailable before\nMarch 2019 (`2019-03`).",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.DownloadResponse": {
+    "fields": {
+      "contents": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.Filter": {
+    "description": "Structured representation of a filter to be applied to a list of policies. All specified filters\nwill be applied in conjunction.",
+    "fields": {
+      "creator_user_id": {
+        "description": "The policy creator user id to be filtered on.\nIf unspecified, all policies will be returned.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "creator_user_name": {
+        "description": "Deprecated: Do not use this field in new integrations. Creator filtering will be removed in a\nfuture version.\nThe policy creator user name to be filtered on.\nIf unspecified, all policies will be returned.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "policy_name": {
+        "description": "The partial name of policies to be filtered on.\nIf unspecified, all policies will be returned.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "billing.GetBillingUsageDashboardRequest": {
+    "fields": {
+      "dashboard_type": {
+        "description": "Workspace level usage dashboard shows usage data for the specified workspace ID. Global level usage dashboard shows usage data for all workspaces in the account.",
+        "ref": "billing.UsageDashboardType",
+        "launch_stage": "GA"
+      },
+      "workspace_id": {
+        "description": "The workspace ID of the workspace in which the usage dashboard is created.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.GetBillingUsageDashboardResponse": {
+    "fields": {
+      "dashboard_id": {
+        "description": "The unique id of the usage dashboard.",
+        "launch_stage": "GA"
+      },
+      "dashboard_url": {
+        "description": "The URL of the usage dashboard.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.GetBudgetConfigurationRequest": {},
+  "billing.GetBudgetConfigurationResponse": {
+    "fields": {
+      "budget": {
+        "ref": "billing.BudgetConfiguration",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.GetBudgetPolicyRequest": {},
+  "billing.GetBudgetSpendStatusRequest": {},
+  "billing.GetLogDeliveryConfigurationResponse": {
+    "fields": {
+      "log_delivery_configuration": {
+        "description": "The fetched log delivery configuration",
+        "ref": "billing.LogDeliveryConfiguration",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.GetLogDeliveryRequest": {},
+  "billing.LimitConfig": {
+    "description": "The limit configuration of the policy.\nLimit configuration provide a budget policy level cost control by enforcing the limit."
+  },
+  "billing.ListBudgetConfigurationsRequest": {
+    "fields": {
+      "page_token": {
+        "description": "A page token received from a previous get all budget configurations call. This token can be used to retrieve the subsequent page.\nRequests first page if absent.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.ListBudgetConfigurationsResponse": {
+    "fields": {
+      "budgets": {
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Token which can be sent as `page_token` to retrieve the next page of results. If this field is omitted, there are no subsequent budgets.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.ListBudgetPoliciesRequest": {
+    "fields": {
+      "filter_by": {
+        "description": "A filter to apply to the list of policies.",
+        "ref": "billing.Filter",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of budget policies to return.\nIf unspecified, at most 100 budget policies will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "A page token, received from a previous `ListServerlessPolicies` call.\nProvide this to retrieve the subsequent page.\nIf unspecified, the first page will be returned.\n\nWhen paginating, all other parameters provided to `ListServerlessPoliciesRequest` must match\nthe call that provided the page token.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "sort_spec": {
+        "description": "The sort specification.",
+        "ref": "billing.SortSpec",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "billing.ListBudgetPoliciesResponse": {
+    "description": "A list of policies.",
+    "fields": {
+      "next_page_token": {
+        "description": "A token that can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "policies": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "previous_page_token": {
+        "description": "A token that can be sent as `page_token` to retrieve the previous page.\nIn this field is omitted, there are no previous pages.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "billing.ListBudgetSpendStatusesRequest": {
+    "fields": {
+      "filter": {
+        "description": "A filter expression that narrows the returned budgets by workspace. Only `workspace_id` is\nsupported, in lower case with numeric workspace IDs, for example `workspace_id = 123` or\n`workspace_id IN (123, 456)`. Matches budgets that apply to any of the listed workspaces,\nincluding budgets that apply to all workspaces. Any other expression, such as an empty `IN ()`\nlist, fails with INVALID_PARAMETER_VALUE. If empty, returns every budget in the account that has\na blocking threshold.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "The maximum number of spend statuses to return per page. If unspecified or 0, at most 100 are\nreturned. The maximum value is 100; values above 100 are coerced to 100. Negative values fail\nwith INVALID_PARAMETER_VALUE. The server may return fewer results than requested, including\nzero, even when more pages remain; page until `next_page_token` is absent.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "page_token": {
+        "description": "A page token from a previous `ListBudgetSpendStatuses` response, used to fetch the next page.\nRequests the first page if absent. All other request parameters except `page_size` must match\nthe request that returned the token; otherwise the request fails with INVALID_PARAMETER_VALUE.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "billing.ListBudgetSpendStatusesResponse": {
+    "description": "Response for ListBudgetSpendStatuses.",
+    "fields": {
+      "budget_spend_statuses": {
+        "description": "The calling user's spend status, one entry per returned budget.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "Token to pass as `page_token` to retrieve the next page. Absent when there are no more results.\nA page can contain fewer results than `page_size`, or none, while this token is still set, so\nkeep paging until it's absent.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "billing.ListLogDeliveryRequest": {
+    "fields": {
+      "credentials_id": {
+        "description": "The Credentials id to filter the search results with",
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "description": "A page token received from a previous get all budget configurations call. This token can be used to retrieve the subsequent page.\nRequests first page if absent.",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "The log delivery status to filter the search results with",
+        "ref": "billing.LogDeliveryConfigStatus",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_id": {
+        "description": "The Storage Configuration id to filter the search results with",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.LogDeliveryConfigStatus": {
+    "description": "*\nLog Delivery Status\n\n`ENABLED`: All dependencies have executed and succeeded\n`DISABLED`: At least one dependency has succeeded",
+    "enum": [
+      "ENABLED",
+      "DISABLED"
+    ],
+    "enum_launch_stages": {
+      "DISABLED": "GA",
+      "ENABLED": "GA"
+    }
+  },
+  "billing.LogDeliveryConfiguration": {
+    "description": "*\nLog Delivery Configuration",
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID.",
+        "launch_stage": "GA"
+      },
+      "config_id": {
+        "description": "The unique UUID of log delivery configuration",
+        "launch_stage": "GA"
+      },
+      "config_name": {
+        "description": "The optional human-readable name of the log delivery configuration. Defaults to empty.",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when the log delivery configuration was created.",
+        "launch_stage": "GA"
+      },
+      "credentials_id": {
+        "description": "The ID for a method:credentials/create that represents the AWS IAM role with policy and trust relationship as described in the main billable usage documentation page. See [Configure billable usage delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html).",
+        "launch_stage": "GA"
+      },
+      "delivery_path_prefix": {
+        "description": "The optional delivery path prefix within Amazon S3 storage. Defaults to empty, which means that logs are delivered to the root of the bucket. This must be a valid S3 object key. This must not start or end with a slash character.",
+        "launch_stage": "GA"
+      },
+      "delivery_start_time": {
+        "description": "This field applies only if log_type is BILLABLE_USAGE. This is the optional start month and year for delivery, specified in YYYY-MM format. Defaults to current year and month. BILLABLE_USAGE logs are not available for usage before March 2019 (2019-03).",
+        "launch_stage": "GA"
+      },
+      "log_delivery_status": {
+        "description": "The LogDeliveryStatus of this log delivery configuration",
+        "ref": "billing.LogDeliveryStatus",
+        "launch_stage": "GA"
+      },
+      "log_type": {
+        "description": "Log delivery type. Supported values are:\n* `BILLABLE_USAGE` — Configure [billable usage log delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html). For the CSV schema, see the [View billable usage](https://docs.databricks.com/administration-guide/account-settings/usage.html).\n* `AUDIT_LOGS` — Configure [audit log delivery](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html). For the JSON schema, see [Configure audit logging](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html)",
+        "ref": "billing.LogType",
+        "launch_stage": "GA"
+      },
+      "output_format": {
+        "description": "The file type of log delivery.\n* If `log_type` is `BILLABLE_USAGE`, this value must be `CSV`. Only the CSV (comma-separated values) format is supported. For the schema, see the [View billable usage](https://docs.databricks.com/administration-guide/account-settings/usage.html)\n* If `log_type` is `AUDIT_LOGS`, this value must be `JSON`. Only the JSON (JavaScript Object Notation) format is supported. For the schema, see the [Configuring audit logs](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html).",
+        "ref": "billing.OutputFormat",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Status of log delivery configuration. Set to `ENABLED` (enabled) or `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the configuration](#operation/patch-log-delivery-config-status) later. Deletion of a configuration is not supported, so disable a log delivery configuration that is no longer needed.",
+        "ref": "billing.LogDeliveryConfigStatus",
+        "launch_stage": "GA"
+      },
+      "storage_configuration_id": {
+        "description": "The ID for a method:storage/create  that represents the S3 bucket with bucket policy as described in the main billable usage documentation page. See [Configure billable usage delivery](https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html).",
+        "launch_stage": "GA"
+      },
+      "update_time": {
+        "description": "Time in epoch milliseconds when the log delivery configuration was updated.",
+        "launch_stage": "GA"
+      },
+      "workspace_ids_filter": {
+        "description": "Optional filter that specifies workspace IDs to deliver logs for. By default the workspace filter is empty and log delivery applies at the account level, delivering workspace-level logs for all workspaces in your account, plus account level logs. You can optionally set this field to an array of workspace IDs (each one is an `int64`) to which log delivery should apply, in which case only workspace-level logs relating to the specified workspaces are delivered. If you plan to use different log delivery configurations for different workspaces, set this field explicitly. Be aware that delivery configurations mentioning specific workspaces won't apply to new workspaces created in the future, and delivery won't include account level logs. For some types of Databricks deployments there is only one workspace per account ID, so this field is unnecessary.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.LogDeliveryStatus": {
+    "fields": {
+      "last_attempt_time": {
+        "description": "The UTC time for the latest log delivery attempt.",
+        "launch_stage": "GA"
+      },
+      "last_successful_attempt_time": {
+        "description": "The UTC time for the latest successful log delivery.",
+        "launch_stage": "GA"
+      },
+      "message": {
+        "description": "Informative message about the latest log delivery attempt. If the log delivery fails with USER_FAILURE, error details will be provided for fixing misconfigurations in cloud permissions.",
+        "launch_stage": "GA"
+      },
+      "status": {
+        "description": "Enum that describes the status. Possible values are:\n* `CREATED`: There were no log delivery attempts since the config was created.\n* `SUCCEEDED`: The latest attempt of log delivery has succeeded completely.\n* `USER_FAILURE`: The latest attempt of log delivery failed because of misconfiguration of customer provided permissions on role or storage.\n* `SYSTEM_FAILURE`: The latest attempt of log delivery failed because of an Databricks internal error. Contact support if it doesn't go away soon.\n* `NOT_FOUND`: The log delivery status as the configuration has been disabled since the release of this feature or there are no workspaces in the account.",
+        "ref": "billing.DeliveryStatus",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.LogType": {
+    "description": "*\nLog Delivery Type",
+    "enum": [
+      "BILLABLE_USAGE",
+      "AUDIT_LOGS"
+    ],
+    "enum_launch_stages": {
+      "AUDIT_LOGS": "GA",
+      "BILLABLE_USAGE": "GA"
+    }
+  },
+  "billing.OutputFormat": {
+    "description": "*\nLog Delivery Output Format",
+    "enum": [
+      "CSV",
+      "JSON"
+    ],
+    "enum_launch_stages": {
+      "CSV": "GA",
+      "JSON": "GA"
+    }
+  },
+  "billing.PatchStatusResponse": {},
+  "billing.PrincipalOverride": {
+    "description": "Per-principal threshold override on a PER_USER alert: bumps the alert's quantity_threshold for one principal_id.",
+    "fields": {
+      "override_threshold": {
+        "description": "Dollar amount that overrides the parent alert's quantity_threshold for this principal.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "principal_id": {
+        "description": "Account-level principal id (user, group, or service principal).",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "billing.SortSpec": {
+    "fields": {
+      "descending": {
+        "description": "Whether to sort in descending order.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "field": {
+        "description": "The filed to sort by",
+        "ref": "billing.SortSpecField",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "billing.SortSpecField": {
+    "enum": [
+      "POLICY_NAME"
+    ],
+    "enum_launch_stages": {
+      "POLICY_NAME": "PUBLIC_PREVIEW"
+    }
+  },
+  "billing.UpdateBudgetConfigurationBudget": {
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID.",
+        "launch_stage": "GA"
+      },
+      "alert_configurations": {
+        "description": "Alerts to configure when this budget is in a triggered state. Budgets must have at least one alert configuration.\nA budget can have up to four shared alerts per time period, each with a unique `quantity_threshold`.\nBudgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY` can also use per-user alerts, with optional `principal_overrides`.\nThese budgets can have at most one per-user alert per time period, and can use shared alerts, a per-user alert, or both.\nThe `BLOCK_USAGE` action is only supported on budgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`.\nAt most one shared alert per time period can have a `BLOCK_USAGE` action, and it must be the shared alert with the highest threshold in that period.",
+        "launch_stage": "GA"
+      },
+      "budget_configuration_id": {
+        "description": "Databricks budget configuration ID.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Human-readable name of budget configuration. Max Length: 128",
+        "launch_stage": "GA"
+      },
+      "filter": {
+        "description": "Configured filters for this budget. These are applied to your account's usage to limit the scope of what is considered for this budget.\nLeave empty to include all usage for this account. All provided filters must be matched for usage to be included.",
+        "ref": "billing.BudgetConfigurationFilter",
+        "launch_stage": "GA"
+      },
+      "include_external_spend": {
+        "description": "Whether this budget tracks external pass-through spend (third-party costs billed through a Databricks product) in addition to internal Databricks spend.\nOnly applicable to Unity Gateway budgets, i.e. when `resource_type` is `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`. This field is immutable after create.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "resource_type": {
+        "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
+        "ref": "billing.BudgetResourceType",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "billing.UpdateBudgetConfigurationRequest": {
+    "fields": {
+      "budget": {
+        "description": "The updated budget. This will overwrite the budget specified by the budget ID.",
+        "ref": "billing.UpdateBudgetConfigurationBudget",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.UpdateBudgetConfigurationResponse": {
+    "fields": {
+      "budget": {
+        "description": "The updated budget.",
+        "ref": "billing.BudgetConfiguration",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.UpdateBudgetPolicyRequest": {
+    "fields": {
+      "limit_config": {
+        "description": "DEPRECATED. This is redundant field as LimitConfig is part of the BudgetPolicy",
+        "ref": "billing.LimitConfig",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "policy": {
+        "description": "The policy to update. `creator_user_id` cannot be specified in the request. All other fields\nmust be specified even if not changed. The `policy_id` is used to identify the policy to\nupdate.",
+        "ref": "billing.BudgetPolicy",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "billing.UpdateLogDeliveryConfigurationStatusRequest": {
+    "description": "*\nUpdate Log Delivery Configuration",
+    "fields": {
+      "status": {
+        "description": "Status of log delivery configuration. Set to `ENABLED` (enabled) or `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the configuration](#operation/patch-log-delivery-config-status) later. Deletion of a configuration is not supported, so disable a log delivery configuration that is no longer needed.",
+        "ref": "billing.LogDeliveryConfigStatus",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.UsageDashboardMajorVersion": {
+    "enum": [
+      "USAGE_DASHBOARD_MAJOR_VERSION_1",
+      "USAGE_DASHBOARD_MAJOR_VERSION_2"
+    ],
+    "enum_launch_stages": {
+      "USAGE_DASHBOARD_MAJOR_VERSION_1": "GA",
+      "USAGE_DASHBOARD_MAJOR_VERSION_2": "GA"
+    }
+  },
+  "billing.UsageDashboardType": {
+    "enum": [
+      "USAGE_DASHBOARD_TYPE_WORKSPACE",
+      "USAGE_DASHBOARD_TYPE_GLOBAL"
+    ],
+    "enum_launch_stages": {
+      "USAGE_DASHBOARD_TYPE_GLOBAL": "GA",
+      "USAGE_DASHBOARD_TYPE_WORKSPACE": "GA"
+    }
+  },
+  "billing.WrappedCreateLogDeliveryConfiguration": {
+    "description": "*\nProperties of the new log delivery configuration.",
+    "fields": {
+      "log_delivery_configuration": {
+        "ref": "billing.CreateLogDeliveryConfigurationParams",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.WrappedLogDeliveryConfiguration": {
+    "fields": {
+      "log_delivery_configuration": {
+        "description": "The created log delivery configuration",
+        "ref": "billing.LogDeliveryConfiguration",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "billing.WrappedLogDeliveryConfigurations": {
+    "fields": {
+      "log_delivery_configurations": {
+        "description": "Log delivery configurations were returned successfully.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "Token which can be sent as `page_token` to retrieve the next page of results. If this field is omitted, there are no subsequent budgets.",
+        "launch_stage": "GA"
+      }
+    }
+  }
+}

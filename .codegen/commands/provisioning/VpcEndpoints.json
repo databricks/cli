@@ -1,0 +1,209 @@
+{
+  "id": "provisioning.VpcEndpoints",
+  "name": "VpcEndpoints",
+  "description": "These APIs manage VPC endpoint configurations for this account.",
+  "package": {
+    "name": "provisioning"
+  },
+  "is_accounts": true,
+  "docs_group": "provisioning",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a VPC endpoint configuration, which represents a\n[VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html)\nobject in AWS used to communicate privately with Databricks over\n[AWS PrivateLink](https://aws.amazon.com/privatelink).\n\nAfter you create the VPC endpoint configuration, the Databricks\n[endpoint service](https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-share-your-services.html)\nautomatically accepts the VPC endpoint.\n\nBefore configuring PrivateLink, read the\n[Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).",
+      "summary": "Create a VPC endpoint configuration.",
+      "path": "/api/2.0/accounts/{account_id}/vpc-endpoints",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateVpcEndpointRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "VpcEndpoint",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "aws_vpc_endpoint_id",
+          "description": "The ID of the VPC endpoint object in AWS.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "gcp_vpc_endpoint_info",
+          "description": "The cloud info of this vpc endpoint.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpVpcEndpointInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "The region in which this VPC endpoint object exists.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "vpc_endpoint_name",
+          "description": "The human-readable name of the storage configuration.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a Databricks VPC endpoint configuration. You cannot delete a VPC endpoint configuration that is associated with any workspace.",
+      "summary": "Delete a VPC endpoint configuration.",
+      "path": "/api/2.0/accounts/{account_id}/vpc-endpoints/{vpc_endpoint_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteVpcEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "vpc_endpoint_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "vpc_endpoint_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VpcEndpoint",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "vpc_endpoint_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "vpc_endpoint_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a VPC endpoint configuration, which represents\na [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html)\nobject in AWS used to communicate privately with Databricks over\n[AWS PrivateLink](https://aws.amazon.com/privatelink).",
+      "summary": "Get a VPC endpoint configuration.",
+      "path": "/api/2.0/accounts/{account_id}/vpc-endpoints/{vpc_endpoint_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetVpcEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "vpc_endpoint_id",
+            "description": "Databricks VPC endpoint ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "vpc_endpoint_id",
+            "description": "Databricks VPC endpoint ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "VpcEndpoint",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "vpc_endpoint_id",
+          "description": "Databricks VPC endpoint ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "vpc_endpoint_id",
+          "description": "Databricks VPC endpoint ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists Databricks VPC endpoint configurations for an account.",
+      "summary": "List VPC endpoint configurations.",
+      "path": "/api/2.0/accounts/{account_id}/vpc-endpoints",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListVpcEndpointsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "VpcEndpointList",
+        "array_value": {
+          "pascal_name": "VpcEndpoint",
+          "is_object": true
+        }
+      }
+    }
+  ]
+}

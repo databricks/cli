@@ -1,0 +1,93 @@
+{
+  "id": "dashboards.LakeviewEmbedded",
+  "name": "LakeviewEmbedded",
+  "description": "Token-based Lakeview APIs for embedding dashboards in external applications.",
+  "package": {
+    "name": "dashboards"
+  },
+  "docs_group": "dashboards",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "GetPublishedDashboardTokenInfo",
+      "description": "Get a required authorization details and scopes of a published dashboard to mint an OAuth token.\n\nThe caller must be a workspace user with one of the following entitlements:\nWorkspace access, Databricks SQL access, or Consumer access.\n\nAccount-level users who are not members of the workspace cannot call this\nendpoint, even if the dashboard has been shared with them.",
+      "summary": "Read information of a published dashboard to mint an OAuth token.",
+      "path": "/api/2.0/lakeview/dashboards/{dashboard_id}/published/tokeninfo",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetPublishedDashboardTokenInfoRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the published dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "dashboard_id",
+            "description": "UUID identifying the published dashboard.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetPublishedDashboardTokenInfoResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the published dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "external_value",
+          "description": "Provided external value to be included in the custom claim.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "external_viewer_id",
+          "description": "Provided external viewer id to be included in the custom claim.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "dashboard_id",
+          "description": "UUID identifying the published dashboard.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "id": "iam.PermissionMigration",
+  "name": "PermissionMigration",
+  "description": "APIs for migrating acl permissions, used only by the ucx tool:  https://github.com/databrickslabs/ucx",
+  "package": {
+    "name": "iam"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "iam",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "methods": [
+    {
+      "name": "MigratePermissions",
+      "description": "Migrate Permissions.",
+      "summary": "Migrate Permissions.",
+      "path": "/api/2.0/permissionmigration",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "MigratePermissionsRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "WorkspaceId of the associated workspace where the permission migration will occur.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "from_workspace_group_name",
+            "description": "The name of the workspace group that permissions will be migrated from.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "to_account_group_name",
+            "description": "The name of the account group that permissions will be migrated to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_id",
+            "description": "WorkspaceId of the associated workspace where the permission migration will occur.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "from_workspace_group_name",
+            "description": "The name of the workspace group that permissions will be migrated from.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "to_account_group_name",
+            "description": "The name of the account group that permissions will be migrated to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MigratePermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "from_workspace_group_name",
+          "description": "The name of the workspace group that permissions will be migrated from.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "size",
+          "description": "The maximum number of permissions that will be migrated.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "to_account_group_name",
+          "description": "The name of the account group that permissions will be migrated to.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "WorkspaceId of the associated workspace where the permission migration will occur.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "WorkspaceId of the associated workspace where the permission migration will occur.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "from_workspace_group_name",
+          "description": "The name of the workspace group that permissions will be migrated from.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "to_account_group_name",
+          "description": "The name of the account group that permissions will be migrated to.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

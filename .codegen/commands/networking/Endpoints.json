@@ -1,0 +1,625 @@
+{
+  "id": "networking.Endpoints",
+  "name": "Endpoints",
+  "description": "These APIs manage endpoint configurations for this account.",
+  "package": {
+    "name": "networking"
+  },
+  "is_accounts": true,
+  "docs_group": "provisioning",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListEndpointsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateEndpoint",
+      "description": "Creates a new network connectivity endpoint that enables private connectivity\nbetween your network resources and Databricks services.\n\nAfter creation, the endpoint is initially in the PENDING state. The Databricks\nendpoint service automatically reviews and approves the endpoint within a few\nminutes. Use the GET method to retrieve the latest endpoint state.\n\nAn endpoint can be used only after it reaches the APPROVED state.",
+      "summary": "Create a network endpoint.",
+      "path": "/api/networking/v1/{parent=accounts/*}/endpoints",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateEndpointRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource name of the account under which the endpoint is created.\nFormat: `accounts/{account_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Endpoint",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource name of the account under which the endpoint is created.\nFormat: `accounts/{account_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "endpoint",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Endpoint",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "endpoint",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Endpoint",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "region",
+              "description": "The cloud provider region where this endpoint is located.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "region",
+              "description": "The cloud provider region where this endpoint is located.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Endpoint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "region",
+            "description": "The cloud provider region where this endpoint is located.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "region",
+            "description": "The cloud provider region where this endpoint is located.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "endpoint",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Endpoint",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "region",
+                "description": "The cloud provider region where this endpoint is located.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "region",
+                "description": "The cloud provider region where this endpoint is located.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The parent resource name of the account under which the endpoint is created.\nFormat: `accounts/{account_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The Databricks Account in which the endpoint object exists.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "aws_vpc_endpoint_info",
+          "description": "Info for an AWS VPC endpoint.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AwsVpcEndpointInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "azure_private_endpoint_info",
+          "description": "Info for an Azure private endpoint.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "AzurePrivateEndpointInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "The timestamp when the endpoint was created. The timestamp is in RFC 3339 format in UTC timezone.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_id",
+          "description": "The unique identifier for this endpoint under the account. This field is a UUID generated by Databricks.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "gcp_psc_endpoint_info",
+          "description": "Info for a GCP Private Service Connect endpoint.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GcpPscEndpointInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the endpoint, which uniquely identifies the endpoint.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "The cloud provider region where this endpoint is located.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "state",
+          "description": "The state of the endpoint. The endpoint can only be used if the state is `APPROVED`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointState",
+            "enum": [
+              {
+                "content": "APPROVED"
+              },
+              {
+                "content": "DISCONNECTED"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "PENDING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "use_case",
+          "description": "The use case that determines the type of network connectivity this endpoint provides.\nThis field is automatically determined based on the endpoint configuration and cloud-specific settings.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointUseCase",
+            "enum": [
+              {
+                "content": "SERVICE_DIRECT"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The parent resource name of the account under which the endpoint is created.\nFormat: `accounts/{account_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "The cloud provider region where this endpoint is located.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteEndpoint",
+      "description": "Deletes a network endpoint. This will remove the endpoint configuration from Databricks.\nDepending on the endpoint type and use case, you may also need to delete corresponding network resources\nin your cloud provider account.",
+      "summary": "Delete a network endpoint.",
+      "path": "/api/networking/v1/{name=accounts/*/endpoints/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetEndpoint",
+      "description": "Gets details of a specific network endpoint.",
+      "summary": "Get a network endpoint.",
+      "path": "/api/networking/v1/{name=accounts/*/endpoints/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Endpoint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "region",
+            "description": "The cloud provider region where this endpoint is located.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "The human-readable display name of this endpoint.\nThe input should conform to RFC-1034, which restricts to letters, numbers, and hyphens,\nwith the first character a letter, the last a letter or a number, and a 63 character maximum.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "region",
+            "description": "The cloud provider region where this endpoint is located.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListEndpoints",
+      "description": "Lists all network connectivity endpoints for the account.",
+      "summary": "List network endpoints.",
+      "path": "/api/networking/v1/{parent=accounts/*}/endpoints",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListEndpointsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource name of the account to list endpoints for.\nFormat: `accounts/{account_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The parent resource name of the account to list endpoints for.\nFormat: `accounts/{account_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListEndpointsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The parent resource name of the account to list endpoints for.\nFormat: `accounts/{account_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The parent resource name of the account to list endpoints for.\nFormat: `accounts/{account_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,780 @@
+{
+  "id": "catalog.RegisteredModels",
+  "name": "RegisteredModels",
+  "description": "Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.\nModels in Unity Catalog provide centralized access control, auditing, lineage, and discovery of\nML models across Databricks workspaces.\n\nAn MLflow registered model resides in the third layer of Unity Catalog’s three-level namespace.\nRegistered models contain model versions, which correspond to actual ML models (MLflow models). Creating new\nmodel versions requires use of the MLflow Python client. After model versions are created, you can\nload them for batch inference using MLflow Python client APIs, or deploy them for real-time serving using\nDatabricks Model Serving.\n\nAll operations on registered models and model versions require USE_CATALOG permissions on the enclosing catalog\nand USE_SCHEMA permissions on the enclosing schema. In addition, the following additional privileges are\nrequired for various operations:\n\n* To create a registered model, users must additionally have the CREATE_MODEL permission on the target schema.\n* To view registered model or model version metadata, model version data files, or invoke a model version,\nusers must additionally have the EXECUTE permission on the registered model\n* To update registered model or model version tags, users must additionally have APPLY TAG permissions on the registered model\n* To update other registered model or model version metadata (comments, aliases)\ncreate a new model version, or update permissions on the registered model, users must be owners of the\nregistered model.\n\nNote: The securable type for models is FUNCTION. When using REST APIs (for example, tagging, grants) that specify\na securable type, use FUNCTION as the securable type.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "RegisteredModelInfoNameToFullNameMap"
+    },
+    "request": {
+      "pascal_name": "ListRegisteredModelsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new registered model in Unity Catalog.\n\nFile storage for model versions in the registered model\nwill be located in the default location which is specified by the parent schema,\nor the parent catalog, or the Metastore.\n\nFor registered model creation to succeed, the user must satisfy the following conditions:\n- The caller must be a metastore admin, or be the owner of the parent catalog and schema,\nor have the **USE_CATALOG** privilege on the parent catalog\nand the **USE_SCHEMA** privilege on the parent schema.\n- The caller must have the **CREATE MODEL** or **CREATE FUNCTION** privilege on the parent schema.",
+      "summary": "Create a Registered Model.",
+      "path": "/api/2.1/unity-catalog/models",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateRegisteredModelRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "RegisteredModelInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "aliases",
+          "description": "List of aliases associated with the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegisteredModelAliasList",
+            "array_value": {
+              "pascal_name": "RegisteredModelAlias",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "browse_only",
+          "description": "Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "catalog_name",
+          "description": "The name of the catalog where the schema and the registered model reside",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "The comment attached to the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_at",
+          "description": "Creation timestamp of the registered model in milliseconds since the Unix epoch",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "The identifier of the user who created the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The unique identifier of the metastore",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "The identifier of the user who owns the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The name of the schema where the registered model resides",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_location",
+          "description": "The storage location on the cloud under which model version data files are stored",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "updated_at",
+          "description": "Last-update timestamp of the registered model in milliseconds since the Unix epoch",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "The identifier of the user who updated the registered model last time",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a registered model and all its model versions from the specified parent catalog and schema.\n\nThe caller must be a metastore admin or an owner of the registered model.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Delete a Registered Model.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteRegisteredModelRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteAlias",
+      "description": "Deletes a registered model alias.\n\nThe caller must be a metastore admin or an owner of the registered model.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Delete a Registered Model Alias.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteAliasRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "alias",
+            "description": "The name of the alias",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "alias",
+            "description": "The name of the alias",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "alias",
+          "description": "The name of the alias",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "alias",
+          "description": "The name of the alias",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a registered model.\n\nThe caller must be a metastore admin or an owner of (or have the **EXECUTE**\nprivilege on) the registered model. For the latter case, the caller must also be the owner\nor have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege\non the parent schema.",
+      "summary": "Get a Registered Model.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRegisteredModelRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RegisteredModelInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_aliases",
+          "description": "Whether to include registered model aliases in the response",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include registered models in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List registered models. You can list registered models under a particular schema,\nor list all registered models in the current metastore.\n\nThe returned models are filtered based on the privileges of the calling user.\nFor example, the metastore admin is able to list all the registered models.\nA regular user needs to be the owner or have the **EXECUTE** privilege\non the registered model to receive the registered models in the response.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.\n\nThere is no guarantee of a specific ordering of the elements in the response.\n\nPAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List Registered Models.",
+      "path": "/api/2.1/unity-catalog/models",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListRegisteredModelsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListRegisteredModelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_name",
+          "description": "The identifier of the catalog under which to list registered models.\nIf specified, schema_name must be specified.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "include_browse",
+          "description": "Whether to include registered models in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Max number of registered models to return.\n\nIf both catalog and schema are specified:\n- when max_results is not specified, the page length is set to a server configured value (10000, as of 4/2/2024).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value (10000, as of 4/2/2024);\n- when set to 0, the page length is set to a server configured value (10000, as of 4/2/2024);\n- when set to a value less than 0, an invalid parameter error is returned;\n\nIf neither schema nor catalog is specified:\n- when max_results is not specified, the page length is set to a server configured value (100, as of 4/2/2024).\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value (1000, as of 4/2/2024);\n- when set to 0, the page length is set to a server configured value (100, as of 4/2/2024);\n- when set to a value less than 0, an invalid parameter error is returned;",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque token to send for the next page of results (pagination).",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The identifier of the schema under which to list registered models.\nIf specified, catalog_name must be specified.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque token to send for the next page of results (pagination).",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "SetAlias",
+      "description": "Set an alias on the specified registered model.\n\nThe caller must be a metastore admin or an owner of the registered model.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.",
+      "summary": "Set a Registered Model Alias.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SetRegisteredModelAliasRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "alias",
+            "description": "The name of the alias",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "version_num",
+            "description": "The version number of the model version to which the alias points",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "alias",
+            "description": "The name of the alias",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "version_num",
+            "description": "The version number of the model version to which the alias points",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RegisteredModelAlias",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "alias",
+          "description": "The name of the alias",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version_num",
+          "description": "The version number of the model version to which the alias points",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "alias",
+          "description": "The name of the alias",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version_num",
+          "description": "The version number of the model version to which the alias points",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the specified registered model.\n\nThe caller must be a metastore admin or an owner of the registered model.\nFor the latter case, the caller must also be the owner or have the **USE_CATALOG**\nprivilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.\n\nCurrently only the name, the owner or the comment of the registered model can be updated.",
+      "summary": "Update a Registered Model.",
+      "path": "/api/2.1/unity-catalog/models/{full_name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateRegisteredModelRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "full_name",
+            "description": "The three-level (fully qualified) name of the registered model",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RegisteredModelInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "aliases",
+          "description": "List of aliases associated with the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RegisteredModelAliasList",
+            "array_value": {
+              "pascal_name": "RegisteredModelAlias",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "browse_only",
+          "description": "Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "catalog_name",
+          "description": "The name of the catalog where the schema and the registered model reside",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "The comment attached to the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "created_at",
+          "description": "Creation timestamp of the registered model in milliseconds since the Unix epoch",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "created_by",
+          "description": "The identifier of the user who created the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metastore_id",
+          "description": "The unique identifier of the metastore",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the registered model.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "The identifier of the user who owns the registered model",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "schema_name",
+          "description": "The name of the schema where the registered model resides",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_location",
+          "description": "The storage location on the cloud under which model version data files are stored",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "updated_at",
+          "description": "Last-update timestamp of the registered model in milliseconds since the Unix epoch",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "The identifier of the user who updated the registered model last time",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "full_name",
+          "description": "The three-level (fully qualified) name of the registered model",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

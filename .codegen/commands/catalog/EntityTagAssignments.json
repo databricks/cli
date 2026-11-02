@@ -1,0 +1,1258 @@
+{
+  "id": "catalog.EntityTagAssignments",
+  "name": "EntityTagAssignments",
+  "description": "Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog. Entity tagging is supported on catalogs, schemas, tables (including views), columns, and volumes.\nWith these APIs, you can create, update, delete, and list tag assignments across Unity Catalog entities.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListEntityTagAssignmentsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a tag assignment for an Unity Catalog entity.\n\nTo add tags to Unity Catalog entities, you must own the entity or have the following privileges:\n- **APPLY TAG** on the entity\n- **USE SCHEMA** on the entity's parent schema\n- **USE CATALOG** on the entity's parent catalog\n\nTo add a governed tag to Unity Catalog entities, you must also have the **ASSIGN** or **MANAGE** permission on the tag policy. See [Manage tag policy permissions](https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions).",
+      "summary": "Create an entity tag assignment.",
+      "path": "/api/2.1/unity-catalog/entity-tag-assignments",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateEntityTagAssignmentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EntityTagAssignment",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EntityTagAssignment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tag_assignment",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "EntityTagAssignment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "entity_name",
+              "description": "The fully qualified name of the entity to which the tag is assigned",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "The type of the entity to which the tag is assigned.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "entity_name",
+              "description": "The fully qualified name of the entity to which the tag is assigned",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "The type of the entity to which the tag is assigned.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "EntityTagAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "tag_assignment",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntityTagAssignment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "entity_name",
+                "description": "The fully qualified name of the entity to which the tag is assigned",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "The type of the entity to which the tag is assigned.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "entity_name",
+                "description": "The fully qualified name of the entity to which the tag is assigned",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "The type of the entity to which the tag is assigned.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "The source type of the tag assignment, e.g., user-assigned or system-assigned",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TagAssignmentSourceType",
+            "enum": [
+              {
+                "content": "TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_value",
+          "description": "The value of the tag",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The timestamp when the tag assignment was last updated",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "The user or principal who updated the tag assignment",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a tag assignment for an Unity Catalog entity by its key.\n\nTo delete tags from Unity Catalog entities, you must own the entity or have the following privileges:\n- **APPLY TAG** on the entity\n- **USE_SCHEMA** on the entity's parent schema\n- **USE_CATALOG** on the entity's parent catalog\n\nTo delete a governed tag from Unity Catalog entities, you must also have the **ASSIGN** or **MANAGE** permission on the tag policy. See [Manage tag policy permissions](https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions).",
+      "summary": "Delete an entity tag assignment.",
+      "path": "/api/2.1/unity-catalog/entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteEntityTagAssignmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "Required. The key of the tag to delete",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "Required. The key of the tag to delete",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "Required. The key of the tag to delete",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "Required. The key of the tag to delete",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a tag assignment for an Unity Catalog entity by tag key.",
+      "summary": "Get an entity tag assignment.",
+      "path": "/api/2.1/unity-catalog/entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetEntityTagAssignmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "Required. The key of the tag",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "Required. The key of the tag",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EntityTagAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "Required. The key of the tag",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "Required. The key of the tag",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List tag assignments for an Unity Catalog entity\n\nPAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List entity tag assignments.",
+      "path": "/api/2.1/unity-catalog/entity-tag-assignments/{entity_type}/{entity_name}/tags",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListEntityTagAssignmentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListEntityTagAssignmentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Optional. Maximum number of tag assignments to return in a single page",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Optional. Pagination token to retrieve the next page of results",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Optional. Pagination token to retrieve the next page of results",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates an existing tag assignment for an Unity Catalog entity.\n\nTo update tags to Unity Catalog entities, you must own the entity or have the following privileges:\n- **APPLY TAG** on the entity\n- **USE SCHEMA** on the entity's parent schema\n- **USE CATALOG** on the entity's parent catalog\n\nTo update a governed tag to Unity Catalog entities, you must also have the **ASSIGN** or **MANAGE** permission on the tag policy. See [Manage tag policy permissions](https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions).",
+      "summary": "Update an entity tag assignment.",
+      "path": "/api/2.1/unity-catalog/entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateEntityTagAssignmentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EntityTagAssignment",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "tag_assignment",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EntityTagAssignment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "tag_assignment",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "EntityTagAssignment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "entity_name",
+              "description": "The fully qualified name of the entity to which the tag is assigned",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "The type of the entity to which the tag is assigned.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "entity_name",
+              "description": "The fully qualified name of the entity to which the tag is assigned",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "tag_key",
+              "description": "The key of the tag",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "entity_type",
+              "description": "The type of the entity to which the tag is assigned.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "EntityTagAssignment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "entity_name",
+            "description": "The fully qualified name of the entity to which the tag is assigned",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "tag_key",
+            "description": "The key of the tag",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "entity_type",
+            "description": "The type of the entity to which the tag is assigned.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_assignment",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EntityTagAssignment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "entity_name",
+                "description": "The fully qualified name of the entity to which the tag is assigned",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "The type of the entity to which the tag is assigned.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "entity_name",
+                "description": "The fully qualified name of the entity to which the tag is assigned",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "tag_key",
+                "description": "The key of the tag",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "entity_type",
+                "description": "The type of the entity to which the tag is assigned.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "The source type of the tag assignment, e.g., user-assigned or system-assigned",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TagAssignmentSourceType",
+            "enum": [
+              {
+                "content": "TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_value",
+          "description": "The value of the tag",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "The timestamp when the tag assignment was last updated",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "updated_by",
+          "description": "The user or principal who updated the tag assignment",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "entity_type",
+          "description": "The type of the entity to which the tag is assigned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "entity_name",
+          "description": "The fully qualified name of the entity to which the tag is assigned",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tag_key",
+          "description": "The key of the tag",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

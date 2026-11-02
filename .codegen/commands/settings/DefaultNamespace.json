@@ -1,0 +1,253 @@
+{
+  "id": "settings.DefaultNamespace",
+  "name": "DefaultNamespace",
+  "description": "The default namespace setting API allows users to configure the default namespace for a Databricks workspace.\n\nThrough this API, users can retrieve, set, or modify the default namespace used when queries do not reference\na fully qualified three-level name. For example, if you use the API to set 'retail_prod' as the default catalog, then a query\n'SELECT * FROM myTable' would reference the object 'retail_prod.default.myTable' (the schema 'default' is always assumed).\n\nThis setting requires a restart of clusters and SQL warehouses to take effect. Additionally, the default namespace only applies when using Unity Catalog-enabled compute.",
+  "package": {
+    "name": "settings"
+  },
+  "has_parent": true,
+  "docs_group": "settings",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "parent_service_id": "settings.Settings",
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Deletes the default namespace setting for the workspace. A fresh etag needs to be provided in `DELETE`\nrequests (as a query parameter). The etag can be retrieved by making a `GET` request before the `DELETE` request.\nIf the setting is updated/deleted concurrently, `DELETE` fails with 409 and the\nrequest must be retried by using the fresh etag in the 409 response.",
+      "summary": "Delete the default namespace setting.",
+      "path": "/api/2.0/settings/types/default_namespace_ws/names/default",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteDefaultNamespaceSettingRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DeleteDefaultNamespaceSettingResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets the default namespace setting.",
+      "summary": "Get the default namespace setting.",
+      "path": "/api/2.0/settings/types/default_namespace_ws/names/default",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetDefaultNamespaceSettingRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DefaultNamespaceSetting",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "namespace",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StringMessage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "namespace",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StringMessage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the default namespace setting for the workspace. A fresh etag needs to be provided in `PATCH`\nrequests (as part of the setting field). The etag can be retrieved by making a `GET` request before the `PATCH` request.\nNote that if the setting does not exist, `GET` returns a NOT_FOUND error and the etag is present in the error response,\nwhich should be set in the `PATCH` request. If the setting is updated concurrently, `PATCH` fails with 409 and the request\nmust be retried by using the fresh etag in the 409 response.",
+      "summary": "Update the default namespace setting.",
+      "path": "/api/2.0/settings/types/default_namespace_ws/names/default",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateDefaultNamespaceSettingRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultNamespaceSetting",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultNamespaceSetting",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DefaultNamespaceSetting",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "namespace",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StringMessage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "namespace",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StringMessage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "field_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "setting",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultNamespaceSetting",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

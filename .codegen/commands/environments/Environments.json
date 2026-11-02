@@ -1,0 +1,1160 @@
+{
+  "id": "environments.Environments",
+  "name": "Environments",
+  "description": "APIs to manage environment resources.\n\nThe Environments API provides management capabilities for different types of environments\nincluding workspace-level base environments that define the environment version and\ndependencies to be used in serverless notebooks and jobs.",
+  "package": {
+    "name": "environments"
+  },
+  "docs_group": "environments",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListWorkspaceBaseEnvironmentsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateWorkspaceBaseEnvironment",
+      "description": "Creates a new WorkspaceBaseEnvironment.\nThis is a long-running operation. The operation will asynchronously generate a materialized environment\nto optimize dependency resolution and is only marked as done when the materialized environment has been\nsuccessfully generated or has failed.",
+      "summary": "Create a workspace base environment.",
+      "path": "/api/environments/v1/workspace-base-environments",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateWorkspaceBaseEnvironmentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "workspace_base_environment",
+            "description": "Required. The workspace base environment to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceBaseEnvironment",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_base_environment",
+            "description": "Required. The workspace base environment to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceBaseEnvironment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_base_environment",
+        "description": "Required. The workspace base environment to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceBaseEnvironment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name for the workspace base environment.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name for the workspace base environment.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Operation",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "request_id",
+          "description": "A unique identifier for this request. A random UUID is recommended.\nThis request is only idempotent if a request_id is provided.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_base_environment",
+          "description": "Required. The workspace base environment to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceBaseEnvironment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name for the workspace base environment.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name for the workspace base environment.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "workspace_base_environment_id",
+          "description": "The ID to use for the workspace base environment, which will become the final component of\nthe resource name.\nThis value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "base_environment_type",
+          "description": "The type of base environment (CPU or GPU).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "BaseEnvironmentType",
+            "enum": [
+              {
+                "content": "CPU"
+              },
+              {
+                "content": "GPU"
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when the environment was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator_user_id",
+          "description": "User ID of the creator.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display name for the workspace base environment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "filepath",
+          "description": "The WSFS or UC Volumes path to the environment YAML file.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "is_default",
+          "description": "Whether this is the default environment for the workspace.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "last_updated_user_id",
+          "description": "User ID of the last user who updated the environment.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message",
+          "description": "Status message providing additional details about the environment status.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the workspace base environment.\nFormat: workspace-base-environments/{workspace-base-environment}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spec",
+          "description": "The environment specification containing version and dependencies.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EnvironmentSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "The status of the materialized workspace base environment.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceBaseEnvironmentCacheStatus",
+            "enum": [
+              {
+                "content": "CREATED"
+              },
+              {
+                "content": "EXPIRED"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "INVALID"
+              },
+              {
+                "content": "PENDING"
+              },
+              {
+                "content": "REFRESHING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when the environment was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "display_name",
+          "description": "Human-readable display name for the workspace base environment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "long_running_operation": {
+        "get_operation": {
+          "kebab_name": "get-operation",
+          "pascal_name": "GetOperation",
+          "request": {
+            "pascal_name": "GetOperationRequest"
+          }
+        },
+        "response_type": {}
+      }
+    },
+    {
+      "name": "DeleteWorkspaceBaseEnvironment",
+      "description": "Deletes a WorkspaceBaseEnvironment.\nDeleting a base environment may impact linked notebooks and jobs.\nThis operation is irreversible and should be performed only when you are certain the environment is no longer needed.",
+      "summary": "Delete a workspace base environment.",
+      "path": "/api/environments/v1/{name=workspace-base-environments/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteWorkspaceBaseEnvironmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetDefaultWorkspaceBaseEnvironment",
+      "description": "Gets the default WorkspaceBaseEnvironment configuration for the workspace.\nReturns the current default base environment settings for both CPU and GPU compute.",
+      "summary": "Get the default workspace base environment configuration.",
+      "path": "/api/environments/v1/{name=default-workspace-base-environment}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetDefaultWorkspaceBaseEnvironmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "A static resource name of the default workspace base environment.\nFormat: default-workspace-base-environment",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "A static resource name of the default workspace base environment.\nFormat: default-workspace-base-environment",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DefaultWorkspaceBaseEnvironment",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "A static resource name of the default workspace base environment.\nFormat: default-workspace-base-environment",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "A static resource name of the default workspace base environment.\nFormat: default-workspace-base-environment",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetOperation",
+      "description": "Gets the status of a long-running operation.\nClients can use this method to poll the operation result.",
+      "summary": "Get the status of a long-running operation.",
+      "path": "/api/environments/v1/{name=operations/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetOperationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the operation resource.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the operation resource.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Operation",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "The name of the operation resource.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the operation resource.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetWorkspaceBaseEnvironment",
+      "description": "Retrieves a WorkspaceBaseEnvironment by its name.",
+      "summary": "Get a workspace base environment.",
+      "path": "/api/environments/v1/{name=workspace-base-environments/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceBaseEnvironmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the workspace base environment to retrieve.\nFormat: workspace-base-environments/{workspace_base_environment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the workspace base environment to retrieve.\nFormat: workspace-base-environments/{workspace_base_environment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspaceBaseEnvironment",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name for the workspace base environment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "display_name",
+            "description": "Human-readable display name for the workspace base environment.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the workspace base environment to retrieve.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the workspace base environment to retrieve.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListWorkspaceBaseEnvironments",
+      "description": "Lists all WorkspaceBaseEnvironments in the workspace.\n\nDatabricks provides the following base environments:\n\n- `workspace-base-environments/databricks_ai_...`: includes popular AI and deep learning packages for serverless GPU compute.\n\n- `workspace-base-environments/databricks_ml_...`: includes popular ML packages for serverless compute.\n\nDatabricks-provided base environments are versioned. For example, `workspace-base-environments/databricks_ml_v5` corresponds to the ML environment built on environment version 5.",
+      "summary": "List workspace base environments.",
+      "path": "/api/environments/v1/workspace-base-environments",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListWorkspaceBaseEnvironmentsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListWorkspaceBaseEnvironmentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The maximum number of environments to return per page.\nDefault is 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token for pagination. Received from a previous ListWorkspaceBaseEnvironments call.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Page token for pagination. Received from a previous ListWorkspaceBaseEnvironments call.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "RefreshWorkspaceBaseEnvironment",
+      "description": "Refreshes the materialized environment for a WorkspaceBaseEnvironment.\nThis is a long-running operation. The operation will asynchronously regenerate the materialized environment\nand is only marked as done when the materialized environment has been successfully generated or has failed.\nThe existing materialized environment remains available until it expires.",
+      "summary": "Refresh materialized workspace base environment.",
+      "path": "/api/environments/v1/{name=workspace-base-environments/*}/refresh",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RefreshWorkspaceBaseEnvironmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Operation",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Required. The resource name of the workspace base environment to delete.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "long_running_operation": {
+        "get_operation": {
+          "kebab_name": "get-operation",
+          "pascal_name": "GetOperation",
+          "request": {
+            "pascal_name": "GetOperationRequest"
+          }
+        },
+        "response_type": {}
+      }
+    },
+    {
+      "name": "UpdateDefaultWorkspaceBaseEnvironment",
+      "description": "Updates the default WorkspaceBaseEnvironment configuration for the workspace.\nSets the specified base environments as the workspace defaults for CPU and/or GPU compute.",
+      "summary": "Update the default workspace base environment configuration.",
+      "path": "/api/environments/v1/{name=default-workspace-base-environment}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateDefaultWorkspaceBaseEnvironmentRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of this singleton resource.\nFormat: default-workspace-base-environment",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "default_workspace_base_environment",
+            "description": "Required. The default workspace base environment configuration to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWorkspaceBaseEnvironment",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask specifying which fields to update. Use comma as the separator for multiple fields (no space).\nThe special value '*' indicates that all fields should be updated (full replacement).\nValid field paths: cpu_workspace_base_environment, gpu_workspace_base_environment\n\nTo unset one or both defaults, include the field path(s) in the mask and omit them from the request body.\nTo unset both, you must list both paths explicitly — the wildcard '*' cannot be used to unset fields.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The resource name of this singleton resource.\nFormat: default-workspace-base-environment",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask specifying which fields to update. Use comma as the separator for multiple fields (no space).\nThe special value '*' indicates that all fields should be updated (full replacement).\nValid field paths: cpu_workspace_base_environment, gpu_workspace_base_environment\n\nTo unset one or both defaults, include the field path(s) in the mask and omit them from the request body.\nTo unset both, you must list both paths explicitly — the wildcard '*' cannot be used to unset fields.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "default_workspace_base_environment",
+            "description": "Required. The default workspace base environment configuration to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "DefaultWorkspaceBaseEnvironment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "default_workspace_base_environment",
+        "description": "Required. The default workspace base environment configuration to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "DefaultWorkspaceBaseEnvironment",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "DefaultWorkspaceBaseEnvironment",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "default_workspace_base_environment",
+          "description": "Required. The default workspace base environment configuration to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "DefaultWorkspaceBaseEnvironment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of this singleton resource.\nFormat: default-workspace-base-environment",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask specifying which fields to update. Use comma as the separator for multiple fields (no space).\nThe special value '*' indicates that all fields should be updated (full replacement).\nValid field paths: cpu_workspace_base_environment, gpu_workspace_base_environment\n\nTo unset one or both defaults, include the field path(s) in the mask and omit them from the request body.\nTo unset both, you must list both paths explicitly — the wildcard '*' cannot be used to unset fields.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "cpu_workspace_base_environment",
+          "description": "The default workspace base environment for CPU compute.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "gpu_workspace_base_environment",
+          "description": "The default workspace base environment for GPU compute.\nFormat: workspace-base-environments/{workspace_base_environment}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of this singleton resource.\nFormat: default-workspace-base-environment",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The resource name of this singleton resource.\nFormat: default-workspace-base-environment",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask specifying which fields to update. Use comma as the separator for multiple fields (no space).\nThe special value '*' indicates that all fields should be updated (full replacement).\nValid field paths: cpu_workspace_base_environment, gpu_workspace_base_environment\n\nTo unset one or both defaults, include the field path(s) in the mask and omit them from the request body.\nTo unset both, you must list both paths explicitly — the wildcard '*' cannot be used to unset fields.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateWorkspaceBaseEnvironment",
+      "description": "Updates an existing WorkspaceBaseEnvironment.\nThis is a long-running operation. The operation will asynchronously regenerate the materialized environment\nand is only marked as done when the materialized environment has been successfully generated or has failed.\nThe existing materialized environment remains available until it expires.",
+      "summary": "Update a workspace base environment.",
+      "path": "/api/environments/v1/{name=workspace-base-environments/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateWorkspaceBaseEnvironmentRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "workspace_base_environment",
+            "description": "Required. The workspace base environment with updated fields.\nThe name field is used to identify the environment to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceBaseEnvironment",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "workspace_base_environment",
+            "description": "Required. The workspace base environment with updated fields.\nThe name field is used to identify the environment to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "WorkspaceBaseEnvironment",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "workspace_base_environment",
+        "description": "Required. The workspace base environment with updated fields.\nThe name field is used to identify the environment to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "WorkspaceBaseEnvironment",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name for the workspace base environment.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "display_name",
+              "description": "Human-readable display name for the workspace base environment.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Operation",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "workspace_base_environment",
+          "description": "Required. The workspace base environment with updated fields.\nThe name field is used to identify the environment to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceBaseEnvironment",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name for the workspace base environment.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "display_name",
+                "description": "Human-readable display name for the workspace base environment.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "base_environment_type",
+          "description": "The type of base environment (CPU or GPU).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "BaseEnvironmentType",
+            "enum": [
+              {
+                "content": "CPU"
+              },
+              {
+                "content": "GPU"
+              }
+            ]
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Timestamp when the environment was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator_user_id",
+          "description": "User ID of the creator.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display name for the workspace base environment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "filepath",
+          "description": "The WSFS or UC Volumes path to the environment YAML file.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "is_default",
+          "description": "Whether this is the default environment for the workspace.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "last_updated_user_id",
+          "description": "User ID of the last user who updated the environment.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "message",
+          "description": "Status message providing additional details about the environment status.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The resource name of the workspace base environment.\nFormat: workspace-base-environments/{workspace-base-environment}",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spec",
+          "description": "The environment specification containing version and dependencies.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EnvironmentSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "The status of the materialized workspace base environment.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspaceBaseEnvironmentCacheStatus",
+            "enum": [
+              {
+                "content": "CREATED"
+              },
+              {
+                "content": "EXPIRED"
+              },
+              {
+                "content": "FAILED"
+              },
+              {
+                "content": "INVALID"
+              },
+              {
+                "content": "PENDING"
+              },
+              {
+                "content": "REFRESHING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Timestamp when the environment was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display name for the workspace base environment.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "long_running_operation": {
+        "get_operation": {
+          "kebab_name": "get-operation",
+          "pascal_name": "GetOperation",
+          "request": {
+            "pascal_name": "GetOperationRequest"
+          }
+        },
+        "response_type": {}
+      }
+    }
+  ]
+}

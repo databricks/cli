@@ -1,0 +1,470 @@
+{
+  "id": "sharing.RecipientFederationPolicies",
+  "name": "RecipientFederationPolicies",
+  "description": "The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of `OIDC_RECIPIENT`, enabling data sharing from Databricks to non-Databricks recipients.\nOIDC Token Federation enables secure, secret-less authentication for accessing Delta Sharing servers. Users and applications authenticate using short-lived OIDC tokens issued by their own Identity Provider (IdP), such as Azure Entra ID or Okta, without the need for managing static credentials or client secrets.\nA federation policy defines how non-Databricks recipients authenticate using OIDC tokens. It validates the OIDC claims in federated tokens and is set at the recipient level. The caller must be the owner of the recipient to create or manage a federation policy.\nFederation policies support the following scenarios:\n- User-to-Machine (U2M) flow: A user accesses Delta Shares using their own identity, such as connecting through PowerBI Delta Sharing Client.\n- Machine-to-Machine (M2M) flow: An application accesses Delta Shares using its own identity, typically for automation tasks like nightly jobs through Python Delta Sharing Client.\nOIDC Token Federation enables fine-grained access control, supports Multi-Factor Authentication (MFA), and enhances security by minimizing the risk of credential leakage through the use of short-lived, expiring tokens. It is designed for strong identity governance, secure cross-platform data sharing, and reduced operational overhead for credential management.\n\nFor more information, see https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security and https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed",
+  "package": {
+    "name": "sharing"
+  },
+  "docs_group": "sharing",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListFederationPoliciesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create a federation policy for an OIDC_FEDERATION recipient for sharing data from Databricks to non-Databricks recipients.\nThe caller must be the owner of the recipient.\nWhen sharing data from Databricks to non-Databricks clients,\nyou can define a federation policy to authenticate non-Databricks recipients.\nThe federation policy validates OIDC claims in federated tokens and is defined at the recipient level.\nThis enables secretless sharing clients to authenticate using OIDC tokens.\n\nSupported scenarios for federation policies:\n1. **User-to-Machine (U2M) flow** (e.g., PowerBI): A user accesses a resource using their own identity.\n2. **Machine-to-Machine (M2M) flow** (e.g., OAuth App): An OAuth App accesses a resource using its own identity,\ntypically for tasks like running nightly jobs.\n\nFor an overview, refer to:\n- Blog post: Overview of feature: https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security\n\nFor detailed configuration guides based on your use case:\n- Creating a Federation Policy as a provider: https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed\n- Configuration and usage for Machine-to-Machine (M2M) applications (e.g., Python Delta Sharing Client): https://docs.databricks.com/aws/en/delta-sharing/sharing-over-oidc-m2m\n- Configuration and usage for User-to-Machine (U2M) applications (e.g., PowerBI): https://docs.databricks.com/aws/en/delta-sharing/sharing-over-oidc-u2m",
+      "summary": "Create recipient federation policy.",
+      "path": "/api/2.0/data-sharing/recipients/{recipient_name}/federation-policies",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateFederationPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policy is being created.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "policy",
+            "description": "Name of the policy. This is the name of the policy to be created.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FederationPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policy is being created.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy",
+            "description": "Name of the policy. This is the name of the policy to be created.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FederationPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "policy",
+        "description": "Name of the policy. This is the name of the policy to be created.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "FederationPolicy",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "FederationPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy",
+          "description": "Name of the policy. This is the name of the policy to be created.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FederationPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policy is being created.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "comment",
+          "description": "Description of the policy. This is a user-provided description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "System-generated timestamp indicating when the policy was created.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique, immutable system-generated identifier for the federation policy.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the federation policy. A recipient can have multiple policies with different names.\nThe name must contain only lowercase alphanumeric characters, numbers, and hyphens.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "oidc_policy",
+          "description": "Specifies the policy to use for validating OIDC claims in the federated tokens.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "OidcFederationPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "System-generated timestamp indicating when the policy was last updated.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policy is being created.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes an existing federation policy for an OIDC_FEDERATION recipient.\nThe caller must be the owner of the recipient.",
+      "summary": "Delete recipient federation policy.",
+      "path": "/api/2.0/data-sharing/recipients/{recipient_name}/federation-policies/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteFederationPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policy is being deleted.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the policy. This is the name of the policy to be deleted.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policy is being deleted.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the policy. This is the name of the policy to be deleted.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the policy. This is the name of the policy to be deleted.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policy is being deleted.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policy is being deleted.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the policy. This is the name of the policy to be deleted.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetFederationPolicy",
+      "description": "Reads an existing federation policy for an OIDC_FEDERATION recipient for sharing data from Databricks to non-Databricks recipients.\nThe caller must have read access to the recipient.",
+      "summary": "Get recipient federation policy.",
+      "path": "/api/2.0/data-sharing/recipients/{recipient_name}/federation-policies/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetFederationPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policy is being retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the policy. This is the name of the policy to be retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policy is being retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the policy. This is the name of the policy to be retrieved.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FederationPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the policy. This is the name of the policy to be retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policy is being retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policy is being retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the policy. This is the name of the policy to be retrieved.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists federation policies for an OIDC_FEDERATION recipient for sharing data from Databricks to non-Databricks recipients.\nThe caller must have read access to the recipient.",
+      "summary": "List recipient federation policies.",
+      "path": "/api/2.0/data-sharing/recipients/{recipient_name}/federation-policies",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListFederationPoliciesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policies are being listed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "recipient_name",
+            "description": "Name of the recipient. This is the name of the recipient for which the policies are being listed.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListFederationPoliciesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policies are being listed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "recipient_name",
+          "description": "Name of the recipient. This is the name of the recipient for which the policies are being listed.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

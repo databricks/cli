@@ -1,0 +1,182 @@
+{
+  "id": "marketplace.ConsumerFulfillments",
+  "name": "ConsumerFulfillments",
+  "description": "Fulfillments are entities that allow consumers to preview installations.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "GetListingContentMetadataRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Get",
+      "description": "Get a high level preview of the metadata of listing installable content.",
+      "summary": "Get listing content metadata.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/content",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetListingContentMetadataRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetListingContentMetadataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List",
+      "description": "Get all listings fulfillments associated with a listing. A _fulfillment_ is a potential installation.\nStandard installations contain metadata about the attached share or git repo. Only one of these fields will be present.\nPersonalized installations contain metadata about the attached share or git repo, as well as the Delta Sharing recipient type.",
+      "summary": "List all listing fulfillments.",
+      "path": "/api/2.1/marketplace-consumer/listings/{listing_id}/fulfillments",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListFulfillmentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "listing_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListFulfillmentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "listing_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

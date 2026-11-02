@@ -1,0 +1,541 @@
+{
+  "id": "marketplace.ConsumerListings",
+  "name": "ConsumerListings",
+  "description": "Listings are the core entities in the Marketplace. They represent the products that are available for consumption.",
+  "package": {
+    "name": "marketplace"
+  },
+  "docs_group": "marketplace",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "ListingSummaryNameToIdMap"
+    },
+    "request": {
+      "pascal_name": "ListListingsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "BatchGet",
+      "description": "Batch get a published listing in the Databricks Marketplace that the consumer has access to.",
+      "summary": "Get one batch of listings. One may specify up to 50 IDs per request.",
+      "path": "/api/2.1/marketplace-consumer/listings:batchGet",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "BatchGetListingsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "BatchGetListingsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "ids",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get a published listing in the Databricks Marketplace that the consumer has access to.",
+      "summary": "Get listing.",
+      "path": "/api/2.1/marketplace-consumer/listings/{id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetListingRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetListingResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List all published listings in the Databricks Marketplace that the consumer has access to.",
+      "summary": "List listings.",
+      "path": "/api/2.1/marketplace-consumer/listings",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListListingsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListListingsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "assets",
+          "description": "Matches any of the following asset types",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "AssetTypeList",
+            "array_value": {
+              "pascal_name": "AssetType",
+              "enum": [
+                {
+                  "content": "ASSET_TYPE_APP"
+                },
+                {
+                  "content": "ASSET_TYPE_DATA_TABLE"
+                },
+                {
+                  "content": "ASSET_TYPE_GIT_REPO"
+                },
+                {
+                  "content": "ASSET_TYPE_MCP"
+                },
+                {
+                  "content": "ASSET_TYPE_MEDIA"
+                },
+                {
+                  "content": "ASSET_TYPE_MODEL"
+                },
+                {
+                  "content": "ASSET_TYPE_NOTEBOOK"
+                },
+                {
+                  "content": "ASSET_TYPE_PARTNER_INTEGRATION"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "categories",
+          "description": "Matches any of the following categories",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "CategoryList",
+            "array_value": {
+              "pascal_name": "Category",
+              "enum": [
+                {
+                  "content": "ADVERTISING_AND_MARKETING"
+                },
+                {
+                  "content": "CLIMATE_AND_ENVIRONMENT"
+                },
+                {
+                  "content": "COMMERCE"
+                },
+                {
+                  "content": "DEMOGRAPHICS"
+                },
+                {
+                  "content": "ECONOMICS"
+                },
+                {
+                  "content": "EDUCATION"
+                },
+                {
+                  "content": "ENERGY"
+                },
+                {
+                  "content": "FINANCIAL"
+                },
+                {
+                  "content": "GAMING"
+                },
+                {
+                  "content": "GEOSPATIAL"
+                },
+                {
+                  "content": "HEALTH"
+                },
+                {
+                  "content": "LOOKUP_TABLES"
+                },
+                {
+                  "content": "MANUFACTURING"
+                },
+                {
+                  "content": "MEDIA"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "PUBLIC_SECTOR"
+                },
+                {
+                  "content": "RETAIL"
+                },
+                {
+                  "content": "SCIENCE_AND_RESEARCH"
+                },
+                {
+                  "content": "SECURITY"
+                },
+                {
+                  "content": "SPORTS"
+                },
+                {
+                  "content": "TRANSPORTATION_AND_LOGISTICS"
+                },
+                {
+                  "content": "TRAVEL_AND_TOURISM"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "is_free",
+          "description": "Filters each listing based on if it is free.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "is_private_exchange",
+          "description": "Filters each listing based on if it is a private exchange.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "is_staff_pick",
+          "description": "Filters each listing based on whether it is a staff pick.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "provider_ids",
+          "description": "Matches any of the following provider ids",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "tags",
+          "description": "Matches listings with this tag",
+          "is_query": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "ListingTag",
+            "is_object": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Search",
+      "description": "Search published listings in the Databricks Marketplace that the consumer has access to.\nThis query supports a variety of different search parameters and performs fuzzy matching.",
+      "summary": "Search listings.",
+      "path": "/api/2.1/marketplace-consumer/search-listings",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SearchListingsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "query",
+            "description": "Fuzzy matches query",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "query",
+            "description": "Fuzzy matches query",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SearchListingsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "assets",
+          "description": "Matches any of the following asset types",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "AssetTypeList",
+            "array_value": {
+              "pascal_name": "AssetType",
+              "enum": [
+                {
+                  "content": "ASSET_TYPE_APP"
+                },
+                {
+                  "content": "ASSET_TYPE_DATA_TABLE"
+                },
+                {
+                  "content": "ASSET_TYPE_GIT_REPO"
+                },
+                {
+                  "content": "ASSET_TYPE_MCP"
+                },
+                {
+                  "content": "ASSET_TYPE_MEDIA"
+                },
+                {
+                  "content": "ASSET_TYPE_MODEL"
+                },
+                {
+                  "content": "ASSET_TYPE_NOTEBOOK"
+                },
+                {
+                  "content": "ASSET_TYPE_PARTNER_INTEGRATION"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "categories",
+          "description": "Matches any of the following categories",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "CategoryList",
+            "array_value": {
+              "pascal_name": "Category",
+              "enum": [
+                {
+                  "content": "ADVERTISING_AND_MARKETING"
+                },
+                {
+                  "content": "CLIMATE_AND_ENVIRONMENT"
+                },
+                {
+                  "content": "COMMERCE"
+                },
+                {
+                  "content": "DEMOGRAPHICS"
+                },
+                {
+                  "content": "ECONOMICS"
+                },
+                {
+                  "content": "EDUCATION"
+                },
+                {
+                  "content": "ENERGY"
+                },
+                {
+                  "content": "FINANCIAL"
+                },
+                {
+                  "content": "GAMING"
+                },
+                {
+                  "content": "GEOSPATIAL"
+                },
+                {
+                  "content": "HEALTH"
+                },
+                {
+                  "content": "LOOKUP_TABLES"
+                },
+                {
+                  "content": "MANUFACTURING"
+                },
+                {
+                  "content": "MEDIA"
+                },
+                {
+                  "content": "OTHER"
+                },
+                {
+                  "content": "PUBLIC_SECTOR"
+                },
+                {
+                  "content": "RETAIL"
+                },
+                {
+                  "content": "SCIENCE_AND_RESEARCH"
+                },
+                {
+                  "content": "SECURITY"
+                },
+                {
+                  "content": "SPORTS"
+                },
+                {
+                  "content": "TRANSPORTATION_AND_LOGISTICS"
+                },
+                {
+                  "content": "TRAVEL_AND_TOURISM"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "is_free",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "is_private_exchange",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "provider_ids",
+          "description": "Matches any of the following provider ids",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "query",
+          "description": "Fuzzy matches query",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "query",
+          "description": "Fuzzy matches query",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

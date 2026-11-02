@@ -1,0 +1,287 @@
+{
+  "id": "oauth2.PublishedAppIntegration",
+  "name": "PublishedAppIntegration",
+  "description": "These APIs enable administrators to manage published OAuth app integrations, which is required for\nadding/using Published OAuth App Integration like Tableau Desktop for Databricks in AWS cloud.",
+  "package": {
+    "name": "oauth2"
+  },
+  "is_accounts": true,
+  "docs_group": "oauth2",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListPublishedAppIntegrationsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create Published OAuth App Integration.\n\nYou can retrieve the published OAuth app integration via [PublishedAppIntegration/get](https://docs.databricks.com/api/account/publishedappintegration/get).",
+      "summary": "Create Published OAuth App Integration.",
+      "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreatePublishedAppIntegration",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CreatePublishedAppIntegrationOutput",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "app_id",
+          "description": "App id of the OAuth published app integration.\nFor example power-bi, tableau-deskop",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "token_access_policy",
+          "description": "Token access policy",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "TokenAccessPolicy",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete an existing Published OAuth App Integration.\nYou can retrieve the published OAuth app integration via [PublishedAppIntegration/get](https://docs.databricks.com/api/account/publishedappintegration/get).",
+      "summary": "Delete Published OAuth App Integration.",
+      "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations/{integration_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeletePublishedAppIntegrationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "integration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "integration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeletePublishedAppIntegrationOutput",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "integration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "integration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets the Published OAuth App Integration for the given integration id.",
+      "summary": "Get OAuth Published App Integration.",
+      "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations/{integration_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPublishedAppIntegrationRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "integration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "integration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetPublishedAppIntegrationOutput",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "integration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "integration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Get the list of published OAuth app integrations for the specified Databricks account",
+      "summary": "Get published oauth app integrations.",
+      "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPublishedAppIntegrationsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetPublishedAppIntegrationsOutput",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates an existing published OAuth App Integration.\nYou can retrieve the published OAuth app integration via [PublishedAppIntegration/get](https://docs.databricks.com/api/account/publishedappintegration/get).",
+      "summary": "Updates Published OAuth App Integration.",
+      "path": "/api/2.0/accounts/{account_id}/oauth2/published-app-integrations/{integration_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdatePublishedAppIntegration",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "integration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "integration_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdatePublishedAppIntegrationOutput",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "integration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "token_access_policy",
+          "description": "Token access policy to be updated in the published OAuth app integration",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "TokenAccessPolicy",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "integration_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

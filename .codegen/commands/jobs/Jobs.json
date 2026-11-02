@@ -1,0 +1,2276 @@
+{
+  "id": "jobs.Jobs",
+  "name": "Jobs",
+  "description": "The Jobs API allows you to create, edit, and delete jobs.\n\nYou can use a Databricks job to run a data processing or data analysis task in a Databricks\ncluster with scalable resources. Your job can consist of a single task or can be a large,\nmulti-task workflow with complex dependencies. Databricks manages the task orchestration,\ncluster management, monitoring, and error reporting for all of your jobs. You can run your jobs\nimmediately or periodically through an easy-to-use scheduling system. You can implement\njob tasks using notebooks, JARS, Spark Declarative Pipelines, or Python, Scala, Spark\nsubmit, and Java applications.\n\nYou should never hard code secrets or store them in plain text. Use the [Secrets CLI](https://docs.databricks.com/dev-tools/cli/secrets-cli.html)\nto manage secrets in the [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html).\nUse the [Secrets utility](https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets) to reference secrets in notebooks and jobs.",
+  "package": {
+    "name": "jobs"
+  },
+  "docs_group": "lakeflow",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "BaseJobSettingsNameToJobIdMap"
+    },
+    "request": {
+      "pascal_name": "ListJobsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CancelAllRuns",
+      "description": "Cancels all active runs of a job. The runs are canceled asynchronously, so it doesn't\nprevent new runs from being started.",
+      "summary": "Cancel all runs of a job.",
+      "path": "/api/2.2/jobs/runs/cancel-all",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CancelAllRuns",
+        "is_object": true
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "all_queued_runs",
+          "description": "Optional boolean parameter to cancel all queued runs. If no job_id is provided, all queued runs in the workspace are canceled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to cancel all runs of.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CancelRun",
+      "description": "Cancels a job run or a task run. The run is canceled asynchronously, so it may still be running when\nthis request completes.",
+      "summary": "Cancel a run.",
+      "path": "/api/2.2/jobs/runs/cancel",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CancelRun",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "run_id",
+          "description": "This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "TERMINATED"
+          },
+          {
+            "content": "SKIPPED"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "Run"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "LifeCycleState"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "State"
+        }
+      }
+    },
+    {
+      "name": "Create",
+      "description": "Create a new job.",
+      "summary": "Create a new job.",
+      "path": "/api/2.2/jobs/create",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_json_only": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateJob",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CreateResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "description": "List of permissions to set on the job.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "JobAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "The id of the user specified budget policy to use for this job.\nIf not specified, a default budget policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "continuous",
+          "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.\n\nPipelines started by a continuous job also run continuously, regardless of their own pipeline mode setting.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "Continuous",
+            "is_object": true
+          }
+        },
+        {
+          "name": "deployment",
+          "description": "Deployment information for jobs managed by external sources.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobDeployment",
+            "is_object": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "duration_target",
+          "description": "The window the run aims to finish within, in hours, for a Cost-optimized serverless run.\nRequired only when `performance_target` is `COST_OPTIMIZED`. Must be one of the\nsupported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run\nuses the default cost-optimized performance level without additional cost-saving optimizations.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "edit_mode",
+          "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobEditMode",
+            "enum": [
+              {
+                "content": "EDITABLE"
+              },
+              {
+                "content": "UI_LOCKED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "email_notifications",
+          "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobEmailNotifications",
+            "is_object": true
+          }
+        },
+        {
+          "name": "environment_variables",
+          "description": "Named environment-variable entries that tasks can reference by key from\n`TaskSettings.environment_variables_key`. Each entry's `spec` holds inline\n`variables` and optional `.env` `files`. Maximum 10 entries per job. A task\ncan reference at most one entry from this list.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobEnvironmentVariablesList",
+            "array_value": {
+              "pascal_name": "JobEnvironmentVariables",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "environments",
+          "description": "A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.\n\nFor notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.\nFor other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobEnvironmentList",
+            "array_value": {
+              "pascal_name": "JobEnvironment",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "format",
+          "description": "Used to tell what is the format of the job. This field is ignored in Create/Update/Reset calls. When using the Jobs API 2.1 this value is always set to `\"MULTI_TASK\"`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Format",
+            "enum": [
+              {
+                "content": "MULTI_TASK"
+              },
+              {
+                "content": "SINGLE_TASK"
+              }
+            ]
+          }
+        },
+        {
+          "name": "git_source",
+          "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GitSource",
+            "is_object": true
+          }
+        },
+        {
+          "name": "health",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobsHealthRules",
+            "is_object": true
+          }
+        },
+        {
+          "name": "job_clusters",
+          "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobClusterList",
+            "array_value": {
+              "pascal_name": "JobCluster",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "max_concurrent_runs",
+          "description": "An optional maximum allowed number of concurrent runs of the job.\nSet this value if you want to be able to execute multiple runs of the same job concurrently.\nThis is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs.\nHowever, from then on, new runs are skipped unless there are fewer than 3 active runs.\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "An optional name for the job. The maximum length is 4096 bytes in UTF-8 encoding.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notification_settings",
+          "description": "Optional notification settings that are used when sending notifications to each of the `email_notifications` and `webhook_notifications` for this job.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobNotificationSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "parameters",
+          "description": "Job-level parameter definitions",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobParameterDefinitionList",
+            "array_value": {
+              "pascal_name": "JobParameterDefinition",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "parent_path",
+          "description": "Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "performance_target",
+          "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PerformanceTarget",
+            "enum": [
+              {
+                "content": "PERFORMANCE_OPTIMIZED"
+              },
+              {
+                "content": "STANDARD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "queue",
+          "description": "The queue settings of the job.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "QueueSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "run_as",
+          "description": "The user or service principal that the job runs as, if specified in the request.\nThis field indicates the explicit configuration of `run_as` for the job.\nTo find the value in all cases, explicit or implicit, use `run_as_user_name`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobRunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "schedule",
+          "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CronSchedule",
+            "is_object": true
+          }
+        },
+        {
+          "name": "tags",
+          "description": "A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "tasks",
+          "description": "A list of task specifications to be executed by this job.\nIt supports up to 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset, :method:jobs/update, :method:jobs/submit).\nRead endpoints return only 100 tasks. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TaskList",
+            "array_value": {
+              "pascal_name": "Task",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "timeout_seconds",
+          "description": "An optional timeout applied to each run of this job. A value of `0` means no timeout.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "trigger",
+          "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "TriggerSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "triggers",
+          "description": "List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in\nthe same request as the legacy `schedule`, `trigger`, or `continuous` fields. Gated behind the \"Multiple Triggers\" feature preview.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "TriggerConfigurationList",
+            "array_value": {
+              "pascal_name": "TriggerConfiguration",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "webhook_notifications",
+          "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "WebhookNotifications",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a job.",
+      "summary": "Delete a job.",
+      "path": "/api/2.2/jobs/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteJob",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to delete. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to delete. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to delete. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to delete. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteRun",
+      "description": "Deletes a non-active run. Returns an error if the run is active.",
+      "summary": "Delete a job run.",
+      "path": "/api/2.2/jobs/runs/delete",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteRun",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "ID of the run to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "ID of the run to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ExportRun",
+      "description": "Export and retrieve the job run task.",
+      "summary": "Export and retrieve a job run.",
+      "path": "/api/2.2/jobs/runs/export",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ExportRunRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "The canonical identifier for the run. This field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "run_id",
+            "description": "The canonical identifier for the run. This field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExportRunOutput",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "run_id",
+          "description": "The canonical identifier for the run. This field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "views_to_export",
+          "description": "Which views to export (CODE, DASHBOARDS, or ALL). Defaults to CODE.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ViewsToExport",
+            "enum": [
+              {
+                "content": "ALL"
+              },
+              {
+                "content": "CODE"
+              },
+              {
+                "content": "DASHBOARDS"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "The canonical identifier for the run. This field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Retrieves the details for a single job.\n\nLarge arrays in the results will be paginated when they exceed 100 elements.\nA request for a single job will return all properties for that job, and the first 100 elements of array properties (`tasks`, `job_clusters`, `environments` and `parameters`).\nUse the `next_page_token` field to check for more results and pass its value as the `page_token` in subsequent requests.\nIf any array properties have more than 100 elements, additional results will be returned on subsequent requests. Arrays without additional results will be empty on later pages.",
+      "summary": "Get a single job.",
+      "path": "/api/2.2/jobs/get",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetJobRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to retrieve information about. This field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to retrieve information about. This field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Job",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_trigger_state",
+          "description": "Flag that indicates that trigger state should be included in the response.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to retrieve information about. This field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Use `next_page_token` returned from the previous GetJob response to request the next page of the job's array properties.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to retrieve information about. This field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissionLevels",
+      "description": "Gets the permission levels that a user can have on an object.",
+      "summary": "Get job permission levels.",
+      "path": "/api/2.0/permissions/jobs/{job_id}/permissionLevels",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetJobPermissionLevelsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetJobPermissionLevelsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetPermissions",
+      "description": "Gets the permissions of a job. Jobs can inherit permissions from their root object.",
+      "summary": "Get job permissions.",
+      "path": "/api/2.0/permissions/jobs/{job_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetJobPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "JobPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetRun",
+      "description": "Retrieves the metadata of a run.\n\nLarge arrays in the results will be paginated when they exceed 100 elements.\nA request for a single run will return all properties for that run, and the first 100 elements of array properties (`tasks`, `job_clusters`, `job_parameters` and `repair_history`).\nUse the next_page_token field to check for more results and pass its value as the page_token in subsequent requests.\nIf any array properties have more than 100 elements, additional results will be returned on subsequent requests. Arrays without additional results will be empty on later pages.",
+      "summary": "Get a single job run.",
+      "path": "/api/2.2/jobs/runs/get",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRunRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "The canonical identifier of the run for which to retrieve the metadata.\nThis field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "run_id",
+            "description": "The canonical identifier of the run for which to retrieve the metadata.\nThis field is required.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Run",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_history",
+          "description": "Whether to include the repair history in the response.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_resolved_values",
+          "description": "Whether to include resolved parameter values in the response.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Use `next_page_token` returned from the previous GetRun response to request the next page of the run's array properties.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "The canonical identifier of the run for which to retrieve the metadata.\nThis field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "The canonical identifier of the run for which to retrieve the metadata.\nThis field is required.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetRunOutput",
+      "description": "Retrieve the output and metadata of a single task run. When a notebook task returns\na value through the `dbutils.notebook.exit()` call, you can use this endpoint to retrieve\nthat value. Databricks restricts this API to returning the first 5 MB of the output.\nTo return a larger result, you can store job results in a cloud storage service.\n\nThis endpoint validates that the __run_id__ parameter is valid and returns an HTTP status\ncode 400 if the __run_id__ parameter is invalid. Runs are automatically removed after\n60 days. If you to want to reference them beyond 60 days, you must save old run results\nbefore they expire.",
+      "summary": "Get the output for a single run.",
+      "path": "/api/2.2/jobs/runs/get-output",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRunOutputRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "The canonical identifier for the run.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "run_id",
+            "description": "The canonical identifier for the run.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RunOutput",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "run_id",
+          "description": "The canonical identifier for the run.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "The canonical identifier for the run.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Retrieves a list of jobs.",
+      "summary": "List jobs.",
+      "path": "/api/2.2/jobs/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListJobsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListJobsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "expand_tasks",
+          "description": "Whether to include task and cluster details in the response. Note that only the first 100 elements will be shown.\nUse :method:jobs/get to paginate through all tasks and clusters.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "limit",
+          "description": "The number of jobs to return. This value must be greater than 0 and less or equal to 100. The default value is 20.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "A filter on the list based on the exact (case insensitive) job name.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "offset",
+          "description": "The offset of the first job to return, relative to the most recently created job.\nDeprecated since June 2023. Use `page_token` to iterate through the pages instead.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Use `next_page_token` or `prev_page_token` returned from the previous request to list the next or previous page of jobs respectively.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Use `next_page_token` or `prev_page_token` returned from the previous request to list the next or previous page of jobs respectively.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListRuns",
+      "description": "List runs in descending order by start time.",
+      "summary": "List job runs.",
+      "path": "/api/2.2/jobs/runs/list",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListRunsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListRunsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "active_only",
+          "description": "If active_only is `true`, only active runs are included in the results; otherwise,\nlists both active and completed runs. An active run is a run in the `QUEUED`, `PENDING`,\n`RUNNING`, or `TERMINATING`. This field cannot be `true` when completed_only is `true`.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "completed_only",
+          "description": "If completed_only is `true`, only completed runs are included in the results;\notherwise, lists both active and completed runs. This field cannot be `true` when\nactive_only is `true`.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "expand_tasks",
+          "description": "Whether to include task and cluster details in the response. Note that only the first 100 elements will be shown.\nUse :method:jobs/getrun to paginate through all tasks and clusters.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "job_id",
+          "description": "The job for which to list runs. If omitted, the Jobs service lists runs from all jobs.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "limit",
+          "description": "The number of runs to return. This value must be greater than 0 and less than 25.\nThe default value is 20. If a request specifies a limit of 0, the service instead\nuses the maximum limit.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "offset",
+          "description": "The offset of the first run to return, relative to the most recent run.\nDeprecated since June 2023. Use `page_token` to iterate through the pages instead.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Use `next_page_token` or `prev_page_token` returned from the previous request to list the next or previous page of runs respectively.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_type",
+          "description": "The type of runs to return. For a description of run types, see :method:jobs/getRun.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "RunType",
+            "enum": [
+              {
+                "content": "JOB_RUN"
+              },
+              {
+                "content": "SUBMIT_RUN"
+              },
+              {
+                "content": "WORKFLOW_RUN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "start_time_from",
+          "description": "Show runs that started _at or after_ this value. The value must be a UTC timestamp\nin milliseconds. Can be combined with _start_time_to_ to filter by a time range.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "start_time_to",
+          "description": "Show runs that started _at or before_ this value. The value must be a UTC timestamp\nin milliseconds. Can be combined with _start_time_from_ to filter by a time range.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Use `next_page_token` or `prev_page_token` returned from the previous request to list the next or previous page of runs respectively.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "RepairRun",
+      "description": "Re-run one or more tasks. Tasks are re-run as part of the original job run.\nThey use the current job and task settings, and can be viewed in the history for the\noriginal job run.",
+      "summary": "Repair a job run.",
+      "path": "/api/2.2/jobs/runs/repair",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RepairRun",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "run_id",
+            "description": "The job run ID of the run to repair. The run must not be in progress.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "run_id",
+            "description": "The job run ID of the run to repair. The run must not be in progress.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RepairRunResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dbt_commands",
+          "description": "An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "duration_target",
+          "description": "The window the run aims to finish within, in hours, for a Cost-optimized serverless run.\nRequired only when `performance_target` is `COST_OPTIMIZED`. Must be one of the\nsupported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run\nuses the default cost-optimized performance level without additional cost-saving optimizations.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "jar_params",
+          "description": "A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "job_parameters",
+          "description": "Job-level parameters used in the run. for example `\"param\": \"overriding_val\"`",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "latest_repair_id",
+          "description": "The ID of the latest repair. This parameter is not required when repairing a run for the first time, but must be provided on subsequent requests to repair the same run.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "notebook_params",
+          "description": "A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "performance_target",
+          "description": "The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.\n\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PerformanceTarget",
+            "enum": [
+              {
+                "content": "PERFORMANCE_OPTIMIZED"
+              },
+              {
+                "content": "STANDARD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline_params",
+          "description": "Controls whether the pipeline should perform a full refresh",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineParams",
+            "is_object": true
+          }
+        },
+        {
+          "name": "python_named_params",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "python_params",
+          "description": "A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "rerun_all_failed_tasks",
+          "description": "If true, repair all failed tasks. Only one of `rerun_tasks` or `rerun_all_failed_tasks` can be used.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "rerun_dependent_tasks",
+          "description": "If true, repair all tasks that depend on the tasks in `rerun_tasks`, even if they were previously successful. Can be also used in combination with `rerun_all_failed_tasks`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "rerun_tasks",
+          "description": "The task keys of the task runs to repair.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "run_id",
+          "description": "The job run ID of the run to repair. The run must not be in progress.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "spark_submit_params",
+          "description": "A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "sql_params",
+          "description": "A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "run_id",
+          "description": "The job run ID of the run to repair. The run must not be in progress.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "TERMINATED"
+          },
+          {
+            "content": "SKIPPED"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "Run"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "LifeCycleState"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "State"
+        }
+      }
+    },
+    {
+      "name": "Reset",
+      "description": "Overwrite all settings for the given job. Use the [_Update_ endpoint](:method:jobs/update) to update job settings partially.",
+      "summary": "Update all job settings (reset).",
+      "path": "/api/2.2/jobs/reset",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ResetJob",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to reset. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "new_settings",
+            "description": "The new settings of the job. These settings completely replace the old settings.\n\nChanges to the field `JobBaseSettings.timeout_seconds` are applied to active runs. Changes to other fields are applied to future runs only.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "JobSettings",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to reset. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "new_settings",
+            "description": "The new settings of the job. These settings completely replace the old settings.\n\nChanges to the field `JobBaseSettings.timeout_seconds` are applied to active runs. Changes to other fields are applied to future runs only.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "JobSettings",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to reset. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "new_settings",
+          "description": "The new settings of the job. These settings completely replace the old settings.\n\nChanges to the field `JobBaseSettings.timeout_seconds` are applied to active runs. Changes to other fields are applied to future runs only.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobSettings",
+            "is_object": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RunNow",
+      "description": "Run a job and return the `run_id` of the triggered run.",
+      "summary": "Trigger a new job run.",
+      "path": "/api/2.2/jobs/run-now",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RunNow",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The ID of the job to be executed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "job_id",
+            "description": "The ID of the job to be executed",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RunNowResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dbt_commands",
+          "description": "An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "duration_target",
+          "description": "The window the run aims to finish within, in hours, for a Cost-optimized serverless run.\nRequired only when `performance_target` is `COST_OPTIMIZED`. Must be one of the\nsupported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run\nuses the default cost-optimized performance level without additional cost-saving optimizations.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "idempotency_token",
+          "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "jar_params",
+          "description": "A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "job_id",
+          "description": "The ID of the job to be executed",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "job_parameters",
+          "description": "Job-level parameters used in the run. for example `\"param\": \"overriding_val\"`",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "notebook_params",
+          "description": "A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "only",
+          "description": "A list of task keys to run inside of the job. If this field is not provided, all tasks in the job will be run.\n\nPrefix a task key with `+` to also run its upstream tasks, or suffix it with `+` to also run its downstream tasks.\nFor example, `+my_task` runs `my_task` and everything upstream of it, `my_task+` runs `my_task` and everything\ndownstream of it, and `+my_task+` runs both. A task key with no `+` runs only that task.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "performance_target",
+          "description": "The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.\n\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PerformanceTarget",
+            "enum": [
+              {
+                "content": "PERFORMANCE_OPTIMIZED"
+              },
+              {
+                "content": "STANDARD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline_params",
+          "description": "Controls whether the pipeline should perform a full refresh",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "PipelineParams",
+            "is_object": true
+          }
+        },
+        {
+          "name": "python_named_params",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "python_params",
+          "description": "A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "queue",
+          "description": "The queue settings of the run.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "QueueSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "spark_submit_params",
+          "description": "A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "sql_params",
+          "description": "A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The ID of the job to be executed",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "TERMINATED"
+          },
+          {
+            "content": "SKIPPED"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "Run"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "LifeCycleState"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "State"
+        }
+      }
+    },
+    {
+      "name": "SetPermissions",
+      "description": "Sets permissions on an object, replacing existing permissions if they exist. Deletes all direct permissions if none are specified. Objects can inherit permissions from their root object.",
+      "summary": "Set job permissions.",
+      "path": "/api/2.0/permissions/jobs/{job_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "JobPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "JobPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "JobAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submit",
+      "description": "Submit a one-time run. This endpoint allows you to submit a workload directly\nwithout creating a job. Runs submitted using this endpoint don’t display in\nthe UI. Use the `jobs/runs/get` API to check the run state after the job is\nsubmitted.\n\n**Important:** Jobs submitted using this endpoint are not saved as a job.\nThey do not show up in the Jobs UI, and do not retry when they fail. Because\nthey are not saved, Databricks cannot auto-optimize serverless compute in case\nof failure. If your job fails, you may want to use classic compute to specify\nthe compute needs for the job. Alternatively, use the `POST /jobs/create` and\n`POST /jobs/run-now` endpoints to create and run a saved job.",
+      "summary": "Create and trigger a one-time run.",
+      "path": "/api/2.2/jobs/runs/submit",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SubmitRun",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "SubmitRunResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "description": "List of permissions to set on the job.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "JobAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "The user specified id of the budget policy to use for this one-time run.\nIf not specified, the run will be not be attributed to any budget policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "duration_target",
+          "description": "The window the run aims to finish within, in hours, for a Cost-optimized serverless run.\nRequired only when `performance_target` is `COST_OPTIMIZED`. Must be one of the\nsupported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run\nuses the default cost-optimized performance level without additional cost-saving optimizations.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "email_notifications",
+          "description": "An optional set of email addresses notified when the run begins or completes.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobEmailNotifications",
+            "is_object": true
+          }
+        },
+        {
+          "name": "environment_variables",
+          "description": "Named environment-variable entries that tasks of this one-time run can\nreference by key from `RunTaskSettings.environment_variables_key`. Each\nentry's `spec` holds inline `variables` and optional `.env` `files`.\nHandled identically to `JobSettings.environment_variables`. Maximum 10 entries.\nEntries are independent of one another — there is no cross-entry merging.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobEnvironmentVariablesList",
+            "array_value": {
+              "pascal_name": "JobEnvironmentVariables",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "environments",
+          "description": "A list of task execution environment specifications that can be referenced by tasks of this run.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobEnvironmentList",
+            "array_value": {
+              "pascal_name": "JobEnvironment",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "git_source",
+          "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "GitSource",
+            "is_object": true
+          }
+        },
+        {
+          "name": "health",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobsHealthRules",
+            "is_object": true
+          }
+        },
+        {
+          "name": "idempotency_token",
+          "description": "An optional token that can be used to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly\none run is launched with that idempotency token.\n\nThis token must have at most 64 characters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "notification_settings",
+          "description": "Optional notification settings that are used when sending notifications to each of the `email_notifications` and `webhook_notifications` for this run.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobNotificationSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "performance_target",
+          "description": "The performance mode on a serverless one-time run. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PerformanceTarget",
+            "enum": [
+              {
+                "content": "PERFORMANCE_OPTIMIZED"
+              },
+              {
+                "content": "STANDARD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "queue",
+          "description": "The queue settings of the one-time run.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "QueueSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "run_as",
+          "description": "Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who submits the request.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobRunAs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "run_name",
+          "description": "An optional name for the run. The default value is `Untitled`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "tasks",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SubmitTaskList",
+            "array_value": {
+              "pascal_name": "SubmitTask",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "timeout_seconds",
+          "description": "An optional timeout applied to each run of this job. A value of `0` means no timeout.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The user specified id of the usage policy to use for this one-time run.\nIf not specified, a default usage policy may be applied when creating or modifying the job.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "webhook_notifications",
+          "description": "A collection of system notification IDs to notify when the run begins or completes.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "WebhookNotifications",
+            "is_object": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "TERMINATED"
+          },
+          {
+            "content": "SKIPPED"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "Run"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "LifeCycleState"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "State"
+          },
+          {
+            "pascal_name": "StateMessage"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "State"
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Add, update, or remove specific settings of an existing job. Use the [_Reset_ endpoint](:method:jobs/reset) to overwrite all job settings.",
+      "summary": "Update job settings partially.",
+      "path": "/api/2.2/jobs/update",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateJob",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to update. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "job_id",
+            "description": "The canonical identifier of the job to update. This field is required.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "fields_to_remove",
+          "description": "Remove top-level fields in the job settings. Removing nested fields is not supported, except for tasks and job clusters (`tasks/task_1`). This field is optional.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to update. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "new_settings",
+          "description": "The new settings for the job.\n\nTop-level fields specified in `new_settings` are completely replaced, except for arrays which are merged. That is, new and existing entries are completely replaced based on the respective key fields, i.e. `task_key` or `job_cluster_key`, while previous entries are kept.\n\nPartially updating nested fields is not supported.\n\nChanges to the field `JobSettings.timeout_seconds` are applied to active runs. Changes to other fields are applied to future runs only.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "JobSettings",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The canonical identifier of the job to update. This field is required.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdatePermissions",
+      "description": "Updates the permissions on a job. Jobs can inherit permissions from their root object.",
+      "summary": "Update job permissions.",
+      "path": "/api/2.0/permissions/jobs/{job_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "JobPermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "job_id",
+            "description": "The job for which to get or manage permissions.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "JobPermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "access_control_list",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "JobAccessControlRequestList",
+            "array_value": {
+              "pascal_name": "JobAccessControlRequest",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "job_id",
+          "description": "The job for which to get or manage permissions.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3799 @@
+{
+  "settings.AccountIpAccessEnable": {
+    "fields": {
+      "acct_ip_acl_enable": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.AccountNetworkPolicy": {
+    "fields": {
+      "account_id": {
+        "description": "The associated account ID for this Network Policy object.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "egress": {
+        "description": "The network policies applying for egress traffic.",
+        "ref": "settings.NetworkPolicyEgress",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "ingress": {
+        "description": "The network policies applying for ingress traffic.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicy",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "ingress_dry_run": {
+        "description": "The ingress policy for dry run mode. Dry run will always run even if the request\nis allowed by the ingress policy. When this field is set, the policy will be evaluated\nand emit logs only without blocking requests.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicy",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "network_policy_id": {
+        "description": "The unique identifier for the network policy.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.AibiDashboardEmbeddingAccessPolicy": {
+    "fields": {
+      "access_policy_type": {
+        "ref": "settings.AibiDashboardEmbeddingAccessPolicyAccessPolicyType",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.AibiDashboardEmbeddingAccessPolicyAccessPolicyType": {
+    "enum": [
+      "ALLOW_ALL_DOMAINS",
+      "ALLOW_APPROVED_DOMAINS",
+      "DENY_ALL_DOMAINS"
+    ],
+    "enum_launch_stages": {
+      "ALLOW_ALL_DOMAINS": "PUBLIC_PREVIEW",
+      "ALLOW_APPROVED_DOMAINS": "PUBLIC_PREVIEW",
+      "DENY_ALL_DOMAINS": "PUBLIC_PREVIEW"
+    }
+  },
+  "settings.AibiDashboardEmbeddingAccessPolicySetting": {
+    "fields": {
+      "aibi_dashboard_embedding_access_policy": {
+        "ref": "settings.AibiDashboardEmbeddingAccessPolicy",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.AibiDashboardEmbeddingApprovedDomains": {
+    "fields": {
+      "approved_domains": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.AibiDashboardEmbeddingApprovedDomainsSetting": {
+    "fields": {
+      "aibi_dashboard_embedding_approved_domains": {
+        "ref": "settings.AibiDashboardEmbeddingApprovedDomains",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.AutomaticClusterUpdateSetting": {
+    "fields": {
+      "automatic_cluster_update_workspace": {
+        "ref": "settings.ClusterAutoRestartMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.BooleanMessage": {
+    "fields": {
+      "value": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.ClusterAutoRestartMessage": {
+    "fields": {
+      "can_toggle": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "enabled": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "enablement_details": {
+        "ref": "settings.ClusterAutoRestartMessageEnablementDetails",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "maintenance_window": {
+        "ref": "settings.ClusterAutoRestartMessageMaintenanceWindow",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "restart_even_if_no_updates_available": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.ClusterAutoRestartMessageEnablementDetails": {
+    "description": "Contains an information about the enablement status judging (e.g. whether the enterprise tier\nis enabled)\nThis is only additional information that MUST NOT be used to decide whether the setting is\nenabled or not. This is intended to use only for purposes like showing an error message to\nthe customer with the additional details. For example, using these details we can check\nwhy exactly the feature is disabled for this customer.",
+    "fields": {
+      "forced_for_compliance_mode": {
+        "description": "The feature is force enabled if compliance mode is active",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "unavailable_for_disabled_entitlement": {
+        "description": "The feature is unavailable if the corresponding entitlement disabled (see getShieldEntitlementEnable)",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "unavailable_for_non_enterprise_tier": {
+        "description": "The feature is unavailable if the customer doesn't have enterprise tier",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.ClusterAutoRestartMessageMaintenanceWindow": {
+    "fields": {
+      "week_day_based_schedule": {
+        "ref": "settings.ClusterAutoRestartMessageMaintenanceWindowWeekDayBasedSchedule",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.ClusterAutoRestartMessageMaintenanceWindowDayOfWeek": {
+    "enum": [
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY",
+      "SUNDAY"
+    ],
+    "enum_launch_stages": {
+      "FRIDAY": "PUBLIC_PREVIEW",
+      "MONDAY": "PUBLIC_PREVIEW",
+      "SATURDAY": "PUBLIC_PREVIEW",
+      "SUNDAY": "PUBLIC_PREVIEW",
+      "THURSDAY": "PUBLIC_PREVIEW",
+      "TUESDAY": "PUBLIC_PREVIEW",
+      "WEDNESDAY": "PUBLIC_PREVIEW"
+    }
+  },
+  "settings.ClusterAutoRestartMessageMaintenanceWindowWeekDayBasedSchedule": {
+    "fields": {
+      "day_of_week": {
+        "ref": "settings.ClusterAutoRestartMessageMaintenanceWindowDayOfWeek",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "frequency": {
+        "ref": "settings.ClusterAutoRestartMessageMaintenanceWindowWeekDayFrequency",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "window_start_time": {
+        "ref": "settings.ClusterAutoRestartMessageMaintenanceWindowWindowStartTime",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.ClusterAutoRestartMessageMaintenanceWindowWeekDayFrequency": {
+    "enum": [
+      "FIRST_OF_MONTH",
+      "SECOND_OF_MONTH",
+      "THIRD_OF_MONTH",
+      "FOURTH_OF_MONTH",
+      "FIRST_AND_THIRD_OF_MONTH",
+      "SECOND_AND_FOURTH_OF_MONTH",
+      "EVERY_WEEK"
+    ],
+    "enum_launch_stages": {
+      "EVERY_WEEK": "PUBLIC_PREVIEW",
+      "FIRST_AND_THIRD_OF_MONTH": "PUBLIC_PREVIEW",
+      "FIRST_OF_MONTH": "PUBLIC_PREVIEW",
+      "FOURTH_OF_MONTH": "PUBLIC_PREVIEW",
+      "SECOND_AND_FOURTH_OF_MONTH": "PUBLIC_PREVIEW",
+      "SECOND_OF_MONTH": "PUBLIC_PREVIEW",
+      "THIRD_OF_MONTH": "PUBLIC_PREVIEW"
+    }
+  },
+  "settings.ClusterAutoRestartMessageMaintenanceWindowWindowStartTime": {
+    "fields": {
+      "hours": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "minutes": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.ComplianceSecurityProfile": {
+    "description": "SHIELD feature: CSP\nCompliance Security Profile (CSP) enables enhanced compliance controls on the workspace.",
+    "fields": {
+      "compliance_standards": {
+        "description": "Compliance standards selected by the customer for this Compliance Security Profile.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "is_enabled": {
+        "description": "Whether Compliance Security Profile (CSP) is enabled on the workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.ComplianceSecurityProfileSetting": {
+    "fields": {
+      "compliance_security_profile_workspace": {
+        "ref": "settings.ComplianceSecurityProfile",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.ComplianceStandard": {
+    "description": "Compliance standard for SHIELD customers. See README.md for how instructions of how to add new standards.",
+    "enum": [
+      "NONE",
+      "HIPAA",
+      "PCI_DSS",
+      "FEDRAMP_MODERATE",
+      "IRAP_PROTECTED",
+      "FEDRAMP_HIGH",
+      "FEDRAMP_IL5",
+      "ITAR_EAR",
+      "CYBER_ESSENTIAL_PLUS",
+      "CANADA_PROTECTED_B",
+      "ISMAP",
+      "HITRUST",
+      "K_FSI",
+      "GERMANY_C5",
+      "GERMANY_TISAX",
+      "KSA_ECC_CCC_DCC"
+    ],
+    "enum_launch_stages": {
+      "CANADA_PROTECTED_B": "GA",
+      "CYBER_ESSENTIAL_PLUS": "GA",
+      "FEDRAMP_HIGH": "GA",
+      "FEDRAMP_IL5": "GA",
+      "FEDRAMP_MODERATE": "GA",
+      "GERMANY_C5": "GA",
+      "GERMANY_TISAX": "GA",
+      "HIPAA": "GA",
+      "HITRUST": "GA",
+      "IRAP_PROTECTED": "GA",
+      "ISMAP": "GA",
+      "ITAR_EAR": "GA",
+      "KSA_ECC_CCC_DCC": "GA",
+      "K_FSI": "GA",
+      "NONE": "GA",
+      "PCI_DSS": "GA"
+    }
+  },
+  "settings.Config": {
+    "fields": {
+      "databricks_app_slack": {
+        "ref": "settings.DatabricksAppSlackConfig",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "databricks_app_teams": {
+        "ref": "settings.DatabricksAppTeamsConfig",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "email": {
+        "ref": "settings.EmailConfig",
+        "launch_stage": "GA"
+      },
+      "generic_webhook": {
+        "ref": "settings.GenericWebhookConfig",
+        "launch_stage": "GA"
+      },
+      "microsoft_teams": {
+        "ref": "settings.MicrosoftTeamsConfig",
+        "launch_stage": "GA"
+      },
+      "pagerduty": {
+        "ref": "settings.PagerdutyConfig",
+        "launch_stage": "GA"
+      },
+      "slack": {
+        "ref": "settings.SlackConfig",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateIpAccessList": {
+    "description": "Details required to configure a block list or allow list.",
+    "fields": {
+      "ip_addresses": {
+        "launch_stage": "GA"
+      },
+      "label": {
+        "description": "Label for the IP access list. This **cannot** be empty.",
+        "launch_stage": "GA"
+      },
+      "list_type": {
+        "ref": "settings.ListType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateIpAccessListResponse": {
+    "description": "An IP access list was successfully created.",
+    "fields": {
+      "ip_access_list": {
+        "ref": "settings.IpAccessListInfo",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateNetworkConnectivityConfigRequest": {
+    "fields": {
+      "network_connectivity_config": {
+        "ref": "settings.CreateNetworkConnectivityConfiguration",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateNetworkConnectivityConfiguration": {
+    "description": "Properties of the new network connectivity configuration.",
+    "fields": {
+      "name": {
+        "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateNetworkPolicyRequest": {
+    "fields": {
+      "network_policy": {
+        "description": "Network policy configuration details.",
+        "ref": "settings.AccountNetworkPolicy",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateNotificationDestinationRequest": {
+    "fields": {
+      "config": {
+        "description": "The configuration for the notification destination. Must wrap EXACTLY one of the nested configs.",
+        "ref": "settings.Config",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name for the notification destination.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateOboTokenRequest": {
+    "description": "Configuration details for creating on-behalf tokens.",
+    "fields": {
+      "application_id": {
+        "description": "Application ID of the service principal.",
+        "launch_stage": "GA"
+      },
+      "autoscope_enabled": {
+        "description": "Whether to enable autoscoping for this token.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "comment": {
+        "description": "Comment that describes the purpose of the token.",
+        "launch_stage": "GA"
+      },
+      "lifetime_seconds": {
+        "description": "The number of seconds before the token expires.",
+        "launch_stage": "GA"
+      },
+      "scopes": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateOboTokenResponse": {
+    "description": "An on-behalf token was successfully created for the service principal.",
+    "fields": {
+      "token_info": {
+        "ref": "settings.TokenInfo",
+        "launch_stage": "GA"
+      },
+      "token_value": {
+        "description": "Value of the token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreatePrivateEndpointRule": {
+    "description": "Properties of the new private endpoint rule.\nNote that you must approve the endpoint in Azure portal after initialization.",
+    "fields": {
+      "domain_names": {
+        "description": "Only used by private endpoints to customer-managed private endpoint services.\n\nDomain names of target private link service.\nWhen updating this field, the full list of target domain_names must be specified.",
+        "launch_stage": "GA"
+      },
+      "endpoint_service": {
+        "description": "The full target AWS endpoint service name that connects to the destination resources of the private endpoint.",
+        "launch_stage": "GA"
+      },
+      "error_message": {
+        "launch_stage": "GA"
+      },
+      "gcp_endpoint": {
+        "ref": "settings.GcpEndpoint",
+        "launch_stage": "GA"
+      },
+      "group_id": {
+        "description": "Not used by customer-managed private endpoint services.\n\nThe sub-resource type (group ID) of the target resource.\nNote that to connect to workspace root storage (root DBFS), you need two endpoints, one for blob and one for dfs.",
+        "launch_stage": "GA"
+      },
+      "resource_id": {
+        "description": "The Azure resource ID of the target resource.",
+        "launch_stage": "GA"
+      },
+      "resource_names": {
+        "description": "Only used by private endpoints towards AWS S3 service.\n\nThe globally unique S3 bucket names that will be accessed via the VPC endpoint.\nThe bucket names must be in the same region as the NCC/endpoint service.\nWhen updating this field, we perform full update on this field. Please ensure a full list of desired\nresource_names is provided.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreatePrivateEndpointRuleRequest": {
+    "fields": {
+      "private_endpoint_rule": {
+        "ref": "settings.CreatePrivateEndpointRule",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateTokenRequest": {
+    "fields": {
+      "autoscope_enabled": {
+        "description": "Whether to enable autoscoping for this token. When true, the token will\nautomatically collect inferred API path scopes as it is used.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "comment": {
+        "description": "Optional description to attach to the token.",
+        "launch_stage": "GA"
+      },
+      "lifetime_seconds": {
+        "description": "The lifetime of the token, in seconds.\n\nIf the lifetime is not specified, this token remains valid for 2 years.",
+        "launch_stage": "GA"
+      },
+      "scopes": {
+        "description": "Optional scopes of the token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CreateTokenResponse": {
+    "fields": {
+      "token_info": {
+        "description": "The information for the new token.",
+        "ref": "settings.PublicTokenInfo",
+        "launch_stage": "GA"
+      },
+      "token_value": {
+        "description": "The value of the new token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CspEnablementAccount": {
+    "description": "Account level policy for CSP",
+    "fields": {
+      "compliance_standards": {
+        "description": "Set by customers when they request Compliance Security Profile (CSP)\nInvariants are enforced in Settings policy.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "is_enforced": {
+        "description": "Enforced = it cannot be overriden at workspace level.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.CspEnablementAccountSetting": {
+    "fields": {
+      "csp_enablement_account": {
+        "ref": "settings.CspEnablementAccount",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicy": {
+    "description": "The network policies applying for ingress traffic.",
+    "fields": {
+      "cross_workspace_access": {
+        "description": "The network policy restrictions for cross-workspace access: which other workspaces may\naccess this workspace.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceAccess",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "private_access": {
+        "description": "The network policy restrictions for private access.\nConfigures how requests arriving over private connectivity are governed.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyPrivateAccess",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "public_access": {
+        "description": "The network policy restrictions for public access to the workspace.\nConfigures how public internet traffic is allowed or denied access.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyPublicAccess",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAccountApiDestination": {
+    "description": "Matches account-level Databricks API endpoints for an ingress network policy rule.",
+    "fields": {
+      "scope_qualifier": {
+        "description": "Qualifies the breadth of API access for the listed scopes. See ApiScopeQualifier.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyApiScopeQualifier",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "scopes": {
+        "description": "The API scopes to match. Use \"all-apis\" to match any account-level API.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAccountDatabricksOneDestination": {
+    "fields": {
+      "all_destinations": {
+        "description": "Must be set to true.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAccountUiDestination": {
+    "description": "The account console UI destination.",
+    "fields": {
+      "all_destinations": {
+        "description": "Must be set to true.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyApiScopeQualifier": {
+    "description": "Qualifies the breadth of API access permitted by an ingress network policy rule.\nAPI_SCOPE_QUALIFIER_READ narrows matching to read-only variants of the listed scopes;\nAPI_SCOPE_QUALIFIER_ALL matches any scope. When unset, scopes match exactly as listed.",
+    "enum": [
+      "API_SCOPE_QUALIFIER_READ",
+      "API_SCOPE_QUALIFIER_ALL"
+    ],
+    "enum_launch_stages": {
+      "API_SCOPE_QUALIFIER_ALL": "GA",
+      "API_SCOPE_QUALIFIER_READ": "GA"
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAppsRuntimeDestination": {
+    "fields": {
+      "all_destinations": {
+        "description": "Must be set to true.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAuthentication": {
+    "fields": {
+      "identities": {
+        "description": "Valid only when IdentityType is IDENTITY_TYPE_SELECTED_IDENTITIES.",
+        "launch_stage": "GA"
+      },
+      "identity_type": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentityType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentity": {
+    "fields": {
+      "principal_id": {
+        "launch_stage": "GA"
+      },
+      "principal_type": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentityPrincipalType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentityPrincipalType": {
+    "enum": [
+      "PRINCIPAL_TYPE_USER",
+      "PRINCIPAL_TYPE_SERVICE_PRINCIPAL"
+    ],
+    "enum_launch_stages": {
+      "PRINCIPAL_TYPE_SERVICE_PRINCIPAL": "GA",
+      "PRINCIPAL_TYPE_USER": "GA"
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyAuthenticationIdentityType": {
+    "enum": [
+      "IDENTITY_TYPE_ALL_USERS",
+      "IDENTITY_TYPE_ALL_SERVICE_PRINCIPALS",
+      "IDENTITY_TYPE_SELECTED_IDENTITIES"
+    ],
+    "enum_launch_stages": {
+      "IDENTITY_TYPE_ALL_SERVICE_PRINCIPALS": "GA",
+      "IDENTITY_TYPE_ALL_USERS": "GA",
+      "IDENTITY_TYPE_SELECTED_IDENTITIES": "GA"
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceAccess": {
+    "fields": {
+      "allow_rules": {
+        "description": "Allow rules are evaluated after deny rules. A request matching any allow rule is\nallowed; a request matching no rule is denied by default. Only applies when\nrestriction_mode is RESTRICTED_ACCESS.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "deny_rules": {
+        "description": "Deny rules are evaluated first. A request matching any deny rule is denied,\nregardless of allow rules. Only applies when restriction_mode is RESTRICTED_ACCESS.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "restriction_mode": {
+        "description": "The restriction mode for cross-workspace access.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceAccessRestrictionMode",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceAccessRestrictionMode": {
+    "description": "The restriction mode for cross-workspace access. In FULL_ACCESS mode, requests from any\nsource workspace (in any account) are allowed, and deny rules and allow rules cannot be set.\nIn RESTRICTED_ACCESS mode, access is restricted based on deny rules and allow rules;\nrequests that do not match any allow rule are denied. In LEGACY_MODE, cross-workspace\ningress is not governed by this policy.",
+    "enum": [
+      "FULL_ACCESS",
+      "RESTRICTED_ACCESS",
+      "LEGACY_MODE"
+    ],
+    "enum_launch_stages": {
+      "FULL_ACCESS": "PRIVATE_PREVIEW",
+      "LEGACY_MODE": "PRIVATE_PREVIEW",
+      "RESTRICTED_ACCESS": "PRIVATE_PREVIEW"
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceIngressRule": {
+    "description": "An ingress rule is enforced when a request satisfies all\nspecified attributes — including request origin, destination, and authentication.",
+    "fields": {
+      "authentication": {
+        "description": "The authenticated identity the request must match. When unset, the rule matches\nall users and service principals.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAuthentication",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "destination": {
+        "description": "The destination the request must match — the resource being accessed, for example\nthe workspace UI or workspace APIs. See RequestDestination.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyRequestDestination",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "label": {
+        "description": "The label for this ingress rule.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "origin": {
+        "description": "The origin the request must match — the source workspace the request comes from,\neither specific source workspaces or any source workspace in any account. See\nCrossWorkspaceRequestOrigin.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceRequestOrigin",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceRequestOrigin": {
+    "fields": {
+      "all_source_workspaces": {
+        "description": "Matches all source workspaces.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "selected_workspaces": {
+        "description": "Specific source workspace IDs to match.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyWorkspaceIdList",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyEndpoints": {
+    "description": "A set of registered endpoints, identified by their endpoint IDs.",
+    "fields": {
+      "endpoint_ids": {
+        "description": "The IDs of the registered endpoints. Must contain at least one endpoint ID.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyIpRanges": {
+    "fields": {
+      "ip_ranges": {
+        "description": "We only support IPv4 and IPv4 CIDR notation for now.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyLakebaseRuntimeDestination": {
+    "fields": {
+      "all_destinations": {
+        "description": "Must be set to true.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPrivateAccess": {
+    "description": "Configures how requests arriving over private connectivity, such as\nregistered endpoints, are allowed or denied access.",
+    "fields": {
+      "allow_rules": {
+        "description": "Allow rules are evaluated after deny rules. A request matching any allow rule is\nallowed; a request matching no rule is denied by default. Only applies when\nrestriction_mode is RESTRICTED_ACCESS.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "deny_rules": {
+        "description": "Deny rules are evaluated first. A request matching any deny rule is denied,\nregardless of allow rules. Only applies when restriction_mode is RESTRICTED_ACCESS.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "restriction_mode": {
+        "description": "The restriction mode for private access.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyPrivateAccessRestrictionMode",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPrivateAccessRestrictionMode": {
+    "description": "The restriction mode for private access. In ALLOW_ALL_REGISTERED_ENDPOINTS mode,\nrequests arriving through any endpoint registered to the account are allowed, and\ndeny rules and allow rules cannot be set. In RESTRICTED_ACCESS mode, access is\nrestricted based on deny rules and allow rules; requests that do not match any\nallow rule are denied.",
+    "enum": [
+      "ALLOW_ALL_REGISTERED_ENDPOINTS",
+      "RESTRICTED_ACCESS"
+    ],
+    "enum_launch_stages": {
+      "ALLOW_ALL_REGISTERED_ENDPOINTS": "PUBLIC_BETA",
+      "RESTRICTED_ACCESS": "PUBLIC_BETA"
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPrivateIngressRule": {
+    "description": "An ingress rule is enforced when a request satisfies all\nspecified attributes — including request origin, destination, and authentication.",
+    "fields": {
+      "authentication": {
+        "description": "The authenticated identity the request must match. When unset, the rule matches\nall users and service principals.\nOn the account-level network policy, scoping to specific identities is not\ncurrently supported, so this field must be unset (the rule matches all users\nand service principals).",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAuthentication",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "destination": {
+        "description": "The destination the request must match — the resource being accessed, for example\nthe workspace UI, workspace APIs, or account-level APIs. See RequestDestination.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyRequestDestination",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "label": {
+        "description": "The label for this ingress rule.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "origin": {
+        "description": "The origin the request must match — the private connectivity the request arrives\nthrough, for example a specific set of registered endpoints or any endpoint\nregistered to the account. See PrivateRequestOrigin.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyPrivateRequestOrigin",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPrivateRequestOrigin": {
+    "description": "The origin of a private access request, identified by the endpoint\nthrough which the request arrives.",
+    "fields": {
+      "all_private_access": {
+        "description": "Matches requests arriving over any private connectivity, including registered\nendpoints and the workspace's Azure Private Link (ui-api) endpoints.\nCan only be used in deny rules of workspace-level network policies.\nMust be set to true when specified.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "all_registered_endpoints": {
+        "description": "Matches requests arriving through any endpoint registered to the account.\nMust be set to true when specified.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "azure_workspace_private_link": {
+        "description": "Matches requests arriving through the workspace's Azure Private Link (ui-api)\nendpoints. Can only be used in deny rules of workspace-level network policies.\nMust be set to true when specified.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "endpoints": {
+        "description": "Matches requests arriving through any of the specified registered endpoints.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyEndpoints",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPublicAccess": {
+    "fields": {
+      "allow_rules": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "deny_rules": {
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "restriction_mode": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyPublicAccessRestrictionMode",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPublicAccessRestrictionMode": {
+    "enum": [
+      "FULL_ACCESS",
+      "RESTRICTED_ACCESS"
+    ],
+    "enum_launch_stages": {
+      "FULL_ACCESS": "GA",
+      "RESTRICTED_ACCESS": "GA"
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPublicIngressRule": {
+    "description": "An ingress rule is enforced when a request satisfies all\nspecified attributes — including request origin, destination, and authentication.",
+    "fields": {
+      "authentication": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAuthentication",
+        "launch_stage": "GA"
+      },
+      "destination": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyRequestDestination",
+        "launch_stage": "GA"
+      },
+      "label": {
+        "description": "The label for this ingress rule.",
+        "launch_stage": "GA"
+      },
+      "origin": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyPublicRequestOrigin",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyPublicRequestOrigin": {
+    "fields": {
+      "all_ip_ranges": {
+        "description": "Matches all IPv4 and IPv6 ranges (both public and private).",
+        "launch_stage": "GA"
+      },
+      "excluded_ip_ranges": {
+        "description": "Excluded means: all public IP ranges except this one.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyIpRanges",
+        "launch_stage": "GA"
+      },
+      "included_ip_ranges": {
+        "description": "Will not allow IP ranges with private IPs.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyIpRanges",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyRequestDestination": {
+    "fields": {
+      "account_api": {
+        "description": "Matches requests to account-level APIs.\nCan only be used in the account-level network policy.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAccountApiDestination",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "account_databricks_one": {
+        "description": "Account DatabricksOne destination is not supported.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAccountDatabricksOneDestination",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "account_ui": {
+        "description": "Matches requests to the account console UI.\nCan only be used in the account-level network policy.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAccountUiDestination",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "all_destinations": {
+        "description": "When true, match all destinations, no other destination fields can be set.\nWhen not set or false, at least one specific destination must be provided.",
+        "launch_stage": "GA"
+      },
+      "apps_runtime": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyAppsRuntimeDestination",
+        "launch_stage": "GA"
+      },
+      "lakebase_runtime": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyLakebaseRuntimeDestination",
+        "launch_stage": "GA"
+      },
+      "workspace_api": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyWorkspaceApiDestination",
+        "launch_stage": "GA"
+      },
+      "workspace_ui": {
+        "ref": "settings.CustomerFacingIngressNetworkPolicyWorkspaceUiDestination",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyWorkspaceApiDestination": {
+    "description": "Matches workspace-level Databricks API endpoints for an ingress network policy rule.",
+    "fields": {
+      "excluded_scopes": {
+        "description": "Inverse of `scopes`: matches every API scope EXCEPT those listed here\n(\"allow all except\"). Mutually exclusive with `scopes` — a single\ndestination may set at most one of the two.",
+        "launch_stage": "GA"
+      },
+      "scope_qualifier": {
+        "description": "Qualifies the breadth of API access for the listed scopes. See ApiScopeQualifier.",
+        "ref": "settings.CustomerFacingIngressNetworkPolicyApiScopeQualifier",
+        "launch_stage": "GA"
+      },
+      "scopes": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyWorkspaceIdList": {
+    "fields": {
+      "workspace_ids": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.CustomerFacingIngressNetworkPolicyWorkspaceUiDestination": {
+    "fields": {
+      "all_destinations": {
+        "description": "Must be set to true.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingNetworkConnectivityConfigAwsPrivateEndpointRule": {
+    "description": "Properties of the new private endpoint rule.\nNote that for private endpoints towards a VPC endpoint service behind a customer-managed NLB,\nyou must approve the endpoint in AWS console after initialization.",
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID. You can find your account ID from the Accounts Console.",
+        "launch_stage": "GA"
+      },
+      "connection_state": {
+        "description": "The current status of this private endpoint. The private endpoint rules are effective only if the connection state\nis ESTABLISHED. Remember that you must approve new endpoints on your resources in the AWS console\nbefore they take effect.\nThe possible values are:\n- PENDING: The endpoint has been created and pending approval.\n- ESTABLISHED: The endpoint has been approved and is ready to use in your serverless compute resources.\n- REJECTED: Connection was rejected by the private link resource owner.\n- DISCONNECTED: Connection was removed by the private link resource owner, the private endpoint becomes informative and should be deleted for clean-up.\n- EXPIRED: If the endpoint is created but not approved in 14 days, it is EXPIRED.",
+        "ref": "settings.CustomerFacingNetworkConnectivityConfigAwsPrivateEndpointRulePrivateLinkConnectionState",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when this object was created.",
+        "launch_stage": "GA"
+      },
+      "deactivated": {
+        "description": "Whether this private endpoint is deactivated.",
+        "launch_stage": "GA"
+      },
+      "deactivated_at": {
+        "description": "Time in epoch milliseconds when this object was deactivated.",
+        "launch_stage": "GA"
+      },
+      "domain_names": {
+        "description": "Only used by private endpoints towards a VPC endpoint service for customer-managed VPC endpoint service.\n\nThe target AWS resource FQDNs accessible via the VPC endpoint service.\nWhen updating this field, we perform full update on this field. Please ensure a full list of desired domain_names is provided.",
+        "launch_stage": "GA"
+      },
+      "enabled": {
+        "description": "Only used by private endpoints towards an AWS S3 service.\n\nUpdate this field to activate/deactivate this private endpoint to allow egress access from serverless compute resources.",
+        "launch_stage": "GA"
+      },
+      "endpoint_service": {
+        "description": "The full target AWS endpoint service name that connects to the destination resources of the private endpoint.",
+        "launch_stage": "GA"
+      },
+      "error_message": {
+        "launch_stage": "GA"
+      },
+      "network_connectivity_config_id": {
+        "description": "The ID of a network connectivity configuration, which is the parent resource of this private endpoint rule object.",
+        "launch_stage": "GA"
+      },
+      "resource_names": {
+        "description": "Only used by private endpoints towards AWS S3 service.\n\nThe globally unique S3 bucket names that will be accessed via the VPC endpoint.\nThe bucket names must be in the same region as the NCC/endpoint service.\nWhen updating this field, we perform full update on this field.\nPlease ensure a full list of desired resource_names is provided.",
+        "launch_stage": "GA"
+      },
+      "rule_id": {
+        "description": "The ID of a private endpoint rule.",
+        "launch_stage": "GA"
+      },
+      "updated_time": {
+        "description": "Time in epoch milliseconds when this object was updated.",
+        "launch_stage": "GA"
+      },
+      "vpc_endpoint_id": {
+        "description": "The AWS VPC endpoint ID. You can use this ID to identify VPC endpoint created by Databricks.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.CustomerFacingNetworkConnectivityConfigAwsPrivateEndpointRulePrivateLinkConnectionState": {
+    "enum": [
+      "ESTABLISHED",
+      "REJECTED",
+      "DISCONNECTED",
+      "EXPIRED",
+      "PENDING",
+      "CREATING",
+      "CREATE_FAILED"
+    ],
+    "enum_launch_stages": {
+      "CREATE_FAILED": "GA",
+      "CREATING": "GA",
+      "DISCONNECTED": "GA",
+      "ESTABLISHED": "GA",
+      "EXPIRED": "GA",
+      "PENDING": "GA",
+      "REJECTED": "GA"
+    }
+  },
+  "settings.DashboardEmailSubscriptions": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DatabricksAppSlackConfig": {
+    "description": "Slack channel reached through the Databricks app. The app must already be installed in the\nSlack workspace and connected to this Databricks workspace.",
+    "fields": {
+      "channel_id": {
+        "description": "[Input-Only] Slack channel ID notifications are posted to.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "channel_id_set": {
+        "description": "[Output-Only] Whether channel ID is set.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "team_id": {
+        "description": "[Input-Only] Slack workspace (team) ID the Databricks app is installed in.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "team_id_set": {
+        "description": "[Output-Only] Whether team ID is set.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.DatabricksAppTeamsConfig": {
+    "description": "Microsoft Teams channel reached through the Databricks app. The app must already be installed in\nthe Microsoft 365 tenant and connected to this Databricks workspace.",
+    "fields": {
+      "channel_id": {
+        "description": "[Input-Only] Teams channel ID notifications are posted to.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "channel_id_set": {
+        "description": "[Output-Only] Whether channel ID is set.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "team_id": {
+        "description": "[Input-Only] Microsoft Entra group ID of the team that owns the channel.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "team_id_set": {
+        "description": "[Output-Only] Whether team ID is set.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tenant_id": {
+        "description": "[Input-Only] Microsoft Entra tenant ID of the Microsoft 365 tenant the app is installed in.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "tenant_id_set": {
+        "description": "[Output-Only] Whether tenant ID is set.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.DefaultNamespaceSetting": {
+    "description": "This represents the setting configuration for the default namespace in the Databricks workspace.\nSetting the default catalog for the workspace determines the catalog that is used when queries do not reference\na fully qualified 3 level name. For example, if the default catalog is set to 'retail_prod' then a query\n'SELECT * FROM myTable' would reference the object 'retail_prod.default.myTable' (the schema\n'default' is always assumed). This setting requires a restart of clusters and SQL warehouses to take effect.\nAdditionally, the default namespace only applies when using Unity Catalog-enabled compute.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "namespace": {
+        "ref": "settings.StringMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DefaultWarehouseId": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "string_val": {
+        "ref": "settings.StringMessage",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteAccountIpAccessEnableRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteAccountIpAccessEnableResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteAccountIpAccessListRequest": {},
+  "settings.DeleteAibiDashboardEmbeddingAccessPolicySettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteAibiDashboardEmbeddingAccessPolicySettingResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteAibiDashboardEmbeddingApprovedDomainsSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteAibiDashboardEmbeddingApprovedDomainsSettingResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteDashboardEmailSubscriptionsRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteDashboardEmailSubscriptionsResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteDefaultNamespaceSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteDefaultNamespaceSettingResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteDefaultWarehouseIdRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteDefaultWarehouseIdResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteDisableLegacyAccessRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DeleteDisableLegacyAccessResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DeleteDisableLegacyDbfsRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DeleteDisableLegacyDbfsResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DeleteDisableLegacyFeaturesRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DeleteDisableLegacyFeaturesResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DeleteIpAccessListRequest": {},
+  "settings.DeleteLlmProxyPartnerPoweredWorkspaceRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteLlmProxyPartnerPoweredWorkspaceResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteNetworkConnectivityConfigurationRequest": {},
+  "settings.DeleteNetworkPolicyRequest": {},
+  "settings.DeleteNotificationDestinationRequest": {},
+  "settings.DeletePersonalComputeSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeletePersonalComputeSettingResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.DeletePrivateEndpointRuleRequest": {},
+  "settings.DeleteRestrictWorkspaceAdminsSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteRestrictWorkspaceAdminsSettingResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteSqlResultsDownloadRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteSqlResultsDownloadResponse": {
+    "description": "The etag is returned.",
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.DeleteTokenManagementRequest": {},
+  "settings.DestinationType": {
+    "enum": [
+      "SLACK",
+      "EMAIL",
+      "WEBHOOK",
+      "PAGERDUTY",
+      "MICROSOFT_TEAMS",
+      "DATABRICKS_APP_SLACK",
+      "DATABRICKS_APP_TEAMS"
+    ],
+    "enum_launch_stages": {
+      "DATABRICKS_APP_SLACK": "PUBLIC_BETA",
+      "DATABRICKS_APP_TEAMS": "PUBLIC_BETA",
+      "EMAIL": "GA",
+      "MICROSOFT_TEAMS": "GA",
+      "PAGERDUTY": "GA",
+      "SLACK": "GA",
+      "WEBHOOK": "GA"
+    }
+  },
+  "settings.DisableLegacyAccess": {
+    "fields": {
+      "disable_legacy_access": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "GA"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "GA"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DisableLegacyDbfs": {
+    "fields": {
+      "disable_legacy_dbfs": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "GA"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "GA"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.DisableLegacyFeatures": {
+    "fields": {
+      "disable_legacy_features": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "GA"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "GA"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicy": {
+    "description": "The network policies applying for egress traffic.\nThis message is used by the UI/REST API. We translate this message to the format expected by the\ndataplane in Lakehouse Network Manager (for the format expected by the dataplane,\nsee networkconfig.textproto).",
+    "fields": {
+      "internet_access": {
+        "description": "The access policy enforced for egress traffic to the internet.",
+        "ref": "settings.EgressNetworkPolicyInternetAccessPolicy",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicy": {
+    "fields": {
+      "allowed_internet_destinations": {
+        "launch_stage": "GA"
+      },
+      "allowed_storage_destinations": {
+        "launch_stage": "GA"
+      },
+      "log_only_mode": {
+        "description": "Optional. If not specified, assume the policy is enforced for all workloads.",
+        "ref": "settings.EgressNetworkPolicyInternetAccessPolicyLogOnlyMode",
+        "launch_stage": "GA"
+      },
+      "restriction_mode": {
+        "ref": "settings.EgressNetworkPolicyInternetAccessPolicyRestrictionMode",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyInternetDestination": {
+    "description": "Users can specify accessible internet destinations when outbound access is restricted.\nWe only support domain name (FQDN) destinations for the time being,\nthough going forwards we want to support host names and IP addresses.",
+    "fields": {
+      "destination": {
+        "launch_stage": "GA"
+      },
+      "protocol": {
+        "ref": "settings.EgressNetworkPolicyInternetAccessPolicyInternetDestinationInternetDestinationFilteringProtocol",
+        "launch_stage": "GA"
+      },
+      "type": {
+        "ref": "settings.EgressNetworkPolicyInternetAccessPolicyInternetDestinationInternetDestinationType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyInternetDestinationInternetDestinationFilteringProtocol": {
+    "description": "The filtering protocol used by the DP. For private and public preview, SEG will only\nsupport TCP filtering (i.e. DNS based filtering, filtering by destination IP address),\nso protocol will be set to TCP by default and hidden from the user. In the future, users\nmay be able to select HTTP filtering (i.e. SNI based filtering, filtering by FQDN).",
+    "enum": [
+      "TCP"
+    ],
+    "enum_launch_stages": {
+      "TCP": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyInternetDestinationInternetDestinationType": {
+    "enum": [
+      "FQDN"
+    ],
+    "enum_launch_stages": {
+      "FQDN": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyLogOnlyMode": {
+    "fields": {
+      "log_only_mode_type": {
+        "ref": "settings.EgressNetworkPolicyInternetAccessPolicyLogOnlyModeLogOnlyModeType",
+        "launch_stage": "GA"
+      },
+      "workloads": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyLogOnlyModeLogOnlyModeType": {
+    "enum": [
+      "ALL_SERVICES",
+      "SELECTED_SERVICES"
+    ],
+    "enum_launch_stages": {
+      "ALL_SERVICES": "GA",
+      "SELECTED_SERVICES": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyLogOnlyModeWorkloadType": {
+    "description": "The values should match the list of workloads used in networkconfig.proto",
+    "enum": [
+      "DBSQL",
+      "ML_SERVING"
+    ],
+    "enum_launch_stages": {
+      "DBSQL": "GA",
+      "ML_SERVING": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyRestrictionMode": {
+    "description": "At which level can Databricks and Databricks managed compute access Internet.\nFULL_ACCESS: Databricks can access Internet. No blocking rules will apply.\nRESTRICTED_ACCESS: Databricks can only access explicitly allowed internet and storage destinations,\nas well as UC connections and external locations.\nPRIVATE_ACCESS_ONLY (not used): Databricks can only access destinations via private link.",
+    "enum": [
+      "FULL_ACCESS",
+      "PRIVATE_ACCESS_ONLY",
+      "RESTRICTED_ACCESS"
+    ],
+    "enum_launch_stages": {
+      "FULL_ACCESS": "GA",
+      "PRIVATE_ACCESS_ONLY": "GA",
+      "RESTRICTED_ACCESS": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyStorageDestination": {
+    "description": "Users can specify accessible storage destinations.",
+    "fields": {
+      "allowed_paths": {
+        "launch_stage": "GA"
+      },
+      "azure_container": {
+        "launch_stage": "GA"
+      },
+      "azure_dns_zone": {
+        "launch_stage": "GA"
+      },
+      "azure_storage_account": {
+        "launch_stage": "GA"
+      },
+      "azure_storage_service": {
+        "launch_stage": "GA"
+      },
+      "bucket_name": {
+        "launch_stage": "GA"
+      },
+      "region": {
+        "launch_stage": "GA"
+      },
+      "type": {
+        "ref": "settings.EgressNetworkPolicyInternetAccessPolicyStorageDestinationStorageDestinationType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyInternetAccessPolicyStorageDestinationStorageDestinationType": {
+    "enum": [
+      "AWS_S3",
+      "CLOUDFLARE_R2",
+      "AZURE_STORAGE",
+      "GOOGLE_CLOUD_STORAGE"
+    ],
+    "enum_launch_stages": {
+      "AWS_S3": "GA",
+      "AZURE_STORAGE": "GA",
+      "CLOUDFLARE_R2": "GA",
+      "GOOGLE_CLOUD_STORAGE": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicy": {
+    "fields": {
+      "allowed_databricks_destinations": {
+        "description": "List of Databricks workspace destinations that serverless workloads are\nallowed to access when in RESTRICTED_ACCESS mode.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "allowed_internet_destinations": {
+        "description": "List of internet destinations that serverless workloads are allowed to access when in RESTRICTED_ACCESS mode.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "allowed_storage_destinations": {
+        "description": "List of storage destinations that serverless workloads are allowed to access when in RESTRICTED_ACCESS mode.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "blocked_internet_destinations": {
+        "description": "List of internet destinations that serverless workloads are blocked from accessing.\nThese destinations are enforced when restriction mode is RESTRICTED_ACCESS or DRY_RUN.\nCurrently supports DNS_NAME type only; IP_RANGE support is planned.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "policy_enforcement": {
+        "description": "Optional. When policy_enforcement is not provided, we default to ENFORCE_MODE_ALL_SERVICES",
+        "ref": "settings.EgressNetworkPolicyNetworkAccessPolicyPolicyEnforcement",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "restriction_mode": {
+        "description": "The restriction mode that controls how serverless workloads can access the internet.",
+        "ref": "settings.EgressNetworkPolicyNetworkAccessPolicyRestrictionMode",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyDatabricksDestination": {
+    "fields": {
+      "workspace_ids": {
+        "description": "The workspace IDs to allow egress traffic to.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyInternetDestination": {
+    "description": "Users can specify accessible internet destinations when outbound access is restricted.\nWe only support DNS_NAME (FQDN format) destinations for the time being.\nGoing forward we may extend support to host names and IP addresses.",
+    "fields": {
+      "destination": {
+        "description": "The internet destination to which access will be allowed. Format dependent on the destination type.",
+        "launch_stage": "GA"
+      },
+      "internet_destination_type": {
+        "description": "The type of internet destination. Currently only DNS_NAME is supported.",
+        "ref": "settings.EgressNetworkPolicyNetworkAccessPolicyInternetDestinationInternetDestinationType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyInternetDestinationInternetDestinationType": {
+    "enum": [
+      "DNS_NAME"
+    ],
+    "enum_launch_stages": {
+      "DNS_NAME": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyPolicyEnforcement": {
+    "fields": {
+      "dry_run_mode_product_filter": {
+        "description": "When empty, it means dry run for all products.\nWhen non-empty, it means dry run for specific products and for the other products, they will run in enforced mode.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "enforcement_mode": {
+        "description": "The mode of policy enforcement. ENFORCED blocks traffic that violates policy,\nwhile DRY_RUN only logs violations without blocking. When not specified,\ndefaults to ENFORCED.",
+        "ref": "settings.EgressNetworkPolicyNetworkAccessPolicyPolicyEnforcementEnforcementMode",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyPolicyEnforcementDryRunModeProductFilter": {
+    "description": "The values should match the list of workloads used in networkconfig.proto",
+    "enum": [
+      "DBSQL",
+      "ML_SERVING"
+    ],
+    "enum_launch_stages": {
+      "DBSQL": "GA",
+      "ML_SERVING": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyPolicyEnforcementEnforcementMode": {
+    "enum": [
+      "ENFORCED",
+      "DRY_RUN"
+    ],
+    "enum_launch_stages": {
+      "DRY_RUN": "GA",
+      "ENFORCED": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyRestrictionMode": {
+    "description": "At which level can Databricks and Databricks managed compute access Internet.\nFULL_ACCESS: Databricks can access Internet. No blocking rules will apply.\nRESTRICTED_ACCESS: Databricks can only access explicitly allowed internet and storage destinations,\nas well as UC connections and external locations.",
+    "enum": [
+      "FULL_ACCESS",
+      "RESTRICTED_ACCESS"
+    ],
+    "enum_launch_stages": {
+      "FULL_ACCESS": "GA",
+      "RESTRICTED_ACCESS": "GA"
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyStorageDestination": {
+    "description": "Users can specify accessible storage destinations.",
+    "fields": {
+      "azure_storage_account": {
+        "description": "The Azure storage account name.",
+        "launch_stage": "GA"
+      },
+      "azure_storage_service": {
+        "description": "The Azure storage service type (blob, dfs, etc.).",
+        "launch_stage": "GA"
+      },
+      "bucket_name": {
+        "launch_stage": "GA"
+      },
+      "region": {
+        "launch_stage": "GA"
+      },
+      "storage_destination_type": {
+        "description": "The type of storage destination.",
+        "ref": "settings.EgressNetworkPolicyNetworkAccessPolicyStorageDestinationStorageDestinationType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.EgressNetworkPolicyNetworkAccessPolicyStorageDestinationStorageDestinationType": {
+    "enum": [
+      "AWS_S3",
+      "AZURE_STORAGE",
+      "GOOGLE_CLOUD_STORAGE"
+    ],
+    "enum_launch_stages": {
+      "AWS_S3": "GA",
+      "AZURE_STORAGE": "GA",
+      "GOOGLE_CLOUD_STORAGE": "GA"
+    }
+  },
+  "settings.EgressResourceType": {
+    "description": "The target resources that are supported by Network Connectivity Config.\nNote: some egress types can support general types that are not defined in EgressResourceType.\nE.g.: Azure private endpoint supports private link enabled Azure services.",
+    "enum": [
+      "AZURE_BLOB_STORAGE"
+    ],
+    "enum_launch_stages": {
+      "AZURE_BLOB_STORAGE": "GA"
+    }
+  },
+  "settings.EmailConfig": {
+    "fields": {
+      "addresses": {
+        "description": "Email addresses to notify.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.Empty": {},
+  "settings.EnableExportNotebook": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.EnableNotebookTableClipboard": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.EnableResultsDownloading": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.EnhancedSecurityMonitoring": {
+    "description": "SHIELD feature: ESM\nEnhanced Security Monitoring (ESM) enables additional security monitoring on the workspace.",
+    "fields": {
+      "is_enabled": {
+        "description": "Whether Enhanced Security Monitoring (ESM) is enabled on the workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.EnhancedSecurityMonitoringSetting": {
+    "fields": {
+      "enhanced_security_monitoring_workspace": {
+        "ref": "settings.EnhancedSecurityMonitoring",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.EsmEnablementAccount": {
+    "description": "Account level policy for ESM",
+    "fields": {
+      "is_enforced": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.EsmEnablementAccountSetting": {
+    "fields": {
+      "esm_enablement_account": {
+        "ref": "settings.EsmEnablementAccount",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.ExchangeToken": {
+    "description": "The exchange token is the result of the token exchange with the IdP",
+    "fields": {
+      "credential": {
+        "description": "The requested token.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "credentialEolTime": {
+        "description": "The end-of-life timestamp of the token. The value is in milliseconds since the Unix epoch.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "ownerId": {
+        "description": "User ID of the user that owns this token.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "scopes": {
+        "description": "The scopes of access granted in the token.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "tokenType": {
+        "description": "The type of this exchange token",
+        "ref": "settings.TokenType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.ExchangeTokenRequest": {
+    "description": "Exchange a token with the IdP",
+    "fields": {
+      "partitionId": {
+        "description": "The partition of Credentials store",
+        "ref": "settings.PartitionId",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "scopes": {
+        "description": "Array of scopes for the token request.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "tokenType": {
+        "description": "A list of token types being requested",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.ExchangeTokenResponse": {
+    "description": "Exhanged tokens were successfully returned.",
+    "fields": {
+      "values": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.FetchIpAccessListResponse": {
+    "description": "An IP access list was successfully returned.",
+    "fields": {
+      "ip_access_list": {
+        "ref": "settings.IpAccessListInfo",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GcpEndpoint": {
+    "fields": {
+      "all_vpc_sc_services": {
+        "description": "All Google APIs that support VPC Service Controls (a subset of all Google APIs).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "google_api_endpoints": {
+        "description": "Selected Google API hostnames, e.g. \"storage.googleapis.com\", \"bigquery.googleapis.com\".",
+        "ref": "settings.GoogleApiEndpoints",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "psc_endpoint_uri": {
+        "description": "Output only. The URI of the created PSC endpoint.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "service_attachment": {
+        "description": "The full url of the target service attachment.\nExample:\nprojects/my-gcp-project/regions/us-east4/serviceAttachments/my-service-attachment",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GenericWebhookConfig": {
+    "fields": {
+      "password": {
+        "description": "[Input-Only][Optional] Password for webhook.",
+        "launch_stage": "GA"
+      },
+      "password_set": {
+        "description": "[Output-Only] Whether password is set.",
+        "launch_stage": "GA"
+      },
+      "url": {
+        "description": "[Input-Only] URL for webhook.",
+        "launch_stage": "GA"
+      },
+      "url_set": {
+        "description": "[Output-Only] Whether URL is set.",
+        "launch_stage": "GA"
+      },
+      "username": {
+        "description": "[Input-Only][Optional] Username for webhook.",
+        "launch_stage": "GA"
+      },
+      "username_set": {
+        "description": "[Output-Only] Whether username is set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetAccountIpAccessEnableRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.GetAccountIpAccessListRequest": {},
+  "settings.GetAibiDashboardEmbeddingAccessPolicySettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetAibiDashboardEmbeddingApprovedDomainsSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetAutomaticClusterUpdateSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetComplianceSecurityProfileSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetCspEnablementAccountSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetDashboardEmailSubscriptionsRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetDefaultNamespaceSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetDefaultWarehouseIdRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.GetDisableLegacyAccessRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetDisableLegacyDbfsRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetDisableLegacyFeaturesRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetEnableExportNotebookRequest": {},
+  "settings.GetEnableNotebookTableClipboardRequest": {},
+  "settings.GetEnableResultsDownloadingRequest": {},
+  "settings.GetEnhancedSecurityMonitoringSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetEsmEnablementAccountSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetIpAccessListRequest": {},
+  "settings.GetIpAccessListResponse": {
+    "fields": {
+      "ip_access_list": {
+        "ref": "settings.IpAccessListInfo",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetIpAccessListsResponse": {
+    "description": "IP access lists were successfully returned.",
+    "fields": {
+      "ip_access_lists": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetLlmProxyPartnerPoweredAccountRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.GetLlmProxyPartnerPoweredEnforceRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.GetLlmProxyPartnerPoweredWorkspaceRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.GetNetworkConnectivityConfigurationRequest": {},
+  "settings.GetNetworkPolicyRequest": {},
+  "settings.GetNotificationDestinationRequest": {},
+  "settings.GetPersonalComputeSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.GetPrivateEndpointRuleRequest": {},
+  "settings.GetRestrictWorkspaceAdminsSettingRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetSqlResultsDownloadRequest": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.GetStatusRequest": {
+    "fields": {
+      "keys": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetTokenManagementRequest": {},
+  "settings.GetTokenPermissionLevelsRequest": {},
+  "settings.GetTokenPermissionLevelsResponse": {
+    "fields": {
+      "permission_levels": {
+        "description": "Specific permission levels",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetTokenPermissionsRequest": {},
+  "settings.GetTokenResponse": {
+    "description": "Token with specified Token ID was successfully returned.",
+    "fields": {
+      "token_info": {
+        "ref": "settings.TokenInfo",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.GetWorkspaceNetworkOptionRequest": {},
+  "settings.GoogleApiEndpoints": {
+    "description": "Wrapper for a list of Google API hostnames. Wrapped in a message because\nproto3 oneof does not support repeated fields directly.",
+    "fields": {
+      "endpoints": {
+        "description": "Google API hostnames, e.g. \"storage.googleapis.com\",\n\"bigquery.googleapis.com\". Use \"googleapis.com\" to cover all Google APIs.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "settings.IpAccessListInfo": {
+    "description": "Definition of an IP Access list",
+    "fields": {
+      "address_count": {
+        "description": "Total number of IP or CIDR values.",
+        "launch_stage": "GA"
+      },
+      "created_at": {
+        "description": "Creation timestamp in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "created_by": {
+        "description": "User ID of the user who created this list.",
+        "launch_stage": "GA"
+      },
+      "enabled": {
+        "description": "Specifies whether this IP access list is enabled.",
+        "launch_stage": "GA"
+      },
+      "ip_addresses": {
+        "launch_stage": "GA"
+      },
+      "label": {
+        "description": "Label for the IP access list. This **cannot** be empty.",
+        "launch_stage": "GA"
+      },
+      "list_id": {
+        "description": "Universally unique identifier (UUID) of the IP access list.",
+        "launch_stage": "GA"
+      },
+      "list_type": {
+        "ref": "settings.ListType",
+        "launch_stage": "GA"
+      },
+      "updated_at": {
+        "description": "Update timestamp in milliseconds.",
+        "launch_stage": "GA"
+      },
+      "updated_by": {
+        "description": "User ID of the user who updated this list.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListIpAccessListResponse": {
+    "description": "IP access lists were successfully returned.",
+    "fields": {
+      "ip_access_lists": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListIpAccessLists": {},
+  "settings.ListNetworkConnectivityConfigurationsRequest": {
+    "fields": {
+      "page_token": {
+        "description": "Pagination token to go to next page based on previous query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListNetworkConnectivityConfigurationsResponse": {
+    "description": "The network connectivity configuration list was successfully retrieved.",
+    "fields": {
+      "items": {
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. If null, there are no more results to show.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListNetworkPoliciesRequest": {
+    "fields": {
+      "page_token": {
+        "description": "Pagination token to go to next page based on previous query.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.ListNetworkPoliciesResponse": {
+    "fields": {
+      "items": {
+        "description": "List of network policies.",
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. If null, there are no more results to show.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListNotificationDestinationsRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "GA"
+      },
+      "page_token": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListNotificationDestinationsResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Page token for next of results.",
+        "launch_stage": "GA"
+      },
+      "results": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListNotificationDestinationsResult": {
+    "fields": {
+      "destination_type": {
+        "description": "[Output-only] The type of the notification destination. The type can not be changed once set.",
+        "ref": "settings.DestinationType",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name for the notification destination.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "UUID identifying notification destination.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListPrivateEndpointRulesRequest": {
+    "fields": {
+      "page_token": {
+        "description": "Pagination token to go to next page based on previous query.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListPrivateEndpointRulesResponse": {
+    "description": "The private endpoint rule list was successfully retrieved.",
+    "fields": {
+      "items": {
+        "launch_stage": "GA"
+      },
+      "next_page_token": {
+        "description": "A token that can be used to get the next page of results. If null, there are no more results to show.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListPublicTokensResponse": {
+    "fields": {
+      "token_infos": {
+        "description": "The information for each token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListTokenManagementRequest": {
+    "fields": {
+      "created_by_id": {
+        "description": "User ID of the user that created the token.",
+        "launch_stage": "GA"
+      },
+      "created_by_username": {
+        "description": "Username of the user that created the token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListTokens": {},
+  "settings.ListTokensResponse": {
+    "description": "Tokens were successfully returned.",
+    "fields": {
+      "token_infos": {
+        "description": "Token metadata of each user-created token in the workspace",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ListType": {
+    "description": "Type of IP access list. Valid values are as follows and are case-sensitive:\n\n* `ALLOW`: An allow list. Include this IP or range.\n* `BLOCK`: A block list. Exclude this IP or range. IP addresses in the block list are excluded even if they are included in an allow list.",
+    "enum": [
+      "ALLOW",
+      "BLOCK"
+    ],
+    "enum_launch_stages": {
+      "ALLOW": "GA",
+      "BLOCK": "GA"
+    },
+    "enum_descriptions": {
+      "ALLOW": "An allow list. Include this IP or range.",
+      "BLOCK": "A block list. Exclude this IP or range. IP addresses in the block list are excluded even if they are included in an allow list."
+    }
+  },
+  "settings.LlmProxyPartnerPoweredAccount": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.LlmProxyPartnerPoweredEnforce": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.LlmProxyPartnerPoweredWorkspace": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.MicrosoftTeamsConfig": {
+    "fields": {
+      "app_id": {
+        "description": "[Input-Only] App ID for Microsoft Teams App.",
+        "launch_stage": "GA"
+      },
+      "app_id_set": {
+        "description": "[Output-Only] Whether App ID is set.",
+        "launch_stage": "GA"
+      },
+      "auth_secret": {
+        "description": "[Input-Only] Secret for Microsoft Teams App authentication.",
+        "launch_stage": "GA"
+      },
+      "auth_secret_set": {
+        "description": "[Output-Only] Whether secret is set.",
+        "launch_stage": "GA"
+      },
+      "channel_url": {
+        "description": "[Input-Only] Channel URL for Microsoft Teams App.",
+        "launch_stage": "GA"
+      },
+      "channel_url_set": {
+        "description": "[Output-Only] Whether Channel URL is set.",
+        "launch_stage": "GA"
+      },
+      "tenant_id": {
+        "description": "[Input-Only] Tenant ID for Microsoft Teams App.",
+        "launch_stage": "GA"
+      },
+      "tenant_id_set": {
+        "description": "[Output-Only] Whether Tenant ID is set.",
+        "launch_stage": "GA"
+      },
+      "url": {
+        "description": "[Input-Only] URL for Microsoft Teams webhook.",
+        "launch_stage": "GA"
+      },
+      "url_set": {
+        "description": "[Output-Only] Whether URL is set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccAwsStableIpRule": {
+    "description": "The stable AWS IP CIDR blocks. You can use these to configure the firewall of your resources to allow traffic from your Databricks workspace.",
+    "fields": {
+      "cidr_blocks": {
+        "description": "The list of stable IP CIDR blocks from which Databricks network traffic originates when accessing your resources.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccAzurePrivateEndpointRule": {
+    "description": "Properties of the new private endpoint rule.\nNote that you must approve the endpoint in Azure portal after initialization.",
+    "fields": {
+      "connection_state": {
+        "description": "The current status of this private endpoint. The private endpoint rules are effective only if the connection state\nis ESTABLISHED. Remember that you must approve new endpoints on your resources in the Azure portal\nbefore they take effect.\nThe possible values are:\n- INIT: (deprecated) The endpoint has been created and pending approval.\n- PENDING: The endpoint has been created and pending approval.\n- ESTABLISHED: The endpoint has been approved and is ready to use in your serverless compute resources.\n- REJECTED: Connection was rejected by the private link resource owner.\n- DISCONNECTED: Connection was removed by the private link resource owner, the private endpoint becomes informative and should be deleted for clean-up.\n- EXPIRED: If the endpoint was created but not approved in 14 days, it will be EXPIRED.",
+        "ref": "settings.NccAzurePrivateEndpointRuleConnectionState",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when this object was created.",
+        "launch_stage": "GA"
+      },
+      "deactivated": {
+        "description": "Whether this private endpoint is deactivated.",
+        "launch_stage": "GA"
+      },
+      "deactivated_at": {
+        "description": "Time in epoch milliseconds when this object was deactivated.",
+        "launch_stage": "GA"
+      },
+      "domain_names": {
+        "description": "Not used by customer-managed private endpoint services.\n\nDomain names of target private link service.\nWhen updating this field, the full list of target domain_names must be specified.",
+        "launch_stage": "GA"
+      },
+      "endpoint_name": {
+        "description": "The name of the Azure private endpoint resource.",
+        "launch_stage": "GA"
+      },
+      "error_message": {
+        "launch_stage": "GA"
+      },
+      "group_id": {
+        "description": "Only used by private endpoints to Azure first-party services.\n\nThe sub-resource type (group ID) of the target resource.\nNote that to connect to workspace root storage (root DBFS), you need two endpoints, one for blob and one for dfs.",
+        "launch_stage": "GA"
+      },
+      "network_connectivity_config_id": {
+        "description": "The ID of a network connectivity configuration, which is the parent resource of this private endpoint rule object.",
+        "launch_stage": "GA"
+      },
+      "resource_id": {
+        "description": "The Azure resource ID of the target resource.",
+        "launch_stage": "GA"
+      },
+      "rule_id": {
+        "description": "The ID of a private endpoint rule.",
+        "launch_stage": "GA"
+      },
+      "updated_time": {
+        "description": "Time in epoch milliseconds when this object was updated.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccAzurePrivateEndpointRuleConnectionState": {
+    "enum": [
+      "INIT",
+      "ESTABLISHED",
+      "REJECTED",
+      "DISCONNECTED",
+      "EXPIRED",
+      "PENDING",
+      "CREATING",
+      "CREATE_FAILED"
+    ],
+    "enum_launch_stages": {
+      "CREATE_FAILED": "GA",
+      "CREATING": "GA",
+      "DISCONNECTED": "GA",
+      "ESTABLISHED": "GA",
+      "EXPIRED": "GA",
+      "INIT": "GA",
+      "PENDING": "GA",
+      "REJECTED": "GA"
+    }
+  },
+  "settings.NccAzureServiceEndpointRule": {
+    "description": "The stable Azure service endpoints. You can configure the firewall of your Azure resources\nto allow traffic from your Databricks serverless compute resources.",
+    "fields": {
+      "subnets": {
+        "description": "The list of subnets from which Databricks network traffic originates when accessing your Azure resources.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "target_region": {
+        "description": "The Azure region in which this service endpoint rule applies..",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "target_services": {
+        "description": "The Azure services to which this service endpoint rule applies to.",
+        "deprecated": true,
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccEgressConfig": {
+    "fields": {
+      "default_rules": {
+        "description": "The network connectivity rules that are applied by default without resource specific configurations.\nYou can find the stable network information of your serverless compute resources here.",
+        "ref": "settings.NccEgressDefaultRules",
+        "launch_stage": "GA"
+      },
+      "target_rules": {
+        "description": "The network connectivity rules that configured for each destinations. These rules override default rules.",
+        "ref": "settings.NccEgressTargetRules",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccEgressDefaultRules": {
+    "description": "Default rules don't have specific targets.",
+    "fields": {
+      "aws_stable_ip_rule": {
+        "ref": "settings.NccAwsStableIpRule",
+        "deprecated": true,
+        "launch_stage": "GA"
+      },
+      "azure_service_endpoint_rule": {
+        "ref": "settings.NccAzureServiceEndpointRule",
+        "deprecated": true,
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccEgressTargetRules": {
+    "description": "Target rule controls the egress rules that are dedicated to specific resources.",
+    "fields": {
+      "aws_private_endpoint_rules": {
+        "description": "AWS private endpoint rule controls the AWS private endpoint based egress rules.",
+        "launch_stage": "GA"
+      },
+      "azure_private_endpoint_rules": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccPrivateEndpointRule": {
+    "description": "Properties of the new private endpoint rule.\nNote that you must approve the endpoint in Azure portal after initialization.",
+    "fields": {
+      "account_id": {
+        "description": "Databricks account ID. You can find your account ID from the Accounts Console.",
+        "launch_stage": "GA"
+      },
+      "connection_state": {
+        "description": "The current status of this private endpoint. The private endpoint rules are effective only if the connection state\nis ESTABLISHED. Remember that you must approve new endpoints on your resources in the Cloud console\nbefore they take effect.\nThe possible values are:\n- PENDING: The endpoint has been created and pending approval.\n- ESTABLISHED: The endpoint has been approved and is ready to use in your serverless compute resources.\n- REJECTED: Connection was rejected by the private link resource owner.\n- DISCONNECTED: Connection was removed by the private link resource owner, the private endpoint becomes informative and should be deleted for clean-up.\n- EXPIRED: If the endpoint was created but not approved in 14 days, it will be EXPIRED.\n- CREATING: The endpoint creation is in progress. Once successfully created, the state will transition to PENDING.\n- CREATE_FAILED: The endpoint creation failed. You can check the error_message field for more details.",
+        "ref": "settings.NccPrivateEndpointRulePrivateLinkConnectionState",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when this object was created.",
+        "launch_stage": "GA"
+      },
+      "deactivated": {
+        "description": "Whether this private endpoint is deactivated.",
+        "launch_stage": "GA"
+      },
+      "deactivated_at": {
+        "description": "Time in epoch milliseconds when this object was deactivated.",
+        "launch_stage": "GA"
+      },
+      "domain_names": {
+        "description": "Only used by private endpoints to customer-managed private endpoint services.\n\nDomain names of target private link service.\nWhen updating this field, the full list of target domain_names must be specified.",
+        "launch_stage": "GA"
+      },
+      "enabled": {
+        "description": "Update this field to activate/deactivate this private endpoint to allow egress access from\nserverless compute resources. Only honored for first-party services on each cloud (e.g. AWS S3).",
+        "launch_stage": "GA"
+      },
+      "endpoint_name": {
+        "description": "The name of the Azure private endpoint resource.",
+        "launch_stage": "GA"
+      },
+      "endpoint_service": {
+        "description": "The full target AWS endpoint service name that connects to the destination resources of the private endpoint.",
+        "launch_stage": "GA"
+      },
+      "error_message": {
+        "launch_stage": "GA"
+      },
+      "gcp_endpoint": {
+        "ref": "settings.GcpEndpoint",
+        "launch_stage": "GA"
+      },
+      "group_id": {
+        "description": "Not used by customer-managed private endpoint services.\n\nThe sub-resource type (group ID) of the target resource.\nNote that to connect to workspace root storage (root DBFS), you need two endpoints, one for blob and one for dfs.",
+        "launch_stage": "GA"
+      },
+      "network_connectivity_config_id": {
+        "description": "The ID of a network connectivity configuration, which is the parent resource of this private endpoint rule object.",
+        "launch_stage": "GA"
+      },
+      "resource_id": {
+        "description": "The Azure resource ID of the target resource.",
+        "launch_stage": "GA"
+      },
+      "resource_names": {
+        "description": "Only used by private endpoints towards AWS S3 service.\n\nThe globally unique S3 bucket names that will be accessed via the VPC endpoint.\nThe bucket names must be in the same region as the NCC/endpoint service.\nWhen updating this field, we perform full update on this field. Please ensure a full list of desired\nresource_names is provided.",
+        "launch_stage": "GA"
+      },
+      "rule_id": {
+        "description": "The ID of a private endpoint rule.",
+        "launch_stage": "GA"
+      },
+      "updated_time": {
+        "description": "Time in epoch milliseconds when this object was updated.",
+        "launch_stage": "GA"
+      },
+      "vpc_endpoint_id": {
+        "description": "The AWS VPC endpoint ID. You can use this ID to identify the VPC endpoint created by Databricks.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NccPrivateEndpointRulePrivateLinkConnectionState": {
+    "enum": [
+      "ESTABLISHED",
+      "REJECTED",
+      "DISCONNECTED",
+      "EXPIRED",
+      "PENDING",
+      "CREATING",
+      "CREATE_FAILED"
+    ],
+    "enum_launch_stages": {
+      "CREATE_FAILED": "GA",
+      "CREATING": "GA",
+      "DISCONNECTED": "GA",
+      "ESTABLISHED": "GA",
+      "EXPIRED": "GA",
+      "PENDING": "GA",
+      "REJECTED": "GA"
+    }
+  },
+  "settings.NetworkConnectivityConfiguration": {
+    "description": "Properties of the new network connectivity configuration.",
+    "fields": {
+      "account_id": {
+        "description": "Your Databricks account ID. You can find your account ID in your Databricks accounts console.",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Time in epoch milliseconds when this object was created.",
+        "launch_stage": "GA"
+      },
+      "egress_config": {
+        "description": "The network connectivity rules that apply to network traffic from your serverless compute resources.",
+        "ref": "settings.NccEgressConfig",
+        "launch_stage": "GA"
+      },
+      "name": {
+        "description": "The name of the network connectivity configuration. The name can contain alphanumeric characters, hyphens,\nand underscores. The length must be between 3 and 30 characters. The name must match the regular\nexpression ^[0-9a-zA-Z-_]{3,30}$",
+        "launch_stage": "GA"
+      },
+      "network_connectivity_config_id": {
+        "description": "Databricks network connectivity configuration ID.",
+        "launch_stage": "GA"
+      },
+      "region": {
+        "description": "The region for the network connectivity configuration.\nOnly workspaces in the same region can be attached to the network connectivity configuration.",
+        "launch_stage": "GA"
+      },
+      "updated_time": {
+        "description": "Time in epoch milliseconds when this object was updated.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.NetworkPolicyEgress": {
+    "description": "The network policies applying for egress traffic.",
+    "fields": {
+      "network_access": {
+        "description": "The access policy enforced for egress traffic to the internet.",
+        "ref": "settings.EgressNetworkPolicyNetworkAccessPolicy",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.NotificationDestination": {
+    "fields": {
+      "config": {
+        "description": "The configuration for the notification destination. Will be exactly one of the nested configs. Only returns for users with workspace admin permissions.",
+        "ref": "settings.Config",
+        "launch_stage": "GA"
+      },
+      "destination_type": {
+        "description": "[Output-only] The type of the notification destination. The type can not be changed once set.",
+        "ref": "settings.DestinationType",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name for the notification destination.",
+        "launch_stage": "GA"
+      },
+      "id": {
+        "description": "UUID identifying notification destination.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.PagerdutyConfig": {
+    "fields": {
+      "integration_key": {
+        "description": "[Input-Only] Integration key for PagerDuty.",
+        "launch_stage": "GA"
+      },
+      "integration_key_set": {
+        "description": "[Output-Only] Whether integration key is set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.PartitionId": {
+    "description": "Partition by workspace or account",
+    "fields": {
+      "workspaceId": {
+        "description": "The ID of the workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.PersonalComputeMessage": {
+    "fields": {
+      "value": {
+        "ref": "settings.PersonalComputeMessageEnum",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.PersonalComputeMessageEnum": {
+    "description": "ON: Grants all users in all workspaces access to the Personal Compute default policy, allowing all users to create single-machine compute resources.\nDELEGATE: Moves access control for the Personal Compute default policy to individual workspaces and requires a workspace’s users or groups to be added to the ACLs of that workspace’s Personal Compute default policy before they will be able to create compute resources through that policy.",
+    "enum": [
+      "ON",
+      "DELEGATE"
+    ],
+    "enum_launch_stages": {
+      "DELEGATE": "PRIVATE_PREVIEW",
+      "ON": "PRIVATE_PREVIEW"
+    }
+  },
+  "settings.PersonalComputeSetting": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "personal_compute": {
+        "ref": "settings.PersonalComputeMessage",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.PublicTokenInfo": {
+    "fields": {
+      "autoscope_state": {
+        "description": "Output only. The autoscope state of this token.",
+        "ref": "iam.AutoscopeState",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "backfill_scopes": {
+        "description": "Output only. Scopes inferred from offline backfill processing.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "comment": {
+        "description": "Comment the token was created with, if applicable.",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Server time (in epoch milliseconds) when the token was created.",
+        "launch_stage": "GA"
+      },
+      "expiry_time": {
+        "description": "Server time (in epoch milliseconds) when the token will expire, or -1 if not applicable.",
+        "launch_stage": "GA"
+      },
+      "inferred_scopes": {
+        "description": "Output only. Inferred API path scopes collected for this token when autoscope is enabled.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "scopes": {
+        "description": "Scope of the token was created with, if applicable.",
+        "launch_stage": "GA"
+      },
+      "token_id": {
+        "description": "The ID of this token.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.ReplaceIpAccessList": {
+    "description": "Details required to replace an IP access list.",
+    "fields": {
+      "enabled": {
+        "description": "Specifies whether this IP access list is enabled.",
+        "launch_stage": "GA"
+      },
+      "ip_addresses": {
+        "launch_stage": "GA"
+      },
+      "label": {
+        "description": "Label for the IP access list. This **cannot** be empty.",
+        "launch_stage": "GA"
+      },
+      "list_type": {
+        "ref": "settings.ListType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.RestrictWorkspaceAdminsMessage": {
+    "fields": {
+      "disable_gov_tag_creation": {
+        "description": "When true, workspace admins cannot create governance tags.\nALLOW_ALL status does not override this; they are independent.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "ref": "settings.RestrictWorkspaceAdminsMessageStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.RestrictWorkspaceAdminsMessageStatus": {
+    "enum": [
+      "ALLOW_ALL",
+      "RESTRICT_TOKENS_AND_JOB_RUN_AS"
+    ],
+    "enum_launch_stages": {
+      "ALLOW_ALL": "PUBLIC_PREVIEW",
+      "RESTRICT_TOKENS_AND_JOB_RUN_AS": "PUBLIC_PREVIEW"
+    }
+  },
+  "settings.RestrictWorkspaceAdminsSetting": {
+    "fields": {
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "restrict_workspace_admins": {
+        "ref": "settings.RestrictWorkspaceAdminsMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.RevokeTokenRequest": {
+    "fields": {
+      "token_id": {
+        "description": "The ID of the token to be revoked.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.RevokeTokenResponse": {},
+  "settings.SlackConfig": {
+    "fields": {
+      "channel_id": {
+        "description": "[Input-Only] Slack channel ID for notifications.",
+        "launch_stage": "GA"
+      },
+      "channel_id_set": {
+        "description": "[Output-Only] Whether channel ID is set.",
+        "launch_stage": "GA"
+      },
+      "oauth_token": {
+        "description": "[Input-Only] OAuth token for Slack authentication.",
+        "launch_stage": "GA"
+      },
+      "oauth_token_set": {
+        "description": "[Output-Only] Whether OAuth token is set.",
+        "launch_stage": "GA"
+      },
+      "url": {
+        "description": "[Input-Only] URL for Slack destination.",
+        "launch_stage": "GA"
+      },
+      "url_set": {
+        "description": "[Output-Only] Whether URL is set.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.SqlResultsDownload": {
+    "fields": {
+      "boolean_val": {
+        "ref": "settings.BooleanMessage",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "etag": {
+        "description": "etag used for versioning. The response is at least as fresh as the eTag provided.\nThis is used for optimistic concurrency control as a way to help prevent simultaneous\nwrites of a setting overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e update pattern to perform setting updates in\norder to avoid race conditions. That is, get an etag from a GET request, and pass it\nwith the PATCH request to identify the setting version you are updating.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting_name": {
+        "description": "Name of the corresponding setting. This field is populated in the response, but it will not be respected\neven if it's set in the request body. The setting name in the path parameter will be\nrespected instead. Setting name is required to be 'default' if the setting only has one instance per workspace.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.StringMessage": {
+    "fields": {
+      "value": {
+        "description": "Represents a generic string value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "settings.TokenAccessControlRequest": {
+    "fields": {
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "settings.TokenPermissionLevel",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "application ID of a service principal",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.TokenAccessControlResponse": {
+    "fields": {
+      "all_permissions": {
+        "description": "All permissions.",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "Display name of the user or service principal.",
+        "launch_stage": "GA"
+      },
+      "group_name": {
+        "description": "name of the group",
+        "launch_stage": "GA"
+      },
+      "service_principal_name": {
+        "description": "Name of the service principal.",
+        "launch_stage": "GA"
+      },
+      "user_name": {
+        "description": "name of the user",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.TokenInfo": {
+    "fields": {
+      "autoscope_state": {
+        "description": "Output only. The autoscope state of this token.",
+        "ref": "iam.AutoscopeState",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "backfill_scopes": {
+        "description": "Output only. Scopes inferred from offline backfill processing.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "comment": {
+        "description": "Comment that describes the purpose of the token, specified by the token creator.",
+        "launch_stage": "GA"
+      },
+      "created_by_id": {
+        "description": "User ID of the user that created the token.",
+        "launch_stage": "GA"
+      },
+      "created_by_username": {
+        "description": "Username of the user that created the token.",
+        "launch_stage": "GA"
+      },
+      "creation_time": {
+        "description": "Timestamp when the token was created.",
+        "launch_stage": "GA"
+      },
+      "expiry_time": {
+        "description": "Timestamp when the token expires.",
+        "launch_stage": "GA"
+      },
+      "inferred_scopes": {
+        "description": "Output only. Inferred API path scopes collected for this token when autoscope is enabled.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "last_used_day": {
+        "description": "Approximate timestamp for the day the token was last used. Accurate up to 1 day.",
+        "launch_stage": "GA"
+      },
+      "owner_id": {
+        "description": "User ID of the user that owns the token.",
+        "launch_stage": "GA"
+      },
+      "scopes": {
+        "description": "Scope of the token was created with, if applicable.",
+        "launch_stage": "GA"
+      },
+      "token_id": {
+        "description": "ID of the token.",
+        "launch_stage": "GA"
+      },
+      "workspace_id": {
+        "description": "If applicable, the ID of the workspace that the token was created in.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.TokenPermission": {
+    "fields": {
+      "inherited": {
+        "launch_stage": "GA"
+      },
+      "inherited_from_object": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "settings.TokenPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.TokenPermissionLevel": {
+    "description": "Permission level",
+    "enum": [
+      "CAN_USE"
+    ]
+  },
+  "settings.TokenPermissions": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      },
+      "object_id": {
+        "launch_stage": "GA"
+      },
+      "object_type": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.TokenPermissionsDescription": {
+    "fields": {
+      "description": {
+        "launch_stage": "GA"
+      },
+      "permission_level": {
+        "ref": "settings.TokenPermissionLevel",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.TokenPermissionsRequest": {
+    "fields": {
+      "access_control_list": {
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.TokenType": {
+    "description": "The type of token request. As of now, only `AZURE_ACTIVE_DIRECTORY_TOKEN` is supported.",
+    "enum": [
+      "AZURE_ACTIVE_DIRECTORY_TOKEN",
+      "ARCLIGHT_AZURE_EXCHANGE_TOKEN",
+      "ARCLIGHT_AZURE_EXCHANGE_TOKEN_WITH_USER_DELEGATION_KEY",
+      "ARCLIGHT_MULTI_TENANT_AZURE_EXCHANGE_TOKEN",
+      "ARCLIGHT_MULTI_TENANT_AZURE_EXCHANGE_TOKEN_WITH_USER_DELEGATION_KEY"
+    ],
+    "enum_launch_stages": {
+      "ARCLIGHT_AZURE_EXCHANGE_TOKEN": "PRIVATE_PREVIEW",
+      "ARCLIGHT_AZURE_EXCHANGE_TOKEN_WITH_USER_DELEGATION_KEY": "PRIVATE_PREVIEW",
+      "ARCLIGHT_MULTI_TENANT_AZURE_EXCHANGE_TOKEN": "PRIVATE_PREVIEW",
+      "ARCLIGHT_MULTI_TENANT_AZURE_EXCHANGE_TOKEN_WITH_USER_DELEGATION_KEY": "PRIVATE_PREVIEW",
+      "AZURE_ACTIVE_DIRECTORY_TOKEN": "PRIVATE_PREVIEW"
+    }
+  },
+  "settings.UpdateAccountIpAccessEnableRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.AccountIpAccessEnable",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateAibiDashboardEmbeddingAccessPolicySettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.AibiDashboardEmbeddingAccessPolicySetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateAibiDashboardEmbeddingApprovedDomainsSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.AibiDashboardEmbeddingApprovedDomainsSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateAutomaticClusterUpdateSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.AutomaticClusterUpdateSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateComplianceSecurityProfileSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.ComplianceSecurityProfileSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateCspEnablementAccountSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.CspEnablementAccountSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateDashboardEmailSubscriptionsRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.DashboardEmailSubscriptions",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateDefaultNamespaceSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.DefaultNamespaceSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateDefaultWarehouseIdRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.DefaultWarehouseId",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateDisableLegacyAccessRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "GA"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      },
+      "setting": {
+        "ref": "settings.DisableLegacyAccess",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateDisableLegacyDbfsRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "GA"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      },
+      "setting": {
+        "ref": "settings.DisableLegacyDbfs",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateDisableLegacyFeaturesRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "GA"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      },
+      "setting": {
+        "ref": "settings.DisableLegacyFeatures",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateEnableExportNotebookRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.EnableExportNotebook",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateEnableNotebookTableClipboardRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.EnableNotebookTableClipboard",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateEnableResultsDownloadingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.EnableResultsDownloading",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateEnhancedSecurityMonitoringSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.EnhancedSecurityMonitoringSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateEsmEnablementAccountSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.EsmEnablementAccountSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateIpAccessList": {
+    "description": "Details required to update an IP access list.",
+    "fields": {
+      "enabled": {
+        "description": "Specifies whether this IP access list is enabled.",
+        "launch_stage": "GA"
+      },
+      "ip_addresses": {
+        "launch_stage": "GA"
+      },
+      "label": {
+        "description": "Label for the IP access list. This **cannot** be empty.",
+        "launch_stage": "GA"
+      },
+      "list_type": {
+        "ref": "settings.ListType",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateLlmProxyPartnerPoweredAccountRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.LlmProxyPartnerPoweredAccount",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateLlmProxyPartnerPoweredEnforceRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.LlmProxyPartnerPoweredEnforce",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateLlmProxyPartnerPoweredWorkspaceRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.LlmProxyPartnerPoweredWorkspace",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateNccPrivateEndpointRuleRequest": {
+    "fields": {
+      "private_endpoint_rule": {
+        "ref": "settings.UpdatePrivateEndpointRule",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateNetworkPolicyRequest": {
+    "fields": {
+      "network_policy": {
+        "description": "Updated network policy configuration details.",
+        "ref": "settings.AccountNetworkPolicy",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateNotificationDestinationRequest": {
+    "fields": {
+      "config": {
+        "description": "The configuration for the notification destination. Must wrap EXACTLY one of the nested configs.",
+        "ref": "settings.Config",
+        "launch_stage": "GA"
+      },
+      "display_name": {
+        "description": "The display name for the notification destination.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdatePersonalComputeSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.PersonalComputeSetting",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdatePrivateEndpointRule": {
+    "description": "Properties of the new private endpoint rule.\nNote that you must approve the endpoint in Azure portal after initialization.",
+    "fields": {
+      "domain_names": {
+        "description": "Only used by private endpoints to customer-managed private endpoint services.\n\nDomain names of target private link service.\nWhen updating this field, the full list of target domain_names must be specified.",
+        "launch_stage": "GA"
+      },
+      "enabled": {
+        "description": "Update this field to activate/deactivate this private endpoint to allow egress access from\nserverless compute resources. Only honored for first-party services on each cloud (e.g. AWS S3).",
+        "launch_stage": "GA"
+      },
+      "error_message": {
+        "launch_stage": "GA"
+      },
+      "gcp_endpoint": {
+        "ref": "settings.GcpEndpoint",
+        "launch_stage": "GA"
+      },
+      "resource_names": {
+        "description": "Only used by private endpoints towards AWS S3 service.\n\nThe globally unique S3 bucket names that will be accessed via the VPC endpoint.\nThe bucket names must be in the same region as the NCC/endpoint service.\nWhen updating this field, we perform full update on this field. Please ensure a full list of desired\nresource_names is provided.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateRestrictWorkspaceAdminsSettingRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.RestrictWorkspaceAdminsSetting",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateSqlResultsDownloadRequest": {
+    "description": "Details required to update a setting.",
+    "fields": {
+      "allow_missing": {
+        "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "field_mask": {
+        "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "setting": {
+        "ref": "settings.SqlResultsDownload",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "settings.UpdateTokenManagementRequest": {
+    "description": "For the list of supported token scopes, see\nhttps://docs.databricks.com/api/workspace/api/scopes.",
+    "fields": {
+      "token": {
+        "ref": "settings.TokenInfo",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "A list of field name under token, For example, {\"update_mask\": \"comment,scopes\"}\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateTokenRequest": {
+    "description": "For the list of supported token scopes, see\nhttps://docs.databricks.com/api/workspace/api/scopes.",
+    "fields": {
+      "token": {
+        "ref": "settings.PublicTokenInfo",
+        "launch_stage": "GA"
+      },
+      "update_mask": {
+        "description": "A list of field name under token, For example, {\"update_mask\": \"comment,scopes\"}\n\nThe field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.UpdateTokenResponse": {},
+  "settings.UpdateWorkspaceNetworkOptionRequest": {
+    "fields": {
+      "workspace_network_option": {
+        "description": "The network option details for the workspace.",
+        "ref": "settings.WorkspaceNetworkOption",
+        "launch_stage": "GA"
+      }
+    }
+  },
+  "settings.WorkspaceConf": {},
+  "settings.WorkspaceNetworkOption": {
+    "fields": {
+      "network_policy_id": {
+        "description": "The network policy ID to apply to the workspace. This controls the network access rules\nfor all serverless compute resources in the workspace. Each workspace can only be\nlinked to one policy at a time. If no policy is explicitly assigned,\nthe workspace will use 'default-policy'.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "workspace_id": {
+        "description": "The workspace ID.",
+        "launch_stage": "GA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,321 @@
+{
+  "id": "compute.PolicyComplianceForClusters",
+  "name": "PolicyComplianceForClusters",
+  "description": "The policy compliance APIs allow you to view and manage the policy compliance status\nof clusters in your workspace.\n\nA cluster is compliant with its policy if its configuration satisfies all its policy rules.\nClusters could be out of compliance if their policy was updated after the cluster was last edited.\n\nThe get and list compliance APIs allow you to view the policy compliance status of a cluster.\nThe enforce compliance API allows you to update a cluster to be compliant with the current version\nof its policy.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CancelPendingClusterEnforcement",
+      "description": "Cancels a pending enforcement on a cluster. After canceling the pending enforcement,\nthe cluster will no longer update on the next termination or restart.\nPending enforcements cannot be canceled when a cluster is in `TERMINATING` state.\nOnly workspace admins can cancel pending enforcements.",
+      "summary": "Cancel pending policy enforcement for a cluster.",
+      "path": "/api/2.0/policies/clusters:cancelPendingClusterEnforcement",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CancelPendingClusterEnforcementRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster to cancel the pending enforcement for.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster to cancel the pending enforcement for.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CancelPendingClusterEnforcementResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "If true and no pending enforcement exists, the request will succeed but no action\nwill be taken.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster to cancel the pending enforcement for.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster to cancel the pending enforcement for.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "EnforceCompliance",
+      "description": "Updates a cluster to be compliant with the current version of its policy.\n\nIf a cluster is updated while in a `TERMINATED` state, it will remain `TERMINATED`.\nThe next time the cluster is started, the new attributes will take effect.\n\nFor clusters in other states, the behavior depends on the `enforce_mode` used.\n\nClusters created by the Databricks Jobs, SDP, or Models services cannot be enforced by this API.\nInstead, use the \"Enforce job policy compliance\" API to enforce policy compliance on jobs.",
+      "summary": "Enforce cluster policy compliance.",
+      "path": "/api/2.0/policies/clusters/enforce-compliance",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "EnforceClusterComplianceRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster you want to enforce policy compliance on.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster you want to enforce policy compliance on.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EnforceClusterComplianceResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster you want to enforce policy compliance on.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "enforce_mode",
+          "description": "Determines how changes should be made to clusters that are not in `TERMINATED` state.\n\n- `ENFORCE_IMMEDIATELY`: If the cluster is in a `RUNNING` state, it will be restarted so\nthat the new attributes can take effect. For other states aside from `TERMINATED` state,\nthe request will be rejected.\n- `WAIT_FOR_TERMINATION`: The cluster is not immediately edited. Instead, a pending enforcement\nis scheduled to update the cluster when it terminates or restarts. When this occurs,\n`enforce_result` will contain `DEFERRED`. Only workspace admins can use this mode.\n\nRegardless of the enforce mode, clusters in `TERMINATED` state are immediately edited.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EnforcePolicyComplianceForClusterEnforceMode",
+            "enum": [
+              {
+                "content": "ENFORCE_IMMEDIATELY"
+              },
+              {
+                "content": "WAIT_FOR_TERMINATION"
+              }
+            ]
+          }
+        },
+        {
+          "name": "validate_only",
+          "description": "If set, previews the changes that would be made to a cluster\nto enforce compliance but does not update the cluster.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster you want to enforce policy compliance on.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetCompliance",
+      "description": "Returns the policy compliance status of a cluster. Clusters could be out\nof compliance if their policy was updated after the cluster was last edited.",
+      "summary": "Get cluster policy compliance.",
+      "path": "/api/2.0/policies/clusters/get-compliance",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetClusterComplianceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster to get the compliance status",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_id",
+            "description": "The ID of the cluster to get the compliance status",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetClusterComplianceResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster to get the compliance status",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "The ID of the cluster to get the compliance status",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListCompliance",
+      "description": "Returns the policy compliance status of all clusters that use a\ngiven policy. Clusters could be out of compliance if their policy was\nupdated after the cluster was last edited.",
+      "summary": "List cluster policy compliance.",
+      "path": "/api/2.0/policies/clusters/list-compliance",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListClusterCompliancesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "policy_id",
+            "description": "Canonical unique identifier for the cluster policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "policy_id",
+            "description": "Canonical unique identifier for the cluster policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListClusterCompliancesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Use this field to specify the maximum number of results to be returned by the server.\nThe server may further constrain the maximum number of results returned in a\nsingle page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A page token that can be used to navigate to the next page or previous page as\nreturned by `next_page_token` or `prev_page_token`.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "Canonical unique identifier for the cluster policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_id",
+          "description": "Canonical unique identifier for the cluster policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A page token that can be used to navigate to the next page or previous page as\nreturned by `next_page_token` or `prev_page_token`.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,473 @@
+{
+  "id": "sql.QueriesLegacy",
+  "name": "QueriesLegacy",
+  "description": "These endpoints are used for CRUD operations on query definitions. Query definitions include\nthe target SQL warehouse, query text, name, description, tags, parameters, and visualizations.\nQueries can be scheduled using the `sql_task` type of the Jobs API, e.g. :method:jobs/create.\n\n**Warning**: This API is deprecated. Please see the latest version of the Databricks SQL API. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new query definition. Queries created with this endpoint belong to the authenticated user making the request.\n\nThe `data_source_id` field specifies the ID of the SQL warehouse to run this query against. You can use the Data Sources API to see a complete list of available SQL warehouses. Or you can copy the `data_source_id` from an existing query.\n\n**Note**: You cannot add a visualization until you create the query.\n\n**Warning**: This API is deprecated. Please use :method:queries/create instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Create a new query definition.",
+      "path": "/api/2.0/preview/sql/queries",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "QueryPostContent",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "LegacyQuery",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "data_source_id",
+          "description": "Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. [Learn more](https://docs.databricks.com/api/workspace/datasources/list)",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "General description that conveys additional information about this query such as usage notes.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The title of this query that appears in list views, widget headings, and on the query page.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "Exclusively used for storing a list parameter definitions. A parameter is an object with `title`, `name`, `type`, and `value` properties. The `value` field here is the default value. It can be overridden at runtime.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The identifier of the workspace folder containing the object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query",
+          "description": "The text of the query to be run.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as_role",
+          "description": "Sets the **Run as** role for the object. Must be set to one of `\"viewer\"` (signifying \"run as viewer\" behavior) or `\"owner\"` (signifying \"run as owner\" behavior)",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RunAsRole",
+            "enum": [
+              {
+                "content": "owner"
+              },
+              {
+                "content": "viewer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tags",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Moves a query to the trash.\nTrashed queries immediately disappear from searches and list views, and they cannot be used for alerts.\nThe trash is deleted after 30 days.\n\n**Warning**: This API is deprecated. Please use :method:queries/delete instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Delete a query.",
+      "path": "/api/2.0/preview/sql/queries/{query_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteQueriesLegacyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Retrieve a query object definition along with contextual permissions information about the currently authenticated user.\n\n**Warning**: This API is deprecated. Please use :method:queries/get instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Get a query definition.",
+      "path": "/api/2.0/preview/sql/queries/{query_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetQueriesLegacyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LegacyQuery",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets a list of queries. Optionally, this list can be filtered by a search term.\n\n**Warning**: Calling this API concurrently 10 or more times could result in throttling, service degradation, or a temporary ban.\n\n**Warning**: This API is deprecated. Please use :method:queries/list instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Get a list of queries.",
+      "path": "/api/2.0/preview/sql/queries",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListQueriesLegacyRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "QueryList",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "order",
+          "description": "Name of query attribute to order by. Default sort order is ascending. Append a dash (`-`) to order descending instead.\n\n- `name`: The name of the query.\n\n- `created_at`: The timestamp the query was created.\n\n- `runtime`: The time it took to run this query. This is blank for parameterized queries. A blank value is treated as the highest value for sorting.\n\n- `executed_at`: The timestamp when the query was last run.\n\n- `created_by`: The user name of the user that created the query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page",
+          "description": "Page number to retrieve.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Number of queries to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "q",
+          "description": "Full text search term",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "offset": {
+          "name": "page",
+          "description": "Page number to retrieve.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        "limit": {
+          "name": "page_size",
+          "description": "Number of queries to return per page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Restore",
+      "description": "Restore a query that has been moved to the trash.\nA restored query appears in list views and searches. You can use restored queries for alerts.\n\n**Warning**: This API is deprecated. Please see the latest version. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Restore a query.",
+      "path": "/api/2.0/preview/sql/queries/trash/{query_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RestoreQueriesLegacyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RestoreResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Modify this query definition.\n\n**Note**: You cannot undo this operation.\n\n**Warning**: This API is deprecated. Please use :method:queries/update instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Change a query definition.",
+      "path": "/api/2.0/preview/sql/queries/{query_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "QueryEditContent",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "query_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LegacyQuery",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "data_source_id",
+          "description": "Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. [Learn more](https://docs.databricks.com/api/workspace/datasources/list)",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "General description that conveys additional information about this query such as usage notes.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The title of this query that appears in list views, widget headings, and on the query page.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "Exclusively used for storing a list parameter definitions. A parameter is an object with `title`, `name`, `type`, and `value` properties. The `value` field here is the default value. It can be overridden at runtime.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "query",
+          "description": "The text of the query to be run.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "run_as_role",
+          "description": "Sets the **Run as** role for the object. Must be set to one of `\"viewer\"` (signifying \"run as viewer\" behavior) or `\"owner\"` (signifying \"run as owner\" behavior)",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RunAsRole",
+            "enum": [
+              {
+                "content": "owner"
+              },
+              {
+                "content": "viewer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tags",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "query_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

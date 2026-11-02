@@ -1,0 +1,493 @@
+{
+  "sandbox.Command": {
+    "description": "A single command execution.",
+    "fields": {
+      "args": {
+        "description": "Arguments passed to the program.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "cmd": {
+        "description": "The program that was executed.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "command_id": {
+        "description": "Stable identifier for this command.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "exit_code": {
+        "description": "Process exit code. Only present when finished is true and the process\nexited normally (not killed by signal or failed to start).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "finished": {
+        "description": "Whether the command has finished executing.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "pid": {
+        "description": "PID of the spawned process. Absent if the process failed to start.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "sandbox.ComputeSpec": {
+    "fields": {
+      "inactivity_timeout": {
+        "description": "Idle duration after which the sandbox is automatically terminated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sandbox.CreateDirectoryRequest": {
+    "description": "Selects a sandbox directory to create and whether to create its parents.",
+    "fields": {
+      "parents": {
+        "description": "Defaults to true, which also succeeds when the directory already exists.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "path": {
+        "description": "Absolute UTF-8 path of the directory.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.CreateDirectoryResponse": {
+    "description": "Confirms that the requested directory exists."
+  },
+  "sandbox.CreateSandboxRequest": {
+    "fields": {
+      "sandbox": {
+        "description": "The sandbox to create.",
+        "ref": "sandbox.Sandbox",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "sandbox_id": {
+        "description": "Client-supplied ID that becomes the final path segment of the resource name.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "sandbox.DeletePathRequest": {
+    "description": "Selects a sandbox path to delete and whether to delete its contents.",
+    "fields": {
+      "path": {
+        "description": "Absolute UTF-8 path of the entry to delete.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "recursive": {
+        "description": "Required for a non-empty directory.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.DeletePathResponse": {
+    "description": "Confirms that the requested path is absent."
+  },
+  "sandbox.DeleteSandboxRequest": {},
+  "sandbox.EnvironmentSpec": {
+    "fields": {
+      "image_uri": {
+        "description": "The Unity Catalog container image to use for the sandbox environment\n(for example, `catalog.schema.folder.image:tag`). See\n[Artifact Registry](https://docs.databricks.com/en/artifact-registry/).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sandbox.ExecuteCommandStatus": {
+    "description": "Terminal status of a unary command execution.",
+    "enum": [
+      "EXECUTE_COMMAND_STATUS_COMPLETED",
+      "EXECUTE_COMMAND_STATUS_TIMED_OUT",
+      "EXECUTE_COMMAND_STATUS_FAILED"
+    ],
+    "enum_launch_stages": {
+      "EXECUTE_COMMAND_STATUS_COMPLETED": "PUBLIC_BETA",
+      "EXECUTE_COMMAND_STATUS_FAILED": "PUBLIC_BETA",
+      "EXECUTE_COMMAND_STATUS_TIMED_OUT": "PUBLIC_BETA"
+    }
+  },
+  "sandbox.ExecuteCommandSyncRequest": {
+    "description": "Request to run a command in the given sandbox and wait for it to finish.",
+    "fields": {
+      "args": {
+        "description": "Arguments passed to `cmd`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "cmd": {
+        "description": "Executable or command to run (e.g. `/bin/echo`, `python3`).",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "envs": {
+        "description": "Extra environment variables for the command's process, merged over the\nsandbox's default environment.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "execution_timeout": {
+        "description": "Maximum time to wait for the command to finish. When it elapses the\ncommand is terminated and the response carries status `TIMED_OUT`. The\nserver applies a default when unset and clamps to an upper bound; negative\nor otherwise invalid durations are rejected with `INVALID_ARGUMENT`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sandbox.ExecuteCommandSyncResponse": {
+    "description": "Result of a completed unary command execution: captured output, exit code,\nand terminal status.",
+    "fields": {
+      "command_id": {
+        "description": "Daemon-generated identifier for this command execution, for correlation\n(for example in `ListCommands`).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "exit_code": {
+        "description": "Process exit code. Unset when the process was terminated by a signal\n(e.g. on `TIMED_OUT`) or never started (`FAILED`) rather than exiting\nnormally.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "status": {
+        "description": "Terminal status of the command execution. Always set on a successful\nresponse; never `EXECUTE_COMMAND_STATUS_UNSPECIFIED`.",
+        "ref": "sandbox.ExecuteCommandStatus",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "stderr": {
+        "description": "Captured standard error, with the same UTF-8 semantics as `stdout`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "stdout": {
+        "description": "Captured standard output as UTF-8 text. Invalid UTF-8 bytes are replaced\nwith the Unicode replacement character (U+FFFD).",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "truncated": {
+        "description": "True when `stdout` / `stderr` were truncated because the captured output\nexceeded the server's per-response size cap. The dropped output is not\nincluded in this response and is not recoverable through this unary API.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "sandbox.GetMetadataRequest": {
+    "fields": {
+      "path": {
+        "description": "Absolute UTF-8 path of the entry to inspect.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.GetMetadataResponse": {
+    "description": "Contains metadata for the requested path without following its final symlink.",
+    "fields": {
+      "file": {
+        "ref": "sandbox.SandboxFileInfo",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.GetSandboxRequest": {},
+  "sandbox.ListCommandsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of commands to return. The server may return fewer.\nIf unspecified, the server returns all commands.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Page token returned by a previous ListCommands call. Use this to\nretrieve the next page of results.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sandbox.ListCommandsResponse": {
+    "description": "Response listing tracked command executions.",
+    "fields": {
+      "commands": {
+        "description": "Commands in this page of results.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "next_page_token": {
+        "description": "Token to retrieve the next page. Empty when there are no more results.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "sandbox.ListDirectoryContentsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Zero uses the default of 1000; values above 1000 are clamped to 1000.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "page_token": {
+        "description": "The token from a prior response. Keep parent and path unchanged between pages.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "path": {
+        "description": "Absolute UTF-8 path of the directory.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.ListDirectoryContentsResponse": {
+    "description": "Contains a page of immediate directory entries and an optional continuation token.\nAn empty token marks the final page. Pages reflect concurrent directory changes.",
+    "fields": {
+      "contents": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "next_page_token": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.ListSandboxesRequest": {
+    "fields": {
+      "page_size": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sandbox.ListSandboxesResponse": {
+    "description": "A list of Sandboxes.",
+    "fields": {
+      "next_page_token": {
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "sandboxes": {
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "sandbox.RenamePathRequest": {
+    "description": "Identifies the source and exact destination for a sandbox path rename.",
+    "fields": {
+      "destination": {
+        "description": "Exact absolute UTF-8 destination; it must not already exist.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "source": {
+        "description": "Absolute UTF-8 path to move.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.RenamePathResponse": {
+    "description": "Confirms that the sandbox path was renamed."
+  },
+  "sandbox.Sandbox": {
+    "description": "A Sandbox resource representing an execution environment.",
+    "fields": {
+      "create_time": {
+        "description": "Output only. The creation time of the sandbox.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "display_name": {
+        "description": "Human-readable display label for the sandbox. At most 256 characters.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "metadata": {
+        "description": "Metadata associated with the sandbox.",
+        "ref": "sandbox.SandboxMetadata",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "The sandbox resource name, in the form `sandboxes/{sandbox_id}`. Derived from\n`sandbox_id`; any value supplied in a create or update request body is ignored.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "spec": {
+        "description": "The desired configuration of the sandbox, supplied by the caller at creation time.",
+        "ref": "sandbox.SandboxSpec",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "status": {
+        "description": "The observed runtime state of the sandbox, populated by the server.",
+        "ref": "sandbox.SandboxStatus",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "Output only. The last update time of the sandbox metadata and spec.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "sandbox.SandboxFileInfo": {
+    "description": "Metadata for a sandbox filesystem entry, describing a final symlink itself.",
+    "fields": {
+      "file_type": {
+        "ref": "sandbox.SandboxFileType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "group": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "mode": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "modify_time": {
+        "description": "Nanosecond precision is preserved on the wire.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "name": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "owner": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "path": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "permissions": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "size": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "symlink_target": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "sandbox.SandboxFileType": {
+    "description": "Type of a sandbox filesystem entry without following its final symlink.",
+    "enum": [
+      "SANDBOX_FILE_TYPE_FILE",
+      "SANDBOX_FILE_TYPE_DIRECTORY",
+      "SANDBOX_FILE_TYPE_SYMLINK",
+      "SANDBOX_FILE_TYPE_OTHER"
+    ],
+    "enum_launch_stages": {
+      "SANDBOX_FILE_TYPE_DIRECTORY": "PRIVATE_PREVIEW",
+      "SANDBOX_FILE_TYPE_FILE": "PRIVATE_PREVIEW",
+      "SANDBOX_FILE_TYPE_OTHER": "PRIVATE_PREVIEW",
+      "SANDBOX_FILE_TYPE_SYMLINK": "PRIVATE_PREVIEW"
+    }
+  },
+  "sandbox.SandboxMetadata": {
+    "description": "Metadata associated with a sandbox.",
+    "fields": {
+      "custom_tags": {
+        "description": "Key-value tags associated with the sandbox. Supports up to 54 tags. Keys must be between\n1 and 512 characters, and values must not exceed 256 characters.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sandbox.SandboxSpec": {
+    "fields": {
+      "compute": {
+        "description": "Compute configuration (size, inactivity timeout) requested for the sandbox.",
+        "ref": "sandbox.ComputeSpec",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "environment": {
+        "description": "The execution environment to use for the sandbox.",
+        "ref": "sandbox.EnvironmentSpec",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "sandbox.SandboxState": {
+    "description": "Lifecycle state of a Sandbox resource. STOPPING is the transient state while the\nsandbox is being stopped -- by a Stop request or inactivity auto-termination\n-- and settles to STOPPED once the operation completes.",
+    "enum": [
+      "SANDBOX_STATE_PENDING",
+      "SANDBOX_STATE_RUNNING",
+      "SANDBOX_STATE_STOPPED",
+      "SANDBOX_STATE_STOPPING"
+    ],
+    "enum_launch_stages": {
+      "SANDBOX_STATE_PENDING": "PUBLIC_BETA",
+      "SANDBOX_STATE_RUNNING": "PUBLIC_BETA",
+      "SANDBOX_STATE_STOPPED": "PUBLIC_BETA",
+      "SANDBOX_STATE_STOPPING": "PUBLIC_BETA"
+    }
+  },
+  "sandbox.SandboxStatus": {
+    "fields": {
+      "state": {
+        "description": "Lifecycle state of the sandbox.",
+        "ref": "sandbox.SandboxState",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "sandbox.StartSandboxRequest": {
+    "description": "A request to start a Sandbox."
+  },
+  "sandbox.StopSandboxRequest": {
+    "description": "A request to stop a Sandbox."
+  },
+  "sandbox.UpdateSandboxRequest": {
+    "fields": {
+      "sandbox": {
+        "description": "The Sandbox resource carrying new field values. Only fields named in\n`update_mask` are read; unmasked fields are ignored.",
+        "ref": "sandbox.Sandbox",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Field paths to update. Must be a non-empty subset of:\n- display_name\n- spec.compute.inactivity_timeout\nAny other path returns INVALID_PARAMETER_VALUE.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  }
+}

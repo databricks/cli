@@ -1,0 +1,135 @@
+{
+  "id": "compute.PolicyFamilies",
+  "name": "PolicyFamilies",
+  "description": "View available policy families. A policy family contains a policy definition providing best\npractices for configuring clusters for a particular use case.\n\nDatabricks manages and provides policy families for several common cluster use cases. You\ncannot create, edit, or delete policy families.\n\nPolicy families cannot be used directly to create clusters. Instead, you create cluster\npolicies using a policy family. Cluster policies created using a policy family inherit the\npolicy family's policy definition.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListPolicyFamiliesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Get",
+      "description": "Retrieve the information for an policy family based on its identifier and version",
+      "summary": "Get policy family information.",
+      "path": "/api/2.0/policy-families/{policy_family_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPolicyFamilyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "policy_family_id",
+            "description": "The family ID about which to retrieve information.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "policy_family_id",
+            "description": "The family ID about which to retrieve information.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PolicyFamily",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy_family_id",
+          "description": "The family ID about which to retrieve information.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "version",
+          "description": "The version number for the family to fetch. Defaults to the latest version.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "policy_family_id",
+          "description": "The family ID about which to retrieve information.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Returns the list of policy definition types available to use at their latest version. This API is paginated.",
+      "summary": "List policy families.",
+      "path": "/api/2.0/policy-families",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPolicyFamiliesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListPolicyFamiliesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of policy families to return.",
+          "is_query": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A token that can be used to get the next page of results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A token that can be used to get the next page of results.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

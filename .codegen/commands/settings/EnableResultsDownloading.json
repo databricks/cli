@@ -1,0 +1,145 @@
+{
+  "id": "settings.EnableResultsDownloading",
+  "name": "EnableResultsDownloading",
+  "description": "Controls whether users can download notebook results. By default, this setting is enabled.",
+  "package": {
+    "name": "settings"
+  },
+  "has_parent": true,
+  "docs_group": "settings",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "parent_service_id": "settings.Settings",
+  "methods": [
+    {
+      "name": "GetEnableResultsDownloading",
+      "description": "Gets the Notebook results download setting.",
+      "summary": "Get the Notebook results download setting.",
+      "path": "/api/2.0/settings/types/enable-results-downloading/names/default",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetEnableResultsDownloadingRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "EnableResultsDownloading",
+        "is_object": true
+      }
+    },
+    {
+      "name": "PatchEnableResultsDownloading",
+      "description": "Updates the Notebook results download setting. The model follows eventual consistency, which means the get after the update operation might receive stale values for some time.",
+      "summary": "Update the Notebook results download setting.",
+      "path": "/api/2.0/settings/types/enable-results-downloading/names/default",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateEnableResultsDownloadingRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EnableResultsDownloading",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EnableResultsDownloading",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "EnableResultsDownloading",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "field_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "setting",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EnableResultsDownloading",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

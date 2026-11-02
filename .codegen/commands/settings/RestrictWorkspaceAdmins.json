@@ -1,0 +1,253 @@
+{
+  "id": "settings.RestrictWorkspaceAdmins",
+  "name": "RestrictWorkspaceAdmins",
+  "description": "The Restrict Workspace Admins setting lets you control the capabilities of workspace admins.\nWith the setting status set to ALLOW_ALL, workspace admins can create service principal personal access\ntokens on behalf of any service principal in their workspace. Workspace admins can also change a job owner to\nany user in their workspace. And they can change the job run_as setting to any user in their workspace or to a\nservice principal on which they have the Service Principal User role. With the setting status set to RESTRICT_TOKENS_AND_JOB_RUN_AS,\nworkspace admins can only create personal access tokens on behalf of service principals they have the\nService Principal User role on. They can also only change a job owner to themselves. And they can change the job\nrun_as setting to themselves or to a service principal on which they have the Service Principal User role.",
+  "package": {
+    "name": "settings"
+  },
+  "has_parent": true,
+  "docs_group": "settings",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "parent_service_id": "settings.Settings",
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Reverts the restrict workspace admins setting status for the workspace. A fresh etag needs\nto be provided in `DELETE` requests (as a query parameter). The etag can be retrieved by making a `GET` request\nbefore the DELETE request. If the setting is updated/deleted concurrently, `DELETE` fails with 409 and the\nrequest must be retried by using the fresh etag in the 409 response.",
+      "summary": "Delete the restrict workspace admins setting.",
+      "path": "/api/2.0/settings/types/restrict_workspace_admins/names/default",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteRestrictWorkspaceAdminsSettingRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DeleteRestrictWorkspaceAdminsSettingResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "etag",
+            "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets the restrict workspace admins setting.",
+      "summary": "Get the restrict workspace admins setting.",
+      "path": "/api/2.0/settings/types/restrict_workspace_admins/names/default",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetRestrictWorkspaceAdminsSettingRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "RestrictWorkspaceAdminsSetting",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "restrict_workspace_admins",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RestrictWorkspaceAdminsMessage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "restrict_workspace_admins",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RestrictWorkspaceAdminsMessage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "etag used for versioning. The response is at least as fresh as the eTag\nprovided. This is used for optimistic concurrency control as a way to\nhelp prevent simultaneous writes of a setting overwriting each other. It\nis strongly suggested that systems make use of the etag in the read -\u003e\ndelete pattern to perform setting deletions in order to avoid race\nconditions. That is, get an etag from a GET request, and pass it with the\nDELETE request to identify the rule set version you are deleting.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates the restrict workspace admins setting for the workspace. A fresh etag needs\nto be provided in `PATCH` requests (as part of the setting field). The etag can be retrieved by making a GET\nrequest before the `PATCH` request. If the setting is updated concurrently, `PATCH` fails with 409 and the\nrequest must be retried by using the fresh etag in the 409 response.",
+      "summary": "Update the restrict workspace admins setting.",
+      "path": "/api/2.0/settings/types/restrict_workspace_admins/names/default",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateRestrictWorkspaceAdminsSettingRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RestrictWorkspaceAdminsSetting",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "allow_missing",
+            "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_bool": true
+            }
+          },
+          {
+            "name": "setting",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RestrictWorkspaceAdminsSetting",
+              "is_object": true
+            }
+          },
+          {
+            "name": "field_mask",
+            "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RestrictWorkspaceAdminsSetting",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "restrict_workspace_admins",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RestrictWorkspaceAdminsMessage",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "restrict_workspace_admins",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RestrictWorkspaceAdminsMessage",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "allow_missing",
+          "description": "This should always be set to true for Settings API. Added for AIP compliance.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "field_mask",
+          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "setting",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RestrictWorkspaceAdminsSetting",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

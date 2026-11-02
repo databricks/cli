@@ -1,0 +1,1114 @@
+{
+  "agentkit.AppendSessionItemsRequest": {
+    "description": "Request to append items to a session.",
+    "fields": {
+      "items": {
+        "description": "Items to append atomically in request order. Concurrent append requests are serialized into one\ncommitted order without exposing a numeric sequence in the public contract.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.AppendSessionItemsResponse": {
+    "description": "Response containing appended items.",
+    "fields": {
+      "session_items": {
+        "description": "Persisted session items with service-assigned fields.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.ClearSessionItemsRequest": {
+    "description": "Request to clear all items from a session."
+  },
+  "agentkit.ClearSessionItemsResponse": {
+    "description": "Response from clearing items from a session."
+  },
+  "agentkit.CreateManagedMemoryEntryRequest": {
+    "fields": {
+      "managed_memory_entry": {
+        "description": "The memory entry to create.",
+        "ref": "agentkit.ManagedMemoryEntry",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "managed_memory_entry_id": {
+        "description": "Optional caller-selected memory entry ID. The service generates an ID when omitted.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.CreateManagedMemoryStoreRequest": {
+    "fields": {
+      "managed_memory_store": {
+        "description": "The memory store to create.",
+        "ref": "agentkit.ManagedMemoryStore",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "managed_memory_store_id": {
+        "description": "Caller-provided, workspace-unique memory store ID. It must be 3-56 characters, begin\nwith a lowercase letter, contain only lowercase letters, digits, and hyphens, and end with a\nletter or digit.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.CreateSessionRequest": {
+    "fields": {
+      "session": {
+        "description": "The session to create. `actor_id` is required. A session with `parent_session_id` is a child and\nmust use its parent's `actor_id`. Independent forks are created only through `ForkSession`.",
+        "ref": "agentkit.Session",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "session_id": {
+        "description": "Optional caller-selected session ID. The service generates a UUID when this field is omitted.\nThe ID must be unique; a collision returns `ALREADY_EXISTS`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.CreateSessionStoreRequest": {
+    "fields": {
+      "session_store": {
+        "description": "The session store to create.",
+        "ref": "agentkit.SessionStore",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "session_store_id": {
+        "description": "Caller-provided, workspace-unique session store ID. It must be 3-55 characters, begin with a\nlowercase letter, and contain only lowercase letters, digits, and hyphens.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.DeleteManagedMemoryEntryRequest": {},
+  "agentkit.DeleteManagedMemoryStoreRequest": {},
+  "agentkit.DeleteSessionRequest": {},
+  "agentkit.DeleteSessionStoreRequest": {},
+  "agentkit.ExtractMemoriesRequest": {
+    "description": "Request to synchronously extract memories from a single session.",
+    "fields": {
+      "dry_run": {
+        "description": "When true, extract and return the entries without writing them to the memory store. Defaults\nto false, which persists the extracted entries and returns them.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "instructions": {
+        "description": "Instructions steering what is extracted from the session.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "memory_store": {
+        "description": "Memory store the extracted entries are written to, in the form\n`memory-stores/{managed_memory_store_id}`.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.ExtractMemoriesResponse": {
+    "description": "Result of a single-session memory extraction.",
+    "fields": {
+      "entries": {
+        "description": "The memory entries written by this extraction.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "name": {
+        "description": "Correlation identifier for this extraction, for logging and tracing. Not a fetchable resource.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.ForkSessionRequest": {
+    "description": "Request to fork a session.",
+    "fields": {
+      "actor_id": {
+        "description": "Opaque caller-provided identifier for the application actor associated with the forked session.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "metadata": {
+        "description": "Optional metadata for the fork.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "session_id": {
+        "description": "Optional unique ID for the forked session. A collision returns `ALREADY_EXISTS`.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "source_session_id": {
+        "description": "ID of the session to copy.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "up_to_item_id": {
+        "description": "Optional last item ID to copy through, inclusively. When omitted, the fork atomically copies\nall items committed before the fork operation begins.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.ForkSessionResponse": {
+    "description": "Response from forking a session.",
+    "fields": {
+      "session": {
+        "description": "The newly-created independent top-level session.",
+        "ref": "agentkit.Session",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.GetManagedMemoryEntryRequest": {
+    "fields": {
+      "view": {
+        "description": "Controls whether the response includes memory content. Defaults to `FULL`.",
+        "ref": "agentkit.ManagedMemoryEntryView",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.GetManagedMemoryStoreRequest": {},
+  "agentkit.GetMemoryStorePermissionRequest": {},
+  "agentkit.GetSessionRequest": {},
+  "agentkit.GetSessionStorePermissionRequest": {},
+  "agentkit.GetSessionStoreRequest": {},
+  "agentkit.GrantMemoryStorePermissionRequest": {
+    "description": "Request to grant a READ or WRITE permission on a memory store to a principal.\nOnly the store owner or a workspace admin may grant permissions.",
+    "fields": {
+      "permission": {
+        "description": "Permission level to grant.",
+        "ref": "agentkit.PermissionLevel",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "principal": {
+        "description": "Principal to grant the permission to.",
+        "ref": "agentkit.StorePrincipal",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "agentkit.GrantMemoryStorePermissionResponse": {
+    "description": "Response from granting a permission on a memory store."
+  },
+  "agentkit.GrantSessionStorePermissionRequest": {
+    "description": "Request to grant a READ or WRITE permission on a session store to a principal.\nOnly the store owner or a workspace admin may grant permissions.",
+    "fields": {
+      "permission": {
+        "description": "Permission level to grant.",
+        "ref": "agentkit.PermissionLevel",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "principal": {
+        "description": "Principal to grant the permission to.",
+        "ref": "agentkit.StorePrincipal",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "agentkit.GrantSessionStorePermissionResponse": {
+    "description": "Response from granting a permission on a session store."
+  },
+  "agentkit.ListManagedMemoryEntriesRequest": {
+    "fields": {
+      "actor_id": {
+        "description": "Customer-provided identifier for the actor whose entries are listed.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "page_size": {
+        "description": "Maximum number of entries to return. The service may return fewer entries than requested.\nDefaults to 10; must be between 1 and 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Opaque pagination token from a previous ListManagedMemoryEntries response.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "path_prefix": {
+        "description": "Optional path prefix used to restrict entries within the actor partition.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "session_id": {
+        "description": "Optional session identifier. When set, only entries with this exact `session_id` are\nreturned. Omitted-session (cross-session) entries are not included. Ignored when path is set.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "view": {
+        "description": "Controls whether each returned entry includes memory content. Defaults to `FULL`.",
+        "ref": "agentkit.ManagedMemoryEntryView",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.ListManagedMemoryEntriesResponse": {
+    "description": "Response containing memory entries.",
+    "fields": {
+      "managed_memory_entries": {
+        "description": "Memory entries matching the request and selected response view.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "Opaque pagination token. This field is omitted when there are no more results.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.ListManagedMemoryStoresRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of stores to return. The service may return fewer stores than requested.\nDefaults to 10; must be between 1 and 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Opaque pagination token from a previous ListManagedMemoryStores response.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.ListManagedMemoryStoresResponse": {
+    "description": "Response containing memory stores in the caller's workspace.",
+    "fields": {
+      "managed_memory_stores": {
+        "description": "Memory stores in the caller's workspace.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "Opaque pagination token. This field is omitted when there are no more results.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.ListMemoryStorePermissionsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of permissions to return. Defaults to 100; maximum is 1000.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Continuation token from a previous response.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.ListMemoryStorePermissionsResponse": {
+    "description": "A page of explicit memory store permissions.",
+    "fields": {
+      "memory_store_permissions": {
+        "description": "Explicit READ or WRITE grants. Implicit owner/admin access and inherited grants are excluded.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "Token for the next page, omitted when all permissions have been returned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.ListSessionItemsRequest": {
+    "fields": {
+      "order_by": {
+        "description": "Sort order. Supported values are `create_time asc` and `create_time desc`. The default is\n`create_time desc`, which returns the most recently appended items first. Equal timestamps are\nresolved by committed append order in the requested direction.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "Maximum number of items to return. Defaults to 10; must be between 1 and 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Token returned by a previous list request.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.ListSessionItemsResponse": {
+    "description": "Response containing a page of session items.",
+    "fields": {
+      "next_page_token": {
+        "description": "Token to retrieve the next page.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "session_items": {
+        "description": "Session items in the requested page.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.ListSessionStorePermissionsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of permissions to return. Defaults to 100; maximum is 1000.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Continuation token from a previous response.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.ListSessionStorePermissionsResponse": {
+    "description": "A page of explicit session store permissions.",
+    "fields": {
+      "next_page_token": {
+        "description": "Token for the next page, omitted when all permissions have been returned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "session_store_permissions": {
+        "description": "Explicit READ or WRITE grants. Implicit owner/admin access and inherited grants are excluded.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.ListSessionStoresRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Maximum number of session stores to return. Defaults to 10; must be between 1 and 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Token returned by a previous list request.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.ListSessionStoresResponse": {
+    "description": "Response containing a page of session stores.",
+    "fields": {
+      "next_page_token": {
+        "description": "Token to retrieve the next page.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "session_stores": {
+        "description": "Session stores in the requested page.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.ListSessionsRequest": {
+    "fields": {
+      "filter": {
+        "description": "Filter expression. Supported fields include `actor_id` and `metadata`; for example,\n`actor_id = \"support-customer-123\"`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "order_by": {
+        "description": "Sort order. Defaults to `last_activity_time desc`. Page-token continuation is exactly-once when\nordering by `create_time` (immutable); ordering by `last_activity_time` is best-effort, because\nthat value changes as a session gains activity, so a session updated between page requests may\nbe repeated or skipped. To enumerate every session exactly once, order by `create_time`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "Maximum number of sessions to return. Defaults to 10; must be between 1 and 100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Token returned by a previous list request.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.ListSessionsResponse": {
+    "description": "Response containing a page of sessions.",
+    "fields": {
+      "next_page_token": {
+        "description": "Token to retrieve the next page.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "sessions": {
+        "description": "Sessions in the requested page.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.ManagedMemoryEntry": {
+    "description": "A workspace-scoped entry in a memory store.",
+    "fields": {
+      "actor_id": {
+        "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "content": {
+        "description": "Optional free-form memory content.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "create_time": {
+        "description": "Time when the entry was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Human-readable description of the memory entry.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.\nRequired for updates; assigned by the service on creation.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "path": {
+        "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "session_id": {
+        "description": "Optional identifier for the session associated with this memory entry. When omitted, the\nentry applies across the actor's sessions.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "source_type": {
+        "description": "Which writer created this entry. Caller sets this on Create; immutable after creation.",
+        "ref": "agentkit.ManagedMemoryEntrySourceType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "update_time": {
+        "description": "Time when the entry was last updated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.ManagedMemoryEntrySearchResult": {
+    "description": "One relevance-ranked memory search result.",
+    "fields": {
+      "managed_memory_entry": {
+        "description": "Memory entry matching the query.",
+        "ref": "agentkit.ManagedMemoryEntry",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "score": {
+        "description": "Relevance score for the result. Higher scores are more relevant.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.ManagedMemoryEntrySourceType": {
+    "description": "Identifies the source that created a memory entry.",
+    "enum": [
+      "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT",
+      "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER"
+    ],
+    "enum_launch_stages": {
+      "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT": "PUBLIC_BETA",
+      "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER": "PUBLIC_BETA"
+    }
+  },
+  "agentkit.ManagedMemoryEntryView": {
+    "description": "Controls how much memory entry data is returned.",
+    "enum": [
+      "MANAGED_MEMORY_ENTRY_VIEW_BASIC",
+      "MANAGED_MEMORY_ENTRY_VIEW_FULL"
+    ],
+    "enum_launch_stages": {
+      "MANAGED_MEMORY_ENTRY_VIEW_BASIC": "PRIVATE_PREVIEW",
+      "MANAGED_MEMORY_ENTRY_VIEW_FULL": "PRIVATE_PREVIEW"
+    }
+  },
+  "agentkit.ManagedMemoryStore": {
+    "description": "A workspace-scoped memory store backed by service-managed storage.",
+    "fields": {
+      "create_time": {
+        "description": "Time when the store was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator_user_id": {
+        "description": "Workspace-local user ID of the authenticated principal that created the store. This is\nimmutable server-set attribution and does not grant access; authorization is evaluated from\nthe authenticated request context.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Human-readable description of the memory store.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "display_name": {
+        "description": "Deprecated compatibility alias for the caller-provided memory store ID. Canonical\nclients provide the ID through `CreateMemoryStoreRequest.managed_memory_store_id` and use\n`name` as the resource identifier.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "owner_user_id": {
+        "description": "Deprecated alias for `creator_user_id`. This identifies the original creator, not a\ntransferable owner. Use `creator_user_id` instead.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "storage_backend": {
+        "description": "Service-managed storage backing this memory store.",
+        "ref": "agentkit.StorageBackend",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "Time when the store was last updated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "workspace_id": {
+        "description": "Workspace that owns the memory store.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.MemoryStorePermission": {
+    "description": "A principal's permission on a memory store.",
+    "fields": {
+      "permission": {
+        "description": "The permission level. WRITE includes READ; PERMISSION_LEVEL_UNSPECIFIED means neither is available.",
+        "ref": "agentkit.PermissionLevel",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "principal": {
+        "description": "The principal whose permission is reported.",
+        "ref": "agentkit.StorePrincipal",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.PermissionLevel": {
+    "description": "Permission level granted on a store. WRITE is a superset of READ.",
+    "enum": [
+      "READ",
+      "WRITE"
+    ],
+    "enum_launch_stages": {
+      "READ": "PRIVATE_PREVIEW",
+      "WRITE": "PRIVATE_PREVIEW"
+    }
+  },
+  "agentkit.PopSessionItemRequest": {
+    "description": "Request to pop an item from a session."
+  },
+  "agentkit.PopSessionItemResponse": {
+    "description": "Response containing the popped item.",
+    "fields": {
+      "item": {
+        "description": "Removed item, if any.",
+        "ref": "agentkit.SessionItem",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.PrincipalType": {
+    "description": "The kind of Databricks principal a store permission is granted to.",
+    "enum": [
+      "USER",
+      "SERVICE_PRINCIPAL"
+    ],
+    "enum_launch_stages": {
+      "SERVICE_PRINCIPAL": "PRIVATE_PREVIEW",
+      "USER": "PRIVATE_PREVIEW"
+    }
+  },
+  "agentkit.RevokeMemoryStorePermissionRequest": {
+    "description": "Request to revoke all explicit access to a memory store. Only the owner or a workspace admin may revoke permissions.",
+    "fields": {
+      "principal": {
+        "description": "Principal whose READ and WRITE grants will be removed.",
+        "ref": "agentkit.StorePrincipal",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "agentkit.RevokeMemoryStorePermissionResponse": {
+    "description": "Response from revoking a memory store permission."
+  },
+  "agentkit.RevokeSessionStorePermissionRequest": {
+    "description": "Request to revoke all explicit access to a session store. Only the owner or a workspace admin may revoke permissions.",
+    "fields": {
+      "principal": {
+        "description": "Principal whose READ and WRITE grants will be removed.",
+        "ref": "agentkit.StorePrincipal",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "agentkit.RevokeSessionStorePermissionResponse": {
+    "description": "Response from revoking a session store permission."
+  },
+  "agentkit.SearchManagedMemoryEntriesRequest": {
+    "description": "Request to search memory entries by text query for one actor.\nSearch returns a relevance-ranked top-N result set and does not currently paginate.",
+    "fields": {
+      "actor_id": {
+        "description": "Customer-provided identifier for the actor whose entries are searched.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "limit": {
+        "description": "Deprecated alias for `page_size`. When both fields are set, their values must match.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_size": {
+        "description": "Maximum number of relevance-ranked entries to return. Defaults to 10 and must be between 1 and\n100.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Reserved for pagination compatibility. The server currently ignores this field because Search\nreturns a ranked top-N result set.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "path_prefix": {
+        "description": "Optional absolute, case-sensitive path prefix used to restrict searched entries within the\nactor partition. The prefix must begin with `/` and must not contain empty, `.` or `..`\nsegments.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "query": {
+        "description": "Free-form search query.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "session_id": {
+        "description": "Optional session identifier. When set, only entries with this exact `session_id` are\nsearched. Omitted-session (cross-session) entries are not included.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "view": {
+        "description": "Controls whether each returned entry includes memory content. Search scores are always\nreturned. Defaults to `FULL`.",
+        "ref": "agentkit.ManagedMemoryEntryView",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.SearchManagedMemoryEntriesResponse": {
+    "description": "Response containing memory entries ranked by relevance.",
+    "fields": {
+      "managed_memory_entries": {
+        "description": "Deprecated compatibility alias for clients migrating to `results`. This contains the same\nentries in the same order, but omits their relevance scores.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "Opaque pagination token. Search currently returns an unpaginated ranked top-N result set, so\nthe server does not populate this field.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "results": {
+        "description": "Canonical matching entries and relevance scores, ordered most relevant first.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.Session": {
+    "description": "A durable logical interaction stored within a Session Store.",
+    "fields": {
+      "actor_id": {
+        "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      },
+      "create_time": {
+        "description": "Time when the session was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_activity_time": {
+        "description": "Time when the session's item history was last mutated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "metadata": {
+        "description": "Mutable caller-defined string labels.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Resource name in the form `session-stores/{session_store_id}/sessions/{session_id}`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "parent_session_id": {
+        "description": "Immediate parent session ID. Set only at creation for child sessions, immutable thereafter, and\nrestricted to the same store.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "root_session_id": {
+        "description": "Top-level session ID in the spawn tree. This equals `session_id` for a root or fork and is\ninherited transitively by child sessions.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "session_id": {
+        "description": "Unique session ID. The service generates a UUID unless the caller supplies\n`CreateSessionRequest.session_id`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "Time when session resource fields last changed.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.SessionItem": {
+    "description": "A transcript entry in a session's history.",
+    "fields": {
+      "create_time": {
+        "description": "Server-assigned time when the append commits. Values are nondecreasing within a session. Item\nlisting orders by this timestamp; equal timestamps are resolved by committed append order.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "data": {
+        "description": "Complete SDK-native, JSON-compatible item. The service stores and returns this value without\ninterpreting provider-specific fields such as `type`, `role`, or `content`.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "item_id": {
+        "description": "Stable service-generated item ID.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.SessionStore": {
+    "description": "A workspace-scoped session store.",
+    "fields": {
+      "create_time": {
+        "description": "Time when the store was created.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator_user_id": {
+        "description": "Workspace-local user ID of the authenticated principal that created the store. This is\nimmutable server-set attribution and does not grant access; authorization is evaluated from\nthe authenticated request context.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "description": {
+        "description": "Human-readable description of the session store.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "metadata": {
+        "description": "Mutable caller-defined string labels.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Resource name in the form `session-stores/{session_store_id}`.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "update_time": {
+        "description": "Time when the store was last updated.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.SessionStorePermission": {
+    "description": "A principal's permission on a session store.",
+    "fields": {
+      "permission": {
+        "description": "The permission level. WRITE includes READ; PERMISSION_LEVEL_UNSPECIFIED means neither is available.",
+        "ref": "agentkit.PermissionLevel",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "principal": {
+        "description": "The principal whose permission is reported.",
+        "ref": "agentkit.StorePrincipal",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.StorageBackend": {
+    "description": "Service-managed storage backing a memory store.",
+    "fields": {
+      "backend_id": {
+        "description": "Backend-specific identifier. For Lakebase, this is the project ID.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "backend_type": {
+        "description": "Type of the storage backend.",
+        "ref": "agentkit.StorageBackendType",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "agentkit.StorageBackendType": {
+    "description": "Type of service-managed storage backing a memory store.",
+    "enum": [
+      "STORAGE_BACKEND_TYPE_LAKEBASE"
+    ],
+    "enum_launch_stages": {
+      "STORAGE_BACKEND_TYPE_LAKEBASE": "PUBLIC_BETA"
+    }
+  },
+  "agentkit.StorePrincipal": {
+    "description": "A principal a store permission is granted to. `name` is the principal's Lakebase\nidentifier: a user's email or a service principal's application (client) id.",
+    "fields": {
+      "name": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "principal_type": {
+        "description": "The kind of principal. Required unless the deprecated type alias is supplied.",
+        "ref": "agentkit.PrincipalType",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "agentkit.UpdateManagedMemoryEntryRequest": {
+    "fields": {
+      "managed_memory_entry": {
+        "description": "The memory entry to update.",
+        "ref": "agentkit.ManagedMemoryEntry",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Fields to update. Only `content` and `description` may be updated.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.UpdateManagedMemoryStoreRequest": {
+    "fields": {
+      "managed_memory_store": {
+        "description": "The memory store to update. `name` is taken from the URL.",
+        "ref": "agentkit.ManagedMemoryStore",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Only `description` and `metadata` may be updated. Selecting `metadata` replaces the entire map.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.UpdateSessionRequest": {
+    "fields": {
+      "session": {
+        "description": "Session to update.",
+        "ref": "agentkit.Session",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Fields to update. Only `metadata` is mutable; any other path returns\n`INVALID_PARAMETER_VALUE`.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "agentkit.UpdateSessionStoreRequest": {
+    "fields": {
+      "session_store": {
+        "description": "Session store to update.",
+        "ref": "agentkit.SessionStore",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "update_mask": {
+        "description": "Fields to update. Only `description` and `metadata` are mutable; any other\npath returns `INVALID_PARAMETER_VALUE`.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  }
+}

@@ -1,0 +1,540 @@
+{
+  "id": "compute.CommandExecution",
+  "name": "CommandExecution",
+  "description": "This API allows execution of Python, Scala, SQL, or R commands on running\nDatabricks Clusters. This API only supports (classic) all-purpose clusters.\nServerless compute is not supported.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Cancel",
+      "description": "Cancels a currently running command within an execution context.\n\nThe command ID is obtained from a prior successful call to __execute__.",
+      "summary": "Cancel a command.",
+      "path": "/api/1.2/commands/cancel",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CancelCommand",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "CancelResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "clusterId",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "commandId",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "Cancelled"
+          }
+        ],
+        "timeout": 20,
+        "complex_message_path": true,
+        "poll": {
+          "response": {
+            "pascal_name": "CommandStatusResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "Status"
+          }
+        ],
+        "message_path": [
+          {
+            "pascal_name": "Results"
+          },
+          {
+            "pascal_name": "Cause"
+          }
+        ],
+        "message_path_head": {
+          "pascal_name": "Results"
+        }
+      }
+    },
+    {
+      "name": "CommandStatus",
+      "description": "Gets the status of and, if available, the results from a currently executing command.\n\nThe command ID is obtained from a prior successful call to __execute__.",
+      "summary": "Get command info.",
+      "path": "/api/1.2/commands/status",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CommandStatusRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clusterId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "contextId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "commandId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clusterId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "contextId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "commandId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CommandStatusResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clusterId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "commandId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clusterId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "commandId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ContextStatus",
+      "description": "Gets the status for an execution context.",
+      "summary": "Get status.",
+      "path": "/api/1.2/contexts/status",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ContextStatusRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clusterId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "contextId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clusterId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "contextId",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ContextStatusResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clusterId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clusterId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create",
+      "description": "Creates an execution context for running cluster commands.\n\nIf successful, this method returns the ID of the new execution context.",
+      "summary": "Create an execution context.",
+      "path": "/api/1.2/contexts/create",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateContext",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "Created",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clusterId",
+          "description": "Running cluster id",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "language",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Language",
+            "enum": [
+              {
+                "content": "python"
+              },
+              {
+                "content": "r"
+              },
+              {
+                "content": "scala"
+              },
+              {
+                "content": "sql"
+              }
+            ]
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "Running"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "ContextStatusResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "Status"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Destroy",
+      "description": "Deletes an execution context.",
+      "summary": "Delete an execution context.",
+      "path": "/api/1.2/contexts/destroy",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DestroyContext",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "clusterId",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "contextId",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "clusterId",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "contextId",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DestroyResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "clusterId",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clusterId",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Execute",
+      "description": "Runs a cluster command in the given execution context, using the provided language.\n\nIf successful, it returns an ID for tracking the status of the command's execution.",
+      "summary": "Run a command.",
+      "path": "/api/1.2/commands/execute",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "Command",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "Created",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "clusterId",
+          "description": "Running cluster id",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "command",
+          "description": "Executable code",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "contextId",
+          "description": "Running context id",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "language",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Language",
+            "enum": [
+              {
+                "content": "python"
+              },
+              {
+                "content": "r"
+              },
+              {
+                "content": "scala"
+              },
+              {
+                "content": "sql"
+              }
+            ]
+          }
+        }
+      ],
+      "wait": {
+        "success": [
+          {
+            "content": "Finished"
+          },
+          {
+            "content": "Error"
+          }
+        ],
+        "timeout": 20,
+        "poll": {
+          "response": {
+            "pascal_name": "CommandStatusResponse"
+          }
+        },
+        "status_path": [
+          {
+            "pascal_name": "Status"
+          }
+        ]
+      }
+    }
+  ]
+}

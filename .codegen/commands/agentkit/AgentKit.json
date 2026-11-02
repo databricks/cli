@@ -1,0 +1,4717 @@
+{
+  "id": "agentkit.AgentKit",
+  "name": "AgentKit",
+  "description": "APIs for managing agent memory and durable session state. This interface is under active development and may change.",
+  "package": {
+    "name": "agentkit"
+  },
+  "docs_group": "agentbricks",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListManagedMemoryEntriesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "AppendSessionItems",
+      "description": "Appends items to a session.",
+      "summary": "Append items to a session.",
+      "path": "/api/2.0/agents/{parent=session-stores/*/sessions/*}/items:append",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "AppendSessionItemsRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "items",
+            "description": "Items to append atomically in request order. Concurrent append requests are serialized into one\ncommitted order without exposing a numeric sequence in the public contract.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SessionItemList",
+              "array_value": {
+                "pascal_name": "SessionItem",
+                "is_object": true
+              }
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "items",
+            "description": "Items to append atomically in request order. Concurrent append requests are serialized into one\ncommitted order without exposing a numeric sequence in the public contract.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SessionItemList",
+              "array_value": {
+                "pascal_name": "SessionItem",
+                "is_object": true
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "AppendSessionItemsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "items",
+          "description": "Items to append atomically in request order. Concurrent append requests are serialized into one\ncommitted order without exposing a numeric sequence in the public contract.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SessionItemList",
+            "array_value": {
+              "pascal_name": "SessionItem",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ClearSessionItems",
+      "description": "Clears all items from a session.",
+      "summary": "Clear items from a session.",
+      "path": "/api/2.0/agents/{parent=session-stores/*/sessions/*}/items:clear",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ClearSessionItemsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClearSessionItemsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateMemory",
+      "description": "Creates a memory entry using exclusive-create semantics. Callers may choose the entry\nID; the service generates one when it is omitted. Returns `ALREADY_EXISTS` when an entry with\nthe same actor, session, and path already exists. Omitted `session_id` is its own uniqueness\nkey: two omitted-session entries with the same actor and path conflict, but an omitted-session\nentry does not conflict with a session-scoped entry at the same actor and path.",
+      "summary": "Create a memory entry.",
+      "path": "/api/2.0/agents/{parent=memory-stores/*}/entries",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateManagedMemoryEntryRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Memory store that will contain the entry, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "managed_memory_entry",
+            "description": "The memory entry to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryEntry",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Memory store that will contain the entry, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "managed_memory_entry",
+            "description": "The memory entry to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryEntry",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "managed_memory_entry",
+        "description": "The memory entry to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ManagedMemoryEntry",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "actor_id",
+              "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "actor_id",
+              "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ManagedMemoryEntry",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "managed_memory_entry",
+          "description": "The memory entry to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryEntry",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "actor_id",
+                "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "actor_id",
+                "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "managed_memory_entry_id",
+          "description": "Optional caller-selected memory entry ID. The service generates an ID when omitted.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Memory store that will contain the entry, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "content",
+          "description": "Optional free-form memory content.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the entry was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Human-readable description of the memory entry.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.\nRequired for updates; assigned by the service on creation.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Optional identifier for the session associated with this memory entry. When omitted, the\nentry applies across the actor's sessions.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "Which writer created this entry. Caller sets this on Create; immutable after creation.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryEntrySourceType",
+            "enum": [
+              {
+                "content": "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT"
+              },
+              {
+                "content": "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when the entry was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Memory store that will contain the entry, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateMemoryStore",
+      "description": "Creates a memory store in the caller's workspace.",
+      "summary": "Create a memory store.",
+      "path": "/api/2.0/agents/memory-stores",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateManagedMemoryStoreRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "managed_memory_store",
+            "description": "The memory store to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryStore",
+              "is_object": true
+            }
+          },
+          {
+            "name": "managed_memory_store_id",
+            "description": "Caller-provided, workspace-unique memory store ID. It must be 3-56 characters, begin\nwith a lowercase letter, contain only lowercase letters, digits, and hyphens, and end with a\nletter or digit.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "managed_memory_store_id",
+            "description": "Caller-provided, workspace-unique memory store ID. It must be 3-56 characters, begin\nwith a lowercase letter, contain only lowercase letters, digits, and hyphens, and end with a\nletter or digit.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "managed_memory_store",
+            "description": "The memory store to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryStore",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "managed_memory_store",
+        "description": "The memory store to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ManagedMemoryStore",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "ManagedMemoryStore",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "managed_memory_store",
+          "description": "The memory store to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryStore",
+            "is_object": true
+          }
+        },
+        {
+          "name": "managed_memory_store_id",
+          "description": "Caller-provided, workspace-unique memory store ID. It must be 3-56 characters, begin\nwith a lowercase letter, contain only lowercase letters, digits, and hyphens, and end with a\nletter or digit.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the store was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator_user_id",
+          "description": "Workspace-local user ID of the authenticated principal that created the store. This is\nimmutable server-set attribution and does not grant access; authorization is evaluated from\nthe authenticated request context.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Human-readable description of the memory store.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Deprecated compatibility alias for the caller-provided memory store ID. Canonical\nclients provide the ID through `CreateMemoryStoreRequest.managed_memory_store_id` and use\n`name` as the resource identifier.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner_user_id",
+          "description": "Deprecated alias for `creator_user_id`. This identifies the original creator, not a\ntransferable owner. Use `creator_user_id` instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_backend",
+          "description": "Service-managed storage backing this memory store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "StorageBackend",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when the store was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "Workspace that owns the memory store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "managed_memory_store_id",
+          "description": "Caller-provided, workspace-unique memory store ID. It must be 3-56 characters, begin\nwith a lowercase letter, contain only lowercase letters, digits, and hyphens, and end with a\nletter or digit.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSession",
+      "description": "Creates a session within a session store.",
+      "summary": "Create a session.",
+      "path": "/api/2.0/agents/{parent=session-stores/*}/sessions",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateSessionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "session",
+            "description": "The session to create. `actor_id` is required. A session with `parent_session_id` is a child and\nmust use its parent's `actor_id`. Independent forks are created only through `ForkSession`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Session",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "session",
+            "description": "The session to create. `actor_id` is required. A session with `parent_session_id` is a child and\nmust use its parent's `actor_id`. Independent forks are created only through `ForkSession`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Session",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "session",
+        "description": "The session to create. `actor_id` is required. A session with `parent_session_id` is a child and\nmust use its parent's `actor_id`. Independent forks are created only through `ForkSession`.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Session",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "actor_id",
+              "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "actor_id",
+              "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Session",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session",
+          "description": "The session to create. `actor_id` is required. A session with `parent_session_id` is a child and\nmust use its parent's `actor_id`. Independent forks are created only through `ForkSession`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Session",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "actor_id",
+                "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "actor_id",
+                "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Optional caller-selected session ID. The service generates a UUID when this field is omitted.\nThe ID must be unique; a collision returns `ALREADY_EXISTS`.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the session was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "last_activity_time",
+          "description": "Time when the session's item history was last mutated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Mutable caller-defined string labels.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}/sessions/{session_id}`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_session_id",
+          "description": "Immediate parent session ID. Set only at creation for child sessions, immutable thereafter, and\nrestricted to the same store.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "root_session_id",
+          "description": "Top-level session ID in the spawn tree. This equals `session_id` for a root or fork and is\ninherited transitively by child sessions.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Unique session ID. The service generates a UUID unless the caller supplies\n`CreateSessionRequest.session_id`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when session resource fields last changed.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSessionStore",
+      "description": "Creates a session store.",
+      "summary": "Create a session store.",
+      "path": "/api/2.0/agents/session-stores",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateSessionStoreRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "session_store",
+            "description": "The session store to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SessionStore",
+              "is_object": true
+            }
+          },
+          {
+            "name": "session_store_id",
+            "description": "Caller-provided, workspace-unique session store ID. It must be 3-55 characters, begin with a\nlowercase letter, and contain only lowercase letters, digits, and hyphens.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "session_store_id",
+            "description": "Caller-provided, workspace-unique session store ID. It must be 3-55 characters, begin with a\nlowercase letter, and contain only lowercase letters, digits, and hyphens.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "session_store",
+            "description": "The session store to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SessionStore",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "session_store",
+        "description": "The session store to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "SessionStore",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "SessionStore",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "session_store",
+          "description": "The session store to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SessionStore",
+            "is_object": true
+          }
+        },
+        {
+          "name": "session_store_id",
+          "description": "Caller-provided, workspace-unique session store ID. It must be 3-55 characters, begin with a\nlowercase letter, and contain only lowercase letters, digits, and hyphens.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the store was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator_user_id",
+          "description": "Workspace-local user ID of the authenticated principal that created the store. This is\nimmutable server-set attribution and does not grant access; authorization is evaluated from\nthe authenticated request context.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Human-readable description of the session store.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Mutable caller-defined string labels.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when the store was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "session_store_id",
+          "description": "Caller-provided, workspace-unique session store ID. It must be 3-55 characters, begin with a\nlowercase letter, and contain only lowercase letters, digits, and hyphens.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteMemory",
+      "description": "Deletes a memory entry by resource name. Returns `NOT_FOUND` when the entry does not\nexist in the caller's workspace.",
+      "summary": "Delete a memory entry by resource name.",
+      "path": "/api/2.0/agents/{name=memory-stores/*/entries/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteManagedMemoryEntryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteMemoryStore",
+      "description": "Deletes a memory store by resource name. Returns `NOT_FOUND` when the store does not\nexist in the caller's workspace.",
+      "summary": "Delete a memory store by resource name.",
+      "path": "/api/2.0/agents/{name=memory-stores/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteManagedMemoryStoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSession",
+      "description": "Deletes a session, its items, and any descendant sessions recursively. Independently retained\nmemory is not deleted.",
+      "summary": "Delete a session.",
+      "path": "/api/2.0/agents/{name=session-stores/*/sessions/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteSessionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSessionStore",
+      "description": "Deletes a session store, its sessions and items, and its service-managed storage. Memory entries\nretained by a separate Memory Store are not deleted.",
+      "summary": "Delete a session store.",
+      "path": "/api/2.0/agents/{name=session-stores/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteSessionStoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ExtractMemories",
+      "description": "Synchronously extracts memories from a single session into the given memory store, returning\nthe entries that were written.",
+      "summary": "Extract memories from a session.",
+      "path": "/api/2.0/agents/{session_store=session-stores/*}/sessions/{session_id}/extractions",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ExtractMemoriesRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "session_store",
+            "description": "Session store containing the session, in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "session_id",
+            "description": "Identifier of the session whose transcript is distilled into memories.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "memory_store",
+            "description": "Memory store the extracted entries are written to, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "session_store",
+            "description": "Session store containing the session, in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "session_id",
+            "description": "Identifier of the session whose transcript is distilled into memories.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "memory_store",
+            "description": "Memory store the extracted entries are written to, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExtractMemoriesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "dry_run",
+          "description": "When true, extract and return the entries without writing them to the memory store. Defaults\nto false, which persists the extracted entries and returns them.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "instructions",
+          "description": "Instructions steering what is extracted from the session.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "memory_store",
+          "description": "Memory store the extracted entries are written to, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Identifier of the session whose transcript is distilled into memories.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_store",
+          "description": "Session store containing the session, in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "session_store",
+          "description": "Session store containing the session, in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Identifier of the session whose transcript is distilled into memories.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "memory_store",
+          "description": "Memory store the extracted entries are written to, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ForkSession",
+      "description": "Forks a session into an independent top-level copy.",
+      "summary": "Fork a session.",
+      "path": "/api/2.0/agents/{parent=session-stores/*}/sessions:fork",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ForkSessionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source_session_id",
+            "description": "ID of the session to copy.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the forked session.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "source_session_id",
+            "description": "ID of the session to copy.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the forked session.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ForkSessionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "actor_id",
+          "description": "Opaque caller-provided identifier for the application actor associated with the forked session.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Optional metadata for the fork.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Optional unique ID for the forked session. A collision returns `ALREADY_EXISTS`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_session_id",
+          "description": "ID of the session to copy.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "up_to_item_id",
+          "description": "Optional last item ID to copy through, inclusively. When omitted, the fork atomically copies\nall items committed before the fork operation begins.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_session_id",
+          "description": "ID of the session to copy.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Opaque caller-provided identifier for the application actor associated with the forked session.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMemory",
+      "description": "Retrieves a memory entry by resource name. `view` controls whether the response\nincludes memory content. Returns `NOT_FOUND` when the entry does not exist in the caller's\nworkspace.",
+      "summary": "Get a memory entry by resource name.",
+      "path": "/api/2.0/agents/{name=memory-stores/*/entries/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetManagedMemoryEntryRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ManagedMemoryEntry",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "Controls whether the response includes memory content. Defaults to `FULL`.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryEntryView",
+            "enum": [
+              {
+                "content": "MANAGED_MEMORY_ENTRY_VIEW_BASIC"
+              },
+              {
+                "content": "MANAGED_MEMORY_ENTRY_VIEW_FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMemoryStore",
+      "description": "Retrieves a memory store by resource name. Returns `NOT_FOUND` when the store does not\nexist in the caller's workspace.",
+      "summary": "Get a memory store by resource name.",
+      "path": "/api/2.0/agents/{name=memory-stores/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetManagedMemoryStoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ManagedMemoryStore",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMemoryStorePermission",
+      "description": "Retrieves the current caller's effective memory store permission. Returns PERMISSION_LEVEL_UNSPECIFIED when the caller has no access.",
+      "summary": "Get memory store permission.",
+      "path": "/api/2.0/agents/{name=memory-stores/*}/permissions/self",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetMemoryStorePermissionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "MemoryStorePermission",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSession",
+      "description": "Gets a session by resource name.",
+      "summary": "Get a session.",
+      "path": "/api/2.0/agents/{name=session-stores/*/sessions/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetSessionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Session",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSessionStore",
+      "description": "Gets a session store by resource name.",
+      "summary": "Get a session store.",
+      "path": "/api/2.0/agents/{name=session-stores/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetSessionStoreRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SessionStore",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSessionStorePermission",
+      "description": "Retrieves the current caller's effective session store permission. Returns PERMISSION_LEVEL_UNSPECIFIED when the caller has no access.",
+      "summary": "Get session store permission.",
+      "path": "/api/2.0/agents/{name=session-stores/*}/permissions/self",
+      "is_crud_read": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetSessionStorePermissionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SessionStorePermission",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GrantMemoryStorePermission",
+      "description": "Grants a READ or WRITE permission on a memory store to a principal. Only the owner or a workspace admin may grant permissions.",
+      "summary": "Grant memory store permission.",
+      "path": "/api/2.0/agents/{name=memory-stores/*}/permissions:grant",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GrantMemoryStorePermissionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "principal",
+            "description": "Principal to grant the permission to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          },
+          {
+            "name": "permission",
+            "description": "Permission level to grant.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PermissionLevel",
+              "enum": [
+                {
+                  "content": "READ"
+                },
+                {
+                  "content": "WRITE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal",
+            "description": "Principal to grant the permission to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          },
+          {
+            "name": "permission",
+            "description": "Permission level to grant.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PermissionLevel",
+              "enum": [
+                {
+                  "content": "READ"
+                },
+                {
+                  "content": "WRITE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GrantMemoryStorePermissionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "permission",
+          "description": "Permission level to grant.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PermissionLevel",
+            "enum": [
+              {
+                "content": "READ"
+              },
+              {
+                "content": "WRITE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal",
+          "description": "Principal to grant the permission to.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "StorePrincipal",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GrantSessionStorePermission",
+      "description": "Grants a READ or WRITE permission on a session store to a principal. Only the owner or a workspace admin may grant permissions.",
+      "summary": "Grant session store permission.",
+      "path": "/api/2.0/agents/{name=session-stores/*}/permissions:grant",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GrantSessionStorePermissionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "principal",
+            "description": "Principal to grant the permission to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          },
+          {
+            "name": "permission",
+            "description": "Permission level to grant.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PermissionLevel",
+              "enum": [
+                {
+                  "content": "READ"
+                },
+                {
+                  "content": "WRITE"
+                }
+              ]
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal",
+            "description": "Principal to grant the permission to.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          },
+          {
+            "name": "permission",
+            "description": "Permission level to grant.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PermissionLevel",
+              "enum": [
+                {
+                  "content": "READ"
+                },
+                {
+                  "content": "WRITE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GrantSessionStorePermissionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "permission",
+          "description": "Permission level to grant.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PermissionLevel",
+            "enum": [
+              {
+                "content": "READ"
+              },
+              {
+                "content": "WRITE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal",
+          "description": "Principal to grant the permission to.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "StorePrincipal",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListMemories",
+      "description": "Lists memory entries for one actor. An exact `path` filters entries across sessions,\nignoring session metadata. Otherwise, `session_id` and `path_prefix` restrict the actor\npartition. `view` controls whether each returned entry includes memory content.",
+      "summary": "List memory entries.",
+      "path": "/api/2.0/agents/{parent=memory-stores/*}/entries",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListManagedMemoryEntriesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Memory store whose entries are listed, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose entries are listed.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Memory store whose entries are listed, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose entries are listed.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListManagedMemoryEntriesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose entries are listed.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of entries to return. The service may return fewer entries than requested.\nDefaults to 10; must be between 1 and 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token from a previous ListManagedMemoryEntries response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Memory store whose entries are listed, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path_prefix",
+          "description": "Optional path prefix used to restrict entries within the actor partition.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Optional session identifier. When set, only entries with this exact `session_id` are\nreturned. Omitted-session (cross-session) entries are not included. Ignored when path is set.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "Controls whether each returned entry includes memory content. Defaults to `FULL`.",
+          "is_query": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryEntryView",
+            "enum": [
+              {
+                "content": "MANAGED_MEMORY_ENTRY_VIEW_BASIC"
+              },
+              {
+                "content": "MANAGED_MEMORY_ENTRY_VIEW_FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Memory store whose entries are listed, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose entries are listed.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token from a previous ListManagedMemoryEntries response.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListMemoryStorePermissions",
+      "description": "Lists explicit memory store grants. Only the owner or a workspace admin may list permissions.",
+      "summary": "List memory store permissions.",
+      "path": "/api/2.0/agents/{parent=memory-stores/*}/permissions",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListMemoryStorePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the store, in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the store, in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListMemoryStorePermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of permissions to return. Defaults to 100; maximum is 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Continuation token from a previous response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Resource name of the store, in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the store, in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Continuation token from a previous response.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListMemoryStores",
+      "description": "Lists memory stores in the caller's workspace.",
+      "summary": "List memory stores.",
+      "path": "/api/2.0/agents/memory-stores",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListManagedMemoryStoresRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListManagedMemoryStoresResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of stores to return. The service may return fewer stores than requested.\nDefaults to 10; must be between 1 and 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token from a previous ListManagedMemoryStores response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token from a previous ListManagedMemoryStores response.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSessionItems",
+      "description": "Lists items in a session.",
+      "summary": "List session items.",
+      "path": "/api/2.0/agents/{parent=session-stores/*/sessions/*}/items",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListSessionItemsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSessionItemsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "order_by",
+          "description": "Sort order. Supported values are `create_time asc` and `create_time desc`. The default is\n`create_time desc`, which returns the most recently appended items first. Equal timestamps are\nresolved by committed append order in the requested direction.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of items to return. Defaults to 10; must be between 1 and 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token returned by a previous list request.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token returned by a previous list request.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSessionStorePermissions",
+      "description": "Lists explicit session store grants. Only the owner or a workspace admin may list permissions.",
+      "summary": "List session store permissions.",
+      "path": "/api/2.0/agents/{parent=session-stores/*}/permissions",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListSessionStorePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the store, in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the store, in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSessionStorePermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of permissions to return. Defaults to 100; maximum is 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Continuation token from a previous response.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Resource name of the store, in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the store, in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Continuation token from a previous response.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSessionStores",
+      "description": "Lists session stores.",
+      "summary": "List session stores.",
+      "path": "/api/2.0/agents/session-stores",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListSessionStoresRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListSessionStoresResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of session stores to return. Defaults to 10; must be between 1 and 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token returned by a previous list request.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token returned by a previous list request.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSessions",
+      "description": "Lists sessions within a session store.",
+      "summary": "List sessions.",
+      "path": "/api/2.0/agents/{parent=session-stores/*}/sessions",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListSessionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListSessionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "filter",
+          "description": "Filter expression. Supported fields include `actor_id` and `metadata`; for example,\n`actor_id = \"support-customer-123\"`.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "order_by",
+          "description": "Sort order. Defaults to `last_activity_time desc`. Page-token continuation is exactly-once when\nordering by `create_time` (immutable); ordering by `last_activity_time` is best-effort, because\nthat value changes as a session gains activity, so a session updated between page requests may\nbe repeated or skipped. To enumerate every session exactly once, order by `create_time`.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of sessions to return. Defaults to 10; must be between 1 and 100.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Token returned by a previous list request.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session store, in the form\n`session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Token returned by a previous list request.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PopSessionItem",
+      "description": "Pops the newest item from a session.",
+      "summary": "Pop an item from a session.",
+      "path": "/api/2.0/agents/{parent=session-stores/*/sessions/*}/items:pop",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "PopSessionItemRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PopSessionItemResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Resource name of the containing session, in the form\n`session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RevokeMemoryStorePermission",
+      "description": "Removes a principal's explicit READ and WRITE grants on a memory store. Only the owner or a workspace admin may revoke permissions. Ownership and inherited access are unaffected.",
+      "summary": "Revoke memory store permission.",
+      "path": "/api/2.0/agents/{name=memory-stores/*}/permissions:revoke",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "RevokeMemoryStorePermissionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "principal",
+            "description": "Principal whose READ and WRITE grants will be removed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal",
+            "description": "Principal whose READ and WRITE grants will be removed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RevokeMemoryStorePermissionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "principal",
+          "description": "Principal whose READ and WRITE grants will be removed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "StorePrincipal",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RevokeSessionStorePermission",
+      "description": "Removes a principal's explicit READ and WRITE grants on a session store. Only the owner or a workspace admin may revoke permissions. Ownership and inherited access are unaffected.",
+      "summary": "Revoke session store permission.",
+      "path": "/api/2.0/agents/{name=session-stores/*}/permissions:revoke",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "RevokeSessionStorePermissionRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "principal",
+            "description": "Principal whose READ and WRITE grants will be removed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "principal",
+            "description": "Principal whose READ and WRITE grants will be removed.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "StorePrincipal",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RevokeSessionStorePermissionResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "principal",
+          "description": "Principal whose READ and WRITE grants will be removed.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "StorePrincipal",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SearchMemories",
+      "description": "Searches memory entries by text query for one actor. Returns matching entries and\nscores ranked by relevance; `view` controls whether each returned entry includes content.",
+      "summary": "Search memory entries.",
+      "path": "/api/2.0/agents/{parent=memory-stores/*}/entries:search",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "SearchManagedMemoryEntriesRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Memory store whose entries are searched, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose entries are searched.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query",
+            "description": "Free-form search query.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Memory store whose entries are searched, in the form\n`memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose entries are searched.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "query",
+            "description": "Free-form search query.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SearchManagedMemoryEntriesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose entries are searched.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "limit",
+          "description": "Deprecated alias for `page_size`. When both fields are set, their values must match.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of relevance-ranked entries to return. Defaults to 10 and must be between 1 and\n100.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Reserved for pagination compatibility. The server currently ignores this field because Search\nreturns a ranked top-N result set.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Memory store whose entries are searched, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path_prefix",
+          "description": "Optional absolute, case-sensitive path prefix used to restrict searched entries within the\nactor partition. The prefix must begin with `/` and must not contain empty, `.` or `..`\nsegments.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query",
+          "description": "Free-form search query.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Optional session identifier. When set, only entries with this exact `session_id` are\nsearched. Omitted-session (cross-session) entries are not included.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "view",
+          "description": "Controls whether each returned entry includes memory content. Search scores are always\nreturned. Defaults to `FULL`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryEntryView",
+            "enum": [
+              {
+                "content": "MANAGED_MEMORY_ENTRY_VIEW_BASIC"
+              },
+              {
+                "content": "MANAGED_MEMORY_ENTRY_VIEW_FULL"
+              }
+            ]
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Memory store whose entries are searched, in the form\n`memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose entries are searched.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query",
+          "description": "Free-form search query.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Reserved for pagination compatibility. The server currently ignores this field because Search\nreturns a ranked top-N result set.",
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "UpdateMemory",
+      "description": "Updates selected mutable fields on a memory entry. Identity fields are immutable.",
+      "summary": "Update a memory entry.",
+      "path": "/api/2.0/agents/{name=memory-stores/*/entries/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateManagedMemoryEntryRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.\nRequired for updates; assigned by the service on creation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "managed_memory_entry",
+            "description": "The memory entry to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryEntry",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Only `content` and `description` may be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.\nRequired for updates; assigned by the service on creation.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Only `content` and `description` may be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "managed_memory_entry",
+            "description": "The memory entry to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryEntry",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "managed_memory_entry",
+        "description": "The memory entry to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ManagedMemoryEntry",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "actor_id",
+              "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "actor_id",
+              "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "path",
+              "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "ManagedMemoryEntry",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "actor_id",
+            "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "managed_memory_entry",
+          "description": "The memory entry to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryEntry",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "actor_id",
+                "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "actor_id",
+                "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "path",
+                "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.\nRequired for updates; assigned by the service on creation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Only `content` and `description` may be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "content",
+          "description": "Optional free-form memory content.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the entry was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Human-readable description of the memory entry.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.\nRequired for updates; assigned by the service on creation.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Optional identifier for the session associated with this memory entry. When omitted, the\nentry applies across the actor's sessions.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source_type",
+          "description": "Which writer created this entry. Caller sets this on Create; immutable after creation.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryEntrySourceType",
+            "enum": [
+              {
+                "content": "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT"
+              },
+              {
+                "content": "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER"
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when the entry was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form\n`memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.\nRequired for updates; assigned by the service on creation.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Only `content` and `description` may be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Customer-provided identifier for the actor whose memory this entry represents.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute, case-sensitive path identifying the entry within its actor and optional session.\nPaths must begin with `/` and must not contain empty, `.` or `..` segments.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateMemoryStore",
+      "description": "Updates a memory store's description and metadata.",
+      "summary": "Update a memory store.",
+      "path": "/api/2.0/agents/{name=memory-stores/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateManagedMemoryStoreRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "managed_memory_store",
+            "description": "The memory store to update. `name` is taken from the URL.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryStore",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Only `description` and `metadata` may be updated. Selecting `metadata` replaces the entire map.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Only `description` and `metadata` may be updated. Selecting `metadata` replaces the entire map.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "managed_memory_store",
+            "description": "The memory store to update. `name` is taken from the URL.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "ManagedMemoryStore",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "managed_memory_store",
+        "description": "The memory store to update. `name` is taken from the URL.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "ManagedMemoryStore",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "ManagedMemoryStore",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "managed_memory_store",
+          "description": "The memory store to update. `name` is taken from the URL.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ManagedMemoryStore",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Only `description` and `metadata` may be updated. Selecting `metadata` replaces the entire map.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the store was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator_user_id",
+          "description": "Workspace-local user ID of the authenticated principal that created the store. This is\nimmutable server-set attribution and does not grant access; authorization is evaluated from\nthe authenticated request context.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Human-readable description of the memory store.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Deprecated compatibility alias for the caller-provided memory store ID. Canonical\nclients provide the ID through `CreateMemoryStoreRequest.managed_memory_store_id` and use\n`name` as the resource identifier.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner_user_id",
+          "description": "Deprecated alias for `creator_user_id`. This identifies the original creator, not a\ntransferable owner. Use `creator_user_id` instead.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_backend",
+          "description": "Service-managed storage backing this memory store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "StorageBackend",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when the store was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "Workspace that owns the memory store.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `memory-stores/{managed_memory_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Only `description` and `metadata` may be updated. Selecting `metadata` replaces the entire map.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSession",
+      "description": "Updates a session's mutable fields.",
+      "summary": "Update a session.",
+      "path": "/api/2.0/agents/{name=session-stores/*/sessions/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateSessionRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "session",
+            "description": "Session to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Session",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Only `metadata` is mutable; any other path returns\n`INVALID_PARAMETER_VALUE`.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}/sessions/{session_id}`.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Only `metadata` is mutable; any other path returns\n`INVALID_PARAMETER_VALUE`.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "session",
+            "description": "Session to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Session",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "session",
+        "description": "Session to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Session",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "actor_id",
+              "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "actor_id",
+              "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Session",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "actor_id",
+            "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session",
+          "description": "Session to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Session",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "actor_id",
+                "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "actor_id",
+                "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Only `metadata` is mutable; any other path returns\n`INVALID_PARAMETER_VALUE`.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the session was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "last_activity_time",
+          "description": "Time when the session's item history was last mutated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Mutable caller-defined string labels.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}/sessions/{session_id}`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent_session_id",
+          "description": "Immediate parent session ID. Set only at creation for child sessions, immutable thereafter, and\nrestricted to the same store.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "root_session_id",
+          "description": "Top-level session ID in the spawn tree. This equals `session_id` for a root or fork and is\ninherited transitively by child sessions.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_id",
+          "description": "Unique session ID. The service generates a UUID unless the caller supplies\n`CreateSessionRequest.session_id`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when session resource fields last changed.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}/sessions/{session_id}`.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Only `metadata` is mutable; any other path returns\n`INVALID_PARAMETER_VALUE`.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "actor_id",
+          "description": "Opaque caller-provided identifier for the application actor associated with the session.\n\nThis is application data and has no Databricks authentication or authorization semantics.\nUse the same value as the Managed Memory Entry `actor_id` when storing memories associated\nwith this actor. Every session must set it. A child session must use the same value as its parent.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSessionStore",
+      "description": "Updates a session store's description and metadata.",
+      "summary": "Update a session store.",
+      "path": "/api/2.0/agents/{name=session-stores/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateSessionStoreRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "session_store",
+            "description": "Session store to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SessionStore",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Only `description` and `metadata` are mutable; any other\npath returns `INVALID_PARAMETER_VALUE`.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the form `session-stores/{session_store_id}`.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Fields to update. Only `description` and `metadata` are mutable; any other\npath returns `INVALID_PARAMETER_VALUE`.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "session_store",
+            "description": "Session store to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "SessionStore",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "session_store",
+        "description": "Session store to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "SessionStore",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "SessionStore",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "session_store",
+          "description": "Session store to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "SessionStore",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Only `description` and `metadata` are mutable; any other\npath returns `INVALID_PARAMETER_VALUE`.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time when the store was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator_user_id",
+          "description": "Workspace-local user ID of the authenticated principal that created the store. This is\nimmutable server-set attribution and does not grant access; authorization is evaluated from\nthe authenticated request context.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Human-readable description of the session store.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Mutable caller-defined string labels.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time when the store was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the form `session-stores/{session_store_id}`.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Fields to update. Only `description` and `metadata` are mutable; any other\npath returns `INVALID_PARAMETER_VALUE`.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    }
+  ]
+}

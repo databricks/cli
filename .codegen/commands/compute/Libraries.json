@@ -1,0 +1,283 @@
+{
+  "id": "compute.Libraries",
+  "name": "Libraries",
+  "description": "The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.\n\nTo make third-party or custom code available to notebooks and jobs running on your clusters, you can install a library.\nLibraries can be written in Python, Java, Scala, and R. You can upload Python, Java, Scala and R libraries and\npoint to external packages in PyPI, Maven, and CRAN repositories.\n\nCluster libraries can be used by all notebooks running on a cluster. You can install a cluster library directly\nfrom a public repository such as PyPI or Maven, using a previously installed workspace library, or using an init script.\n\nWhen you uninstall a library from a cluster, the library is removed only when you restart the cluster.\nUntil you restart the cluster, the status of the uninstalled library appears as Uninstall pending restart.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ClusterStatus"
+    }
+  },
+  "methods": [
+    {
+      "name": "AllClusterStatuses",
+      "description": "Get the status of all libraries on all clusters. A status is returned for all libraries installed on this cluster\nvia the API or the libraries UI.",
+      "summary": "Get all statuses.",
+      "path": "/api/2.0/libraries/all-cluster-statuses",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListAllClusterLibraryStatuses",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListAllClusterLibraryStatusesResponse",
+        "is_object": true
+      },
+      "pagination": {}
+    },
+    {
+      "name": "ClusterStatus",
+      "description": "Get the status of libraries on a cluster. A status is returned for all libraries installed on this cluster via the API\nor the libraries UI.\nThe order of returned libraries is as follows:\n1. Libraries set to be installed on this cluster, in the order that the libraries were added\nto the cluster, are returned first.\n2. Libraries that were previously requested to be installed on this cluster or,\nbut are now marked for removal, in no particular order, are returned last.",
+      "summary": "Get status.",
+      "path": "/api/2.0/libraries/cluster-status",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ClusterStatus",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "Unique identifier of the cluster whose status should be retrieved.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "cluster_id",
+            "description": "Unique identifier of the cluster whose status should be retrieved.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ClusterLibraryStatuses",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "Unique identifier of the cluster whose status should be retrieved.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "cluster_id",
+          "description": "Unique identifier of the cluster whose status should be retrieved.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {}
+    },
+    {
+      "name": "Install",
+      "description": "Add libraries to install on a cluster. The installation is asynchronous; it happens in\nthe background after the completion of this request.",
+      "summary": "Add a library.",
+      "path": "/api/2.0/libraries/install",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_crud_create": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "InstallLibraries",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "Unique identifier for the cluster on which to install these libraries.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "libraries",
+            "description": "The libraries to install.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LibraryList",
+              "array_value": {
+                "pascal_name": "Library",
+                "is_object": true
+              }
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "Unique identifier for the cluster on which to install these libraries.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "libraries",
+            "description": "The libraries to install.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LibraryList",
+              "array_value": {
+                "pascal_name": "Library",
+                "is_object": true
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "InstallLibrariesResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "Unique identifier for the cluster on which to install these libraries.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "libraries",
+          "description": "The libraries to install.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LibraryList",
+            "array_value": {
+              "pascal_name": "Library",
+              "is_object": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Uninstall",
+      "description": "Set libraries to uninstall from a cluster. The libraries won't be uninstalled until\nthe cluster is restarted. A request to uninstall a library that is not currently installed is ignored.",
+      "summary": "Uninstall libraries.",
+      "path": "/api/2.0/libraries/uninstall",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UninstallLibraries",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "cluster_id",
+            "description": "Unique identifier for the cluster on which to uninstall these libraries.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "libraries",
+            "description": "The libraries to uninstall.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LibraryList",
+              "array_value": {
+                "pascal_name": "Library",
+                "is_object": true
+              }
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cluster_id",
+            "description": "Unique identifier for the cluster on which to uninstall these libraries.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "libraries",
+            "description": "The libraries to uninstall.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "LibraryList",
+              "array_value": {
+                "pascal_name": "Library",
+                "is_object": true
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UninstallLibrariesResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "cluster_id",
+          "description": "Unique identifier for the cluster on which to uninstall these libraries.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "libraries",
+          "description": "The libraries to uninstall.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "LibraryList",
+            "array_value": {
+              "pascal_name": "Library",
+              "is_object": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

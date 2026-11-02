@@ -1,0 +1,596 @@
+{
+  "id": "cleanrooms.CleanRoomAssetRevisions",
+  "name": "CleanRoomAssetRevisions",
+  "description": "Clean Room Asset Revisions denote new versions\nof uploaded assets (e.g. notebooks) in the clean room.",
+  "package": {
+    "name": "cleanrooms"
+  },
+  "docs_group": "cleanrooms",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListCleanRoomAssetRevisionsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Get",
+      "description": "Get a specific revision of an asset",
+      "summary": "Get an asset revision.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{name}/revisions/{etag}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetCleanRoomAssetRevisionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Revision etag to fetch. If not provided, the latest revision will be returned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Revision etag to fetch. If not provided, the latest revision will be returned.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CleanRoomAsset",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "A fully qualified name that uniquely identifies the asset within the clean room.\nThis is also the name displayed in the clean room UI.\n\nFor UC securable assets (tables, volumes, etc.), the format is *shared_catalog*.*shared_schema*.*asset_name*\n\nFor notebooks, the name is the notebook file name.\nFor jar analyses, the name is the jar analysis name.\nFor Genie spaces, the name is derived from the clean room; the caller does not choose it.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "The type of the asset.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "asset_type",
+          "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Revision etag to fetch. If not provided, the latest revision will be returned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Revision etag to fetch. If not provided, the latest revision will be returned.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List revisions for an asset",
+      "summary": "List asset revisions.",
+      "path": "/api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{name}/revisions",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListCleanRoomAssetRevisionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "clean_room_name",
+            "description": "Name of the clean room.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "asset_type",
+            "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "pascal_name": "CleanRoomAssetAssetType",
+              "enum": [
+                {
+                  "content": "FOREIGN_TABLE"
+                },
+                {
+                  "content": "JAR_ANALYSIS"
+                },
+                {
+                  "content": "NOTEBOOK_FILE"
+                },
+                {
+                  "content": "TABLE"
+                },
+                {
+                  "content": "VIEW"
+                },
+                {
+                  "content": "VOLUME"
+                }
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "description": "Name of the asset.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListCleanRoomAssetRevisionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "asset_type",
+          "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of asset revisions to return. Defaults to 10.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on the previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "clean_room_name",
+          "description": "Name of the clean room.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "asset_type",
+          "description": "Asset type. Only NOTEBOOK_FILE is supported.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "pascal_name": "CleanRoomAssetAssetType",
+            "enum": [
+              {
+                "content": "FOREIGN_TABLE"
+              },
+              {
+                "content": "JAR_ANALYSIS"
+              },
+              {
+                "content": "NOTEBOOK_FILE"
+              },
+              {
+                "content": "TABLE"
+              },
+              {
+                "content": "VIEW"
+              },
+              {
+                "content": "VOLUME"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the asset.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on the previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

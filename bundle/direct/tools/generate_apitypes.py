@@ -66,12 +66,14 @@ def get_schema_fields(schemas):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate apitypes.yml from the cli.json schema block")
-    parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
+    parser.add_argument("apischema", type=Path, help="Path to the .codegen directory holding the sharded cli.json")
     parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
     args = parser.parse_args()
 
     resource_fields = parse_out_fields(args.out_fields)
-    schemas = json.loads(args.apischema.read_text())["schemas"]
+    schemas = {}
+    for path in sorted((args.apischema / "schemas").glob("*.json")):
+        schemas.update(json.loads(path.read_text()))
     schema_fields = get_schema_fields(schemas)
 
     field_counts = Counter()

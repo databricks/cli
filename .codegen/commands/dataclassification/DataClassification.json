@@ -1,0 +1,463 @@
+{
+  "id": "dataclassification.DataClassification",
+  "name": "DataClassification",
+  "description": "Manage data classification for Unity Catalog catalogs.\nData classification automatically identifies and tags sensitive data (PII) in Unity Catalog tables.\nEach catalog can have at most one configuration resource that controls scanning behavior and auto-tagging rules.",
+  "package": {
+    "name": "dataclassification"
+  },
+  "docs_group": "dataclassification",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CreateCatalogConfig",
+      "description": "Create Data Classification configuration for a catalog.\n\nCreates a new config resource, which enables Data Classification\nfor the specified catalog.\n- The config must not already exist for the catalog.",
+      "summary": "Create config for a catalog.",
+      "path": "/api/data-classification/v1/{parent=catalogs/*}/config",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateCatalogConfigRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource in the format: catalogs/{catalog_name}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "catalog_config",
+            "description": "The configuration to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CatalogConfig",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Parent resource in the format: catalogs/{catalog_name}",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "catalog_config",
+            "description": "The configuration to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CatalogConfig",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "catalog_config",
+        "description": "The configuration to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CatalogConfig",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "CatalogConfig",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_config",
+          "description": "The configuration to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CatalogConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Parent resource in the format: catalogs/{catalog_name}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "auto_tag_configs",
+          "description": "List of auto-tagging configurations for this catalog.\nEmpty list means no auto-tagging is enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AutoTaggingConfigList",
+            "array_value": {
+              "pascal_name": "AutoTaggingConfig",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "excluded_schemas",
+          "description": "Schemas to exclude from the scan, each named relative to the parent catalog.\nIf specified, all schemas except the specified ones will be scanned.\nMutually exclusive with `included_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CatalogConfigSchemaNames",
+            "is_object": true
+          }
+        },
+        {
+          "name": "included_schemas",
+          "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CatalogConfigSchemaNames",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Parent resource in the format: catalogs/{catalog_name}",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteCatalogConfig",
+      "description": "Delete Data Classification configuration for a catalog.",
+      "summary": "Delete config for a catalog.",
+      "path": "/api/data-classification/v1/{name=catalogs/*/config}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteCatalogConfigRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the format: catalogs/{catalog_name}/config",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the format: catalogs/{catalog_name}/config",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetCatalogConfig",
+      "description": "Get the Data Classification configuration for a catalog.",
+      "summary": "Get config for a catalog.",
+      "path": "/api/data-classification/v1/{name=catalogs/*/config}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetCatalogConfigRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the format: catalogs/{catalog_name}/config",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the format: catalogs/{catalog_name}/config",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CatalogConfig",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateCatalogConfig",
+      "description": "Update the Data Classification configuration for a catalog.\n- The config must already exist for the catalog.\n- Updates fields specified in the update_mask.  Use update_mask field to perform partial updates of the configuration.",
+      "summary": "Update config for a catalog.",
+      "path": "/api/data-classification/v1/{name=catalogs/*/config}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateCatalogConfigRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the format: catalogs/{catalog_name}/config.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "catalog_config",
+            "description": "The configuration to apply to the catalog.\nThe name field in catalog_config identifies which resource to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CatalogConfig",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask specifying which fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name in the format: catalogs/{catalog_name}/config.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field mask specifying which fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "catalog_config",
+            "description": "The configuration to apply to the catalog.\nThe name field in catalog_config identifies which resource to update.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "CatalogConfig",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "catalog_config",
+        "description": "The configuration to apply to the catalog.\nThe name field in catalog_config identifies which resource to update.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "CatalogConfig",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "CatalogConfig",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "catalog_config",
+          "description": "The configuration to apply to the catalog.\nThe name field in catalog_config identifies which resource to update.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CatalogConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask specifying which fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "auto_tag_configs",
+          "description": "List of auto-tagging configurations for this catalog.\nEmpty list means no auto-tagging is enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AutoTaggingConfigList",
+            "array_value": {
+              "pascal_name": "AutoTaggingConfig",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "excluded_schemas",
+          "description": "Schemas to exclude from the scan, each named relative to the parent catalog.\nIf specified, all schemas except the specified ones will be scanned.\nMutually exclusive with `included_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CatalogConfigSchemaNames",
+            "is_object": true
+          }
+        },
+        {
+          "name": "included_schemas",
+          "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "CatalogConfigSchemaNames",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name in the format: catalogs/{catalog_name}/config.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field mask specifying which fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    }
+  ]
+}

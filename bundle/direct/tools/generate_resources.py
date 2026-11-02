@@ -212,7 +212,7 @@ def write_files(outdir, resource_behaviors):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate resources YAML from the cli.json schema block")
-    parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
+    parser.add_argument("apischema", type=Path, help="Path to the .codegen directory holding the sharded cli.json")
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
     parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
     parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
@@ -221,7 +221,9 @@ def main():
 
     resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
     state_fields, array_element_types = parse_out_fields(args.out_fields)
-    schemas = json.loads(args.apischema.read_text())["schemas"]
+    schemas = {}
+    for path in sorted((args.apischema / "schemas").glob("*.json")):
+        schemas.update(json.loads(path.read_text()))
 
     resource_behaviors = {}
     for resource, type_name in sorted(resource_types.items()):

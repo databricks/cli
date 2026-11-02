@@ -1,0 +1,284 @@
+{
+  "id": "sql.QueryVisualizationsLegacy",
+  "name": "QueryVisualizationsLegacy",
+  "description": "This is an evolving API that facilitates the addition and removal of visualizations from existing\nqueries within the Databricks Workspace. Data structures may change over time.\n\n**Warning**: This API is deprecated. Please see the latest version of the Databricks SQL API. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+  "package": {
+    "name": "sql"
+  },
+  "is_hidden_cli": true,
+  "docs_group": "sql",
+  "launch_stage": "PRIVATE_PREVIEW",
+  "cli_launch_stage_display": "Private Preview",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates visualization in the query.\n\n**Warning**: This API is deprecated. Please use :method:queryvisualizations/create instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Add visualization to a query.",
+      "path": "/api/2.0/preview/sql/visualizations",
+      "can_use_json": true,
+      "must_use_json": true,
+      "is_hidden_cli": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateQueryVisualizationsLegacyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "options",
+            "description": "The options object varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization settings in JSON.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_any": true
+            }
+          },
+          {
+            "name": "query_id",
+            "description": "The identifier returned by :method:queries/create",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "type",
+            "description": "The type of visualization: chart, table, pivot table, and so on.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "options",
+            "description": "The options object varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization settings in JSON.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_any": true
+            }
+          },
+          {
+            "name": "query_id",
+            "description": "The identifier returned by :method:queries/create",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "type",
+            "description": "The type of visualization: chart, table, pivot table, and so on.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "LegacyVisualization",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "description",
+          "description": "A short description of this visualization. This is not displayed in the UI.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the visualization that appears on dashboards and the query screen.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "The options object varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization settings in JSON.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "query_id",
+          "description": "The identifier returned by :method:queries/create",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "type",
+          "description": "The type of visualization: chart, table, pivot table, and so on.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Removes a visualization from the query.\n\n**Warning**: This API is deprecated. Please use :method:queryvisualizations/delete instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Remove visualization.",
+      "path": "/api/2.0/preview/sql/visualizations/{id}",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeleteQueryVisualizationsLegacyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "id",
+            "description": "Widget ID returned by :method:queryvisualizations/create",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "id",
+            "description": "Widget ID returned by :method:queryvisualizations/create",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "id",
+          "description": "Widget ID returned by :method:queryvisualizations/create",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "id",
+          "description": "Widget ID returned by :method:queryvisualizations/create",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates visualization in the query.\n\n**Warning**: This API is deprecated. Please use :method:queryvisualizations/update instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Edit existing visualization.",
+      "path": "/api/2.0/preview/sql/visualizations/{id}",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "LegacyVisualization",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "LegacyVisualization",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "created_at",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "A short description of this visualization. This is not displayed in the UI.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "The UUID for this visualization.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the visualization that appears on dashboards and the query screen.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "The options object varies widely from one visualization type to the next and is unsupported. Databricks does not recommend modifying visualization settings in JSON.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_any": true
+          }
+        },
+        {
+          "name": "query",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "LegacyQuery",
+            "is_object": true
+          }
+        },
+        {
+          "name": "type",
+          "description": "The type of visualization: chart, table, pivot table, and so on.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "updated_at",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

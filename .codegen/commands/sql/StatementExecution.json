@@ -1,0 +1,441 @@
+{
+  "id": "sql.StatementExecution",
+  "name": "StatementExecution",
+  "description": "The Databricks SQL Statement Execution API can be used to execute SQL statements on a SQL warehouse and fetch the result.\n\n**Getting started**\n\nWe suggest beginning with the [Databricks SQL Statement Execution API tutorial](https://docs.databricks.com/sql/api/sql-execution-tutorial.html).\n\n**Overview of statement execution and result fetching**\n\nStatement execution begins by issuing a :method:statementexecution/executeStatement request with a valid\nSQL statement and warehouse ID, along with optional parameters such as the data catalog and output format.\nIf no other parameters are specified, the server will wait for up to 10s before returning a response.\nIf the statement has completed within this timespan, the response will include the result data as a JSON\narray and metadata.\nOtherwise, if no result is available after the 10s timeout expired, the response will provide the\nstatement ID that can be used to poll for results by using a :method:statementexecution/getStatement\nrequest.\n\nYou can specify whether the call should behave synchronously, asynchronously\nor start synchronously with a fallback to asynchronous execution.\nThis is controlled with the `wait_timeout` and `on_wait_timeout` settings.\nIf `wait_timeout` is set between 5-50 seconds (default:\n10s), the call waits for results up to\nthe specified timeout; when set to `0s`, the call is asynchronous and responds immediately with a\nstatement ID. The `on_wait_timeout` setting specifies what should happen when the timeout is reached while\nthe statement execution has not yet finished. This can be set to either `CONTINUE`, to fallback to\nasynchronous mode, or it can be set to `CANCEL`, which cancels the statement.\n\nIn summary:\n- **Synchronous mode** (`wait_timeout=30s` and `on_wait_timeout=CANCEL`):\nThe call waits up to 30 seconds; if the statement execution finishes within this time,\nthe result data is returned directly in the response. If the execution takes longer than 30 seconds,\nthe execution is canceled and the call returns with a `CANCELED` state.\n- **Asynchronous mode** (`wait_timeout=0s` and `on_wait_timeout` is ignored):\nThe call doesn't wait for the statement to finish but returns directly with a statement ID.\nThe status of the statement execution can be polled by issuing :method:statementexecution/getStatement with the statement ID.\nOnce the execution has succeeded, this call also returns the result and metadata in the response.\n- **[Default] Hybrid mode** (`wait_timeout=10s` and `on_wait_timeout=CONTINUE`):\nThe call waits for up to 10 seconds; if the statement execution finishes within this time,\nthe result data is returned directly in the response. If the execution takes longer than 10\nseconds, a statement ID is returned. The statement ID can be used to fetch status and results in\nthe same way as in the asynchronous mode.\n\nDepending on the size, the result can be split into multiple chunks. If the statement execution is\nsuccessful, the statement response contains a manifest and the first chunk of the result. The manifest\ncontains schema information and provides metadata for each chunk in the result. Result chunks can be\nretrieved by index with :method:statementexecution/getStatementResultChunkN which may be called in any\norder and in parallel. For sequential fetching, each chunk, apart from the last, also contains a\n`next_chunk_index` and `next_chunk_internal_link` that point to the next chunk.\n\nA statement can be canceled with :method:statementexecution/cancelExecution.\n\n**Fetching result data: format and disposition**\n\nTo specify the format of the result data, use the `format` field, which can be set to one of the following\noptions: `JSON_ARRAY` (JSON), `ARROW_STREAM`\n([Apache Arrow Columnar](https://arrow.apache.org/overview/)), or `CSV`.\n\nThere are two ways to receive statement results, controlled by the `disposition` setting,\nwhich can be either `INLINE` or `EXTERNAL_LINKS`:\n\n- `INLINE`: In this mode, the result data is directly included in the response. It's best suited for smaller results.\nThis mode can only be used with the `JSON_ARRAY` format.\n\n- `EXTERNAL_LINKS`: In this mode, the response provides links that can be used to download the result data in chunks separately.\nThis approach is ideal for larger results and offers higher throughput.\nThis mode can be used with all the formats: `JSON_ARRAY`, `ARROW_STREAM`, and `CSV`.\n\nBy default, the API uses `format=JSON_ARRAY` and `disposition=INLINE`.\n\n**Limits and limitations**\n\nNote: The byte limit for INLINE disposition is based on internal storage metrics and will not exactly match the byte count of the actual payload.\n\n- Statements with `disposition=INLINE` are limited to 25 MiB and will fail when this limit is\nexceeded.\n- Statements with `disposition=EXTERNAL_LINKS` are limited to 100 GiB. Result sets larger than\nthis limit will be truncated. Truncation is indicated by the `truncated` field in the result manifest.\n- The maximum query text size is 16 MiB.\n- Cancelation might silently fail. A successful response from a cancel request indicates that the cancel request\nwas successfully received and sent to the processing engine. However, an outstanding statement\nmight have already completed execution when the cancel request arrives. Polling\nfor status until a terminal state is reached is a reliable way to determine the final state.\n- Wait timeouts are approximate, occur server-side, and cannot account for things such as caller delays and network latency from caller to service.\n- To keep a statement alive, poll for its status at least once every 15 minutes. Regular polling guarantees the statement stays alive.\n- To stop a statement you no longer need, cancel it explicitly with :method:statementexecution/cancelExecution. Stopping polling does not cancel a statement. Explicit cancellation is the only way to end statement execution on demand.\n- The results are only available for one hour after success; polling does not extend this.\n- The SQL Execution API must be used for the entire lifecycle of the statement. For example, you cannot use the Jobs API to execute the command, and then the SQL Execution API to cancel it.",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "CancelExecution",
+      "description": "Requests that an executing statement be canceled. Callers must poll for status to see the\nterminal state. Cancel response is empty; receiving response indicates successful receipt.",
+      "summary": "Cancel statement execution.",
+      "path": "/api/2.0/sql/statements/{statement_id}/cancel",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CancelExecutionRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "statement_id",
+            "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "statement_id",
+            "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "statement_id",
+          "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "statement_id",
+          "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ExecuteStatement",
+      "description": "Execute a SQL statement and optionally await its results for a specified time.\n\n**Use case: small result sets with INLINE + JSON_ARRAY**\n\nFor flows that generate small and predictable result sets (\u003c= 25 MiB), `INLINE` responses of `JSON_ARRAY` result\ndata are typically the simplest way to execute and fetch result data.\n\n**Use case: large result sets with EXTERNAL_LINKS**\n\nUsing `EXTERNAL_LINKS` to fetch result data allows you to fetch large result sets efficiently.\nThe main differences from using `INLINE` disposition are that the result data is accessed\nwith short-lived cloud-storage URLs, and\nthat there are 3 supported formats: `JSON_ARRAY`, `ARROW_STREAM` and `CSV` compared to only `JSON_ARRAY` with\n`INLINE`.\n\n**External-link URLs**\n\nExternal links point to data stored within your workspace's internal cloud storage. The URLs are valid for only a\nshort period, \u003c= 15 minutes. Alongside each `external_link` is an expiration field indicating the time at which the URL\nis no longer valid. In `EXTERNAL_LINKS` mode, chunks can be resolved and fetched multiple times and in parallel.\n\n----\n\n### **Warning: Databricks strongly recommends that you protect the URLs that are returned by the `EXTERNAL_LINKS` disposition.**\n\nWhen you use the `EXTERNAL_LINKS` disposition, a short-lived cloud-storage URL is generated to download the\nresults. The URL contains temporary access credentials, so protect it and do not set an `Authorization` header in\nthe download request.\n\nThe `EXTERNAL_LINKS` disposition can be disabled upon request by creating a [support case](https://docs.databricks.com/resources/support.html).\n\nSee also [Security best practices](https://docs.databricks.com/sql/admin/sql-execution-tutorial.html#security-best-practices).\n\n----\n\nStatementResponse contains `statement_id` and `status`; other fields might be absent or present depending on\ncontext. If the SQL warehouse fails to execute the provided statement, a 200 response is returned with\n`status.state` set to `FAILED` (in contrast to a failure when accepting the request, which results in a non-200\nresponse). Details of the error can be found at `status.error` in case of execution failures.",
+      "summary": "Execute a SQL statement.",
+      "path": "/api/2.0/sql/statements",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ExecuteStatementRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "statement",
+            "description": "The SQL statement to execute. The statement can optionally be parameterized, see `parameters`.\nThe maximum query text size is 16 MiB.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "Warehouse upon which to execute a statement. See also\n[What are SQL warehouses?](https://docs.databricks.com/sql/admin/warehouse-type.html)",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "statement",
+            "description": "The SQL statement to execute. The statement can optionally be parameterized, see `parameters`.\nThe maximum query text size is 16 MiB.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "description": "Warehouse upon which to execute a statement. See also\n[What are SQL warehouses?](https://docs.databricks.com/sql/admin/warehouse-type.html)",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StatementResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "byte_limit",
+          "description": "Applies the given byte limit to the statement's result size. Byte counts are based on internal data\nrepresentations and might not match the final size in the requested `format`. If the result was truncated due to\nthe byte limit, then `truncated` in the response is set to `true`.\nWhen using `EXTERNAL_LINKS` disposition, a default `byte_limit` of 100 GiB is applied if `byte_limit` is not\nexplicitly set.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "catalog",
+          "description": "Sets default catalog for statement execution, similar to\n[`USE CATALOG`](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-catalog.html)\nin SQL.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "disposition",
+          "description": "The fetch disposition provides two modes of fetching results: `INLINE` and `EXTERNAL_LINKS`.\n\nStatements executed with `INLINE` disposition will return result data inline, in `JSON_ARRAY` format, in a series\nof chunks. If a given statement produces a result set with a size larger than 25 MiB,\nthat statement execution is aborted, and no result set will be available.\n\n**NOTE**\nByte limits are computed based upon internal representations of the result set data, and might not match the sizes\nvisible in JSON responses.\n\nStatements executed with `EXTERNAL_LINKS` disposition will return result data as external links: URLs that point\nto cloud storage internal to the workspace. Using `EXTERNAL_LINKS` disposition allows statements to generate\narbitrarily sized result sets for fetching up to 100 GiB. The resulting links have two important properties:\n\n1. They point to resources _external_ to the Databricks compute; therefore any associated authentication\ninformation (typically a personal access token, OAuth token, or similar) _must be removed_ when fetching from\nthese links.\n\n2. These are short-lived cloud-storage URLs\nwith a specific expiration, indicated in the response. The behavior when attempting to use an expired link is\ncloud specific.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Disposition",
+            "enum": [
+              {
+                "content": "EXTERNAL_LINKS"
+              },
+              {
+                "content": "INLINE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "format",
+          "description": "Statement execution supports three result formats: `JSON_ARRAY` (default), `ARROW_STREAM`, and `CSV`.\n\nImportant: The formats `ARROW_STREAM` and `CSV` are supported only with `EXTERNAL_LINKS` disposition.\n`JSON_ARRAY` is supported in `INLINE` and `EXTERNAL_LINKS` disposition.\n\nWhen specifying `format=JSON_ARRAY`, result data will be formatted as an array of arrays of values, where each\nvalue is either the *string representation* of a value, or `null`.\nFor example, the output of `SELECT concat('id-', id) AS strCol, id AS intCol, null AS nullCol FROM range(3)` would\nlook like this:\n\n```\n[\n[ \"id-1\", \"1\", null ],\n[ \"id-2\", \"2\", null ],\n[ \"id-3\", \"3\", null ],\n]\n```\n\nWhen specifying `format=JSON_ARRAY` and `disposition=EXTERNAL_LINKS`, each chunk in the result contains compact\nJSON with no indentation or extra whitespace.\n\nWhen specifying `format=ARROW_STREAM` and `disposition=EXTERNAL_LINKS`, each chunk in the result will be formatted\nas Apache Arrow Stream. See the\n[Apache Arrow streaming format](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format).\n\nWhen specifying `format=CSV` and `disposition=EXTERNAL_LINKS`, each chunk in the result will be a CSV according to\n[RFC 4180](https://www.rfc-editor.org/rfc/rfc4180) standard.\nAll the columns values will have *string representation* similar to the `JSON_ARRAY` format, and `null` values will\nbe encoded as “null”.\nOnly the first chunk in the result would contain a header row with column names.\nFor example, the output of `SELECT concat('id-', id) AS strCol, id AS intCol, null as nullCol FROM range(3)` would\nlook like this:\n\n```\nstrCol,intCol,nullCol\nid-1,1,null\nid-2,2,null\nid-3,3,null\n```",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Format",
+            "enum": [
+              {
+                "content": "ARROW_STREAM"
+              },
+              {
+                "content": "CSV"
+              },
+              {
+                "content": "JSON_ARRAY"
+              }
+            ]
+          }
+        },
+        {
+          "name": "on_wait_timeout",
+          "description": "When `wait_timeout \u003e 0s`, the call will block up to the specified time. If the statement execution doesn't\nfinish within this time, `on_wait_timeout` determines whether the execution should continue or be canceled.\nWhen set to `CONTINUE`, the statement execution continues asynchronously and the call returns a statement ID\nwhich can be used for polling with :method:statementexecution/getStatement. When set to `CANCEL`,\nthe statement execution is canceled and the call returns with a `CANCELED` state.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "ExecuteStatementRequestOnWaitTimeout",
+            "enum": [
+              {
+                "content": "CANCEL"
+              },
+              {
+                "content": "CONTINUE"
+              }
+            ]
+          }
+        },
+        {
+          "name": "parameters",
+          "description": "A list of parameters to pass into a SQL statement containing parameter markers. A\nparameter consists of a name, a value, and optionally a type. To represent a NULL\nvalue, the `value` field may be omitted or set to `null` explicitly. If the `type` field\nis omitted, the value is interpreted as a string.\n\nIf the type is given, parameters will be checked for type correctness according\nto the given type. A value is correct if the provided string can be converted to\nthe requested type using the `cast` function. The exact semantics are described in\nthe section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.\n\nFor example, the following statement contains two parameters, `my_name` and `my_date`:\n\n```\nSELECT * FROM my_table WHERE name = :my_name AND date = :my_date\n```\n\nThe parameters can be passed in the request body as follows:\n\n`\n{\n...,\n\"statement\": \"SELECT * FROM my_table WHERE name = :my_name AND date = :my_date\",\n\"parameters\": [\n{ \"name\": \"my_name\", \"value\": \"the name\" },\n{ \"name\": \"my_date\", \"value\": \"2020-01-01\", \"type\": \"DATE\" }\n]\n}\n`\n\nCurrently, positional parameters denoted by a `?` marker are not supported by the\nDatabricks SQL Statement Execution API.\n\nAlso see the section [Parameter markers](https://docs.databricks.com/sql/language-manual/sql-ref-parameter-marker.html) of the SQL language reference.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "StatementParameterListItemList",
+            "array_value": {
+              "pascal_name": "StatementParameterListItem",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "query_tags",
+          "description": "An array of query tags to annotate a SQL statement. A query tag\nconsists of a non-empty key and, optionally, a value. To represent a NULL\nvalue, either omit the `value` field or manually set it to `null` or white space.\nRefer to the SQL language reference for the format specification of query tags.\nThere's no significance to the order of tags. Only one value per key will be recorded.\nA sequence in excess of 20 query tags will be coerced to 20.\nExample:\n\n{\n...,\n\"query_tags\": [\n{ \"key\": \"team\", \"value\": \"eng\" },\n{ \"key\": \"some key only tag\" }\n]\n}",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "QueryTagList",
+            "array_value": {
+              "pascal_name": "QueryTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "row_limit",
+          "description": "Applies the given row limit to the statement's result set, but unlike the `LIMIT` clause in SQL,\nit also sets the `truncated` field in the response to indicate whether the result was trimmed due to the limit or\nnot.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "schema",
+          "description": "Sets default schema for statement execution, similar to\n[`USE SCHEMA`](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-schema.html)\nin SQL.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "statement",
+          "description": "The SQL statement to execute. The statement can optionally be parameterized, see `parameters`.\nThe maximum query text size is 16 MiB.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "wait_timeout",
+          "description": "The time in seconds the call will wait for the statement's result set as `Ns`, where `N` can be set to 0 or to a\nvalue between 5 and 50.\n\nWhen set to `0s`, the statement will execute in asynchronous mode and the call will not wait for the execution to\nfinish. In this case, the call returns directly with `PENDING` state and a statement ID which can be used for\npolling with :method:statementexecution/getStatement.\n\nWhen set between 5 and 50 seconds, the call will behave synchronously up to this timeout and wait for the statement\nexecution to finish. If the execution finishes within this time, the call returns immediately with a manifest and\nresult data (or a `FAILED` state in case of an execution error). If the statement takes longer to execute,\n`on_wait_timeout` determines what should happen after the timeout is reached.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "Warehouse upon which to execute a statement. See also\n[What are SQL warehouses?](https://docs.databricks.com/sql/admin/warehouse-type.html)",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "statement",
+          "description": "The SQL statement to execute. The statement can optionally be parameterized, see `parameters`.\nThe maximum query text size is 16 MiB.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "warehouse_id",
+          "description": "Warehouse upon which to execute a statement. See also\n[What are SQL warehouses?](https://docs.databricks.com/sql/admin/warehouse-type.html)",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetStatement",
+      "description": "This request can be used to poll for the statement's status. StatementResponse contains\n`statement_id` and `status`; other fields might be absent or present depending on context.\nWhen the `status.state` field is `SUCCEEDED` it will also return the result manifest and the\nfirst chunk of the result data. When the statement is in the terminal states `CANCELED`,\n`CLOSED` or `FAILED`, it returns HTTP 200 with the state set. After at least 12 hours in\nterminal state, the statement is removed from the warehouse and further calls will receive an\nHTTP 404 response.\n\n**NOTE**\nThis call currently might take up to 5 seconds to get the latest status and result.",
+      "summary": "Get status, manifest, and result first chunk.",
+      "path": "/api/2.0/sql/statements/{statement_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetStatementRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "statement_id",
+            "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "statement_id",
+            "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "StatementResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "statement_id",
+          "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "statement_id",
+          "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetStatementResultChunkN",
+      "description": "After the statement execution has `SUCCEEDED`, this request can be used to fetch any chunk by\nindex. Whereas the first chunk with `chunk_index=0` is typically fetched with\n:method:statementexecution/executeStatement or :method:statementexecution/getStatement, this\nrequest can be used to fetch subsequent chunks. The response structure is identical to the\nnested `result` element described in the :method:statementexecution/getStatement request, and\nsimilarly includes the `next_chunk_index` and `next_chunk_internal_link` fields for simple\niteration through the result set. Depending on `disposition`, the response returns chunks of\ndata either inline, or as links.",
+      "summary": "Get result chunk by index.",
+      "path": "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetStatementResultChunkNRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "statement_id",
+            "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "chunk_index",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "statement_id",
+            "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "chunk_index",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ResultData",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "chunk_index",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "statement_id",
+          "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "statement_id",
+          "description": "The statement ID is returned upon successfully submitting a SQL statement, and is a required\nreference for all subsequent calls.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "chunk_index",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      ]
+    }
+  ]
+}

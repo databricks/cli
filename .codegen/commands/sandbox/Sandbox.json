@@ -1,0 +1,1474 @@
+{
+  "id": "sandbox.Sandbox",
+  "name": "Sandbox",
+  "description": "Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.",
+  "package": {
+    "name": "sandbox"
+  },
+  "docs_group": "sandbox",
+  "launch_stage": "PUBLIC_BETA",
+  "cli_launch_stage_label": "*Beta*",
+  "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+  "cli_launch_stage_display": "Beta",
+  "list": {
+    "request": {
+      "pascal_name": "ListDirectoryContentsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateDirectory",
+      "description": "Creates a directory in a sandbox, including missing parents by default.",
+      "summary": ".",
+      "path": "/api/2.0/sandbox-files/{parent=sandboxes/*}/directories:make",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "CreateDirectoryRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the directory.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the directory.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateDirectoryResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parents",
+          "description": "Defaults to true, which also succeeds when the directory already exists.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the directory.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the directory.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateSandbox",
+      "description": "Creates a new Sandbox.",
+      "summary": "Create a sandbox.",
+      "path": "/api/2.0/sandboxes",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "CreateSandboxRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "sandbox",
+            "description": "The sandbox to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Sandbox",
+              "is_object": true
+            }
+          },
+          {
+            "name": "sandbox_id",
+            "description": "Client-supplied ID that becomes the final path segment of the resource name.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "sandbox_id",
+            "description": "Client-supplied ID that becomes the final path segment of the resource name.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "sandbox",
+            "description": "The sandbox to create.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Sandbox",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "sandbox",
+        "description": "The sandbox to create.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Sandbox",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Sandbox",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "sandbox",
+          "description": "The sandbox to create.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Sandbox",
+            "is_object": true
+          }
+        },
+        {
+          "name": "sandbox_id",
+          "description": "Client-supplied ID that becomes the final path segment of the resource name.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Output only. The creation time of the sandbox.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display label for the sandbox. At most 256 characters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Metadata associated with the sandbox.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SandboxMetadata",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The sandbox resource name, in the form `sandboxes/{sandbox_id}`. Derived from\n`sandbox_id`; any value supplied in a create or update request body is ignored.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spec",
+          "description": "The desired configuration of the sandbox, supplied by the caller at creation time.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SandboxSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "The observed runtime state of the sandbox, populated by the server.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SandboxStatus",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Output only. The last update time of the sandbox metadata and spec.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "sandbox_id",
+          "description": "Client-supplied ID that becomes the final path segment of the resource name.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeletePath",
+      "description": "Deletes a file, symlink, or empty directory, with an option for recursive deletion.\nSucceeds if the path is already absent.",
+      "summary": ".",
+      "path": "/api/2.0/sandbox-files/{parent=sandboxes/*}/paths:remove",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "DeletePathRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the entry to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the entry to delete.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeletePathResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the entry to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "recursive",
+          "description": "Required for a non-empty directory.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the entry to delete.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteSandbox",
+      "description": "Deletes a Sandbox.",
+      "summary": "Delete a sandbox.",
+      "path": "/api/2.0/{name=sandboxes/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "DeleteSandboxRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ExecuteCommandSync",
+      "description": "Runs a command in the sandbox and blocks until it exits, returning the\ncaptured stdout, stderr and exit code in a single response.",
+      "summary": "Run a command in a sandbox and wait for its result.",
+      "path": "/api/2.0/sandbox-exec/{name=sandboxes/*}/exec-sync",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ExecuteCommandSyncRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to run the command in, in the form\n`sandboxes/{sandbox_id}`. Bound from the URL path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "cmd",
+            "description": "Executable or command to run (e.g. `/bin/echo`, `python3`).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to run the command in, in the form\n`sandboxes/{sandbox_id}`. Bound from the URL path.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "cmd",
+            "description": "Executable or command to run (e.g. `/bin/echo`, `python3`).",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ExecuteCommandSyncResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "args",
+          "description": "Arguments passed to `cmd`.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "cmd",
+          "description": "Executable or command to run (e.g. `/bin/echo`, `python3`).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "envs",
+          "description": "Extra environment variables for the command's process, merged over the\nsandbox's default environment.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "execution_timeout",
+          "description": "Maximum time to wait for the command to finish. When it elapses the\ncommand is terminated and the response carries status `TIMED_OUT`. The\nserver applies a default when unset and clamps to an upper bound; negative\nor otherwise invalid durations are rejected with `INVALID_ARGUMENT`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_duration": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to run the command in, in the form\n`sandboxes/{sandbox_id}`. Bound from the URL path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to run the command in, in the form\n`sandboxes/{sandbox_id}`. Bound from the URL path.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "cmd",
+          "description": "Executable or command to run (e.g. `/bin/echo`, `python3`).",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetMetadata",
+      "description": "Returns metadata for a path without following its final symlink.",
+      "summary": ".",
+      "path": "/api/2.0/sandbox-files/{parent=sandboxes/*}/paths:describe",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "GetMetadataRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the entry to inspect.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the entry to inspect.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetMetadataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the entry to inspect.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the entry to inspect.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetSandbox",
+      "description": "Retrieves a Sandbox by name.",
+      "summary": "Get a sandbox.",
+      "path": "/api/2.0/{name=sandboxes/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "GetSandboxRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Sandbox",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListCommands",
+      "description": "Lists the tracked command executions (running and completed) in a sandbox.",
+      "summary": "List the tracked command executions in a sandbox.",
+      "path": "/api/2.0/sandbox-exec/{parent=sandboxes/*}/commands",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListCommandsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The sandbox whose commands to list, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The sandbox whose commands to list, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListCommandsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Maximum number of commands to return. The server may return fewer.\nIf unspecified, the server returns all commands.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token returned by a previous ListCommands call. Use this to\nretrieve the next page of results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The sandbox whose commands to list, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The sandbox whose commands to list, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListDirectoryContents",
+      "description": "Lists a directory's immediate children in UTF-8 name order. Later pages may reflect concurrent changes.",
+      "summary": ".",
+      "path": "/api/2.0/sandbox-files/{parent=sandboxes/*}/directory-entries",
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "ListDirectoryContentsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the directory.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "path",
+            "description": "Absolute UTF-8 path of the directory.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListDirectoryContentsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Zero uses the default of 1000; values above 1000 are clamped to 1000.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "The token from a prior response. Keep parent and path unchanged between pages.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the directory.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "path",
+          "description": "Absolute UTF-8 path of the directory.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "The token from a prior response. Keep parent and path unchanged between pages.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListSandboxes",
+      "description": "Lists all Sandboxes.",
+      "summary": "List sandboxes.",
+      "path": "/api/2.0/sandboxes",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "ListSandboxesRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListSandboxesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "RenamePath",
+      "description": "Renames a path within a sandbox. The destination must be absent and on the same filesystem.",
+      "summary": ".",
+      "path": "/api/2.0/sandbox-files/{parent=sandboxes/*}/paths:rename",
+      "can_use_json": true,
+      "is_hidden_cli": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PRIVATE_PREVIEW",
+      "cli_launch_stage_display": "Private Preview",
+      "request": {
+        "pascal_name": "RenamePathRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "Sandbox resource name, for example `sandboxes/my-sandbox`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "source",
+            "description": "Absolute UTF-8 path to move.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "destination",
+            "description": "Exact absolute UTF-8 destination; it must not already exist.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "Sandbox resource name, for example `sandboxes/my-sandbox`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "source",
+            "description": "Absolute UTF-8 path to move.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "destination",
+            "description": "Exact absolute UTF-8 destination; it must not already exist.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RenamePathResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "destination",
+          "description": "Exact absolute UTF-8 destination; it must not already exist.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "Sandbox resource name, for example `sandboxes/my-sandbox`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source",
+          "description": "Absolute UTF-8 path to move.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "Sandbox resource name, for example `sandboxes/my-sandbox`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "source",
+          "description": "Absolute UTF-8 path to move.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "destination",
+          "description": "Exact absolute UTF-8 destination; it must not already exist.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "StartSandbox",
+      "description": "Starts a previously stopped Sandbox under the same sandbox name.\nReturns NOT_FOUND if there is no stopped sandbox to start for\nthe given name.",
+      "summary": "Start a sandbox.",
+      "path": "/api/2.0/{name=sandboxes/*}/start",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "StartSandboxRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to start, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to start, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Sandbox",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to start, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to start, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "StopSandbox",
+      "description": "Stops a running Sandbox, preserving it so it can later be restarted with\na Start request.",
+      "summary": "Stop a sandbox.",
+      "path": "/api/2.0/{name=sandboxes/*}/stop",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "StopSandboxRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to stop, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to stop, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Sandbox",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to stop, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to stop, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateSandbox",
+      "description": "Updates mutable fields on an existing Sandbox. Allowlisted update_mask\npaths today: display_name, spec.compute.inactivity_timeout.\nReturns INVALID_PARAMETER_VALUE for empty masks or unknown paths;\nNOT_FOUND if the sandbox does not exist.",
+      "summary": "Update a sandbox.",
+      "path": "/api/2.0/{name=sandboxes/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_BETA",
+      "cli_launch_stage_label": "*Beta*",
+      "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+      "cli_launch_stage_display": "Beta",
+      "request": {
+        "pascal_name": "UpdateSandboxRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to update, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "sandbox",
+            "description": "The Sandbox resource carrying new field values. Only fields named in\n`update_mask` are read; unmasked fields are ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Sandbox",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field paths to update. Must be a non-empty subset of:\n- display_name\n- spec.compute.inactivity_timeout\nAny other path returns INVALID_PARAMETER_VALUE.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Resource name of the sandbox to update, in the form `sandboxes/{sandbox_id}`.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Field paths to update. Must be a non-empty subset of:\n- display_name\n- spec.compute.inactivity_timeout\nAny other path returns INVALID_PARAMETER_VALUE.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "sandbox",
+            "description": "The Sandbox resource carrying new field values. Only fields named in\n`update_mask` are read; unmasked fields are ignored.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Sandbox",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "sandbox",
+        "description": "The Sandbox resource carrying new field values. Only fields named in\n`update_mask` are read; unmasked fields are ignored.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Sandbox",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "Sandbox",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to update, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "sandbox",
+          "description": "The Sandbox resource carrying new field values. Only fields named in\n`update_mask` are read; unmasked fields are ignored.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Sandbox",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field paths to update. Must be a non-empty subset of:\n- display_name\n- spec.compute.inactivity_timeout\nAny other path returns INVALID_PARAMETER_VALUE.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Output only. The creation time of the sandbox.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "display_name",
+          "description": "Human-readable display label for the sandbox. At most 256 characters.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "metadata",
+          "description": "Metadata associated with the sandbox.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SandboxMetadata",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The sandbox resource name, in the form `sandboxes/{sandbox_id}`. Derived from\n`sandbox_id`; any value supplied in a create or update request body is ignored.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "spec",
+          "description": "The desired configuration of the sandbox, supplied by the caller at creation time.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SandboxSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "The observed runtime state of the sandbox, populated by the server.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SandboxStatus",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Output only. The last update time of the sandbox metadata and spec.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Resource name of the sandbox to update, in the form `sandboxes/{sandbox_id}`.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "Field paths to update. Must be a non-empty subset of:\n- display_name\n- spec.compute.inactivity_timeout\nAny other path returns INVALID_PARAMETER_VALUE.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,342 @@
+{
+  "id": "iam.AccountAccessControlProxy",
+  "name": "AccountAccessControlProxy",
+  "description": "These APIs manage access rules on resources in an account. Currently, only grant rules are\nsupported. A grant rule specifies a role assigned to a set of principals. A list of rules\nattached to a resource is called a rule set. A workspace must belong to an account for these\nAPIs to work",
+  "package": {
+    "name": "iam"
+  },
+  "docs_group": "iam",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "methods": [
+    {
+      "name": "GetAssignableRolesForResource",
+      "description": "Gets all the roles that can be granted on an account level resource. A role is grantable if the rule set on the\nresource can contain an access rule of the role.",
+      "summary": "Get assignable roles for a resource.",
+      "path": "/api/2.0/preview/accounts/access-control/assignable-roles",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetAssignableRolesForResourceRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "resource",
+            "description": "The resource name for which assignable roles will be listed.\n\nExamples | Summary\n:--- | :---\n`resource=accounts/\u003cACCOUNT_ID\u003e` | A resource name for the account.\n`resource=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e` | A resource name for the group.\n`resource=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSP_ID\u003e` | A resource name for the service principal.\n`resource=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e` | A resource name for the tag policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "resource",
+            "description": "The resource name for which assignable roles will be listed.\n\nExamples | Summary\n:--- | :---\n`resource=accounts/\u003cACCOUNT_ID\u003e` | A resource name for the account.\n`resource=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e` | A resource name for the group.\n`resource=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSP_ID\u003e` | A resource name for the service principal.\n`resource=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e` | A resource name for the tag policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetAssignableRolesForResourceResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "resource",
+          "description": "The resource name for which assignable roles will be listed.\n\nExamples | Summary\n:--- | :---\n`resource=accounts/\u003cACCOUNT_ID\u003e` | A resource name for the account.\n`resource=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e` | A resource name for the group.\n`resource=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSP_ID\u003e` | A resource name for the service principal.\n`resource=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e` | A resource name for the tag policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "resource",
+          "description": "The resource name for which assignable roles will be listed.\n\nExamples | Summary\n:--- | :---\n`resource=accounts/\u003cACCOUNT_ID\u003e` | A resource name for the account.\n`resource=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e` | A resource name for the group.\n`resource=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSP_ID\u003e` | A resource name for the service principal.\n`resource=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e` | A resource name for the tag policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetRuleSet",
+      "description": "Get a rule set by its name. A rule set is always attached to a resource and contains a list of access rules on the\nsaid resource. Currently only a default rule set for each resource is supported.",
+      "summary": "Get a rule set.",
+      "path": "/api/2.0/preview/accounts/access-control/rule-sets",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetRuleSetRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The ruleset name associated with the request.\n\nExamples | Summary\n:--- | :---\n`name=accounts/\u003cACCOUNT_ID\u003e/ruleSets/default` | A name for a rule set on the account.\n`name=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e/ruleSets/default` | A name for a rule set on the group.\n`name=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSERVICE_PRINCIPAL_APPLICATION_ID\u003e/ruleSets/default` | A name for a rule set on the service principal.\n`name=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e/ruleSets/default` | A name for a rule set on the tag policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Etag used for versioning. The response is at least as fresh as the eTag provided. Etag is used for optimistic\nconcurrency control as a way to help prevent simultaneous updates of a rule set from overwriting each other. It is\nstrongly suggested that systems make use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set\nupdates in order to avoid race conditions that is get an etag from a GET rule set request, and pass it with the\nPUT update request to identify the rule set version you are updating.\n\nExamples | Summary\n:--- | :---\n`etag=` | An empty etag can only be used in GET to indicate no freshness requirements.\n`etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ==` | An etag encoded a specific version of the rule set to get or to be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The ruleset name associated with the request.\n\nExamples | Summary\n:--- | :---\n`name=accounts/\u003cACCOUNT_ID\u003e/ruleSets/default` | A name for a rule set on the account.\n`name=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e/ruleSets/default` | A name for a rule set on the group.\n`name=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSERVICE_PRINCIPAL_APPLICATION_ID\u003e/ruleSets/default` | A name for a rule set on the service principal.\n`name=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e/ruleSets/default` | A name for a rule set on the tag policy.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Etag used for versioning. The response is at least as fresh as the eTag provided. Etag is used for optimistic\nconcurrency control as a way to help prevent simultaneous updates of a rule set from overwriting each other. It is\nstrongly suggested that systems make use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set\nupdates in order to avoid race conditions that is get an etag from a GET rule set request, and pass it with the\nPUT update request to identify the rule set version you are updating.\n\nExamples | Summary\n:--- | :---\n`etag=` | An empty etag can only be used in GET to indicate no freshness requirements.\n`etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ==` | An etag encoded a specific version of the rule set to get or to be updated.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RuleSetResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the rule set.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Identifies the version of the rule set returned.\nEtag used for versioning. The response is at least as fresh as the eTag provided.\nEtag is used for optimistic concurrency control as a way to help prevent simultaneous\nupdates of a rule set from overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set updates in\norder to avoid race conditions that is get an etag from a GET rule set request, and pass it\nwith the PUT update request to identify the rule set version you are updating.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the rule set.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Identifies the version of the rule set returned.\nEtag used for versioning. The response is at least as fresh as the eTag provided.\nEtag is used for optimistic concurrency control as a way to help prevent simultaneous\nupdates of a rule set from overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set updates in\norder to avoid race conditions that is get an etag from a GET rule set request, and pass it\nwith the PUT update request to identify the rule set version you are updating.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "etag",
+          "description": "Etag used for versioning. The response is at least as fresh as the eTag provided. Etag is used for optimistic\nconcurrency control as a way to help prevent simultaneous updates of a rule set from overwriting each other. It is\nstrongly suggested that systems make use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set\nupdates in order to avoid race conditions that is get an etag from a GET rule set request, and pass it with the\nPUT update request to identify the rule set version you are updating.\n\nExamples | Summary\n:--- | :---\n`etag=` | An empty etag can only be used in GET to indicate no freshness requirements.\n`etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ==` | An etag encoded a specific version of the rule set to get or to be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The ruleset name associated with the request.\n\nExamples | Summary\n:--- | :---\n`name=accounts/\u003cACCOUNT_ID\u003e/ruleSets/default` | A name for a rule set on the account.\n`name=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e/ruleSets/default` | A name for a rule set on the group.\n`name=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSERVICE_PRINCIPAL_APPLICATION_ID\u003e/ruleSets/default` | A name for a rule set on the service principal.\n`name=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e/ruleSets/default` | A name for a rule set on the tag policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The ruleset name associated with the request.\n\nExamples | Summary\n:--- | :---\n`name=accounts/\u003cACCOUNT_ID\u003e/ruleSets/default` | A name for a rule set on the account.\n`name=accounts/\u003cACCOUNT_ID\u003e/groups/\u003cGROUP_ID\u003e/ruleSets/default` | A name for a rule set on the group.\n`name=accounts/\u003cACCOUNT_ID\u003e/servicePrincipals/\u003cSERVICE_PRINCIPAL_APPLICATION_ID\u003e/ruleSets/default` | A name for a rule set on the service principal.\n`name=accounts/\u003cACCOUNT_ID\u003e/tagPolicies/\u003cTAG_POLICY_ID\u003e/ruleSets/default` | A name for a rule set on the tag policy.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "etag",
+          "description": "Etag used for versioning. The response is at least as fresh as the eTag provided. Etag is used for optimistic\nconcurrency control as a way to help prevent simultaneous updates of a rule set from overwriting each other. It is\nstrongly suggested that systems make use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set\nupdates in order to avoid race conditions that is get an etag from a GET rule set request, and pass it with the\nPUT update request to identify the rule set version you are updating.\n\nExamples | Summary\n:--- | :---\n`etag=` | An empty etag can only be used in GET to indicate no freshness requirements.\n`etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ==` | An etag encoded a specific version of the rule set to get or to be updated.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateRuleSet",
+      "description": "Replace the rules of a rule set. First, use get to read the current version of the rule set before modifying it.\nThis pattern helps prevent conflicts between concurrent updates.",
+      "summary": "Update a rule set.",
+      "path": "/api/2.0/preview/accounts/access-control/rule-sets",
+      "can_use_json": true,
+      "must_use_json": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateRuleSetRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the rule set.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_set",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RuleSetUpdateRequest",
+              "is_object": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the rule set.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "rule_set",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "RuleSetUpdateRequest",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RuleSetResponse",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the rule set.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Identifies the version of the rule set returned.\nEtag used for versioning. The response is at least as fresh as the eTag provided.\nEtag is used for optimistic concurrency control as a way to help prevent simultaneous\nupdates of a rule set from overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set updates in\norder to avoid race conditions that is get an etag from a GET rule set request, and pass it\nwith the PUT update request to identify the rule set version you are updating.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of the rule set.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "etag",
+            "description": "Identifies the version of the rule set returned.\nEtag used for versioning. The response is at least as fresh as the eTag provided.\nEtag is used for optimistic concurrency control as a way to help prevent simultaneous\nupdates of a rule set from overwriting each other. It is strongly suggested that systems\nmake use of the etag in the read -\u003e modify -\u003e write pattern to perform rule set updates in\norder to avoid race conditions that is get an etag from a GET rule set request, and pass it\nwith the PUT update request to identify the rule set version you are updating.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the rule set.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "rule_set",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "RuleSetUpdateRequest",
+            "is_object": true
+          }
+        }
+      ]
+    }
+  ]
+}

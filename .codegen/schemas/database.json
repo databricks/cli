@@ -1,0 +1,1239 @@
+{
+  "database.CreateDatabaseCatalogRequest": {
+    "fields": {
+      "catalog": {
+        "ref": "database.DatabaseCatalog",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.CreateDatabaseInstanceRequest": {
+    "fields": {
+      "database_instance": {
+        "description": "Instance to create.",
+        "ref": "database.DatabaseInstance",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.CreateDatabaseInstanceRoleRequest": {
+    "fields": {
+      "database_instance_name": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "database_instance_role": {
+        "ref": "database.DatabaseInstanceRole",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "database.CreateDatabaseTableRequest": {
+    "fields": {
+      "table": {
+        "ref": "database.DatabaseTable",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.CreateSyncedDatabaseTableRequest": {
+    "fields": {
+      "synced_table": {
+        "ref": "database.SyncedDatabaseTable",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.CustomTag": {
+    "fields": {
+      "key": {
+        "description": "The key of the custom tag.",
+        "launch_stage": "PUBLIC_BETA"
+      },
+      "value": {
+        "description": "The value of the custom tag.",
+        "launch_stage": "PUBLIC_BETA"
+      }
+    }
+  },
+  "database.DatabaseCatalog": {
+    "fields": {
+      "create_database_if_not_exists": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "database_instance_name": {
+        "description": "The name of the DatabaseInstance housing the database.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "database_name": {
+        "description": "The name of the database (in an instance) associated with the catalog.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "The name of the catalog in UC.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "uid": {
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.DatabaseCredential": {
+    "fields": {
+      "expiration_time": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "token": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.DatabaseInstance": {
+    "description": "A DatabaseInstance represents a logical Postgres instance, comprised of both compute and storage.",
+    "fields": {
+      "capacity": {
+        "description": "The sku of the instance. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "child_instance_refs": {
+        "description": "The refs of the child instances. This is only available if the instance is\nparent instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creation_time": {
+        "description": "The timestamp when the instance was created.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "creator": {
+        "description": "The email of the creator of the instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "custom_tags": {
+        "description": "Custom tags associated with the instance. This field is only included on create and update responses.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "effective_capacity": {
+        "description": "Deprecated. The sku of the instance; this field will always match the value of capacity.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_custom_tags": {
+        "description": "The recorded custom tags associated with the instance.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_enable_pg_native_login": {
+        "description": "Whether the instance has PG native password login enabled.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_enable_readable_secondaries": {
+        "description": "Whether secondaries serving read-only traffic are enabled. Defaults to false.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_node_count": {
+        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_retention_window_in_days": {
+        "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_stopped": {
+        "description": "Whether the instance is stopped.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_usage_policy_id": {
+        "description": "The policy that is applied to the instance.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "enable_pg_native_login": {
+        "description": "Whether to enable PG native password login on the instance. Defaults to false.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "enable_readable_secondaries": {
+        "description": "Whether to enable secondaries to serve read-only traffic. Defaults to false.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "The name of the instance. This is the unique identifier for the instance.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "node_count": {
+        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries. This field is input only, see effective_node_count for the output.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "parent_instance_ref": {
+        "description": "The ref of the parent instance. This is only available if the instance is\nchild instance.\nInput: For specifying the parent instance to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
+        "ref": "database.DatabaseInstanceRef",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE",
+          "OPTIONAL"
+        ]
+      },
+      "pg_version": {
+        "description": "The version of Postgres running on the instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "read_only_dns": {
+        "description": "The DNS endpoint to connect to the instance for read only access. This is only available if\nenable_readable_secondaries is true.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "read_write_dns": {
+        "description": "The DNS endpoint to connect to the instance for read+write access.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "retention_window_in_days": {
+        "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "state": {
+        "description": "The current state of the instance.",
+        "ref": "database.DatabaseInstanceState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "stopped": {
+        "description": "Whether to stop the instance. An input only param, see effective_stopped for the output.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "uid": {
+        "description": "An immutable UUID identifier for the instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "usage_policy_id": {
+        "description": "The desired usage policy to associate with the instance.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.DatabaseInstanceRef": {
+    "description": "DatabaseInstanceRef is a reference to a database instance. It is used in the\nDatabaseInstance object to refer to the parent instance of an instance and\nto refer the child instances of an instance.\nTo specify as a parent instance during creation of an instance,\nthe lsn and branch_time fields are optional. If not specified, the child\ninstance will be created from the latest lsn of the parent.\nIf both lsn and branch_time are specified, the lsn will be used to create\nthe child instance.",
+    "fields": {
+      "branch_time": {
+        "description": "Branch time of the ref database instance.\nFor a parent ref instance, this is the point in time on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the point in time on the instance from which the child\ninstance was created.\nInput: For specifying the point in time to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_lsn": {
+        "description": "For a parent ref instance, this is the LSN on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the LSN on the instance from which the child instance\nwas created.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "lsn": {
+        "description": "User-specified WAL LSN of the ref database instance.\n\nInput: For specifying the WAL LSN to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Name of the ref database instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "uid": {
+        "description": "Id of the ref database instance.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.DatabaseInstanceRole": {
+    "description": "A DatabaseInstanceRole represents a Postgres role in a database instance.",
+    "fields": {
+      "attributes": {
+        "description": "The desired API-exposed Postgres role attribute to associate with the role. Optional.",
+        "ref": "database.DatabaseInstanceRoleAttributes",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "effective_attributes": {
+        "description": "The attributes that are applied to the role.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "ref": "database.DatabaseInstanceRoleAttributes",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "identity_type": {
+        "description": "The type of the role.",
+        "ref": "database.DatabaseInstanceRoleIdentityType",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "instance_name": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "membership_role": {
+        "description": "An enum value for a standard role that this role is a member of.",
+        "ref": "database.DatabaseInstanceRoleMembershipRole",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "The name of the role. This is the unique identifier for the role in an instance.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "database.DatabaseInstanceRoleAttributes": {
+    "description": "Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:\nhttps://www.postgresql.org/docs/16/sql-createrole.html\nThe values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical\nunderscores between words. We were requested to make this a nested object/struct representation since these are\nknobs from an external spec.",
+    "fields": {
+      "bypassrls": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "createdb": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "createrole": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.DatabaseInstanceRoleIdentityType": {
+    "enum": [
+      "PG_ONLY",
+      "USER",
+      "SERVICE_PRINCIPAL",
+      "GROUP"
+    ],
+    "enum_launch_stages": {
+      "GROUP": "PRIVATE_PREVIEW",
+      "PG_ONLY": "PRIVATE_PREVIEW",
+      "SERVICE_PRINCIPAL": "PRIVATE_PREVIEW",
+      "USER": "PRIVATE_PREVIEW"
+    }
+  },
+  "database.DatabaseInstanceRoleMembershipRole": {
+    "description": "Roles that the DatabaseInstanceRole can be a member of.",
+    "enum": [
+      "DATABRICKS_SUPERUSER"
+    ],
+    "enum_launch_stages": {
+      "DATABRICKS_SUPERUSER": "PRIVATE_PREVIEW"
+    }
+  },
+  "database.DatabaseInstanceState": {
+    "enum": [
+      "STARTING",
+      "AVAILABLE",
+      "DELETING",
+      "STOPPED",
+      "UPDATING",
+      "FAILING_OVER"
+    ],
+    "enum_launch_stages": {
+      "AVAILABLE": "PUBLIC_PREVIEW",
+      "DELETING": "PUBLIC_PREVIEW",
+      "FAILING_OVER": "PUBLIC_PREVIEW",
+      "STARTING": "PUBLIC_PREVIEW",
+      "STOPPED": "PUBLIC_PREVIEW",
+      "UPDATING": "PUBLIC_PREVIEW"
+    }
+  },
+  "database.DatabaseTable": {
+    "fields": {
+      "database_instance_name": {
+        "description": "Name of the target database instance. This is required when creating database tables in standard catalogs.\nThis is optional when creating database tables in registered catalogs. If this field is specified\nwhen creating database tables in registered catalogs, the database instance name MUST\nmatch that of the registered catalog (or the request will be rejected).",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "logical_database_name": {
+        "description": "Target Postgres database object (logical database) name for this table.\n\nWhen creating a table in a standard catalog, this field is required.\nIn this scenario, specifying this field will allow targeting an arbitrary postgres database.\n\nRegistration of database tables via /database/tables is currently only supported in standard catalogs.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "name": {
+        "description": "Full three-part (catalog, schema, table) name of the table.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.DeleteDatabaseCatalogRequest": {},
+  "database.DeleteDatabaseInstanceRequest": {
+    "fields": {
+      "force": {
+        "description": "By default, an instance cannot be deleted if it has descendant instances created via PITR. If\nthis flag is specified as true, all descendent instances will be deleted as well.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "purge": {
+        "description": "Deprecated. Omitting the field or setting it to true will result in the field being hard deleted. Setting a value\nof false will throw a bad request.",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.DeleteDatabaseInstanceRoleRequest": {
+    "fields": {
+      "allow_missing": {
+        "description": "This is the AIP standard name for the equivalent of Postgres' `IF EXISTS` option",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "reassign_owned_to": {
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.DeleteDatabaseTableRequest": {},
+  "database.DeleteSyncedDatabaseTableRequest": {
+    "fields": {
+      "purge_data": {
+        "description": "Optional. When set to true, the actual PostgreSQL table will be dropped from the database.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.DeltaTableSyncInfo": {
+    "fields": {
+      "delta_commit_timestamp": {
+        "description": "The timestamp when the above Delta version was committed in the source Delta table.\nNote: This is the Delta commit time, not the time the data was written to the synced table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "delta_commit_version": {
+        "description": "The Delta Lake commit version that was last successfully synced.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.FindDatabaseInstanceByUidRequest": {
+    "fields": {
+      "uid": {
+        "description": "UID of the cluster to get.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.GenerateDatabaseCredentialRequest": {
+    "description": "Generates a credential that can be used to access database instances",
+    "fields": {
+      "claims": {
+        "description": "A set of UC permissions to add to the credential. We verify that the caller has the necessary\npermissions in UC and include a reference in the token. Postgres uses that token to give the\nconnecting user additional grants to the Postgres resources that correspond to the UC resources.\nThe UC resources need to be something that have a Postgres counterpart. For example, a synced table or\na table in a UC database catalog.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "instance_names": {
+        "description": "Instances to request a credential for. At least one of instance_names or claims must be specified.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "request_id": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.GetDatabaseCatalogRequest": {},
+  "database.GetDatabaseInstanceRequest": {},
+  "database.GetDatabaseInstanceRoleRequest": {},
+  "database.GetDatabaseTableRequest": {},
+  "database.GetSyncedDatabaseTableRequest": {},
+  "database.ListDatabaseCatalogsRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of synced database tables. Requests first page if absent.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.ListDatabaseCatalogsResponse": {
+    "fields": {
+      "database_catalogs": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "next_page_token": {
+        "description": "Pagination token to request the next page of database catalogs.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "database.ListDatabaseInstanceRolesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of Database Instances. Requests first page if absent.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.ListDatabaseInstanceRolesResponse": {
+    "fields": {
+      "database_instance_roles": {
+        "description": "List of database instance roles.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "next_page_token": {
+        "description": "Pagination token to request the next page of instances.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.ListDatabaseInstancesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned. The maximum value is 100.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of Database Instances. Requests first page if absent.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.ListDatabaseInstancesResponse": {
+    "fields": {
+      "database_instances": {
+        "description": "List of instances.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "next_page_token": {
+        "description": "Pagination token to request the next page of instances.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.ListSyncedDatabaseTablesRequest": {
+    "fields": {
+      "page_size": {
+        "description": "Upper bound for items returned.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "page_token": {
+        "description": "Pagination token to go to the next page of synced database tables. Requests first page if absent.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.ListSyncedDatabaseTablesResponse": {
+    "fields": {
+      "next_page_token": {
+        "description": "Pagination token to request the next page of synced tables.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "synced_tables": {
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "database.NewPipelineSpec": {
+    "description": "Custom fields that user can set for pipeline while creating SyncedDatabaseTable.\nNote that other fields of pipeline are still inferred by table def internally",
+    "fields": {
+      "budget_policy_id": {
+        "description": "Budget policy to set on the newly created pipeline.",
+        "launch_stage": "PUBLIC_BETA",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "storage_catalog": {
+        "description": "This field needs to be specified if the destination catalog is a managed postgres catalog.\n\nUC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be a standard catalog where the user has permissions to create Delta tables.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "storage_schema": {
+        "description": "This field needs to be specified if the destination catalog is a managed postgres catalog.\n\nUC schema for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be in the standard catalog where the user has permissions to create Delta tables.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.ProvisioningInfoState": {
+    "enum": [
+      "PROVISIONING",
+      "ACTIVE",
+      "FAILED",
+      "DELETING",
+      "UPDATING",
+      "DEGRADED"
+    ],
+    "enum_launch_stages": {
+      "ACTIVE": "PUBLIC_PREVIEW",
+      "DEGRADED": "PUBLIC_PREVIEW",
+      "DELETING": "PUBLIC_PREVIEW",
+      "FAILED": "PUBLIC_PREVIEW",
+      "PROVISIONING": "PUBLIC_PREVIEW",
+      "UPDATING": "PUBLIC_PREVIEW"
+    }
+  },
+  "database.ProvisioningPhase": {
+    "enum": [
+      "PROVISIONING_PHASE_MAIN",
+      "PROVISIONING_PHASE_INDEX_SCAN",
+      "PROVISIONING_PHASE_INDEX_SORT"
+    ],
+    "enum_launch_stages": {
+      "PROVISIONING_PHASE_INDEX_SCAN": "PUBLIC_PREVIEW",
+      "PROVISIONING_PHASE_INDEX_SORT": "PUBLIC_PREVIEW",
+      "PROVISIONING_PHASE_MAIN": "PUBLIC_PREVIEW"
+    }
+  },
+  "database.RequestedClaims": {
+    "fields": {
+      "permission_set": {
+        "ref": "database.RequestedClaimsPermissionSet",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "resources": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.RequestedClaimsPermissionSet": {
+    "description": "Might add WRITE in the future",
+    "enum": [
+      "READ_ONLY"
+    ],
+    "enum_launch_stages": {
+      "READ_ONLY": "PUBLIC_PREVIEW"
+    }
+  },
+  "database.RequestedResource": {
+    "fields": {
+      "table_name": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "unspecified_resource_name": {
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.SyncedDatabaseTable": {
+    "fields": {
+      "data_synchronization_status": {
+        "description": "Synced Table data synchronization status",
+        "ref": "database.SyncedTableStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "database_instance_name": {
+        "description": "Name of the target database instance. This is required when creating synced database tables in standard catalogs.\nThis is optional when creating synced database tables in registered catalogs. If this field is specified\nwhen creating synced database tables in registered catalogs, the database instance name MUST\nmatch that of the registered catalog (or the request will be rejected).",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "effective_database_instance_name": {
+        "description": "The name of the database instance that this table is registered to. This field is always returned, and for\ntables inside database catalogs is inferred database instance associated with the catalog.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "effective_logical_database_name": {
+        "description": "The name of the logical database that this table is registered to.\nThis is an output only field that contains the value computed from the input field combined with\nserver side defaults. Use the field without the effective_ prefix to set the value.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "logical_database_name": {
+        "description": "Target Postgres database object (logical database) name for this table.\n\nWhen creating a synced table in a registered Postgres catalog, the\ntarget Postgres database name is inferred to be that of the registered catalog.\nIf this field is specified in this scenario, the Postgres database name MUST\nmatch that of the registered catalog (or the request will be rejected).\n\nWhen creating a synced table in a standard catalog, this field is required.\nIn this scenario, specifying this field will allow targeting an arbitrary postgres database.\nNote that this has implications for the `create_database_objects_is_missing` field in `spec`.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "name": {
+        "description": "Full three-part (catalog, schema, table) name of the table.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "spec": {
+        "ref": "database.SyncedTableSpec",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "unity_catalog_provisioning_state": {
+        "description": "The provisioning state of the synced table entity in Unity Catalog. This is distinct from the\nstate of the data synchronization pipeline (i.e. the table may be in \"ACTIVE\" but the pipeline\nmay be in \"PROVISIONING\" as it runs asynchronously).",
+        "ref": "database.ProvisioningInfoState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.SyncedTableContinuousUpdateStatus": {
+    "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE\nor the SYNCED_UPDATING_PIPELINE_RESOURCES state.",
+    "fields": {
+      "initial_pipeline_sync_progress": {
+        "description": "Progress of the initial data synchronization.",
+        "ref": "database.SyncedTablePipelineProgress",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "last_processed_commit_version": {
+        "description": "The last source table Delta version that was successfully synced to the synced table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "timestamp": {
+        "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. This is when the data is available in the synced table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.SyncedTableFailedStatus": {
+    "description": "Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the\nSYNCED_PIPELINE_FAILED state.",
+    "fields": {
+      "last_processed_commit_version": {
+        "description": "The last source table Delta version that was successfully synced to the synced table.\nThe last source table Delta version that was synced to the synced table.\nOnly populated if the table is still\nsynced and available for serving.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "timestamp": {
+        "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. Only populated if the table is still synced and available for serving.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.SyncedTablePipelineProgress": {
+    "description": "Progress information of the Synced Table data synchronization pipeline.",
+    "fields": {
+      "estimated_completion_time_seconds": {
+        "description": "The estimated time remaining to complete this update in seconds.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "latest_version_currently_processing": {
+        "description": "The source table Delta version that was last processed by the pipeline. The pipeline may not\nhave completely processed this version yet.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "provisioning_phase": {
+        "description": "The current phase of the data synchronization pipeline.",
+        "ref": "database.ProvisioningPhase",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sync_progress_completion": {
+        "description": "The completion ratio of this update. This is a number between 0 and 1.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "synced_row_count": {
+        "description": "The number of rows that have been synced in this update.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "total_row_count": {
+        "description": "The total number of rows that need to be synced in this update. This number may be an estimate.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.SyncedTablePosition": {
+    "fields": {
+      "delta_table_sync_info": {
+        "ref": "database.DeltaTableSyncInfo",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sync_end_timestamp": {
+        "description": "The end timestamp of the most recent successful synchronization.\nThis is the time when the data is available in the synced table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "sync_start_timestamp": {
+        "description": "The starting timestamp of the most recent successful synchronization from the source table\nto the destination (synced) table.\nNote this is the starting timestamp of the sync operation, not the end time.\nE.g., for a batch, this is the time when the sync operation started.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.SyncedTableProvisioningStatus": {
+    "description": "Detailed status of a synced table. Shown if the synced table is in the\nPROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.",
+    "fields": {
+      "initial_pipeline_sync_progress": {
+        "description": "Details about initial data synchronization. Only populated when in the\nPROVISIONING_INITIAL_SNAPSHOT state.",
+        "ref": "database.SyncedTablePipelineProgress",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.SyncedTableSchedulingPolicy": {
+    "enum": [
+      "CONTINUOUS",
+      "TRIGGERED",
+      "SNAPSHOT"
+    ],
+    "enum_launch_stages": {
+      "CONTINUOUS": "PUBLIC_PREVIEW",
+      "SNAPSHOT": "PUBLIC_PREVIEW",
+      "TRIGGERED": "PUBLIC_PREVIEW"
+    }
+  },
+  "database.SyncedTableSpec": {
+    "description": "Specification of a synced database table.",
+    "fields": {
+      "accelerated_sync": {
+        "description": "When true, enables accelerated sync mode for the initial data load.\nThis significantly improves performance for large tables.\nRequires workspace-level enablement.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "create_database_objects_if_missing": {
+        "description": "If true, the synced table's logical database and schema resources in PG\nwill be created if they do not already exist.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "existing_pipeline_id": {
+        "description": "At most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nIf existing_pipeline_id is defined, the synced table will be bin packed into the existing pipeline\nreferenced. This avoids creating a new pipeline and allows sharing existing compute.\nIn this case, the scheduling_policy of this synced table must match the scheduling policy of the existing pipeline.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "new_pipeline_spec": {
+        "description": "At most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nIf new_pipeline_spec is defined, a new pipeline is created for this synced table. The location pointed to is used\nto store intermediate files (checkpoints, event logs etc). The caller must have write permissions to create Delta\ntables in the specified catalog and schema. Again, note this requires write permissions, whereas the source table\nonly requires read permissions.",
+        "ref": "database.NewPipelineSpec",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "INPUT_ONLY",
+          "OPTIONAL"
+        ]
+      },
+      "primary_key_columns": {
+        "description": "Primary Key columns to be used for data insert/update in the destination.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "scheduling_policy": {
+        "description": "Scheduling policy of the underlying pipeline.",
+        "ref": "database.SyncedTableSchedulingPolicy",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "source_table_full_name": {
+        "description": "Three-part (catalog, schema, table) name of the source Delta table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "timeseries_key": {
+        "description": "Time series key to deduplicate (tie-break) rows with the same primary key.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "type_overrides": {
+        "description": "Override the default Delta-\u003ePG type mapping for specific columns.\nA TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type must be set.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.SyncedTableSpecPgSpecificType": {
+    "description": "PostgreSQL-specific target types that can override the default Delta-to-PG mapping.",
+    "enum": [
+      "PG_SPECIFIC_TYPE_VECTOR",
+      "PG_SPECIFIC_TYPE_HALFVEC",
+      "PG_SPECIFIC_TYPE_VARCHAR"
+    ],
+    "enum_launch_stages": {
+      "PG_SPECIFIC_TYPE_HALFVEC": "PRIVATE_PREVIEW",
+      "PG_SPECIFIC_TYPE_VARCHAR": "PRIVATE_PREVIEW",
+      "PG_SPECIFIC_TYPE_VECTOR": "PRIVATE_PREVIEW"
+    }
+  },
+  "database.SyncedTableSpecTypeOverride": {
+    "description": "Overrides the default Delta-to-PostgreSQL type mapping for a single column.",
+    "fields": {
+      "column_name": {
+        "description": "Name of the source column whose target PostgreSQL type should be overridden.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "pg_type": {
+        "description": "PostgreSQL-specific target type to use for the column.",
+        "ref": "database.SyncedTableSpecPgSpecificType",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "size": {
+        "description": "Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.SyncedTableState": {
+    "description": "The state of a synced table.",
+    "enum": [
+      "SYNCED_TABLE_PROVISIONING",
+      "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES",
+      "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT",
+      "SYNCED_TABLE_ONLINE",
+      "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE",
+      "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE",
+      "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE",
+      "SYNCED_TABLED_OFFLINE",
+      "SYNCED_TABLE_OFFLINE_FAILED",
+      "SYNCED_TABLE_ONLINE_PIPELINE_FAILED",
+      "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES"
+    ],
+    "enum_launch_stages": {
+      "SYNCED_TABLED_OFFLINE": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_OFFLINE_FAILED": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_ONLINE": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_ONLINE_PIPELINE_FAILED": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_PROVISIONING": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT": "PUBLIC_PREVIEW",
+      "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES": "PUBLIC_PREVIEW"
+    }
+  },
+  "database.SyncedTableStatus": {
+    "description": "Status of a synced table.",
+    "fields": {
+      "continuous_update_status": {
+        "ref": "database.SyncedTableContinuousUpdateStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "detailed_state": {
+        "description": "The state of the synced table.",
+        "ref": "database.SyncedTableState",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "failed_status": {
+        "ref": "database.SyncedTableFailedStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "last_sync": {
+        "description": "Summary of the last successful synchronization from source to destination.\n\nWill always be present if there has been a successful sync. Even if the most recent syncs have failed.\n\nLimitation:\nThe only exception is if the synced table is doing a FULL REFRESH, then the last sync information\nwill not be available until the full refresh is complete. This limitation will be addressed in a future version.\n\nThis top-level field is a convenience for consumers who want easy access to last sync information\nwithout having to traverse detailed_status.",
+        "ref": "database.SyncedTablePosition",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "message": {
+        "description": "A text description of the current state of the synced table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "pipeline_id": {
+        "description": "ID of the associated pipeline. The pipeline ID may have been provided by the client\n(in the case of bin packing), or generated by the server (when creating a new pipeline).",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "provisioning_status": {
+        "ref": "database.SyncedTableProvisioningStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      },
+      "triggered_update_status": {
+        "ref": "database.SyncedTableTriggeredUpdateStatus",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OPTIONAL"
+        ]
+      }
+    }
+  },
+  "database.SyncedTableTriggeredUpdateStatus": {
+    "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE\nor the SYNCED_NO_PENDING_UPDATE state.",
+    "fields": {
+      "last_processed_commit_version": {
+        "description": "The last source table Delta version that was successfully synced to the synced table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "timestamp": {
+        "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. This is when the data is available in the synced table.",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      },
+      "triggered_update_progress": {
+        "description": "Progress of the active data synchronization pipeline.",
+        "ref": "database.SyncedTablePipelineProgress",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "OUTPUT_ONLY"
+        ]
+      }
+    }
+  },
+  "database.UpdateDatabaseCatalogRequest": {
+    "fields": {
+      "database_catalog": {
+        "description": "Note that updating a database catalog is not yet supported.",
+        "ref": "database.DatabaseCatalog",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The list of fields to update. Setting this field is not yet supported.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  },
+  "database.UpdateDatabaseInstanceRequest": {
+    "fields": {
+      "database_instance": {
+        "ref": "database.DatabaseInstance",
+        "launch_stage": "PUBLIC_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The list of fields to update. If unspecified, all fields will be updated when possible. To wipe out custom_tags,\nspecify custom_tags in the update_mask with an empty custom_tags map.",
+        "launch_stage": "PUBLIC_PREVIEW"
+      }
+    }
+  },
+  "database.UpdateSyncedDatabaseTableRequest": {
+    "fields": {
+      "synced_table": {
+        "description": "Note that updating a synced database table is not yet supported.",
+        "ref": "database.SyncedDatabaseTable",
+        "launch_stage": "PRIVATE_PREVIEW"
+      },
+      "update_mask": {
+        "description": "The list of fields to update. Setting this field is not yet supported.",
+        "launch_stage": "PRIVATE_PREVIEW"
+      }
+    }
+  }
+}

@@ -219,8 +219,9 @@ func main() {
 	workdir := os.Args[1]
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
-	// The .codegen/cli.json spec. Its schema graph carries the descriptions,
-	// enums and field behaviors the CLI reflects onto its config types.
+	// The .codegen directory holding the sharded cli.json spec. Its schema
+	// graph carries the descriptions, enums and field behaviors the CLI
+	// reflects onto its config types.
 	cliJSONFile := os.Args[3]
 
 	// When --docs is passed, skip interpolation patterns and add sinceVersion annotations.

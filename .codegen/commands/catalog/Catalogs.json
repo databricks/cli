@@ -1,0 +1,530 @@
+{
+  "id": "catalog.Catalogs",
+  "name": "Catalogs",
+  "description": "A catalog is the first layer of Unity Catalog’s three-level namespace. It’s used to organize\nyour data assets. Users can see all catalogs on which they have been assigned the USE_CATALOG\ndata permission.\n\nIn Unity Catalog, admins and data stewards manage users and their access to data centrally\nacross all of the workspaces in a Databricks account. Users in different workspaces can\nshare access to the same data, depending on privileges granted centrally in Unity Catalog.",
+  "package": {
+    "name": "catalog"
+  },
+  "docs_group": "catalog",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListCatalogsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new catalog instance in the parent metastore if the caller is a metastore admin or has the **CREATE_CATALOG** privilege.",
+      "summary": "Create a catalog.",
+      "path": "/api/2.1/unity-catalog/catalogs",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateCatalog",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of catalog.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CatalogInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "connection_name",
+          "description": "The name of the connection to an external data source.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_max_retention_hours",
+          "description": "Custom maximum retention period in hours for the catalog",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "managed_encryption_settings",
+          "description": "Control CMK encryption for managed catalog data",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EncryptionSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "A map of key-value properties attached to the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "properties",
+          "description": "A map of key-value properties attached to the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "provider_name",
+          "description": "The name of delta sharing provider.\n\nA Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "share_name",
+          "description": "The name of the share under the share provider.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "storage_root",
+          "description": "Storage root URL for managed tables within catalog.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of catalog.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes the catalog that matches the supplied name. The caller must be a metastore admin or the owner of the catalog.",
+      "summary": "Delete a catalog.",
+      "path": "/api/2.1/unity-catalog/catalogs/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteCatalogRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "force",
+          "description": "Force deletion even if the catalog is not empty.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets the specified catalog in a metastore.\nThe caller must be a metastore admin, the owner of the catalog, or a user that has the **USE_CATALOG** privilege set for their account.",
+      "summary": "Get a catalog.",
+      "path": "/api/2.1/unity-catalog/catalogs/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetCatalogRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CatalogInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_browse",
+          "description": "Whether to include catalogs in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of catalogs in the metastore.\nIf the caller is the metastore admin, all catalogs will be retrieved.\nOtherwise, only catalogs owned by the caller (or for which the caller has the **USE_CATALOG** privilege) will be retrieved.\nThere is no guarantee of a specific ordering of the elements in the array.\n\nNOTE: we recommend using max_results=0 to use the paginated version of this API. Unpaginated calls will be deprecated soon.\n\nPAGINATION BEHAVIOR: When using pagination (max_results \u003e= 0), a page may contain zero results while still providing a next_page_token.\nClients must continue reading pages until next_page_token is absent, which is the only indication that the end of results has been reached.",
+      "summary": "List catalogs.",
+      "path": "/api/2.1/unity-catalog/catalogs",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListCatalogsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListCatalogsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "include_browse",
+          "description": "Whether to include catalogs in the response for which the principal can only access selective metadata for",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "include_unbound",
+          "description": "Whether to include catalogs not bound to the workspace.\nEffective only if the user has permission to update the catalog–workspace binding.",
+          "is_query": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of catalogs to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid catalogs are returned (not recommended).\n- Note: The number of returned catalogs might be less than the specified max_results size, even zero.\nThe only definitive indication that no further catalogs can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of catalogs to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid catalogs are returned (not recommended).\n- Note: The number of returned catalogs might be less than the specified max_results size, even zero.\nThe only definitive indication that no further catalogs can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Updates the catalog that matches the supplied name.\nThe caller must be either the owner of the catalog, or a metastore admin (when changing the owner field of the catalog).",
+      "summary": "Update a catalog.",
+      "path": "/api/2.1/unity-catalog/catalogs/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateCatalog",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the catalog.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CatalogInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "User-provided free-form text description.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_max_retention_hours",
+          "description": "Custom maximum retention period in hours for the catalog",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "enable_predictive_optimization",
+          "description": "Whether predictive optimization should be enabled for this object and objects under it.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EnablePredictiveOptimization",
+            "enum": [
+              {
+                "content": "DISABLE"
+              },
+              {
+                "content": "ENABLE"
+              },
+              {
+                "content": "INHERIT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "isolation_mode",
+          "description": "Whether the current securable is accessible from all workspaces or a specific set of workspaces.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CatalogIsolationMode",
+            "enum": [
+              {
+                "content": "ISOLATED"
+              },
+              {
+                "content": "OPEN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "managed_encryption_settings",
+          "description": "Control CMK encryption for managed catalog data",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EncryptionSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the catalog.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "options",
+          "description": "A map of key-value properties attached to the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of current owner of catalog.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties",
+          "description": "A map of key-value properties attached to the securable.",
+          "is_request_body_field": true,
+          "entity": {
+            "map_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the catalog.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

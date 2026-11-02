@@ -1,0 +1,66 @@
+{
+  "id": "oauth2.OAuthPublishedApps",
+  "name": "OAuthPublishedApps",
+  "description": "These APIs enable administrators to view all the available published OAuth applications in Databricks.\nAdministrators can add the published OAuth applications to their account through the OAuth Published App Integration APIs.",
+  "package": {
+    "name": "oauth2"
+  },
+  "is_accounts": true,
+  "docs_group": "oauth2",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListOAuthPublishedAppsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "List",
+      "description": "Get all the available published OAuth apps in Databricks.",
+      "summary": "Get all the published OAuth apps.",
+      "path": "/api/2.0/accounts/{account_id}/oauth2/published-apps",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListOAuthPublishedAppsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "GetPublishedAppsOutput",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "The max number of OAuth published apps to return in one page.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "A token that can be used to get the next page of results.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "A token that can be used to get the next page of results.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

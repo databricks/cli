@@ -1,0 +1,434 @@
+{
+  "id": "compute.GlobalInitScripts",
+  "name": "GlobalInitScripts",
+  "description": "The Global Init Scripts API enables Workspace administrators to configure global\ninitialization scripts for their workspace. These scripts run on every node in every cluster\nin the workspace.\n\n**Important:** Existing clusters must be restarted to pick up any changes made to global\ninit scripts.\nGlobal init scripts are run in order. If the init script returns with a bad exit code,\nthe Apache Spark container fails to launch and init scripts with later position are skipped.\nIf enough containers fail, the entire cluster fails with a `GLOBAL_INIT_SCRIPT_FAILURE`\nerror code.",
+  "package": {
+    "name": "compute"
+  },
+  "docs_group": "compute",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "named_id_map": {
+      "pascal_name": "GlobalInitScriptDetailsNameToScriptIdMap"
+    },
+    "is_legacy_empty_request": true,
+    "request": {
+      "pascal_name": "ListGlobalInitScriptsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new global init script in this workspace.",
+      "summary": "Create init script.",
+      "path": "/api/2.0/global-init-scripts",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GlobalInitScriptCreateRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the script",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "script",
+            "description": "The Base64-encoded content of the script.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the script",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "script",
+            "description": "The Base64-encoded content of the script.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "CreateResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "enabled",
+          "description": "Specifies whether the script is enabled. The script runs only if enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the script",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "position",
+          "description": "The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.\n\nIf you omit the numeric position for a new global init script, it defaults to last position. It will run after all current scripts.\nSetting any value greater than the position of the last script is equivalent to the last position. Example: Take three existing scripts with positions 0, 1, and 2. Any position of (3) or greater puts the script in the last position.\nIf an explicit position value conflicts with an existing script value, your request succeeds, but the original script at that position and all later scripts have their positions incremented by 1.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "script",
+          "description": "The Base64-encoded content of the script.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the script",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "script",
+          "description": "The Base64-encoded content of the script.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a global init script.",
+      "summary": "Delete init script.",
+      "path": "/api/2.0/global-init-scripts/{script_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteGlobalInitScriptRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "script_id",
+            "description": "The ID of the global init script.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "script_id",
+            "description": "The ID of the global init script.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "script_id",
+          "description": "The ID of the global init script.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "script_id",
+          "description": "The ID of the global init script.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets all the details of a script, including its Base64-encoded contents.",
+      "summary": "Get an init script.",
+      "path": "/api/2.0/global-init-scripts/{script_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetGlobalInitScriptRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "script_id",
+            "description": "The ID of the global init script.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "script_id",
+            "description": "The ID of the global init script.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GlobalInitScriptDetailsWithContent",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "script_id",
+          "description": "The ID of the global init script.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "script_id",
+          "description": "The ID of the global init script.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Get a list of all global init scripts for this workspace. This returns all properties for each script but **not** the script contents.\nTo retrieve the contents of a script, use the [get a global init script](:method:globalinitscripts/get) operation.",
+      "summary": "Get init scripts.",
+      "path": "/api/2.0/global-init-scripts",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListGlobalInitScriptsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListGlobalInitScriptsResponse",
+        "is_object": true
+      },
+      "pagination": {}
+    },
+    {
+      "name": "Update",
+      "description": "Updates a global init script, specifying only the fields to change. All fields are optional.\nUnspecified fields retain their current value.",
+      "summary": "Update init script.",
+      "path": "/api/2.0/global-init-scripts/{script_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GlobalInitScriptUpdateRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "script_id",
+            "description": "The ID of the global init script.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "name",
+            "description": "The name of the script",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "script",
+            "description": "The Base64-encoded content of the script.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "script_id",
+            "description": "The ID of the global init script.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "The name of the script",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "script",
+            "description": "The Base64-encoded content of the script.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpdateResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "enabled",
+          "description": "Specifies whether the script is enabled. The script runs only if enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the script",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "position",
+          "description": "The position of a script, where 0 represents the first script to run,\n1 is the second script to run, in ascending order.\nTo move the script to run first, set its position to 0.\n\nTo move the script to the end, set its position to any value\ngreater or equal to the position of the last script.\nExample, three existing scripts with positions 0, 1, and 2.\nAny position value of 2 or greater puts the script in the last position (2).\n\nIf an explicit position value conflicts with an existing script, your request succeeds,\nbut the original script at that position and all later scripts have their positions\nincremented by 1.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "script",
+          "description": "The Base64-encoded content of the script.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "script_id",
+          "description": "The ID of the global init script.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "script_id",
+          "description": "The ID of the global init script.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the script",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "script",
+          "description": "The Base64-encoded content of the script.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

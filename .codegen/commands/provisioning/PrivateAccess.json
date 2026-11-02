@@ -1,0 +1,400 @@
+{
+  "id": "provisioning.PrivateAccess",
+  "name": "PrivateAccess",
+  "description": "These APIs manage private access settings for this account.",
+  "package": {
+    "name": "provisioning"
+  },
+  "is_accounts": true,
+  "docs_group": "provisioning",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a private access settings configuration, which represents\nnetwork access restrictions for workspace resources. Private access\nsettings configure whether workspaces can be accessed from the public\ninternet or only from private endpoints.",
+      "summary": "Create private access settings.",
+      "path": "/api/2.0/accounts/{account_id}/private-access-settings",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreatePrivateAccessSettingsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "PrivateAccessSettings",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "allowed_vpc_endpoint_ids",
+          "description": "An array of Databricks VPC endpoint IDs. This is the Databricks ID returned when registering the VPC endpoint configuration in your Databricks account. This is not the ID of the VPC endpoint in AWS.\nOnly used when private_access_level is set to ENDPOINT. This is an allow list of VPC endpoints registered in your Databricks account that can connect to your workspace over AWS PrivateLink.\nNote: If hybrid access to your workspace is enabled by setting public_access_enabled to true, this control only works for PrivateLink connections. To control how your workspace is accessed via public internet, see IP access lists.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "private_access_level",
+          "description": "The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.\n`ACCOUNT` level access (the default) allows only VPC endpoints that are registered in your Databricks account connect to your workspace.\n`ENDPOINT` level access allows only specified VPC endpoints connect to your workspace. For details, see allowed_vpc_endpoint_ids.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateAccessLevel",
+            "enum": [
+              {
+                "content": "ACCOUNT"
+              },
+              {
+                "content": "ENDPOINT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "private_access_settings_name",
+          "description": "The human-readable name of the private access settings object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "public_access_enabled",
+          "description": "Determines if the workspace can be accessed over public internet. For fully private workspaces, you can optionally specify false, but only if you implement both the front-end and the back-end PrivateLink connections. Otherwise, specify true, which means that public access is enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "The AWS region for workspaces attached to this private access settings object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes a Databricks private access settings configuration, both specified by ID.",
+      "summary": "Delete private access settings.",
+      "path": "/api/2.0/accounts/{account_id}/private-access-settings/{private_access_settings_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeletePrivateAccesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "private_access_settings_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "private_access_settings_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PrivateAccessSettings",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "private_access_settings_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "private_access_settings_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a Databricks private access settings configuration, both specified by ID.",
+      "summary": "Get private access settings.",
+      "path": "/api/2.0/accounts/{account_id}/private-access-settings/{private_access_settings_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetPrivateAccesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "private_access_settings_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "private_access_settings_id",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PrivateAccessSettings",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "private_access_settings_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "private_access_settings_id",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Lists Databricks private access settings for an account.",
+      "summary": "List private access settings.",
+      "path": "/api/2.0/accounts/{account_id}/private-access-settings",
+      "is_legacy_empty_request": true,
+      "is_crud_read": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListPrivateAccessRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "PrivateAccessSettingsList",
+        "array_value": {
+          "pascal_name": "PrivateAccessSettings",
+          "is_object": true
+        }
+      }
+    },
+    {
+      "name": "Replace",
+      "description": "Updates an existing private access settings object, which specifies how your workspace is accessed over AWS PrivateLink. To use AWS PrivateLink, a workspace must have a private access settings object referenced by ID in the workspace's private_access_settings_id property.\nThis operation completely overwrites your existing private access settings object attached to your workspaces. All workspaces attached to the private access settings are affected by any change. If public_access_enabled, private_access_level, or allowed_vpc_endpoint_ids are updated, effects of these changes might take several minutes to propagate to the workspace API.\nYou can share one private access settings object with multiple workspaces in a single account. However, private access settings are specific to AWS regions, so only workspaces in the same AWS region can use a given private access settings object.\nBefore configuring PrivateLink, read the Databricks article about PrivateLink.",
+      "summary": "Update private access settings.",
+      "path": "/api/2.0/accounts/{account_id}/private-access-settings/{private_access_settings_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ReplacePrivateAccessSettingsRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "private_access_settings_id",
+            "description": "Databricks private access settings ID.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "customer_facing_private_access_settings",
+            "description": "Properties of the new private access settings object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateAccessSettings",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "private_access_settings_id",
+            "description": "Databricks private access settings ID.",
+            "required": true,
+            "is_path": true,
+            "is_output_only": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "customer_facing_private_access_settings",
+            "description": "Properties of the new private access settings object.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "PrivateAccessSettings",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "customer_facing_private_access_settings",
+        "description": "Properties of the new private access settings object.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "PrivateAccessSettings",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "PrivateAccessSettings",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "customer_facing_private_access_settings",
+          "description": "Properties of the new private access settings object.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateAccessSettings",
+            "is_object": true
+          }
+        },
+        {
+          "name": "private_access_settings_id",
+          "description": "Databricks private access settings ID.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "account_id",
+          "description": "The Databricks account ID that hosts the private access settings.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "allowed_vpc_endpoint_ids",
+          "description": "An array of Databricks VPC endpoint IDs. This is the Databricks ID that is returned when registering the VPC endpoint configuration in your Databricks account. This is not the ID of the VPC endpoint in AWS.\nOnly used when private_access_level is set to ENDPOINT. This is an allow list of VPC endpoints that in your account that can connect to your workspace over AWS PrivateLink.\nIf hybrid access to your workspace is enabled by setting public_access_enabled to true, this control only works for PrivateLink connections. To control how your workspace is accessed via public internet, see IP access lists.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "private_access_level",
+          "description": "The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.\n`ACCOUNT` level access (the default) allows only VPC endpoints that are registered in your Databricks account connect to your workspace.\n`ENDPOINT` level access allows only specified VPC endpoints connect to your workspace. For details, see allowed_vpc_endpoint_ids.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "PrivateAccessLevel",
+            "enum": [
+              {
+                "content": "ACCOUNT"
+              },
+              {
+                "content": "ENDPOINT"
+              }
+            ]
+          }
+        },
+        {
+          "name": "private_access_settings_id",
+          "description": "Databricks private access settings ID.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "private_access_settings_name",
+          "description": "The human-readable name of the private access settings object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "public_access_enabled",
+          "description": "Determines if the workspace can be accessed over public internet. For fully private workspaces, you can optionally specify false, but only if you implement both the front-end and the back-end PrivateLink connections. Otherwise, specify true, which means that public access is enabled.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_bool": true
+          }
+        },
+        {
+          "name": "region",
+          "description": "The AWS region for workspaces attached to this private access settings object.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "private_access_settings_id",
+          "description": "Databricks private access settings ID.",
+          "required": true,
+          "is_path": true,
+          "is_output_only": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

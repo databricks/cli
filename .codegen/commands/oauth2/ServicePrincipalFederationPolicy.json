@@ -1,0 +1,704 @@
+{
+  "id": "oauth2.ServicePrincipalFederationPolicy",
+  "name": "ServicePrincipalFederationPolicy",
+  "description": "These APIs manage service principal federation policies.\n\nService principal federation, also known as Workload Identity Federation, allows your automated workloads running outside of Databricks to securely access Databricks APIs without the need for Databricks secrets. With Workload Identity Federation, your application (or workload) authenticates to Databricks as a Databricks service principal, using tokens provided by the workload runtime.\n\nDatabricks strongly recommends using Workload Identity Federation to authenticate to Databricks from automated workloads, over alternatives such as OAuth client secrets or Personal Access Tokens, whenever possible. Workload Identity Federation is supported by many popular services, including Github Actions, Azure DevOps, GitLab, Terraform Cloud, and Kubernetes clusters, among others.\n\nWorkload identity federation is configured in your Databricks account using a service principal federation policy. A service principal federation policy specifies:\n* which IdP, or issuer, the service principal is allowed to authenticate from\n* which workload identity, or subject, is allowed to authenticate as the Databricks service principal\n\nTo configure a federation policy, you provide the following:\n* The required token __issuer__, as specified in the “iss” claim of workload identity tokens. The issuer is an https URL that identifies the workload identity provider.\n* The required token __subject__, as specified in the “sub” claim of workload identity tokens. The subject uniquely identifies the workload in the workload runtime environment.\n* The allowed token __audiences__, as specified in the “aud” claim of workload identity tokens. The audience is intended to represent the recipient of the token. As long as the audience in the token matches at least one audience in the policy, the token is considered a match. If unspecified, the default value is your Databricks account id.\n* Optionally, the public keys used to validate the signature of the workload identity tokens, in JWKS format. If unspecified (recommended), Databricks automatically fetches the public keys from the issuer’s well known endpoint. Databricks strongly recommends relying on the issuer’s well known endpoint for discovering public keys.\n\nAn example service principal federation policy, for a Github Actions workload, is:\n```\nissuer: \"https://token.actions.githubusercontent.com\"\naudiences: [\"https://github.com/my-github-org\"]\nsubject: \"repo:my-github-org/my-repo:environment:prod\"\n```\n\nAn example JWT token body that matches this policy and could be used to authenticate to Databricks is:\n```\n{\n\"iss\": \"https://token.actions.githubusercontent.com\",\n\"aud\": \"https://github.com/my-github-org\",\n\"sub\": \"repo:my-github-org/my-repo:environment:prod\"\n}\n```\n\nYou may also need to configure the workload runtime to generate tokens for your workloads.\n\nYou do not need to configure an OAuth application in Databricks to use token federation.",
+  "package": {
+    "name": "oauth2"
+  },
+  "is_accounts": true,
+  "docs_group": "oauth2",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListServicePrincipalFederationPoliciesRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Create account federation policy.",
+      "summary": "Create service principal federation policy.",
+      "path": "/api/2.0/accounts/{account_id}/servicePrincipals/{service_principal_id}/federationPolicies",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateServicePrincipalFederationPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FederationPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FederationPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "policy",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "FederationPolicy",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "FederationPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FederationPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The identifier for the federation policy. The identifier must contain only lowercase\nalphanumeric characters, numbers, hyphens, and slashes. If unspecified, the id will be\nassigned by Databricks.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Creation time of the federation policy.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of the federation policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name for the federation policy. Example values include\n`accounts/\u003caccount-id\u003e/federationPolicies/my-federation-policy` for Account Federation Policies, and\n`accounts/\u003caccount-id\u003e/servicePrincipals/\u003cservice-principal-id\u003e/federationPolicies/my-federation-policy`\nfor Service Principal Federation Policies. Typically an output parameter, which does not need to be\nspecified in create or update requests. If specified in a request, must match the value in the\nrequest URL.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "oidc_policy",
+          "description": "audit_mode INCLUDE is required on both this message field and its leaf fields so the OIDC\npolicy configuration is captured in create/update audit logs (see go/auditlogs).",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "OidcFederationPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The ID of the federation policy. Output only.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "The service principal ID that this federation policy applies to. Output only. Only set for service principal federation policies.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "uid",
+          "description": "Unique, immutable id of the federation policy.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Last update time of the federation policy.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Delete account federation policy.",
+      "summary": "Delete service principal federation policy.",
+      "path": "/api/2.0/accounts/{account_id}/servicePrincipals/{service_principal_id}/federationPolicies/{policy_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteServicePrincipalFederationPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "policy_id",
+            "description": "The identifier for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "policy_id",
+            "description": "The identifier for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "policy_id",
+          "description": "The identifier for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The identifier for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get account federation policy.",
+      "summary": "Get service principal federation policy.",
+      "path": "/api/2.0/accounts/{account_id}/servicePrincipals/{service_principal_id}/federationPolicies/{policy_id}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetServicePrincipalFederationPolicyRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "policy_id",
+            "description": "The identifier for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "policy_id",
+            "description": "The identifier for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "FederationPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy_id",
+          "description": "The identifier for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The identifier for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "List account federation policies.",
+      "summary": "List service principal federation policies.",
+      "path": "/api/2.0/accounts/{account_id}/servicePrincipals/{service_principal_id}/federationPolicies",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListServicePrincipalFederationPoliciesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListFederationPoliciesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update",
+      "description": "Update account federation policy.",
+      "summary": "Update service principal federation policy.",
+      "path": "/api/2.0/accounts/{account_id}/servicePrincipals/{service_principal_id}/federationPolicies/{policy_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateServicePrincipalFederationPolicyRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "policy_id",
+            "description": "The identifier for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FederationPolicy",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "service_principal_id",
+            "description": "The service principal id for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "policy_id",
+            "description": "The identifier for the federation policy.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "policy",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "FederationPolicy",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "policy",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "FederationPolicy",
+          "is_object": true
+        }
+      },
+      "response": {
+        "pascal_name": "FederationPolicy",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "policy",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "FederationPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The identifier for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The field mask specifies which fields of the policy to update. To specify multiple fields\nin the field mask, use comma as the separator (no space). The special value '*' indicates\nthat all fields should be updated (full replacement). If unspecified, all fields that are\nset in the policy provided in the update request will overwrite the corresponding fields\nin the existing policy. Example value: 'description,oidc_policy.audiences'.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Creation time of the federation policy.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "description",
+          "description": "Description of the federation policy.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Resource name for the federation policy. Example values include\n`accounts/\u003caccount-id\u003e/federationPolicies/my-federation-policy` for Account Federation Policies, and\n`accounts/\u003caccount-id\u003e/servicePrincipals/\u003cservice-principal-id\u003e/federationPolicies/my-federation-policy`\nfor Service Principal Federation Policies. Typically an output parameter, which does not need to be\nspecified in create or update requests. If specified in a request, must match the value in the\nrequest URL.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "oidc_policy",
+          "description": "audit_mode INCLUDE is required on both this message field and its leaf fields so the OIDC\npolicy configuration is captured in create/update audit logs (see go/auditlogs).",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "OidcFederationPolicy",
+            "is_object": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The ID of the federation policy. Output only.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "service_principal_id",
+          "description": "The service principal ID that this federation policy applies to. Output only. Only set for service principal federation policies.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "uid",
+          "description": "Unique, immutable id of the federation policy.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Last update time of the federation policy.",
+          "is_computed": true,
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "service_principal_id",
+          "description": "The service principal id for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "policy_id",
+          "description": "The identifier for the federation policy.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

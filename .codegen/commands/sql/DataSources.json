@@ -1,0 +1,33 @@
+{
+  "id": "sql.DataSources",
+  "name": "DataSources",
+  "description": "This API is provided to assist you in making new query objects. When creating a query object,\nyou may optionally specify a `data_source_id` for the SQL warehouse against which it will run.\nIf you don't already know the `data_source_id` for your desired SQL warehouse, this API will\nhelp you find it.\n\nThis API does not support searches. It returns the full list of SQL warehouses in your\nworkspace. We advise you to use any text editor, REST client, or `grep` to search the\nresponse from this API for the name of your SQL warehouse as it appears in Databricks SQL.\n\n**Warning**: This API is deprecated. Please see the latest version of the Databricks SQL API. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+  "package": {
+    "name": "sql"
+  },
+  "docs_group": "sql",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "methods": [
+    {
+      "name": "List",
+      "description": "Retrieves a full list of SQL warehouses available in this workspace.\nAll fields that appear in this API response are enumerated for clarity.\nHowever, you need only a SQL warehouse's `id` to create new queries against it.\n\n**Warning**: This API is deprecated. Please use :method:warehouses/list instead. [Learn more](https://docs.databricks.com/en/sql/dbsql-api-latest.html)",
+      "summary": "Get a list of SQL warehouses.",
+      "path": "/api/2.0/preview/sql/data_sources",
+      "is_legacy_empty_request": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "DataSourceList",
+        "array_value": {
+          "pascal_name": "DataSource",
+          "is_object": true
+        }
+      }
+    }
+  ]
+}

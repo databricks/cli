@@ -1,0 +1,361 @@
+{
+  "id": "iam.WorkspaceAssignment",
+  "name": "WorkspaceAssignment",
+  "description": "The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.",
+  "package": {
+    "name": "iam"
+  },
+  "is_accounts": true,
+  "docs_group": "iam",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListWorkspaceAssignmentRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Delete",
+      "description": "Deletes the workspace permissions assignment in a given account and workspace for the specified principal.",
+      "summary": "Delete permissions assignment.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}/permissionassignments/principals/{principal_id}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteWorkspaceAssignmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID for the account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "The ID of the user, service principal, or group.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID for the account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "The ID of the user, service principal, or group.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "DeleteWorkspacePermissionAssignmentResponse",
+        "is_object": true,
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "principal_id",
+          "description": "The ID of the user, service principal, or group.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID for the account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID for the account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The ID of the user, service principal, or group.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Get an array of workspace permissions for the specified account and workspace.",
+      "summary": "List workspace permissions.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}/permissionassignments/permissions",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetWorkspaceAssignmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "WorkspacePermissions",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Get the permission assignments for the specified Databricks account and Databricks workspace.",
+      "summary": "Get permission assignments.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}/permissionassignments",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListWorkspaceAssignmentRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID for the account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID for the account.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PermissionAssignments",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID for the account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID for the account.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "pagination": {}
+    },
+    {
+      "name": "Update",
+      "description": "Creates or updates the workspace permissions assignment in a given account and workspace for the specified principal.",
+      "summary": "Create or update permissions assignment.",
+      "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}/permissionassignments/principals/{principal_id}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateWorkspaceAssignments",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "The ID of the user, service principal, or group.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "workspace_id",
+            "description": "The workspace ID.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          },
+          {
+            "name": "principal_id",
+            "description": "The ID of the user, service principal, or group.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "PermissionAssignment",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "permissions",
+          "description": "Array of permissions assignments to update on the workspace.\nValid values are \"USER\" and \"ADMIN\" (case-sensitive).\nIf both \"USER\" and \"ADMIN\" are provided, \"ADMIN\" takes precedence.\nOther values will be ignored.\nNote that excluding this field, or providing unsupported values, will have the same effect as providing an empty list, which will result in the deletion of all permissions for the principal.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "WorkspacePermissionList",
+            "array_value": {
+              "pascal_name": "WorkspacePermission",
+              "enum": [
+                {
+                  "content": "ADMIN"
+                },
+                {
+                  "content": "UNKNOWN"
+                },
+                {
+                  "content": "USER"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The ID of the user, service principal, or group.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "workspace_id",
+          "description": "The workspace ID.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "principal_id",
+          "description": "The ID of the user, service principal, or group.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    }
+  ]
+}

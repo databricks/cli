@@ -1,0 +1,2386 @@
+{
+  "id": "aisearch.AiSearch",
+  "name": "AiSearch",
+  "description": "**AI Search Endpoint**: Represents the compute resources to host AI Search indexes. AIP-conformant replacement for the legacy VectorSearchEndpoints API; functionally equivalent.",
+  "package": {
+    "name": "aisearch"
+  },
+  "docs_group": "aisearch",
+  "launch_stage": "PUBLIC_PREVIEW",
+  "cli_launch_stage_label": "*Public Preview*",
+  "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+  "cli_launch_stage_display": "Public Preview",
+  "list": {
+    "request": {
+      "pascal_name": "ListEndpointsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "CreateEndpoint",
+      "description": "Create a new AI Search endpoint.",
+      "summary": "Create an AI Search endpoint.",
+      "path": "/api/2.0/ai-search/{parent=workspaces/*}/endpoints",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateEndpointRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The Workspace where this Endpoint will be created.\nFormat: `workspaces/{workspace_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "endpoint",
+            "description": "The Endpoint resource to create. Fields other than `endpoint.name` carry the desired\nconfiguration; `endpoint.name` is server-assigned from `parent` and `endpoint_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Endpoint",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The Workspace where this Endpoint will be created.\nFormat: `workspaces/{workspace_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "endpoint",
+            "description": "The Endpoint resource to create. Fields other than `endpoint.name` carry the desired\nconfiguration; `endpoint.name` is server-assigned from `parent` and `endpoint_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Endpoint",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "endpoint",
+        "description": "The Endpoint resource to create. Fields other than `endpoint.name` carry the desired\nconfiguration; `endpoint.name` is server-assigned from `parent` and `endpoint_id`.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Endpoint",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "endpoint_type",
+              "description": "Type of endpoint. Required on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "EndpointType",
+                "enum": [
+                  {
+                    "content": "STANDARD"
+                  },
+                  {
+                    "content": "STORAGE_OPTIMIZED"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "endpoint_type",
+              "description": "Type of endpoint. Required on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "EndpointType",
+                "enum": [
+                  {
+                    "content": "STANDARD"
+                  },
+                  {
+                    "content": "STORAGE_OPTIMIZED"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Endpoint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "endpoint",
+          "description": "The Endpoint resource to create. Fields other than `endpoint.name` carry the desired\nconfiguration; `endpoint.name` is server-assigned from `parent` and `endpoint_id`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Endpoint",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "endpoint_type",
+                "description": "Type of endpoint. Required on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EndpointType",
+                  "enum": [
+                    {
+                      "content": "STANDARD"
+                    },
+                    {
+                      "content": "STORAGE_OPTIMIZED"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "endpoint_type",
+                "description": "Type of endpoint. Required on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EndpointType",
+                  "enum": [
+                    {
+                      "content": "STANDARD"
+                    },
+                    {
+                      "content": "STORAGE_OPTIMIZED"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "endpoint_id",
+          "description": "The user-supplied short name for the Endpoint, per AIP-133. The server composes the\nfull `Endpoint.name` as `{parent}/endpoints/{endpoint_id}`. AIP-133 does not list\n`endpoint_id` as a fields-may-be-required entry, so we annotate it OPTIONAL on the\nwire; the server still rejects empty values with INVALID_PARAMETER_VALUE.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The Workspace where this Endpoint will be created.\nFormat: `workspaces/{workspace_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "The user-selected budget policy id for the endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the endpoint was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "Creator of the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "The custom tags assigned to the endpoint",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTagList",
+            "array_value": {
+              "pascal_name": "CustomTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "effective_budget_policy_id",
+          "description": "The budget policy id applied to the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_status",
+          "description": "Current status of the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointStatus",
+            "is_object": true
+          }
+        },
+        {
+          "name": "endpoint_type",
+          "description": "Type of endpoint. Required on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointType",
+            "enum": [
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "STORAGE_OPTIMIZED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "index_count",
+          "description": "Number of indexes on the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "last_updated_user",
+          "description": "User who last updated the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "replica_count",
+          "description": "The client-supplied desired number of replicas for the endpoint, applied at\ncreate/update time. Mutually exclusive with `target_qps`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "scaling_info",
+          "description": "Scaling information for the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointScalingInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "target_qps",
+          "description": "Target QPS for the endpoint. Mutually exclusive with `replica_count`. Best-effort;\nthe system does not guarantee this QPS will be achieved.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "throughput_info",
+          "description": "Throughput information for the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointThroughputInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the endpoint was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The usage policy id applied to the endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The Workspace where this Endpoint will be created.\nFormat: `workspaces/{workspace_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_type",
+          "description": "Type of endpoint. Required on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointType",
+            "enum": [
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "STORAGE_OPTIMIZED"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CreateIndex",
+      "description": "Create a new AI Search index.",
+      "summary": "Create an AI Search index.",
+      "path": "/api/2.0/ai-search/{parent=workspaces/*/endpoints/*}/indexes",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "CreateIndexRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The Endpoint where this Index will be created.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "index",
+            "description": "The Index resource to create. Fields other than `index.name` carry the desired\nconfiguration; `index.name` is server-assigned from `parent` and `index_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Index",
+              "is_object": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The Endpoint where this Index will be created.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "index",
+            "description": "The Index resource to create. Fields other than `index.name` carry the desired\nconfiguration; `index.name` is server-assigned from `parent` and `index_id`.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Index",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "index",
+        "description": "The Index resource to create. Fields other than `index.name` carry the desired\nconfiguration; `index.name` is server-assigned from `parent` and `index_id`.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Index",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "primary_key",
+              "description": "Primary key of the index. Set on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "index_type",
+              "description": "Type of index. Required on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "IndexType",
+                "enum": [
+                  {
+                    "content": "DELTA_SYNC"
+                  },
+                  {
+                    "content": "DIRECT_ACCESS"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "primary_key",
+              "description": "Primary key of the index. Set on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "is_string": true
+              }
+            },
+            {
+              "name": "index_type",
+              "description": "Type of index. Required on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "IndexType",
+                "enum": [
+                  {
+                    "content": "DELTA_SYNC"
+                  },
+                  {
+                    "content": "DIRECT_ACCESS"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Index",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "primary_key",
+            "description": "Primary key of the index. Set on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "index_type",
+            "description": "Type of index. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IndexType",
+              "enum": [
+                {
+                  "content": "DELTA_SYNC"
+                },
+                {
+                  "content": "DIRECT_ACCESS"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "primary_key",
+            "description": "Primary key of the index. Set on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "index_type",
+            "description": "Type of index. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IndexType",
+              "enum": [
+                {
+                  "content": "DELTA_SYNC"
+                },
+                {
+                  "content": "DIRECT_ACCESS"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "index",
+          "description": "The Index resource to create. Fields other than `index.name` carry the desired\nconfiguration; `index.name` is server-assigned from `parent` and `index_id`.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Index",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "primary_key",
+                "description": "Primary key of the index. Set on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "index_type",
+                "description": "Type of index. Required on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "IndexType",
+                  "enum": [
+                    {
+                      "content": "DELTA_SYNC"
+                    },
+                    {
+                      "content": "DIRECT_ACCESS"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "primary_key",
+                "description": "Primary key of the index. Set on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "index_type",
+                "description": "Type of index. Required on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "IndexType",
+                  "enum": [
+                    {
+                      "content": "DELTA_SYNC"
+                    },
+                    {
+                      "content": "DIRECT_ACCESS"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "index_id",
+          "description": "The user-supplied Unity Catalog table name for the Index, per AIP-133. The server\ncomposes the full `Index.name` as `{parent}/indexes/{index_id}`. AIP-133 does not\nlist `index_id` as a fields-may-be-required entry, so we annotate it OPTIONAL on the\nwire; the server still rejects empty values with INVALID_PARAMETER_VALUE.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The Endpoint where this Index will be created.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "Creator of the index.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "delta_sync_index_spec",
+          "description": "Specification for a Delta Sync index. Set when `index_type` is `DELTA_SYNC`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DeltaSyncIndexSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "direct_access_index_spec",
+          "description": "Specification for a Direct Access index. Set when `index_type` is `DIRECT_ACCESS`.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "DirectAccessIndexSpec",
+            "is_object": true
+          }
+        },
+        {
+          "name": "endpoint",
+          "description": "Name of the endpoint associated with the index. Ignored on create — the endpoint is\ntaken from `CreateIndexRequest.parent`; populated only on output.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "index_subtype",
+          "description": "The subtype of the index. Set on create and immutable thereafter.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IndexSubtype",
+            "enum": [
+              {
+                "content": "FULL_TEXT"
+              },
+              {
+                "content": "HYBRID"
+              },
+              {
+                "content": "VECTOR"
+              }
+            ]
+          }
+        },
+        {
+          "name": "index_type",
+          "description": "Type of index. Required on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IndexType",
+            "enum": [
+              {
+                "content": "DELTA_SYNC"
+              },
+              {
+                "content": "DIRECT_ACCESS"
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the AI Search index. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}/indexes/{index}`) on output, where\n`{index}` is the index's Unity Catalog table name. On create, the user-supplied UC\ntable name is conveyed via `CreateIndexRequest.index_id`; the server composes the\nfull `name` and returns it on the response.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "primary_key",
+          "description": "Primary key of the index. Set on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "status",
+          "description": "Current status of the index.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IndexStatus",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The Endpoint where this Index will be created.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "primary_key",
+          "description": "Primary key of the index. Set on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "index_type",
+          "description": "Type of index. Required on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "IndexType",
+            "enum": [
+              {
+                "content": "DELTA_SYNC"
+              },
+              {
+                "content": "DIRECT_ACCESS"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteEndpoint",
+      "description": "Delete an AI Search endpoint.",
+      "summary": "Delete an AI Search endpoint.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the endpoint to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the endpoint to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the endpoint to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the endpoint to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeleteIndex",
+      "description": "Delete an AI Search index.",
+      "summary": "Delete an AI Search index.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "DeleteIndexRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index to delete.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetEndpoint",
+      "description": "Get details for a single AI Search endpoint.",
+      "summary": "Get an AI Search endpoint.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetEndpointRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the endpoint.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the endpoint.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Endpoint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the endpoint.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the endpoint.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GetIndex",
+      "description": "Get details for a single AI Search index.",
+      "summary": "Get an AI Search index.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "GetIndexRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "Index",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "primary_key",
+            "description": "Primary key of the index. Set on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "index_type",
+            "description": "Type of index. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IndexType",
+              "enum": [
+                {
+                  "content": "DELTA_SYNC"
+                },
+                {
+                  "content": "DIRECT_ACCESS"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "primary_key",
+            "description": "Primary key of the index. Set on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "index_type",
+            "description": "Type of index. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "IndexType",
+              "enum": [
+                {
+                  "content": "DELTA_SYNC"
+                },
+                {
+                  "content": "DIRECT_ACCESS"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ListEndpoints",
+      "description": "List AI Search endpoints in a workspace.",
+      "summary": "List AI Search endpoints.",
+      "path": "/api/2.0/ai-search/{parent=workspaces/*}/endpoints",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListEndpointsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The Workspace that owns this collection of endpoints.\nFormat: `workspaces/{workspace_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The Workspace that owns this collection of endpoints.\nFormat: `workspaces/{workspace_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListEndpointsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Best-effort upper bound on the number of results to return. Honored as an upper\nbound by the shim: `page_size` only narrows the legacy backend's response, never\nwidens it, so the practical cap is `min(page_size, legacy_fixed_page_size)`.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token from a previous response. If not provided, returns the first page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The Workspace that owns this collection of endpoints.\nFormat: `workspaces/{workspace_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The Workspace that owns this collection of endpoints.\nFormat: `workspaces/{workspace_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Page token from a previous response. If not provided, returns the first page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ListIndexes",
+      "description": "List AI Search indexes on an endpoint.",
+      "summary": "List AI Search indexes.",
+      "path": "/api/2.0/ai-search/{parent=workspaces/*/endpoints/*}/indexes",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ListIndexesRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "parent",
+            "description": "The Endpoint that owns this collection of indexes.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "parent",
+            "description": "The Endpoint that owns this collection of indexes.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ListIndexesResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "page_size",
+          "description": "Best-effort upper bound on the number of results to return. Honored as an upper\nbound by the shim: `page_size` only narrows the legacy backend's response, never\nwidens it, so the practical cap is `min(page_size, legacy_fixed_page_size)`.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token from a previous response. If not provided, returns the first page.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "parent",
+          "description": "The Endpoint that owns this collection of indexes.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "parent",
+          "description": "The Endpoint that owns this collection of indexes.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Page token from a previous response. If not provided, returns the first page.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "QueryIndex",
+      "description": "Query (search) an AI Search index. Read-only, so a read-scoped token may invoke it.",
+      "summary": "Query an AI Search index.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:query",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "QueryIndexRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to query.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "columns",
+            "description": "Column names to include in each result row.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to query.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "columns",
+            "description": "Column names to include in each result row.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "QueryIndexResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "columns",
+          "description": "Column names to include in each result row.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "columns_to_rerank",
+          "description": "Columns whose values are sent to the reranker.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "facets",
+          "description": "Facets to compute over the matched results (e.g. `\"category TOP 5\"`).",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "filters_json",
+          "description": "JSON string describing query filters (e.g. `{\"id \u003e\": 5}`).",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of results to return (the legacy `num_results`). Defaults to 10.\nPrefer `page_size`; when both are set, `page_size` takes precedence.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name of the index to query.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_columns",
+          "description": "Text columns to search for `query_text`. When empty, all text columns are searched.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        },
+        {
+          "name": "query_text",
+          "description": "Query text. Required for Delta Sync indexes that compute embeddings from a model endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_type",
+          "description": "Query type: `ANN`, `HYBRID`, or `FULL_TEXT`. Defaults to `ANN`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "query_vector",
+          "description": "Query vector. Required for Direct Access indexes and Delta Sync indexes with self-managed\nvectors.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_float64": true
+            }
+          }
+        },
+        {
+          "name": "reranker",
+          "description": "If set, results are reranked before being returned.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "RerankerConfig",
+            "is_object": true
+          }
+        },
+        {
+          "name": "score_threshold",
+          "description": "Score threshold for the approximate nearest-neighbor search. Defaults to 0.0.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_float64": true
+          }
+        },
+        {
+          "name": "sort_columns",
+          "description": "Sort clauses, e.g. `[\"rating DESC\", \"price ASC\"]`. Overrides relevance ordering.",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index to query.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RemoveData",
+      "description": "Remove rows by primary key from a Direct Access AI Search index.",
+      "summary": "Remove data from an AI Search index.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:removeData",
+      "can_use_json": true,
+      "must_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "RemoveDataRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "primary_keys",
+            "description": "Primary keys of the rows to remove.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "primary_keys",
+            "description": "Primary keys of the rows to remove.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "List",
+              "array_value": {
+                "is_string": true
+              }
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RemoveDataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "primary_keys",
+          "description": "Primary keys of the rows to remove.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "List",
+            "array_value": {
+              "is_string": true
+            }
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ScanIndex",
+      "description": "Scan (paginate over) the rows of an AI Search index.",
+      "summary": "Scan an AI Search index.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:scan",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "ScanIndexRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to scan.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to scan.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "ScanIndexResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index to scan.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_size",
+          "description": "Maximum number of rows to return in this page.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Page token from a previous response; if unset, scanning starts from the beginning.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index to scan.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SyncIndex",
+      "description": "Synchronize a Delta Sync AI Search index with its source Delta table. Applies only to\nDelta Sync indexes; Direct Access indexes are written via the data-plane upsert path.",
+      "summary": "Synchronize an AI Search index.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:sync",
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "SyncIndexRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to synchronize. Must be a Delta Sync index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index to synchronize. Must be a Delta Sync index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "SyncIndexResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index to synchronize. Must be a Delta Sync index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index to synchronize. Must be a Delta Sync index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpdateEndpoint",
+      "description": "Update an existing AI Search endpoint. Multi-bucket masks are supported and\ndispatched in deterministic bucket order: budget policy, custom tags, throughput,\nthen scaling/replicas. Per-bucket dispatch is not atomic across buckets — if a\nlater bucket fails, earlier buckets may already have been applied.",
+      "summary": "Update an AI Search endpoint.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpdateEndpointRequest",
+        "is_object": true,
+        "has_field_mask": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "endpoint",
+            "description": "The Endpoint resource to update. `endpoint.name` carries the full resource path.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Endpoint",
+              "is_object": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "The list of fields to update.",
+            "required": true,
+            "is_query": true,
+            "entity": {
+              "is_field_mask": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "endpoint",
+            "description": "The Endpoint resource to update. `endpoint.name` carries the full resource path.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "Endpoint",
+              "is_object": true
+            }
+          }
+        ]
+      },
+      "request_body_field": {
+        "name": "endpoint",
+        "description": "The Endpoint resource to update. `endpoint.name` carries the full resource path.",
+        "required": true,
+        "is_request_body_field": true,
+        "entity": {
+          "pascal_name": "Endpoint",
+          "is_object": true,
+          "has_required_request_body_fields": true,
+          "required_fields": [
+            {
+              "name": "endpoint_type",
+              "description": "Type of endpoint. Required on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "EndpointType",
+                "enum": [
+                  {
+                    "content": "STANDARD"
+                  },
+                  {
+                    "content": "STORAGE_OPTIMIZED"
+                  }
+                ]
+              }
+            }
+          ],
+          "required_request_body_fields": [
+            {
+              "name": "endpoint_type",
+              "description": "Type of endpoint. Required on create and immutable thereafter.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "EndpointType",
+                "enum": [
+                  {
+                    "content": "STANDARD"
+                  },
+                  {
+                    "content": "STORAGE_OPTIMIZED"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "pascal_name": "Endpoint",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "endpoint_type",
+            "description": "Type of endpoint. Required on create and immutable thereafter.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "EndpointType",
+              "enum": [
+                {
+                  "content": "STANDARD"
+                },
+                {
+                  "content": "STORAGE_OPTIMIZED"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "all_fields": [
+        {
+          "name": "endpoint",
+          "description": "The Endpoint resource to update. `endpoint.name` carries the full resource path.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "Endpoint",
+            "is_object": true,
+            "has_required_request_body_fields": true,
+            "required_fields": [
+              {
+                "name": "endpoint_type",
+                "description": "Type of endpoint. Required on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EndpointType",
+                  "enum": [
+                    {
+                      "content": "STANDARD"
+                    },
+                    {
+                      "content": "STORAGE_OPTIMIZED"
+                    }
+                  ]
+                }
+              }
+            ],
+            "required_request_body_fields": [
+              {
+                "name": "endpoint_type",
+                "description": "Type of endpoint. Required on create and immutable thereafter.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "EndpointType",
+                  "enum": [
+                    {
+                      "content": "STANDARD"
+                    },
+                    {
+                      "content": "STORAGE_OPTIMIZED"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "budget_policy_id",
+          "description": "The user-selected budget policy id for the endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "create_time",
+          "description": "Time the endpoint was created.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "creator",
+          "description": "Creator of the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "custom_tags",
+          "description": "The custom tags assigned to the endpoint",
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "CustomTagList",
+            "array_value": {
+              "pascal_name": "CustomTag",
+              "is_object": true
+            }
+          }
+        },
+        {
+          "name": "effective_budget_policy_id",
+          "description": "The budget policy id applied to the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "endpoint_status",
+          "description": "Current status of the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointStatus",
+            "is_object": true
+          }
+        },
+        {
+          "name": "endpoint_type",
+          "description": "Type of endpoint. Required on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointType",
+            "enum": [
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "STORAGE_OPTIMIZED"
+              }
+            ]
+          }
+        },
+        {
+          "name": "id",
+          "description": "Unique identifier of the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "index_count",
+          "description": "Number of indexes on the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "last_updated_user",
+          "description": "User who last updated the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "replica_count",
+          "description": "The client-supplied desired number of replicas for the endpoint, applied at\ncreate/update time. Mutually exclusive with `target_qps`.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "scaling_info",
+          "description": "Scaling information for the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointScalingInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "target_qps",
+          "description": "Target QPS for the endpoint. Mutually exclusive with `replica_count`. Best-effort;\nthe system does not guarantee this QPS will be achieved.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "throughput_info",
+          "description": "Throughput information for the endpoint",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "EndpointThroughputInfo",
+            "is_object": true
+          }
+        },
+        {
+          "name": "update_time",
+          "description": "Time the endpoint was last updated.",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "is_timestamp": true
+          }
+        },
+        {
+          "name": "usage_policy_id",
+          "description": "The usage policy id applied to the endpoint.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the AI Search endpoint. Server-assigned full resource path\n(`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the\nuser-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;\nthe server composes the full `name` and returns it on the response.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "update_mask",
+          "description": "The list of fields to update.",
+          "required": true,
+          "is_query": true,
+          "entity": {
+            "is_field_mask": true
+          }
+        },
+        {
+          "name": "endpoint_type",
+          "description": "Type of endpoint. Required on create and immutable thereafter.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "EndpointType",
+            "enum": [
+              {
+                "content": "STANDARD"
+              },
+              {
+                "content": "STORAGE_OPTIMIZED"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "UpsertData",
+      "description": "Upsert rows into a Direct Access AI Search index.",
+      "summary": "Upsert data into an AI Search index.",
+      "path": "/api/2.0/ai-search/{name=workspaces/*/endpoints/*/indexes/*}:upsertData",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "PUBLIC_PREVIEW",
+      "cli_launch_stage_label": "*Public Preview*",
+      "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+      "cli_launch_stage_display": "Public Preview",
+      "request": {
+        "pascal_name": "UpsertDataRequest",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "inputs_json",
+            "description": "JSON document describing the rows to upsert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "inputs_json",
+            "description": "JSON document describing the rows to upsert.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "UpsertDataResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "inputs_json",
+          "description": "JSON document describing the rows to upsert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Full resource name of the index. Must be a Direct Access index.\nFormat: `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "inputs_json",
+          "description": "JSON document describing the rows to upsert.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}

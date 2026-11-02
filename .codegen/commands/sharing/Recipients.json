@@ -1,0 +1,725 @@
+{
+  "id": "sharing.Recipients",
+  "name": "Recipients",
+  "description": "A recipient is an object you create using :method:recipients/create to represent an\norganization which you want to allow access shares. The way how sharing works differs\ndepending on whether or not your recipient has access to a Databricks workspace that is\nenabled for Unity Catalog:\n\n- For recipients with access to a Databricks workspace that is enabled for Unity Catalog,\nyou can create a recipient object along with a unique sharing identifier you get from the\nrecipient. The sharing identifier is the key identifier that enables the secure connection.\nThis sharing mode is called **Databricks-to-Databricks sharing**.\n\n- For recipients without access to a Databricks workspace that is enabled for Unity Catalog,\nwhen you create a recipient object, Databricks generates an activation link you can send\nto the recipient. The recipient follows the activation link to download the credential file,\nand then uses the credential file to establish a secure connection to receive the shared data.\nThis sharing mode is called **open sharing**.",
+  "package": {
+    "name": "sharing"
+  },
+  "docs_group": "sharing",
+  "launch_stage": "GA",
+  "cli_launch_stage_display": "GA",
+  "list": {
+    "request": {
+      "pascal_name": "ListRecipientsRequest"
+    }
+  },
+  "methods": [
+    {
+      "name": "Create",
+      "description": "Creates a new recipient with the delta sharing authentication type in the metastore.\nThe caller must be a metastore admin or have the **CREATE_RECIPIENT** privilege on the metastore.",
+      "summary": "Create a share recipient.",
+      "path": "/api/2.1/unity-catalog/recipients",
+      "can_use_json": true,
+      "is_crud_create": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "CreateRecipient",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of Recipient.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "authentication_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AuthenticationType",
+              "enum": [
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "OAUTH_CLIENT_CREDENTIALS"
+                },
+                {
+                  "content": "OIDC_FEDERATION"
+                },
+                {
+                  "content": "TOKEN"
+                }
+              ]
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "name",
+            "description": "Name of Recipient.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "authentication_type",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "pascal_name": "AuthenticationType",
+              "enum": [
+                {
+                  "content": "DATABRICKS"
+                },
+                {
+                  "content": "OAUTH_CLIENT_CREDENTIALS"
+                },
+                {
+                  "content": "OIDC_FEDERATION"
+                },
+                {
+                  "content": "TOKEN"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RecipientInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "authentication_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AuthenticationType",
+            "enum": [
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "OAUTH_CLIENT_CREDENTIALS"
+              },
+              {
+                "content": "OIDC_FEDERATION"
+              },
+              {
+                "content": "TOKEN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "comment",
+          "description": "Description about the recipient.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "data_recipient_global_metastore_id",
+          "description": "The global Unity Catalog metastore id provided by the data recipient.\nThis field is only present when the __authentication_type__ is **DATABRICKS**.\nThe identifier is of format __cloud__:__region__:__metastore-uuid__.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "expiration_time",
+          "description": "Expiration timestamp of the token, in epoch milliseconds.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "[Create,Update:IGN] common - id of the recipient",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ip_access_list",
+          "description": "IP Access List",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IpAccessList",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of Recipient.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of the recipient owner.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties_kvpairs",
+          "description": "Recipient properties as map of string key-value pairs.\nWhen provided in update request, the specified properties will override the existing\nproperties. To add and remove properties, one would need to perform a read-modify-write.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SecurablePropertiesKvPairs",
+            "is_object": true
+          }
+        },
+        {
+          "name": "sharing_code",
+          "description": "The one-time sharing code provided by the data recipient. This field is only present when the __authentication_type__ is **DATABRICKS**.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of Recipient.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "authentication_type",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "pascal_name": "AuthenticationType",
+            "enum": [
+              {
+                "content": "DATABRICKS"
+              },
+              {
+                "content": "OAUTH_CLIENT_CREDENTIALS"
+              },
+              {
+                "content": "OIDC_FEDERATION"
+              },
+              {
+                "content": "TOKEN"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete",
+      "description": "Deletes the specified recipient from the metastore. The caller must be the owner of the recipient.",
+      "summary": "Delete a share recipient.",
+      "path": "/api/2.1/unity-catalog/recipients/{name}",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "DeleteRecipientRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "is_empty_response": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "description": "Gets a share recipient from the metastore. The caller must be one of:\n* A user with **USE_RECIPIENT** privilege on the metastore\n* The owner of the share recipient\n* A metastore admin",
+      "summary": "Get a share recipient.",
+      "path": "/api/2.1/unity-catalog/recipients/{name}",
+      "is_crud_read": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "GetRecipientRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RecipientInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "name",
+          "description": "Name of the recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "description": "Gets an array of all share recipients within the current metastore where:\n\n* the caller is a metastore admin, or\n* the caller is the owner.\nThere is no guarantee of a specific ordering of the elements in the array.",
+      "summary": "List share recipients.",
+      "path": "/api/2.1/unity-catalog/recipients",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "ListRecipientsRequest",
+        "is_object": true
+      },
+      "response": {
+        "pascal_name": "ListRecipientsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "data_recipient_global_metastore_id",
+          "description": "If not provided, all recipients will be returned.\nIf no recipients exist with this ID, no results will be returned.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "max_results",
+          "description": "Maximum number of recipients to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid recipients are returned (not recommended).\n- Note: The number of returned recipients might be less than the specified max_results size, even zero.\nThe only definitive indication that no further recipients can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "pagination": {
+        "token": {
+          "poll_field": {
+            "name": "page_token",
+            "description": "Opaque pagination token to go to next page based on previous query.",
+            "is_query": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        },
+        "max_results": {
+          "name": "max_results",
+          "description": "Maximum number of recipients to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid recipients are returned (not recommended).\n- Note: The number of returned recipients might be less than the specified max_results size, even zero.\nThe only definitive indication that no further recipients can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        }
+      }
+    },
+    {
+      "name": "RotateToken",
+      "description": "Refreshes the specified recipient's delta sharing authentication token with the provided token info.\nThe caller must be the owner of the recipient.",
+      "summary": "Rotate a token.",
+      "path": "/api/2.1/unity-catalog/recipients/{name}/rotate-token",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "RotateRecipientToken",
+        "is_object": true,
+        "has_required_request_body_fields": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          },
+          {
+            "name": "existing_token_expire_in_seconds",
+            "description": "The expiration time of the bearer token in ISO 8601 format. This will set the expiration_time\nof existing token only to a smaller timestamp, it cannot extend the expiration_time. Use 0 to\nexpire the existing token immediately, negative number will return an error.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_request_body_fields": [
+          {
+            "name": "existing_token_expire_in_seconds",
+            "description": "The expiration time of the bearer token in ISO 8601 format. This will set the expiration_time\nof existing token only to a smaller timestamp, it cannot extend the expiration_time. Use 0 to\nexpire the existing token immediately, negative number will return an error.",
+            "required": true,
+            "is_request_body_field": true,
+            "entity": {
+              "is_int64": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RecipientInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "existing_token_expire_in_seconds",
+          "description": "The expiration time of the bearer token in ISO 8601 format. This will set the expiration_time\nof existing token only to a smaller timestamp, it cannot extend the expiration_time. Use 0 to\nexpire the existing token immediately, negative number will return an error.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the Recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the Recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "existing_token_expire_in_seconds",
+          "description": "The expiration time of the bearer token in ISO 8601 format. This will set the expiration_time\nof existing token only to a smaller timestamp, it cannot extend the expiration_time. Use 0 to\nexpire the existing token immediately, negative number will return an error.",
+          "required": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "SharePermissions",
+      "description": "Gets the share permissions for the specified Recipient. The caller must have the **USE_RECIPIENT** privilege on the metastore or be the owner of the Recipient.",
+      "summary": "Get recipient share permissions.",
+      "path": "/api/2.1/unity-catalog/recipients/{name}/share-permissions",
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "SharePermissionsRequest",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "The name of the Recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "GetRecipientSharePermissionsResponse",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "max_results",
+          "description": "Maximum number of permissions to return.\n- when set to 0, the page length is set to a server configured value (recommended);\n- when set to a value greater than 0, the page length is the minimum of this value and a server configured value;\n- when set to a value less than 0, an invalid parameter error is returned;\n- If not set, all valid permissions are returned (not recommended).\n- Note: The number of returned permissions might be less than the specified max_results size, even zero.\nThe only definitive indication that no further permissions can be fetched is when the next_page_token is unset from the response.",
+          "is_query": true,
+          "entity": {
+            "is_int": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "The name of the Recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "page_token",
+          "description": "Opaque pagination token to go to next page based on previous query.",
+          "is_query": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "The name of the Recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update",
+      "description": "Updates an existing recipient in the metastore. The caller must be a metastore admin or the owner of the recipient.\nIf the recipient name will be updated, the user must be both a metastore admin and the owner of the recipient.",
+      "summary": "Update a share recipient.",
+      "path": "/api/2.1/unity-catalog/recipients/{name}",
+      "can_use_json": true,
+      "has_required_positional_arguments": true,
+      "launch_stage": "GA",
+      "cli_launch_stage_display": "GA",
+      "request": {
+        "pascal_name": "UpdateRecipient",
+        "is_object": true,
+        "required_fields": [
+          {
+            "name": "name",
+            "description": "Name of the recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ],
+        "required_in_url_fields": [
+          {
+            "name": "name",
+            "description": "Name of the recipient.",
+            "required": true,
+            "is_path": true,
+            "entity": {
+              "is_string": true
+            }
+          }
+        ]
+      },
+      "response": {
+        "pascal_name": "RecipientInfo",
+        "is_object": true
+      },
+      "all_fields": [
+        {
+          "name": "comment",
+          "description": "Description about the recipient.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "expiration_time",
+          "description": "Expiration timestamp of the token, in epoch milliseconds.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_int64": true
+          }
+        },
+        {
+          "name": "id",
+          "description": "[Create,Update:IGN] common - id of the recipient",
+          "is_output_only": true,
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "ip_access_list",
+          "description": "IP Access List",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "IpAccessList",
+            "is_object": true
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "new_name",
+          "description": "New name for the recipient.\n.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "owner",
+          "description": "Username of the recipient owner.",
+          "is_request_body_field": true,
+          "entity": {
+            "is_string": true
+          }
+        },
+        {
+          "name": "properties_kvpairs",
+          "description": "Recipient properties as map of string key-value pairs.\nWhen provided in update request, the specified properties will override the existing\nproperties. To add and remove properties, one would need to perform a read-modify-write.",
+          "is_request_body_field": true,
+          "is_optional_object": true,
+          "entity": {
+            "pascal_name": "SecurablePropertiesKvPairs",
+            "is_object": true
+          }
+        }
+      ],
+      "required_positional_arguments": [
+        {
+          "name": "name",
+          "description": "Name of the recipient.",
+          "required": true,
+          "is_path": true,
+          "entity": {
+            "is_string": true
+          }
+        }
+      ]
+    }
+  ]
+}
