@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+presets:
+  tags:
+    preset_tag: ${resources.jobs.j.id}
+
+resources:
+  schemas:
+    s:
+      name: s
+      catalog_name: main
+      properties: {owner: fixed}
+  jobs:
+    j:
+      # tags is a reference to a whole map, and the preset tag above is not added to it.
+      tags: ${resources.schemas.s.properties}

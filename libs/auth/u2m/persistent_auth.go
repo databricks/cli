@@ -412,7 +412,7 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	if oldToken.RefreshToken == "" {
 		return nil, ErrMissingRefreshToken
 	}
-	cfg, err := a.oauth2Config()
+	cfg, err := a.oauth2Config(a.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +460,7 @@ func (a *PersistentAuth) Challenge() (*oauth2.Token, error) {
 	// the callback server is not created, we need to close the listener manually.
 	defer a.Close()
 
-	cfg, err := a.oauth2Config()
+	cfg, err := a.oauth2Config(a.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching oauth config: %w", err)
 	}
@@ -591,20 +591,20 @@ func (a *PersistentAuth) resolveScopes() []string {
 }
 
 // oauth2Config returns the OAuth2 configuration for the given OAuthArgument.
-func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
+func (a *PersistentAuth) oauth2Config(ctx context.Context) (*oauth2.Config, error) {
 	scopes := a.resolveScopes()
 
 	var endpoints *OAuthAuthorizationServer
 	var err error
 	switch argg := a.oAuthArgument.(type) {
 	case WorkspaceOAuthArgument:
-		endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(a.ctx, argg.GetWorkspaceHost())
+		endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(ctx, argg.GetWorkspaceHost())
 	case AccountOAuthArgument:
 		endpoints, err = a.endpointSupplier.GetAccountOAuthEndpoints(
-			a.ctx, argg.GetAccountHost(), argg.GetAccountId(),
+			ctx, argg.GetAccountHost(), argg.GetAccountId(),
 		)
 	case UnifiedOAuthArgument:
-		endpoints, err = a.endpointSupplier.GetUnifiedOAuthEndpoints(a.ctx, argg.GetHost(), argg.GetAccountId())
+		endpoints, err = a.endpointSupplier.GetUnifiedOAuthEndpoints(ctx, argg.GetHost(), argg.GetAccountId())
 	case DiscoveryOAuthArgument:
 		return nil, fmt.Errorf("discovery OAuthArgument %T is only supported with WithDiscoveryLogin during Challenge; after discovery, construct a WorkspaceOAuthArgument with the discovered host", a.oAuthArgument)
 	default:

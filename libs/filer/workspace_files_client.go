@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -111,39 +112,6 @@ type apiClient interface {
 		visitors ...func(*http.Request) error) error
 }
 
-// Extensions that format=AUTO imports as the same asset type the legacy import-file
-// endpoint created: dashboards, alerts and Lakeflow Designer files.
-var autoImportAssetExtensions = []string{".lvdash.json", ".dbalert.json", ".designer.py", ".designer.ipynb"}
-
-// importRequest returns the workspace path and /workspace/import options for a file,
-// matching how the legacy import-file endpoint stored it. Other files avoid format=AUTO
-// because it types them by name and rejects names reserved for other assets
-// (e.g. .geniespace.json, .lwquery.ipynb).
-func importRequest(absPath string, content []byte) (string, []workspace.UploadOption) {
-	lower := strings.ToLower(absPath)
-	for _, ext := range autoImportAssetExtensions {
-		if strings.HasSuffix(lower, ext) {
-			return absPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatAuto)}
-		}
-	}
-
-	isNotebook, language, _ := notebook.DetectBytes(absPath, content)
-	if !isNotebook {
-		return absPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatRaw)}
-	}
-
-	// Notebooks are imported without their extension and with an explicit format.
-	ext := path.Ext(absPath)
-	notebookPath := strings.TrimSuffix(absPath, ext)
-	if strings.EqualFold(ext, notebook.ExtensionJupyter) {
-		return notebookPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatJupyter)}
-	}
-	return notebookPath, []workspace.UploadOption{
-		workspace.UploadFormat(workspace.ImportFormatSource),
-		workspace.UploadLanguage(language),
-	}
-}
-
 // WorkspaceFilesClient implements the files-in-workspace API.
 
 // NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
@@ -188,31 +156,32 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
+	// Remove leading "/" so we can use it in the URL.
+	overwrite := slices.Contains(mode, OverwriteIfExists)
+	urlPath := fmt.Sprintf(
+		"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
+		url.PathEscape(strings.TrimLeft(absPath, "/")),
+		overwrite,
+	)
+
 	// Buffer the file contents because we may need to retry below and we cannot read twice.
 	body, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
-	overwrite := slices.Contains(mode, OverwriteIfExists)
-	if strings.HasSuffix(absPath, ".zip") {
-		// The legacy import-file endpoint extracts a .zip into its parent directory and
-		// overwrites existing entries. /workspace/import imports it as a new folder that
-		// cannot be overwritten, so zips stay on import-file until it supports that.
-		urlPath := fmt.Sprintf(
-			"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
-			url.PathEscape(strings.TrimLeft(absPath, "/")),
-			overwrite,
-		)
-		err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
-	} else {
-		// Upload with the SDK's multipart Workspace.Upload. The JSON-body workspace.Import
-		// caps content at 10 MB, the multipart form at the 500 MB workspace file limit.
-		uploadPath, opts := importRequest(absPath, body)
-		if overwrite {
-			opts = append(opts, workspace.UploadOverwrite())
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
+
+	// Overwrite can't change a node's type. If a node of the other type holds the
+	// path, delete it and upload again so the remote matches the local file.
+	if err != nil && overwrite {
+		deleted, derr := w.deleteNodeOfOtherType(ctx, absPath, err)
+		if derr != nil {
+			return derr
 		}
-		err = w.workspaceClient.Workspace.Upload(ctx, uploadPath, bytes.NewReader(body), opts...)
+		if deleted {
+			err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
+		}
 	}
 
 	// Return early on success.
@@ -220,8 +189,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return nil
 	}
 
-	// Parent directory does not exist.
-	if errors.Is(err, apierr.ErrNotFound) {
+	// Special handling of this error only if it is an API error.
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
+		return err
+	}
+
+	// This API returns a 404 if the parent directory does not exist.
+	if aerr.StatusCode == http.StatusNotFound {
 		if !slices.Contains(mode, CreateParentDirectories) {
 			return noSuchDirectoryError{path.Dir(absPath)}
 		}
@@ -229,8 +204,8 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
-			if errors.Is(err, apierr.ErrPermissionDenied) {
-				return permissionError{absPath, err}
+			if mkdirErr, ok := errors.AsType[*apierr.APIError](err); ok && mkdirErr.StatusCode == http.StatusForbidden {
+				return permissionError{absPath, mkdirErr}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
@@ -239,32 +214,89 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// Path already taken. ErrResourceConflict covers every 409 (including the
-	// bare 409 with only a message); ErrResourceAlreadyExists covers the 400
-	// RESOURCE_ALREADY_EXISTS, which no status maps to a conflict.
-	if errors.Is(err, apierr.ErrResourceConflict) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
+	// This API returns 409 if the file already exists, when the object type is file
+	if aerr.StatusCode == http.StatusConflict {
 		return fileAlreadyExistsError{absPath}
 	}
-	// Overwrite rejected because the existing object's node type differs from
-	// the upload. The collision carries an AIP-193 ErrorInfo with a stable
-	// reason, so branch on it rather than the message text.
-	if errors.Is(err, apierr.ErrInvalidParameterValue) {
-		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
-			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
-				return fileAlreadyExistsError{absPath}
-			}
-		}
+
+	// This API returns 400 if the file already exists when the object type is notebook.
+	// Both the historical "Path (<path>) already exists." format and the newer
+	// "RESOURCE_ALREADY_EXISTS: <path> already exists. ..." format end with the same
+	// "already exists." marker; the JSON error_code is empty in both. The new format
+	// might not have been rolled out to all workspaces yet, so we anchor on the shared
+	// marker and return absPath rather than parsing the message.
+	if aerr.StatusCode == http.StatusBadRequest && strings.Contains(aerr.Message, "already exists.") {
+		return fileAlreadyExistsError{absPath}
 	}
 
-	// Caller has read access but no write access.
-	if errors.Is(err, apierr.ErrPermissionDenied) {
-		return permissionError{absPath, err}
+	// This API returns StatusForbidden when you have read access but don't have write access to a file
+	if aerr.StatusCode == http.StatusForbidden {
+		return permissionError{absPath, aerr}
 	}
 
-	// Any other failure (e.g. a server-side error with an empty message) is
-	// surfaced with the target path so the user can tell which upload failed;
-	// %w keeps the original error inspectable by callers.
-	return fmt.Errorf("failed to upload %s: %w", absPath, err)
+	return err
+}
+
+// Messages import-file returns when an overwrite would change a node's type. The
+// endpoint sets no error code for them. Matching is best-effort: if the wording
+// changes, the original error is returned as before.
+var (
+	// A file holds the name of a notebook upload. Captures the file's name.
+	fileHoldsNotebookName = regexp.MustCompile(`Node named '(.+)' already exists`)
+	// A notebook holds the name of a file upload (SQL notebook "x" holds "x.sql").
+	// Captures the upload's path.
+	notebookHoldsFileName = regexp.MustCompile(`Creating file failed\. An item with path (.+) already exists`)
+)
+
+// messageNames reports whether msg matches re and names name.
+func messageNames(re *regexp.Regexp, msg, name string) bool {
+	m := re.FindStringSubmatch(msg)
+	return m != nil && m[1] == name
+}
+
+// deleteNodeOfOtherType deletes the node that blocks an overwrite of absPath
+// because its type differs from the upload's, and reports whether it did.
+// CLI v1.21 and v1.22 uploaded some notebooks as files this way.
+func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPath string, uploadErr error) (bool, error) {
+	aerr, ok := errors.AsType[*apierr.APIError](uploadErr)
+	if !ok {
+		return false, nil
+	}
+
+	var nodePath string
+	var nodeType workspace.ObjectType
+	switch {
+	case messageNames(fileHoldsNotebookName, aerr.Message, path.Base(absPath)):
+		nodePath, nodeType = absPath, workspace.ObjectTypeFile
+	case messageNames(notebookHoldsFileName, aerr.Message, absPath):
+		nodePath, nodeType = strings.TrimSuffix(absPath, path.Ext(absPath)), workspace.ObjectTypeNotebook
+	default:
+		return false, nil
+	}
+
+	// The second message is also returned when a directory holds the path or
+	// when two writers create it at once, so only delete a node of the expected
+	// type. A notebook only holds the name with its language's extension: SQL
+	// notebook "x" holds "x.sql", not "x.py".
+	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if info.ObjectType != nodeType {
+		return false, nil
+	}
+	if nodeType == workspace.ObjectTypeNotebook && info.Language != notebook.ExtensionToLanguage[strings.ToLower(path.Ext(absPath))] {
+		return false, nil
+	}
+
+	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{Path: nodePath})
+	if err != nil {
+		return false, fmt.Errorf("failed to delete %s to replace it with %s: %w", nodePath, absPath, err)
+	}
+	return true, nil
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {

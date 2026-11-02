@@ -294,6 +294,32 @@ func TestGetDefaultProfile_NoFile(t *testing.T) {
 	assert.NoFileExists(t, path)
 }
 
+func TestGetSectionNames(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	err := os.WriteFile(path, []byte(`[__settings__]
+default_profile = ws
+
+[ws]
+host = https://ws.cloud.databricks.test
+
+[hostless]
+cluster_id = abc
+
+[empty]
+`), 0o600)
+	require.NoError(t, err)
+
+	got, err := GetSectionNames(t.Context(), path)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"__settings__", "ws", "hostless"}, got)
+}
+
+func TestGetSectionNames_NoFile(t *testing.T) {
+	got, err := GetSectionNames(t.Context(), filepath.Join(t.TempDir(), "databrickscfg"))
+	require.NoError(t, err)
+	assert.Nil(t, got)
+}
+
 func TestGetConfiguredDefaultProfile(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -504,6 +530,49 @@ func TestSetDefaultProfile_RoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "https://abc.cloud.databricks.com", section.Key("host").String())
 	assert.Equal(t, "xyz", section.Key("token").String())
+}
+
+func TestValidateProfileName(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		profile string
+		wantErr string
+	}{
+		{name: "plain", profile: "my-workspace"},
+		{name: "dotted", profile: "team.prod"},
+		{name: "reserved", profile: "__settings__", wantErr: "reserved for internal use"},
+		{name: "newline", profile: "foo\nbar", wantErr: "must not contain line breaks"},
+		{name: "carriage return", profile: "foo\rbar", wantErr: "must not contain line breaks"},
+		{name: "opening bracket", profile: "[foo"},
+		{name: "closing bracket", profile: "foo]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateProfileName(tc.profile)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorContains(t, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestSaveToProfile_SquareBracketsRoundTrip(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	for _, name := range []string{"[foo]", "a[b", "a]b"} {
+		err := SaveToProfile(ctx, &config.Config{
+			ConfigFile: path,
+			Profile:    name,
+			Host:       "https://ws.cloud.databricks.test",
+		})
+		require.NoError(t, err)
+	}
+
+	got, err := GetSectionNames(ctx, path)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"[foo]", "__settings__", "a[b", "a]b"}, got)
 }
 
 func TestSaveToProfile_RejectsReservedProfileName(t *testing.T) {

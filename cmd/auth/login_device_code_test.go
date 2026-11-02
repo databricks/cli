@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -208,25 +211,32 @@ func TestIsDeviceCodeSupportedForHost(t *testing.T) {
 	}
 }
 
-// startDeviceCodeLogin runs "auth login --use-device-code" with args in a
-// terminal emulator, using config as the contents of .databrickscfg.
-func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
+// startLogin runs "auth login" with args in a terminal emulator, using config
+// as the contents of .databrickscfg.
+func startLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, config))
 	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
-	t.Setenv(deviceCodeEnvVar, "true")
 
 	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
 		cmd := newLoginCommand(&auth.AuthArguments{})
 		cmd.Flags().String("profile", "", "")
 		cmd.SetContext(ctx)
-		cmd.SetArgs(append([]string{"--use-device-code"}, args...))
+		// Cobra reads os.Args when the args are nil.
+		cmd.SetArgs(append([]string{}, args...))
 		cmd.SetOut(io.Discard)
 		cmd.SetErr(io.Discard)
 		return struct{}{}, cmd.Execute()
 	})
+}
+
+// startDeviceCodeLogin runs "auth login --use-device-code" with args in a
+// terminal emulator, using config as the contents of .databrickscfg.
+func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
+	t.Setenv(deviceCodeEnvVar, "true")
+	return startLogin(t, config, append([]string{"--use-device-code"}, args...)...)
 }
 
 func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
@@ -251,6 +261,29 @@ func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
 	tm.Type(termtest.KeyEnter)
 	_, err := tm.Result()
 	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
+}
+
+func TestLoginDeviceCodeCreateNewProfileRejectsHiddenProfileName(t *testing.T) {
+	// See TestLoginDeviceCodePickerEmptyHost.
+	if runtime.GOOS == "windows" {
+		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
+	}
+	tm := startDeviceCodeLogin(t, `[DEFAULT]
+host = https://accounts.cloud.databricks.test
+account_id = acct-123
+`)
+	tm.WaitFor(profilePickerCreateNewLabel)
+	tm.Type(termtest.KeyEnter)
+	tm.WaitFor("Databricks profile name")
+	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> profile name is required")
+	tm.Type("DEFAULT" + termtest.KeyEnter)
+	tm.WaitFor(">> profile DEFAULT already exists")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("DEFAULT")) + "newprof" + termtest.KeyEnter)
+	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyCtrlC)
+	_, err := tm.Result()
+	assert.EqualError(t, err, "^C")
 }
 
 func TestMatchDeviceCodeProfiles(t *testing.T) {
@@ -303,4 +336,120 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")
+}
+
+// Only a wrong confirmation code can be fixed by entering the code again, so
+// any other token exchange error ends the login.
+func TestLoginDeviceCodeFailsOnTokenExchangeError(t *testing.T) {
+	// Neither error can be fixed by entering the confirmation code again, so
+	// the login fails after one token request instead of asking again.
+	tests := []struct {
+		name        string
+		status      int
+		description string
+		wantErr     string
+	}{
+		{
+			name:        "rate limited",
+			status:      http.StatusTooManyRequests,
+			description: "Device grant rate limit exceeded",
+			wantErr:     "token exchange: Device grant rate limit exceeded (error code: invalid_request)",
+		},
+		{
+			name:        "unknown device code",
+			status:      http.StatusBadRequest,
+			description: "Invalid device code",
+			wantErr:     "token exchange: Invalid device code (error code: invalid_request)",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			var tokenRequests atomic.Int32
+			// The router keeps the first handler registered for a route, so
+			// this one replaces the default token endpoint.
+			server.Handle("POST", "/oidc/v1/token", func(_ testserver.Request) any {
+				tokenRequests.Add(1)
+				return testserver.Response{
+					StatusCode: tt.status,
+					Body:       map[string]string{"error": "invalid_request", "error_description": tt.description},
+				}
+			})
+			testserver.AddDefaultHandlers(server)
+			tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+			tm.WaitFor("Confirmation code")
+			tm.Type("FTFA-QQKY\n")
+			_, err := tm.Result()
+			assert.EqualError(t, err, tt.wantErr)
+			assert.Equal(t, int32(1), tokenRequests.Load())
+		})
+	}
+}
+
+func TestLoginDeviceCodeWrongConfirmationCode(t *testing.T) {
+	// The prompt for each attempt, which the test waits for before typing
+	// the next code.
+	prompts := []string{"Confirmation code", "(2 attempts left)", "(1 attempt left)"}
+	tests := []struct {
+		name  string
+		codes []string
+		// closeStdin ends the input after the codes, so that the next
+		// prompt fails.
+		closeStdin        bool
+		wantErr           string
+		wantTokenRequests int32
+	}{
+		{
+			name:              "right code after a wrong one",
+			codes:             []string{"AAAA-AAAA", "FTFA-QQKY"},
+			wantTokenRequests: 2,
+		},
+		{
+			name:              "too many wrong codes",
+			codes:             []string{"AAAA-AAAA", "BBBB-BBBB", "CCCC-CCCC"},
+			wantErr:           "Invalid confirmation code (error code: invalid_request). Start login from scratch",
+			wantTokenRequests: 3,
+		},
+		{
+			name:              "no code after a wrong one",
+			codes:             []string{"AAAA-AAAA"},
+			closeStdin:        true,
+			wantErr:           "reading confirmation code: EOF",
+			wantTokenRequests: 1,
+		},
+		{
+			name:              "no code",
+			closeStdin:        true,
+			wantErr:           "reading confirmation code: EOF",
+			wantTokenRequests: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			testserver.AddDefaultHandlers(server)
+			var tokenRequests atomic.Int32
+			server.RequestCallback = func(req *testserver.Request) {
+				if req.URL.Path == "/oidc/v1/token" {
+					tokenRequests.Add(1)
+				}
+			}
+			tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+			for i, code := range tt.codes {
+				tm.WaitFor(prompts[i])
+				tm.Type(code + "\n")
+			}
+			if tt.closeStdin {
+				tm.WaitFor(prompts[len(tt.codes)])
+				tm.Close()
+			}
+			_, err := tm.Result()
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantTokenRequests, tokenRequests.Load())
+		})
+	}
 }

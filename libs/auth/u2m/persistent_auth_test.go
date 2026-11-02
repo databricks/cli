@@ -159,7 +159,7 @@ func TestPersistentAuthClientID(t *testing.T) {
 			if err != nil {
 				t.Fatalf("NewPersistentAuth(): %v", err)
 			}
-			cfg, err := p.oauth2Config()
+			cfg, err := p.oauth2Config(t.Context())
 			if err != nil {
 				t.Fatalf("oauth2Config(): %v", err)
 			}
@@ -206,7 +206,7 @@ func TestPersistentAuthResources(t *testing.T) {
 			if err != nil {
 				t.Fatalf("NewPersistentAuth(): %v", err)
 			}
-			cfg, err := p.oauth2Config()
+			cfg, err := p.oauth2Config(t.Context())
 			if err != nil {
 				t.Fatalf("oauth2Config(): %v", err)
 			}

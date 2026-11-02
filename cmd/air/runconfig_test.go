@@ -822,6 +822,11 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 			wantOptions: "    GPU_8xH100 - 4 accelerators per node [Public Preview]\n    GPU_FUTURE - 16 accelerators per node\n    GPU_1xA10 - 1 accelerator per node",
 		},
 		{
+			name:        "workspace confirms RTX6000 availability",
+			response:    `{"compute_options":[{"hardware_accelerator":"GPU_1xRTX6000","per_node_accelerator_count":1,"launch_stage":"GA"}]}`,
+			wantOptions: "    GPU_1xRTX6000 - 1 accelerator per node",
+		},
+		{
 			name:        "empty response",
 			response:    `{}`,
 			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",
@@ -979,12 +984,19 @@ func TestRunCommandHelp_NoConfigPath(t *testing.T) {
 // -h with a config path documents the field instead of the command, and does so
 // without the otherwise-required --file.
 func TestRunCommandHelp_ConfigPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_FUTURE","per_node_accelerator_count":16}]}`))
+	}))
+	t.Cleanup(srv.Close)
+
 	var out strings.Builder
 	cmd := newRunCommand()
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL)))
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"-h", "config.compute.accelerator_type"})
 	require.NoError(t, cmd.Execute())
 	assert.Contains(t, out.String(), "config.compute.accelerator_type")
+	assert.Contains(t, out.String(), "GPU_FUTURE - 16 accelerators per node")
 	assert.Contains(t, out.String(), "Type:     string")
 	assert.NotContains(t, out.String(), "Usage:")
 }

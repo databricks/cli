@@ -40,6 +40,38 @@ func TestFaultRulesWildcardMatch(t *testing.T) {
 	assert.Nil(t, fr.Check("PUT", "/api/2.0/permissions/pipelines/xyz", "tok", nil)) // exhausted
 }
 
+func TestFaultRulesWildcardPatterns(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		pattern string
+		path    string
+		match   bool
+	}{
+		{"middle", "POST /versions/*/complete", "/versions/42/complete", true},
+		{"middle_empty", "POST /versions/*/complete", "/versions//complete", true},
+		{"middle_does_not_span_slashes", "POST /versions/*/complete", "/versions/42/other/complete", false},
+		{"wrong_endpoint", "POST /versions/*/complete", "/versions/42/heartbeat", false},
+		{"extra_prefix", "POST /versions/*/complete", "/other/versions/42/complete", false},
+		{"extra_suffix", "POST /versions/*/complete", "/versions/42/complete/extra", false},
+		{"multiple", "POST /deployments/*/versions/*/complete", "/deployments/123/versions/42/complete", true},
+		{"trailing", "POST /versions/*", "/versions/42", true},
+		{"trailing_does_not_span_slashes", "POST /versions/*", "/versions/42/operations/1", false},
+		{"trailing_empty", "POST /versions/*", "/versions/", true},
+		{"recursive_trailing", "POST /versions/**", "/versions/42/operations/1", true},
+		{"recursive_empty", "POST /versions/**", "/versions/", true},
+		{"recursive_middle", "POST /**/complete", "/deployments/123/versions/42/complete", true},
+		{"recursive_wrong_suffix", "POST /**/complete", "/deployments/123/versions/42/heartbeat", false},
+		{"literal_metacharacters", "POST /v1.0/[id]?", "/v1.0/[id]?", true},
+		{"metacharacters_do_not_match", "POST /v1.0/[id]?", "/v1x0/i", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fr := testserver.NewFaultRules()
+			fr.Set("tok", tc.pattern, 500, "body", 0, 1, "")
+			assert.Equal(t, tc.match, fr.Check("POST", tc.path, "tok", nil) != nil)
+		})
+	}
+}
+
 func TestFaultRulesOffset(t *testing.T) {
 	fr := testserver.NewFaultRules()
 	fr.Set("tok", "GET /foo", 504, "body", 2, 1, "")

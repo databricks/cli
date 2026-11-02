@@ -11,7 +11,12 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
+
+// maxConfirmationAttempts is how many confirmation codes the user can enter
+// for a single device code before the login fails.
+const maxConfirmationAttempts = 3
 
 // deviceCodeIncompatibleFlags lists flags that device code login cannot honor.
 var deviceCodeIncompatibleFlags = []string{
@@ -55,6 +60,41 @@ func validateDeviceCodeLogin(ctx context.Context, cmd *cobra.Command) error {
 		}
 	}
 	return nil
+}
+
+// deviceCodeLogin logs in using the Databricks variant of the RFC 8628
+// device authorization grant. It shows the user where to approve the login
+// and exchanges the device code together with the confirmation code that the
+// user enters for a token. A rejected confirmation code leaves the device
+// code valid, so the user can re-enter it up to maxConfirmationAttempts
+// times.
+func deviceCodeLogin(ctx context.Context, persistentAuth *u2m.PersistentAuth) (*oauth2.Token, error) {
+	login, err := persistentAuth.NewDeviceCodeLogin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	da, err := login.RequestDeviceAuthorization(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var lastErr error
+	for attempt := range maxConfirmationAttempts {
+		code, err := promptForConfirmationCode(ctx, *da, lastErr, maxConfirmationAttempts-attempt)
+		if err != nil {
+			return nil, err
+		}
+
+		token, err := login.RequestDeviceAccessToken(ctx, da.DeviceCode, code)
+		if err == nil {
+			return token, nil
+		}
+		lastErr = err
+		if !errors.Is(err, u2m.ErrInvalidConfirmationCode) {
+			return nil, fmt.Errorf("token exchange: %w", err)
+		}
+	}
+	return nil, fmt.Errorf("%w. Start login from scratch", lastErr)
 }
 
 // promptForConfirmationCode shows the user where to approve the login and

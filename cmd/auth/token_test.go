@@ -7,6 +7,8 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
@@ -964,4 +967,34 @@ func TestWriteTokenErrorOutput(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, unauthenticatedErrorCode, got.ErrorCode)
 	assert.Equal(t, "refresh token is invalid", got.Message)
+}
+
+func TestResolveNoArgsTokenCreateNewProfileRejectsTakenName(t *testing.T) {
+	// See TestLoginDeviceCodePickerEmptyHost.
+	if runtime.GOOS == "windows" {
+		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
+	}
+	// Either one would resolve the profile before the picker is shown.
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, `[prod]
+host = https://prod.cloud.databricks.test
+
+[hostless]
+cluster_id = abc
+`))
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		name, _, err := resolveNoArgsToken(ctx, profile.DefaultProfiler, &auth.AuthArguments{}, nil, storage.StorageModePlaintext)
+		return name, err
+	})
+	tm.WaitFor(profilePickerCreateNewLabel)
+	tm.Type(termtest.KeyDown + termtest.KeyEnter)
+	tm.WaitFor("Databricks profile name [DEFAULT]")
+	tm.Type("prod" + termtest.KeyEnter)
+	tm.WaitFor(">> profile prod already exists")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("prod")) + "hostless" + termtest.KeyEnter)
+	tm.WaitFor(">> profile hostless already exists")
+	tm.Type(termtest.KeyCtrlC)
+	_, err := tm.Result()
+	assert.EqualError(t, err, "^C")
 }

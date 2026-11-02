@@ -11888,7 +11888,7 @@
       "description": "Behavioral configuration for a ModelProviderService: provider authentication\nand provider-specific fields, the catalog of models this provider\nservice can route to, and the passthrough policy that governs how request\nheaders, query parameters, and unmanaged subpaths cross the trust boundary\nto the upstream provider.",
       "fields": {
         "allow_all_targets": {
-          "description": "When true, accepts any model exposed by the upstream provider; `targets`\nis not required and does not restrict routability. When false, only\nmodels listed in `targets` are routable. Defaults to false.",
+          "description": "When true, allows models from the provider's built-in model catalog in\naddition to explicit `targets`. When false, only models listed in `targets`\nare routable. Defaults to false. CUSTOM providers have no built-in model\ncatalog and must leave this false and list their models in `targets`.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -12004,7 +12004,7 @@
           ]
         },
         "targets": {
-          "description": "Models and provider-native API types exposed by this provider service. Each\nentry must include at least one `native_api_types` value. When\n`allow_all_targets` is false, at least one entry is required and model\nservice destinations can reference only listed models. When\n`allow_all_targets` is true, any upstream model is routable; entries in\nthis list provide API-type metadata without restricting other models.",
+          "description": "Models and provider-native API types exposed by this provider service. Each\nentry must include at least one `native_api_types` value. When\n`allow_all_targets` is false, at least one entry is required and model\nservice destinations can reference only listed models. When\n`allow_all_targets` is true, models from the provider's built-in model\ncatalog are also routable. CUSTOM providers must explicitly list their\nmodels here and cannot enable `allow_all_targets`.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -29912,7 +29912,7 @@
           ]
         },
         "external_id": {
-          "description": "The external ID of the principal in Databricks.",
+          "description": "The external ID of the principal in the customer's IdP.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -30905,7 +30905,7 @@
           "launch_stage": "PUBLIC_BETA"
         },
         "update_mask": {
-          "description": "Optional. The list of fields to update.",
+          "description": "Required. The list of fields to update.",
           "launch_stage": "PUBLIC_BETA"
         }
       }
@@ -30918,7 +30918,7 @@
           "launch_stage": "PUBLIC_BETA"
         },
         "update_mask": {
-          "description": "Optional. The list of fields to update.",
+          "description": "Required. The list of fields to update.",
           "launch_stage": "PUBLIC_BETA"
         }
       }
@@ -30931,7 +30931,7 @@
           "launch_stage": "PUBLIC_BETA"
         },
         "update_mask": {
-          "description": "Optional. The list of fields to update.",
+          "description": "Required. The list of fields to update.",
           "launch_stage": "PUBLIC_BETA"
         }
       }
@@ -30944,7 +30944,7 @@
           "launch_stage": "PUBLIC_BETA"
         },
         "update_mask": {
-          "description": "Optional. The list of fields to update.",
+          "description": "Required. The list of fields to update.",
           "launch_stage": "PUBLIC_BETA"
         }
       }
@@ -30952,7 +30952,7 @@
     "iamv2.UpdateUserProxyRequest": {
       "fields": {
         "update_mask": {
-          "description": "Optional. The list of fields to update.",
+          "description": "Required. The list of fields to update.",
           "launch_stage": "PUBLIC_BETA"
         },
         "user": {
@@ -30965,7 +30965,7 @@
     "iamv2.UpdateUserRequest": {
       "fields": {
         "update_mask": {
-          "description": "Optional. The list of fields to update.",
+          "description": "Required. The list of fields to update.",
           "launch_stage": "PUBLIC_BETA"
         },
         "user": {
@@ -37469,10 +37469,10 @@
     "marketplace.AddExchangeForListingRequest": {
       "fields": {
         "exchange_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "listing_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37480,7 +37480,7 @@
       "fields": {
         "exchange_for_listing": {
           "ref": "marketplace.ExchangeListing",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37622,14 +37622,14 @@
       "fields": {
         "filter": {
           "ref": "marketplace.ExchangeFilter",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.CreateExchangeFilterResponse": {
       "fields": {
         "filter_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37637,32 +37637,32 @@
       "fields": {
         "exchange": {
           "ref": "marketplace.Exchange",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.CreateExchangeResponse": {
       "fields": {
         "exchange_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.CreateFileRequest": {
       "fields": {
         "display_name": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "file_parent": {
           "ref": "marketplace.FileParent",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "marketplace_file_type": {
           "ref": "marketplace.MarketplaceFileType",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "mime_type": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37670,11 +37670,11 @@
       "fields": {
         "file_info": {
           "ref": "marketplace.FileInfo",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "upload_url": {
           "description": "Pre-signed POST URL to blob storage",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37705,14 +37705,14 @@
       "fields": {
         "listing": {
           "ref": "marketplace.Listing",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.CreateListingResponse": {
       "fields": {
         "listing_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37759,14 +37759,14 @@
       "fields": {
         "provider": {
           "ref": "marketplace.ProviderInfo",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.CreateProviderResponse": {
       "fields": {
         "id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37830,63 +37830,63 @@
     "marketplace.Exchange": {
       "fields": {
         "comment": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "created_at": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "created_by": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "filters": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "linked_listings": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "name": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "updated_at": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "updated_by": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ExchangeFilter": {
       "fields": {
         "created_at": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "created_by": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "exchange_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "filter_type": {
           "ref": "marketplace.ExchangeFilterType",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "filter_value": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "name": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "updated_at": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "updated_by": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -37895,31 +37895,31 @@
         "GLOBAL_METASTORE_ID"
       ],
       "enum_launch_stages": {
-        "GLOBAL_METASTORE_ID": "PUBLIC_PREVIEW"
+        "GLOBAL_METASTORE_ID": "GA"
       }
     },
     "marketplace.ExchangeListing": {
       "fields": {
         "created_at": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "created_by": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "exchange_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "exchange_name": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "listing_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "listing_name": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38014,7 +38014,7 @@
       "fields": {
         "exchange": {
           "ref": "marketplace.Exchange",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38023,7 +38023,7 @@
       "fields": {
         "file_info": {
           "ref": "marketplace.FileInfo",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38032,7 +38032,7 @@
       "fields": {
         "version": {
           "description": "version here is latest logical version of the dashboard template",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38068,20 +38068,20 @@
     "marketplace.GetListingsRequest": {
       "fields": {
         "page_size": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.GetListingsResponse": {
       "fields": {
         "listings": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "next_page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38222,66 +38222,66 @@
     "marketplace.ListExchangeFiltersRequest": {
       "fields": {
         "exchange_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_size": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListExchangeFiltersResponse": {
       "fields": {
         "filters": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "next_page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListExchangesForListingRequest": {
       "fields": {
         "listing_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_size": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListExchangesForListingResponse": {
       "fields": {
         "exchange_listing": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "next_page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListExchangesRequest": {
       "fields": {
         "page_size": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListExchangesResponse": {
       "fields": {
         "exchanges": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "next_page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38289,23 +38289,23 @@
       "fields": {
         "file_parent": {
           "ref": "marketplace.FileParent",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_size": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListFilesResponse": {
       "fields": {
         "file_infos": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "next_page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38352,23 +38352,23 @@
     "marketplace.ListListingsForExchangeRequest": {
       "fields": {
         "exchange_id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_size": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListListingsForExchangeResponse": {
       "fields": {
         "exchange_listings": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "next_page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38426,23 +38426,23 @@
       "fields": {
         "dashboard_id": {
           "description": "dashboard_id will be used to open Lakeview dashboard.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "version": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.ListProvidersRequest": {
       "fields": {
         "page_size": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "page_token": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38791,7 +38791,7 @@
     "marketplace.ProviderAnalyticsDashboard": {
       "fields": {
         "id": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -38993,7 +38993,7 @@
       "fields": {
         "filter": {
           "ref": "marketplace.ExchangeFilter",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39001,7 +39001,7 @@
       "fields": {
         "filter": {
           "ref": "marketplace.ExchangeFilter",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39009,7 +39009,7 @@
       "fields": {
         "exchange": {
           "ref": "marketplace.Exchange",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39017,7 +39017,7 @@
       "fields": {
         "exchange": {
           "ref": "marketplace.Exchange",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39044,7 +39044,7 @@
       "fields": {
         "listing": {
           "ref": "marketplace.Listing",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39052,22 +39052,22 @@
       "fields": {
         "listing": {
           "ref": "marketplace.Listing",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
     "marketplace.UpdatePersonalizationRequestRequest": {
       "fields": {
         "reason": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "share": {
           "ref": "marketplace.ShareInfo",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "status": {
           "ref": "marketplace.PersonalizationRequestStatus",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39075,7 +39075,7 @@
       "fields": {
         "request": {
           "ref": "marketplace.PersonalizationRequest",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39083,7 +39083,7 @@
       "fields": {
         "version": {
           "description": "this is the version of the dashboard template we want to update our user to\ncurrent expectation is that it should be equal to latest version of the dashboard template",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39091,14 +39091,14 @@
       "fields": {
         "dashboard_id": {
           "description": "this is newly created Lakeview dashboard for the user",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "id": {
           "description": "id \u0026 version should be the same as the request",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "version": {
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39106,7 +39106,7 @@
       "fields": {
         "provider": {
           "ref": "marketplace.ProviderInfo",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -39114,7 +39114,7 @@
       "fields": {
         "provider": {
           "ref": "marketplace.ProviderInfo",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -150449,7 +150449,7 @@
               },
               {
                 "name": "external_id",
-                "description": "The external ID of the principal in Databricks.",
+                "description": "The external ID of the principal in the customer's IdP.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -154744,7 +154744,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -154764,7 +154764,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -154821,7 +154821,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -154875,7 +154875,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -154921,7 +154921,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -154941,7 +154941,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -155169,7 +155169,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -155250,7 +155250,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -155322,7 +155322,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -155342,7 +155342,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -155530,7 +155530,7 @@
             "all_fields": [
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -155705,7 +155705,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -192648,10 +192648,8 @@
           "name": "marketplace"
         },
         "docs_group": "marketplace",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "list": {
           "named_id_map": {
             "pascal_name": "ExchangeFilterNameToIdMap"
@@ -192669,10 +192667,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "is_crud_create": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateExchangeFilterRequest",
               "is_object": true,
@@ -192722,10 +192718,8 @@
             "summary": "Delete an exchange filter.",
             "path": "/api/2.0/marketplace-exchange/filters/{id}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteExchangeFilterRequest",
               "is_object": true,
@@ -192782,10 +192776,8 @@
             "summary": "List exchange filters.",
             "path": "/api/2.0/marketplace-exchange/filters",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListExchangeFiltersRequest",
               "is_object": true,
@@ -192868,10 +192860,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateExchangeFilterRequest",
               "is_object": true,
@@ -192961,10 +192951,8 @@
           "name": "marketplace"
         },
         "docs_group": "marketplace",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "list": {
           "named_id_map": {
             "pascal_name": "ExchangeNameToIdMap"
@@ -192982,10 +192970,8 @@
             "can_use_json": true,
             "is_crud_create": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "AddExchangeForListingRequest",
               "is_object": true,
@@ -193076,10 +193062,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "is_crud_create": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateExchangeRequest",
               "is_object": true,
@@ -193129,10 +193113,8 @@
             "summary": "Delete an exchange.",
             "path": "/api/2.0/marketplace-exchange/exchanges/{id}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteExchangeRequest",
               "is_object": true,
@@ -193189,10 +193171,8 @@
             "summary": "Remove an exchange for listing.",
             "path": "/api/2.0/marketplace-exchange/exchanges-for-listing/{id}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "RemoveExchangeForListingRequest",
               "is_object": true,
@@ -193250,10 +193230,8 @@
             "path": "/api/2.0/marketplace-exchange/exchanges/{id}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetExchangeRequest",
               "is_object": true,
@@ -193309,10 +193287,8 @@
             "summary": "List exchanges.",
             "path": "/api/2.0/marketplace-exchange/exchanges",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListExchangesRequest",
               "is_object": true
@@ -193355,10 +193331,8 @@
             "summary": "List exchanges for listing.",
             "path": "/api/2.0/marketplace-exchange/exchanges-for-listing",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListExchangesForListingRequest",
               "is_object": true,
@@ -193439,10 +193413,8 @@
             "summary": "List listings for exchange.",
             "path": "/api/2.0/marketplace-exchange/listings-for-exchange",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListListingsForExchangeRequest",
               "is_object": true,
@@ -193525,10 +193497,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateExchangeRequest",
               "is_object": true,
@@ -193618,10 +193588,8 @@
           "name": "marketplace"
         },
         "docs_group": "marketplace",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "list": {
           "named_id_map": {
             "pascal_name": "FileInfoDisplayNameToIdMap"
@@ -193639,10 +193607,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "is_crud_create": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateFileRequest",
               "is_object": true,
@@ -193780,10 +193746,8 @@
             "summary": "Delete a file.",
             "path": "/api/2.0/marketplace-provider/files/{file_id}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteFileRequest",
               "is_object": true,
@@ -193841,10 +193805,8 @@
             "path": "/api/2.0/marketplace-provider/files/{file_id}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetFileRequest",
               "is_object": true,
@@ -193901,10 +193863,8 @@
             "path": "/api/2.0/marketplace-provider/files",
             "can_use_json": true,
             "must_use_json": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListFilesRequest",
               "is_object": true,
@@ -193982,10 +193942,8 @@
           "name": "marketplace"
         },
         "docs_group": "marketplace",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "list": {
           "named_id_map": {
             "pascal_name": "ListingSummaryNameToIdMap"
@@ -194003,10 +193961,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "is_crud_create": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateListingRequest",
               "is_object": true,
@@ -194056,10 +194012,8 @@
             "summary": "Delete a listing.",
             "path": "/api/2.0/marketplace-provider/listings/{id}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteListingRequest",
               "is_object": true,
@@ -194117,10 +194071,8 @@
             "path": "/api/2.0/marketplace-provider/listings/{id}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetListingRequest",
               "is_object": true,
@@ -194176,10 +194128,8 @@
             "summary": "List listings.",
             "path": "/api/2.0/marketplace-provider/listings",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetListingsRequest",
               "is_object": true
@@ -194224,10 +194174,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateListingRequest",
               "is_object": true,
@@ -194317,10 +194265,8 @@
           "name": "marketplace"
         },
         "docs_group": "marketplace",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "list": {
           "request": {
             "pascal_name": "ListAllPersonalizationRequestsRequest"
@@ -194333,10 +194279,8 @@
             "summary": "All personalization requests across all listings.",
             "path": "/api/2.0/marketplace-provider/personalization-requests",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListAllPersonalizationRequestsRequest",
               "is_object": true
@@ -194380,10 +194324,8 @@
             "path": "/api/2.0/marketplace-provider/listings/{listing_id}/personalization-requests/{request_id}/request-status",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdatePersonalizationRequestRequest",
               "is_object": true,
@@ -194582,10 +194524,8 @@
           "name": "marketplace"
         },
         "docs_group": "marketplace",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "methods": [
           {
             "name": "Create",
@@ -194594,10 +194534,8 @@
             "path": "/api/2.0/marketplace-provider/analytics_dashboard",
             "is_legacy_empty_request": true,
             "is_crud_create": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateProviderAnalyticsDashboardRequest",
               "is_object": true
@@ -194635,10 +194573,8 @@
             "path": "/api/2.0/marketplace-provider/analytics_dashboard",
             "is_legacy_empty_request": true,
             "is_crud_read": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListProviderAnalyticsDashboardRequest",
               "is_object": true
@@ -194694,10 +194630,8 @@
             "path": "/api/2.0/marketplace-provider/analytics_dashboard/latest",
             "is_legacy_empty_request": true,
             "is_crud_read": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetLatestVersionProviderAnalyticsDashboardRequest",
               "is_object": true
@@ -194714,10 +194648,8 @@
             "path": "/api/2.0/marketplace-provider/analytics_dashboard/{id}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateProviderAnalyticsDashboardRequest",
               "is_object": true,
@@ -194830,10 +194762,8 @@
           "name": "marketplace"
         },
         "docs_group": "marketplace",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "list": {
           "named_id_map": {
             "pascal_name": "ProviderInfoNameToIdMap"
@@ -194851,10 +194781,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "is_crud_create": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateProviderRequest",
               "is_object": true,
@@ -194904,10 +194832,8 @@
             "summary": "Delete provider.",
             "path": "/api/2.0/marketplace-provider/providers/{id}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteProviderRequest",
               "is_object": true,
@@ -194965,10 +194891,8 @@
             "path": "/api/2.0/marketplace-provider/providers/{id}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetProviderRequest",
               "is_object": true,
@@ -195024,10 +194948,8 @@
             "summary": "List providers.",
             "path": "/api/2.0/marketplace-provider/providers",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListProvidersRequest",
               "is_object": true
@@ -195072,10 +194994,8 @@
             "can_use_json": true,
             "must_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateProviderRequest",
               "is_object": true,
@@ -232729,7 +232649,7 @@
               },
               {
                 "name": "external_id",
-                "description": "The external ID of the principal in Databricks.",
+                "description": "The external ID of the principal in the customer's IdP.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -236165,7 +236085,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -236185,7 +236105,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -236242,7 +236162,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -236296,7 +236216,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -236342,7 +236262,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -236362,7 +236282,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -236590,7 +236510,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -236671,7 +236591,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -236743,7 +236663,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -236763,7 +236683,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "Optional. The list of fields to update.",
+                  "description": "Required. The list of fields to update.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -236951,7 +236871,7 @@
             "all_fields": [
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -237126,7 +237046,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "Optional. The list of fields to update.",
+                "description": "Required. The list of fields to update.",
                 "required": true,
                 "is_query": true,
                 "entity": {

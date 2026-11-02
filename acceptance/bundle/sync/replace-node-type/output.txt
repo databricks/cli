@@ -1,0 +1,35 @@
+
+=== A file holds the name of notebook bom.sql, a notebook holds the name of file plain.sql
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/replace-node-type-[UNIQUE_NAME]/default/files/bom.sql --file bom.sql --format RAW
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/replace-node-type-[UNIQUE_NAME]/default/files/plain --file plain.sql --format SOURCE --language SQL
+
+>>> list
+FILE bom.sql
+NOTEBOOK plain
+
+=== Sync replaces both
+
+>>> [CLI] bundle sync --output text
+Action: PUT: bom.sql, plain.sql
+Initial Sync Complete
+Uploaded bom.sql
+Uploaded plain.sql
+
+>>> list
+NOTEBOOK bom
+FILE plain.sql
+
+=== Remove both local files and sync again
+
+>>> [CLI] bundle sync --output text
+Action: DELETE: bom.sql, plain.sql
+Deleted bom.sql
+Deleted plain.sql
+Initial Sync Complete
+
+=== BUG: bom remains after sync reports deleting bom.sql
+
+>>> list
+NOTEBOOK bom

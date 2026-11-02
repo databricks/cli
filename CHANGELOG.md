@@ -1,5 +1,43 @@
 # Version changelog
 
+## Release v1.23.0 (2026-10-29)
+
+### CLI
+
+ * Fix GitHub API rate limit errors in `aitools list` and plugin installs by pinning skills to `0.2.32`. ([#7159](https://github.com/databricks/cli/pull/7159))
+ * `databricks ssh connect` now makes `claude` and `codex` available on dedicated clusters. ([#7190](https://github.com/databricks/cli/pull/7190))
+ * `databricks ssh connect` on serverless now makes `claude` and `codex` available in IDE sessions (`--ide`) and to non-interactive commands (e.g. `databricks ssh connect -- 'claude -p "..."'`). ([#7123](https://github.com/databricks/cli/pull/7123))
+
+### AI Runtime
+
+ * Add workload support for the GPU_1xRTX6000 accelerator type in enabled workspaces. ([#7214](https://github.com/databricks/cli/pull/7214))
+ * Show only the accelerator types available in the current workspace in `databricks air run -h config.compute`. ([#6993](https://github.com/databricks/cli/pull/6993))
+
+### Bundles
+
+ * Fixed `bundle validate` failing with "expected a map to index" when a job `schedule`, `trigger` or `continuous` is a reference to a whole block, such as `${resources.jobs.base.schedule}`. ([#7225](https://github.com/databricks/cli/pull/7225))
+ * Added `lifecycle.depends_on` to order resources without referencing their fields. ([#7120](https://github.com/databricks/cli/pull/7120))
+ * Immutable-folder deploys now refuse to deploy onto a snapshot that was modified outside the bundle (break glass); `bundle deploy --force` moves the deployment to a fresh snapshot. ([#6774](https://github.com/databricks/cli/pull/6774))
+ * Fix `--include-locations` failing when a resource is missing a required field. ([#7185](https://github.com/databricks/cli/pull/7185))
+ * Removed spurious "required field is not set" warnings for a field whose value is a reference to a whole block, such as `schedule: ${resources.jobs.base.schedule}`. ([#7226](https://github.com/databricks/cli/pull/7226))
+ * Revert bundle file uploads to the legacy `/workspace-files/import-file` endpoint, rolling back [#6149](https://github.com/databricks/cli/pull/6149) and [#7034](https://github.com/databricks/cli/pull/7034) released in [v1.21.0](https://github.com/databricks/cli/releases/tag/v1.21.0). This fixes notebooks being uploaded as plain files and deployments failing (for example SQL notebooks in [#7216](https://github.com/databricks/cli/issues/7216)). A remote file or notebook whose type differs from the local one is now deleted and replaced instead of blocking the deploy. ([#7218](https://github.com/databricks/cli/pull/7218))
+ * Support selecting resources for deletion with `bundle deploy --select`. ([#7023](https://github.com/databricks/cli/pull/7023))
+ * Add the `workspace.sync_mode` setting with the values `overwrite` (default), `in-place`, and `immutable`. It replaces `presets.source_linked_deployment` (use `in-place`) and `experimental.immutable_folder` (use `immutable`), which are now deprecated and emit a warning. ([#7183](https://github.com/databricks/cli/pull/7183))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7213](https://github.com/databricks/cli/pull/7213))
+ * Update the Go SDK to [v0.190.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.190.0). ([#7155](https://github.com/databricks/cli/pull/7155))
+ * Update the Go SDK to [v0.191.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.191.0). ([#7211](https://github.com/databricks/cli/pull/7211))
+ * Bump Node.js downloaded by the `ssh` agent shim from v24.21.0 to v24.22.2. ([#7246](https://github.com/databricks/cli/pull/7246))
+
+
+## Release v1.22.1 (2026-10-22)
+
+### CLI
+
+ * Fix GitHub API rate limit errors in `aitools list` and plugin installs by pinning skills to `0.2.32`. ([#7159](https://github.com/databricks/cli/pull/7159))
+
 ## Release v1.22.0 (2026-10-22)
 
 ### CLI

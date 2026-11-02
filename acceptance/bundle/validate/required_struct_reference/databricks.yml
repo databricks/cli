@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  clusters:
+    source:
+      is_single_node: true
+    target:
+      # clients is a required field of workload_type. Both of its fields are references.
+      workload_type:
+        clients:
+          notebooks: ${resources.clusters.source.is_single_node}
+          jobs: ${resources.clusters.source.is_single_node}

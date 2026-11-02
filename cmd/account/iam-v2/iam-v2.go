@@ -2915,7 +2915,7 @@ Update a group in the account.
 
   Arguments:
     GROUP_ID: Required. Internal ID of the group in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.`
+    UPDATE_MASK: Required. The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -3005,7 +3005,7 @@ Update a service principal in the account.
 
   Arguments:
     SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.
+    UPDATE_MASK: Required. The list of fields to update.
     DISPLAY_NAME: Display name of the service principal.
     ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
@@ -3112,7 +3112,7 @@ Update a user in the account.
 
   Arguments:
     USER_ID: Required. Internal ID of the user in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.
+    UPDATE_MASK: Required. The list of fields to update.
     USERNAME: Username/email of the user.
     FULL_NAME:
     ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.

@@ -1,0 +1,34 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# Deploy both jobs.
+title "Initial deploy\n"
+trace $CLI bundle deploy
+# Register [KEEP_ID]/[GONE_ID] from state while both still exist, so the delete
+# request body below is masked deterministically.
+replace_ids.py
+
+# Remove 'gone' from config. It is now orphaned in state and planned for deletion.
+envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
+
+# Filter the plan to the deletion and serialize it. (Kept out of recorded output:
+# the JSON embeds remote state that differs between local and cloud.)
+$CLI bundle plan --select jobs.gone -o json > plan.json
+
+# Deploy from the plan file WITHOUT re-passing --select: the deletion was selected
+# at plan time and survives serialization, so applying the saved plan deletes 'gone'
+# and reports the ", 1 not selected" suffix from plan.NotSelected, not the flag.
+title "bundle deploy --plan (no --select)\n"
+trace $CLI bundle deploy --plan plan.json
+
+# The delete call targeted 'gone' only.
+trace print_requests.py --sort //jobs/delete
+
+# A full plan now has nothing to delete and 'keep' is unchanged.
+trace $CLI bundle plan
