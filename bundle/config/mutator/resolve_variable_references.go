@@ -59,7 +59,7 @@ type resolveVariableReferences struct {
 	// outside of 'resources'.
 	includeResources bool
 
-	artifactsReferenceUsed  bool
+	artifactsReferenceUsed   bool
 	validateVolumeSchemaRefs bool
 
 	// excludePaths lists variable reference paths (e.g. "workspace.file_path") whose
