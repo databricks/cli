@@ -1,0 +1,13 @@
+
+=== A submit error from the service is shown as is, and no update ID is printed
+>>> musterr [CLI] pipelines test --pipeline-id 1234
+Error: An active update '[UUID]' already exists for pipeline '1234'.
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/1234/updates",
+  "body": {
+    "test_only": true
+  }
+}
