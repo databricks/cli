@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -221,6 +222,58 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_VIEW", UserName: "TestUser2"})
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+}
+
+func TestTargetGroupPermissionOverridesJobWithoutWarning(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		rootPermissions []resources.Permission
+		wantWarnings    int
+	}{
+		{name: "target only"},
+		{
+			name: "root and target",
+			rootPermissions: []resources.Permission{
+				{Level: permissions.CAN_VIEW, GroupName: "TestGroup"},
+			},
+			wantWarnings: 1,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Permissions: tc.rootPermissions,
+					Targets: map[string]*config.Target{
+						"dev-ci": {
+							Permissions: []resources.Permission{
+								{Level: permissions.CAN_VIEW, GroupName: "TestGroup"},
+							},
+							Resources: &config.Resources{
+								Jobs: map[string]*resources.Job{
+									"job_1": {
+										JobSettings: jobs.JobSettings{Name: "job_1"},
+										Permissions: []resources.JobPermission{
+											{Level: "CAN_MANAGE_RUN", GroupName: "TestGroup"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			diags := bundle.ApplySeq(t.Context(), b, mutator.SelectTarget("dev-ci"), ApplyBundlePermissions())
+			require.Len(t, diags, tc.wantWarnings)
+			if tc.wantWarnings > 0 {
+				require.Equal(t, diag.Warning, diags[0].Severity)
+				require.Equal(t, "'jobs' already has permissions set for 'TestGroup' group", diags[0].Summary)
+			}
+			require.Equal(t, []resources.JobPermission{
+				{Level: "CAN_MANAGE_RUN", GroupName: "TestGroup"},
+			}, b.Config.Resources.Jobs["job_1"].Permissions)
+		})
+	}
 }
 
 func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {

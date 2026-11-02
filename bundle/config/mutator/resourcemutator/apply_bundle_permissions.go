@@ -108,6 +108,12 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diag.FromErr(err)
 	}
 
+	// Target permissions follow root permissions when SelectTarget merges the lists.
+	targetPermissionsStart := len(b.Config.Permissions)
+	if b.Target != nil {
+		targetPermissionsStart -= len(b.Target.Permissions)
+	}
+
 	for _, group := range b.Config.Resources.AllResources() {
 		key := group.Description.PluralName
 		lm, ok := levelsMap[key]
@@ -124,6 +130,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 				permissions,
 				key,
 				lm,
+				targetPermissionsStart,
 			)...)
 			writePermissions(field, permissions)
 		}
@@ -187,9 +194,10 @@ func convertPermissions(
 	resourcePermissions []resources.Permission,
 	resourceName string,
 	lm map[string]string,
+	targetPermissionsStart int,
 ) []resources.Permission {
 	var permissions []resources.Permission
-	for _, p := range bundlePermissions {
+	for i, p := range bundlePermissions {
 		level, ok := lm[string(p.Level)]
 		// If there is no bundle permission level defined in the map, it means
 		// it's not applicable for the resource, therefore skipping
@@ -197,7 +205,13 @@ func convertPermissions(
 			continue
 		}
 
-		if notifyForPermissionOverlap(ctx, p, resourcePermissions, resourceName) {
+		if i >= targetPermissionsStart && resourceName == "jobs" && p.GroupName != "" {
+			// A job-level group permission takes precedence over the target-level one.
+			overlap, _ := isPermissionOverlap(p, resourcePermissions, resourceName)
+			if overlap {
+				continue
+			}
+		} else if notifyForPermissionOverlap(ctx, p, resourcePermissions, resourceName) {
 			continue
 		}
 
