@@ -601,17 +601,21 @@ func TestLoginDeviceCodeCompletionWithSameHostInAnotherForm(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// The server keeps rejecting the token requests for a rate limited device
-// code, so its pending login is deleted.
+// A rate limit can be lifted, so the pending login of a rate limited token
+// request is kept for a rerun.
 func TestLoginDeviceCodeCompletionRateLimited(t *testing.T) {
 	server := testserver.New(t)
+	var tokenRequests atomic.Int32
 	// The router keeps the first handler registered for a route, so this one
-	// replaces the default token endpoint.
+	// replaces the default token endpoint. It rate limits the first request.
 	server.Handle("POST", "/oidc/v1/token", func(_ testserver.Request) any {
-		return testserver.Response{
-			StatusCode: http.StatusTooManyRequests,
-			Body:       map[string]string{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"},
+		if tokenRequests.Add(1) == 1 {
+			return testserver.Response{
+				StatusCode: http.StatusTooManyRequests,
+				Body:       map[string]string{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"},
+			}
 		}
+		return map[string]any{"access_token": "oauth-token", "expires_in": 3600, "token_type": "Bearer"}
 	})
 	testserver.AddDefaultHandlers(server)
 	setUpDeviceCodeLogin(t, "")
@@ -620,10 +624,10 @@ func TestLoginDeviceCodeCompletionRateLimited(t *testing.T) {
 
 	args := []string{"--host", server.URL, "--profile", "test", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY"}
 	err := runDeviceCodeLogin(ctx, args...)
-	assert.EqualError(t, err, "token exchange: Device grant rate limit exceeded (error code: invalid_request). "+startNewLoginHint)
+	assert.EqualError(t, err, "token exchange: Device grant rate limit exceeded (error code: invalid_request). Rerun this command later. "+startNewLoginHint+" if it still fails")
 
-	err = runDeviceCodeLogin(ctx, args...)
-	assert.EqualError(t, err, "no pending device code login for profile test. "+startNewLoginHint)
+	require.NoError(t, runDeviceCodeLogin(ctx, args...))
+	assert.Equal(t, int32(2), tokenRequests.Load())
 }
 
 func TestLoginDeviceCodeCompletionWithoutHostSkipsPicker(t *testing.T) {

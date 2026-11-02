@@ -132,7 +132,8 @@ from, e.g., an agent's transcript cannot complete the login on another machine.
 Each target has one pending login, and a new login for it replaces the old
 one. The second step checks the user code, so a replaced login fails with a
 clear error without sending its confirmation code. A wrong confirmation code
-keeps the pending login for a rerun. A device code the server no longer knows
+or a rate limited token request keeps the pending login for a rerun. A device
+code the server no longer knows
 deletes it, and so does any successful login for the same target
 (`storeLoginToken`), with or without device code. The CLI does not expire
 pending logins itself: the server does. `auth logout` deletes the pending login

@@ -43,8 +43,7 @@ var ErrInvalidConfirmationCode = errors.New("invalid confirmation code")
 var ErrInvalidDeviceCode = errors.New("invalid device code")
 
 // ErrDeviceCodeRateLimited matches the token exchange error for a device code
-// the server received too many token requests for. The login has to be
-// started again.
+// the server received too many token requests for.
 var ErrDeviceCodeRateLimited = errors.New("device code rate limited")
 
 // DeviceAuthorization holds what the user needs to approve a device code
