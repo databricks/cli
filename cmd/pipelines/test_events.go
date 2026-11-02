@@ -149,8 +149,8 @@ func (r *testEventReader) read(ctx context.Context, sinceTimestamp string) ([]te
 
 // testCaseResult is what the events report about one test case.
 type testCaseResult struct {
-	// id is origin.test_case_id: the pytest test ID, relative to pytest's rootdir, such as
-	// tests/test_orders.py::test_backfill.
+	// id is origin.test_case_id: the absolute workspace path of the test file followed by the pytest
+	// test ID, such as /Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_backfill.
 	id     string
 	status testCaseStatus
 	// finals counts final outcomes; a complete result has exactly one per case.
