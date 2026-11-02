@@ -601,6 +601,18 @@ func TestLoginDeviceCodeCompletionWithSameHostInAnotherForm(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// The scopes of the second step can be listed in another order, because
+// they request the same scopes.
+func TestLoginDeviceCodeCompletionWithSameScopesInAnotherOrder(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	setUpDeviceCodeLogin(t, "")
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--scopes", "sql,all-apis"))
+
+	err := runDeviceCodeLogin(ctx, "--host", server.URL, "--scopes", "all-apis,sql", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
+	assert.NoError(t, err)
+}
+
 // A rate limit can be lifted, so the pending login of a rate limited token
 // request is kept for a rerun.
 func TestLoginDeviceCodeCompletionRateLimited(t *testing.T) {

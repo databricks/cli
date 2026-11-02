@@ -261,10 +261,19 @@ func (l nonInteractiveDeviceCodeLogin) changedSetting(pending storage.PendingLog
 		return "a different host"
 	case pending.ClientID != l.clientID:
 		return "a different client ID"
-	case !slices.Equal(pending.Scopes, l.scopes):
+	case !sameScopes(pending.Scopes, l.scopes):
 		return "different scopes"
 	}
 	return ""
+}
+
+// sameScopes reports whether two scope lists request the same scopes, in any
+// order, like --scopes does.
+func sameScopes(a, b []string) bool {
+	a, b = slices.Clone(a), slices.Clone(b)
+	slices.Sort(a)
+	slices.Sort(b)
+	return slices.Equal(slices.Compact(a), slices.Compact(b))
 }
 
 // sameCode reports whether two device codes match when compared the way the
