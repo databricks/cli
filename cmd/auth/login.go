@@ -247,6 +247,14 @@ a new profile is created.
 			}
 		}
 
+		// setHost normalizes the host only after the keyring probe and the
+		// profile name prompt, so reject an invalid host before them.
+		if authArguments.Host != "" {
+			if err := validateLoginHost(authArguments.Host); err != nil {
+				return err
+			}
+		}
+
 		if err := validateDeviceCodeCompletionFlags(cmd); err != nil {
 			return err
 		}
@@ -639,6 +647,11 @@ func normalizeLoginHost(authArguments *auth.AuthArguments) error {
 		authArguments.AccountID = params.AccountID
 	}
 	return nil
+}
+
+// validateLoginHost returns the error normalizeLoginHost returns for host.
+func validateLoginHost(host string) error {
+	return normalizeLoginHost(&auth.AuthArguments{Host: host})
 }
 
 // lacksHostname reports whether host, with or without a scheme, is a URL

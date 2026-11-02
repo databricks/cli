@@ -60,7 +60,7 @@ func promptForHost(ctx context.Context) (string, error) {
 			}
 			// Reject hosts that setHost would reject after the prompt,
 			// e.g. "/" or "?o=123", while the user can still edit them.
-			return normalizeLoginHost(&auth.AuthArguments{Host: input})
+			return validateLoginHost(input)
 		},
 	})
 	return strings.TrimSpace(result), err

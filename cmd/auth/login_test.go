@@ -1519,6 +1519,25 @@ func TestLoginSkipWorkspaceHostEmptyAfterNormalization(t *testing.T) {
 	assert.EqualError(t, err, `invalid host "?a=123"`)
 }
 
+func TestLoginRejectsInvalidHostBeforeProfileNamePrompt(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "slash", args: []string{"--host", "/"}},
+		{name: "no hostname", args: []string{"--host", "https://"}},
+		{name: "positional arg without hostname", args: []string{"https://?o=123"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Without --profile, login would otherwise wait at the profile name prompt.
+			tm := startLogin(t, "", tt.args...)
+			_, err := tm.Result()
+			assert.ErrorIs(t, err, errInvalidHost)
+		})
+	}
+}
+
 func TestPromptForProfileRejectsTakenName(t *testing.T) {
 	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
 		return promptForProfile(ctx, "DEFAULT", []string{"DEFAULT", "taken"})
