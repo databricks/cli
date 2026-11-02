@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -212,10 +213,10 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		}
 	} else {
 		// A device code login started for the profile could still complete
-		// and save a token for it.
-		err = args.tokenStore.Delete(pendingLoginKey(matchedProfile.Name))
-		if err != nil {
-			return fmt.Errorf("failed to delete pending device code login for profile %q: %w", matchedProfile.Name, err)
+		// and save a token for it. The profile does not use the token store
+		// otherwise, so an unavailable store does not fail its logout.
+		if err := args.tokenStore.Delete(pendingLoginKey(matchedProfile.Name)); err != nil {
+			log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
 		}
 	}
 
