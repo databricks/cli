@@ -8,9 +8,7 @@ import "github.com/databricks/databricks-sdk-go/useragent"
 // Note: use of this function is incompatible with parallel execution.
 func SetAgent(t TestingT, agent string) {
 	NullEnvironment(t)
-	if agent != "" {
-		t.Setenv("AGENT", agent)
-	}
+	t.Setenv("AGENT", agent)
 	useragent.ClearCache()
 	t.Cleanup(useragent.ClearCache)
 }
