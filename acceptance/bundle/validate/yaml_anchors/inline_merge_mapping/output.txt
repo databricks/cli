@@ -1,5 +1,5 @@
 
->>> [CLI] bundle validate --strict -t dev
+>>> [CLI] bundle validate -t dev
 Name: test-bundle
 Target: dev
 Workspace:
@@ -8,7 +8,7 @@ Workspace:
 
 Validation OK!
 
->>> [CLI] bundle validate --strict -t dev -o json
+>>> [CLI] bundle validate -t dev -o json
 {
   "default": "overridden",
   "value": "overridden"
