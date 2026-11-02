@@ -389,13 +389,17 @@ func TestValidateDeviceCodeCompletionFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
+			cmd.Flags().Bool("use-device-code", false, "")
 			cmd.Flags().String("user-code", "", "")
 			cmd.Flags().String("confirmation-code", "", "")
+			if tt.useDeviceCode {
+				require.NoError(t, cmd.Flags().Set("use-device-code", "true"))
+			}
 			for name, value := range tt.flags {
 				require.NoError(t, cmd.Flags().Set(name, value))
 			}
 
-			err := validateDeviceCodeCompletionFlags(cmd, tt.useDeviceCode)
+			err := validateDeviceCodeCompletionFlags(cmd)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
 			} else {

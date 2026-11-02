@@ -246,7 +246,7 @@ a new profile is created.
 			}
 		}
 
-		if err := validateDeviceCodeCompletionFlags(cmd, useDeviceCode); err != nil {
+		if err := validateDeviceCodeCompletionFlags(cmd); err != nil {
 			return err
 		}
 		completeLogin := cmd.Flags().Changed("confirmation-code")
@@ -479,7 +479,7 @@ a new profile is created.
 			profile:        profileName,
 			host:           (&config.Config{Host: authArguments.Host}).CanonicalHostName(),
 			clientID:       clientID,
-			scopes:         scopesList,
+			scopes:         slices.Sorted(slices.Values(scopesList)),
 		}
 		var token *oauth2.Token
 		switch {

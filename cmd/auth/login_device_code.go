@@ -114,7 +114,11 @@ func deviceCodeLogin(ctx context.Context, persistentAuth *u2m.PersistentAuth) (*
 // validateDeviceCodeCompletionFlags returns an error if the flags that complete
 // a non-interactive device code login are not set together, or are set to an
 // empty code.
-func validateDeviceCodeCompletionFlags(cmd *cobra.Command, useDeviceCode bool) error {
+func validateDeviceCodeCompletionFlags(cmd *cobra.Command) error {
+	useDeviceCode, err := cmd.Flags().GetBool("use-device-code")
+	if err != nil {
+		return err
+	}
 	hasUserCode := cmd.Flags().Changed("user-code")
 	hasConfirmationCode := cmd.Flags().Changed("confirmation-code")
 	switch {
@@ -137,8 +141,8 @@ func validateDeviceCodeCompletionFlags(cmd *cobra.Command, useDeviceCode bool) e
 // that cannot read the confirmation code from stdin. The first step stores the
 // device code as a pending login under key, and the second step exchanges it,
 // so that the device code never leaves the machine. The host is canonical, like
-// the host in the cache key, so that the same host passed in another form
-// completes the login.
+// the host in the cache key, and the scopes are sorted, so that the same host
+// or scopes passed in another form complete the login.
 type nonInteractiveDeviceCodeLogin struct {
 	persistentAuth *u2m.PersistentAuth
 	tokenStore     storage.Store
@@ -269,19 +273,10 @@ func (l nonInteractiveDeviceCodeLogin) changedSetting(pending storage.PendingLog
 		return "a different host"
 	case pending.ClientID != l.clientID:
 		return "a different client ID"
-	case !sameScopes(pending.Scopes, l.scopes):
+	case !slices.Equal(pending.Scopes, l.scopes):
 		return "different scopes"
 	}
 	return ""
-}
-
-// sameScopes reports whether two scope lists request the same scopes, in any
-// order, like --scopes does.
-func sameScopes(a, b []string) bool {
-	a, b = slices.Clone(a), slices.Clone(b)
-	slices.Sort(a)
-	slices.Sort(b)
-	return slices.Equal(slices.Compact(a), slices.Compact(b))
 }
 
 // sameCode reports whether two device codes match when compared the way the
