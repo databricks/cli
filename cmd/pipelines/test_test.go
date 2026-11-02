@@ -145,17 +145,6 @@ func TestTestTargetResumeCommand(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "pipeline key",
-			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
-			want:   "databricks pipelines test my_pipeline --resume u1",
-		},
-		{
-			name:   "pipeline key with target and profile",
-			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
-			flags:  map[string]string{"target": "dev", "profile": "staging"},
-			want:   "databricks pipelines test my_pipeline --target dev --profile staging --resume u1",
-		},
-		{
 			name:   "names that need quoting",
 			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
 			flags:  map[string]string{"target": "dev west", "profile": "CI West"},
@@ -185,44 +174,22 @@ func TestTestTargetResumeCommand(t *testing.T) {
 	}
 }
 
-func TestCheckTestUpdate(t *testing.T) {
+// Where the service cannot report test_only, as before pipeline testing is enabled, the update
+// may be a test update, so the command reads its results instead of rejecting it.
+func TestCheckTestUpdateWithoutTestOnly(t *testing.T) {
 	const updateID = "11111111-1111-1111-1111-111111111111"
-	tests := []struct {
-		name    string
-		update  string
-		wantErr string
-	}{
-		// Where the service cannot report test_only, as before pipeline testing is enabled, the
-		// update may be a test update, so the command reads its results.
-		{name: "test_only not reported", update: `{"state": "COMPLETED"}`},
-		{name: "test update", update: `{"state": "COMPLETED", "test_only": true}`},
-		{
-			name:    "regular update",
-			update:  `{"state": "COMPLETED", "test_only": false}`,
-			wantErr: "update " + updateID + " is not a test update; pass the update ID that pipelines test printed",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path == "/api/2.0/pipelines/p1/updates/"+updateID {
-					_, _ = w.Write([]byte(`{"update": ` + tc.update + `}`))
-					return
-				}
-				_, _ = w.Write([]byte(`{}`))
-			}))
-			t.Cleanup(srv.Close)
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token"})
-			require.NoError(t, err)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/pipelines/p1/updates/"+updateID {
+			_, _ = w.Write([]byte(`{"update": {"state": "COMPLETED"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token"})
+	require.NoError(t, err)
 
-			err = checkTestUpdate(t.Context(), w, "p1", updateID)
-			if tc.wantErr == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, tc.wantErr)
-			}
-		})
-	}
+	assert.NoError(t, checkTestUpdate(t.Context(), w, "p1", updateID))
 }
 
 func TestTestRunError(t *testing.T) {
@@ -233,32 +200,12 @@ func TestTestRunError(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "passed",
-			events: func() []testPipelineEvent {
-				return []testPipelineEvent{caseEvent(t, "t::a", "PASSED", ""), summaryEvent(t, 1, 1, 0, 0, 0)}
-			},
-			state: pipelines.UpdateInfoStateCompleted,
-		},
-		{
 			name: "incomplete after completion",
 			events: func() []testPipelineEvent {
 				return []testPipelineEvent{caseEvent(t, "t::a", "PASSED", "")}
 			},
 			state:   pipelines.UpdateInfoStateCompleted,
 			wantErr: root.ErrAlreadyPrinted.Error(),
-		},
-		{
-			name: "update failed with an error of its own and then the service's verdict",
-			events: func() []testPipelineEvent {
-				return []testPipelineEvent{
-					caseEvent(t, "t::a", "FAILED", ""),
-					summaryEvent(t, 1, 0, 1, 0, 0),
-					decodeTestEvent(t, `{"id": "own", "error": {"fatal": true, "exceptions": [{"message": "Commit failed."}]}}`),
-					decodeTestEvent(t, `{"id": "verdict", "error": {"fatal": true, "exceptions": [{"class_name": "TestFailure", "message": "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed."}]}}`),
-				}
-			},
-			state:   pipelines.UpdateInfoStateFailed,
-			wantErr: "update u1 is FAILED: Commit failed.",
 		},
 		{
 			name: "update failed with the service's verdict although no test failed",

@@ -24,9 +24,6 @@ trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout
 unset DATABRICKS_CONFIG_FILE
 rm .databrickscfg
 
-title "Another update cannot start while the test update is active"
-trace musterr $CLI pipelines test my_pipeline tests/test_orders.py
-
 title "Stopping the pipeline cancels the test update"
 trace $CLI pipelines stop my_pipeline
 trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id

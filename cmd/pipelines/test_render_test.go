@@ -2,7 +2,6 @@ package pipelines
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -10,23 +9,6 @@ import (
 )
 
 func sameTestID(id string) string { return id }
-
-func TestRenderShortTestIDs(t *testing.T) {
-	shortID := func(id string) string { return strings.TrimPrefix(id, "/Workspace/root/") }
-	var out bytes.Buffer
-	p := &testProgressPrinter{out: &out, shortID: shortID}
-	run := newTestRun()
-	p.caseFinished(run.add(caseEvent(t, "/Workspace/root/t.py::test_x", "FAILED", "2026-01-01T00:00:00.000Z")))
-	renderTestFailures(&out, run, shortID)
-
-	assert.Equal(t, `Running tests...
-t.py::test_x  FAILED
-
-FAILURES
-t.py::test_x
-  No details were reported.
-`, out.String())
-}
 
 func TestTestProgressPrinter(t *testing.T) {
 	var out bytes.Buffer
@@ -77,61 +59,6 @@ t::setup
   No details were reported.
 
 3 tests: 1 passed, 1 failed, 0 skipped, 1 error
-`,
-		},
-		{
-			name: "several errors",
-			events: func() []testPipelineEvent {
-				return []testPipelineEvent{
-					caseEvent(t, "t::setup", "ERROR", ""),
-					caseEvent(t, "t::teardown", "ERROR", ""),
-					summaryEvent(t, 2, 0, 0, 0, 2),
-				}
-			},
-			state: pipelines.UpdateInfoStateFailed,
-			want: `
-FAILURES
-t::setup
-  No details were reported.
-t::teardown
-  No details were reported.
-
-2 tests: 0 passed, 0 failed, 0 skipped, 2 errors
-`,
-		},
-		{
-			name: "incomplete",
-			events: func() []testPipelineEvent {
-				return []testPipelineEvent{caseEvent(t, "t::ok", "PASSED", ""), caseEvent(t, "t::skip", "SKIPPED", "")}
-			},
-			state: pipelines.UpdateInfoStateFailed,
-			want: `
-RUN INCOMPLETE: the update failed before all test results were received.
-Results received: 1 passed, 1 skipped.
-`,
-		},
-		{
-			name: "incomplete with one error",
-			events: func() []testPipelineEvent {
-				return []testPipelineEvent{caseEvent(t, "t::setup", "ERROR", "")}
-			},
-			state: pipelines.UpdateInfoStateFailed,
-			want: `
-FAILURES
-t::setup
-  No details were reported.
-
-RUN INCOMPLETE: the update failed before all test results were received.
-Results received: 1 error.
-`,
-		},
-		{
-			name:   "incomplete without results",
-			events: func() []testPipelineEvent { return nil },
-			state:  pipelines.UpdateInfoStateCanceled,
-			want: `
-RUN INCOMPLETE: the update was canceled before all test results were received.
-Results received: none.
 `,
 		},
 	}

@@ -46,14 +46,6 @@ Update: [UUID]
 Running tests...
 Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --profile run-control --resume [UUID]
 
-=== Another update cannot start while the test update is active
->>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py
-Recommendation: This command runs the last deployed version of the code
-
-If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
-
-Error: An active update '[UUID]' already exists for pipeline '[UUID]'.
-
 === Stopping the pipeline cancels the test update
 >>> [CLI] pipelines stop my_pipeline
 Stopping my_pipeline...

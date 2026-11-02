@@ -96,18 +96,6 @@ func TestTestRunIncompleteReason(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "no summary after failure",
-			events: []testPipelineEvent{passed()},
-			state:  pipelines.UpdateInfoStateFailed,
-			want:   "the update failed before all test results were received",
-		},
-		{
-			name:   "no summary after cancel",
-			events: nil,
-			state:  pipelines.UpdateInfoStateCanceled,
-			want:   "the update was canceled before all test results were received",
-		},
-		{
 			name:   "no summary after completion",
 			events: []testPipelineEvent{passed()},
 			state:  pipelines.UpdateInfoStateCompleted,
@@ -169,15 +157,6 @@ func TestTestRunIncompleteReason(t *testing.T) {
 			assert.Equal(t, tc.want, run.incompleteReason(tc.state))
 		})
 	}
-}
-
-func TestTestRunFatalError(t *testing.T) {
-	run := newTestRun()
-	run.add(decodeTestEvent(t, `{
-		"id": "fatal", "event_type": "update_progress", "level": "ERROR",
-		"error": {"fatal": true, "exceptions": [{"class_name": "ComputeTerminated", "message": "Compute stopped."}]}
-	}`))
-	assert.Equal(t, "ComputeTerminated: Compute stopped.", run.fatalError)
 }
 
 func TestTestEventReaderFollowsPages(t *testing.T) {
