@@ -22,8 +22,13 @@ type FileInfoWithWorkspaceObjectInfo interface {
 	WorkspaceObjectInfo() workspace.ObjectInfo
 }
 
-// Maximum length in bytes of the notebook header.
-const headerLength = 32
+// Marker the workspace looks for on the first line of a source file to import it as a
+// notebook (NOTEBOOK_IDENTIFIER in universe's NotebookUtils).
+const notebookSourceMarker = "Databricks notebook source"
+
+// Number of leading bytes the workspace inspects for the marker
+// (NOTEBOOK_IDENTIFIER_BUFFER_LENGTH in universe's NotebookUtils).
+const headerLength = 200
 
 // file wraps an fs.File and implements a few helper methods such that
 // they don't need to be inlined in the [DetectWithFS] function below.
@@ -126,29 +131,25 @@ func DetectBytes(name string, content []byte) (notebook bool, language workspace
 }
 
 // detectSource reports whether a source file with the given name and first line is a notebook.
+// It applies the same rule as the workspace's import-file endpoint (checkSourceFileNotebook in
+// universe's NotebookUtils), so the remote name the CLI predicts matches what the server creates:
+// the extension picks the language and the first line only has to contain the marker. A leading
+// byte order mark or a different comment prefix therefore still counts.
 func detectSource(name, fileHeader string) (notebook bool, language workspace.Language) {
-	header := ""
-
-	// Determine which header to expect based on filename extension.
-	ext := strings.ToLower(filepath.Ext(name))
-	switch ext {
+	switch strings.ToLower(filepath.Ext(name)) {
 	case ExtensionPython:
-		header = `# Databricks notebook source`
 		language = workspace.LanguagePython
 	case ExtensionR:
-		header = `# Databricks notebook source`
 		language = workspace.LanguageR
 	case ExtensionScala:
-		header = "// Databricks notebook source"
 		language = workspace.LanguageScala
 	case ExtensionSql:
-		header = "-- Databricks notebook source"
 		language = workspace.LanguageSql
 	default:
 		return false, ""
 	}
 
-	if fileHeader != header {
+	if !strings.Contains(fileHeader, notebookSourceMarker) {
 		return false, ""
 	}
 
