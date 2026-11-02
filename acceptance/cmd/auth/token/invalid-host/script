@@ -7,3 +7,7 @@ unset DATABRICKS_CONFIG_PROFILE
 # A host that is empty without its query params is rejected instead of
 # falling back to DATABRICKS_HOST.
 trace musterr $CLI auth token --host '?o=123'
+
+# A host without a hostname is rejected instead of being read as a host
+# named "https".
+trace musterr $CLI auth token --host 'https://'

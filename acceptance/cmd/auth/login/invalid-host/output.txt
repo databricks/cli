@@ -1,3 +1,6 @@
 
 >>> musterr [CLI] auth login --host ?o=123 --profile test
 Error: invalid host "?o=123"
+
+>>> musterr [CLI] auth login --host https:// --profile test
+Error: invalid host "https://"

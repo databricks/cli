@@ -3,3 +3,7 @@ sethome "./home"
 # A host that is empty without its query params is rejected before login
 # can fall back to discovery or DATABRICKS_HOST.
 trace musterr $CLI auth login --host '?o=123' --profile test
+
+# A host without a hostname is rejected instead of being read as a host
+# named "https".
+trace musterr $CLI auth login --host 'https://' --profile test

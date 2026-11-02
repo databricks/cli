@@ -1,3 +1,6 @@
 
 >>> musterr [CLI] auth token --host ?o=123
 Error: invalid host "?o=123"
+
+>>> musterr [CLI] auth token --host https://
+Error: invalid host "https://"

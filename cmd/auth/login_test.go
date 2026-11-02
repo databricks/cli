@@ -226,6 +226,22 @@ func TestSetHost(t *testing.T) {
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.EqualError(t, err, `invalid host "  "`)
 
+	// Test host with a scheme but no hostname from flag
+	authArguments.Host = "https://"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "https://"`)
+
+	// Test host with a scheme and query params but no hostname from flag
+	authArguments.Host = "https://?o=123"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "https://?o=123"`)
+
+	// Test host:port without a scheme from flag
+	authArguments = auth.AuthArguments{Host: "www.host1.test:8080"}
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "www.host1.test:8080", authArguments.Host)
+
 	// Test spaces around the host are trimmed before the query params are extracted
 	authArguments = auth.AuthArguments{Host: " https://www.host1.test/?o=123 "}
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
