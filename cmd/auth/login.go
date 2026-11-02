@@ -657,15 +657,13 @@ func validateLoginHost(host string) error {
 // hasHostname reports whether host, with or without a scheme, is a URL with a
 // hostname.
 func hasHostname(host string) bool {
-	u, err := url.Parse(host)
-	// Treat a host without an http(s) scheme as an https host. url.Parse
-	// reads "localhost:8080" with "localhost" as the scheme and fails on
-	// "127.0.0.1:8080". Keep an explicit "https:" as the scheme, and don't
-	// retry a host with "://" that fails to parse, so that neither "https:"
-	// nor "https://my workspace.test" is read as a host named "https".
-	if !strings.Contains(host, "://") && (err != nil || (u.Scheme != "https" && u.Scheme != "http")) {
-		u, err = url.Parse("https://" + host)
+	// url.Parse can't read a host without a scheme, e.g. "localhost:8080",
+	// so check it as an https host.
+	lower := strings.ToLower(host)
+	if !strings.HasPrefix(lower, "https:") && !strings.HasPrefix(lower, "http:") {
+		host = "https://" + host
 	}
+	u, err := url.Parse(host)
 	return err == nil && u.Hostname() != ""
 }
 
