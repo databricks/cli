@@ -1,7 +1,17 @@
 
->>> musterr [CLI] bundle plan
+>>> musterr [CLI] bundle validate
 Error: bind block references undefined resource "resources.jobs.bar"; define it in the resources section or remove the bind block
   at targets.default.bind.jobs.bar
 
-Error: bind validation failed
+Name: test-bind-orphaned
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-orphaned/default
+
+Found 1 error
+
+>>> musterr [CLI] bundle plan
+Error: bind block references undefined resource "resources.jobs.bar"; define it in the resources section or remove the bind block
+  at targets.default.bind.jobs.bar
 

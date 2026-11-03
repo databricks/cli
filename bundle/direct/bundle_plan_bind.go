@@ -30,21 +30,8 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 	hasError := false
 	targetName := configRoot.Bundle.Target
 
-	// Bind blocks must reference resources that exist in the merged config.
-	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-		key := "resources." + resourceType + "." + resourceName
-		if _, ok := b.Plan.Plan[key]; ok {
-			return
-		}
-		bindPath := bindBlockPath(targetName, resourceType, resourceName)
-		logdiag.LogDiag(ctx, diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key),
-			Locations: configRoot.GetLocationsOf(bindPath),
-			Paths:     []*structpath.PathNode{bindPath},
-		})
-		hasError = true
-	})
+	// Bind blocks referencing resources missing from config are rejected by
+	// mutator.ValidateBindResources before planning; the checks below need state.
 
 	// A resource that is already in state cannot be re-bound to a different ID: the
 	// bind block is meant to import a resource for the first time. When the IDs match
