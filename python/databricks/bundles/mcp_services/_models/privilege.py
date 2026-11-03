@@ -60,6 +60,17 @@ class Privilege(Enum):
     READ_FEATURE = "READ_FEATURE"
     EXTERNAL_USE_LOCATION = "EXTERNAL_USE_LOCATION"
 
+    @classmethod
+    def _missing_(cls, value: object) -> "Privilege | None":
+        if not isinstance(value, str):
+            return None
+
+        member = object.__new__(cls)
+        member._name_ = value
+        member._value_ = value
+
+        return cls._value2member_map_.setdefault(value, member)  # type:ignore
+
 
 PrivilegeParam = (
     Literal[
@@ -119,4 +130,5 @@ PrivilegeParam = (
         "EXTERNAL_USE_LOCATION",
     ]
     | Privilege
+    | str
 )
