@@ -1,0 +1,13 @@
+# Create a pipeline whose storage matches the config and bind it
+NEW_PIPELINE_ID=$($CLI pipelines create --json '{"name": "test-pipeline", "storage": "/old/storage/path", "allow_duplicate_names": true, "libraries": [{"notebook": {"path": "/Workspace/test"}}]}' | jq -r .pipeline_id)
+add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID
+update_file.py databricks.yml 'PLACEHOLDER_PIPELINE_ID' "$NEW_PIPELINE_ID"
+
+trace $CLI bundle deploy --auto-approve
+
+title "Removing the bind block is the opt-out: with it gone, the same storage change plans a recreate"
+cp databricks_unbound.yml databricks.yml
+trace $CLI bundle plan
+
+# Cleanup
+trace $CLI bundle destroy --auto-approve

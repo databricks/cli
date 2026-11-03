@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-rebind-different-id/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A bind block for a resource already in state must carry the state ID; a different ID is not a re-point
+>>> musterr [CLI] bundle plan
+Error: resources.jobs.foo: resource already bound to ID "[FOO_ID]", cannot bind as "999999999"; remove the bind block or unbind the existing resource
+  at targets.default.bind.jobs.foo
+
+Error: bind validation failed
+
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-rebind-different-id/default
+
+Destroy: 1 deleted
