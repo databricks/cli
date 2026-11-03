@@ -1,0 +1,20 @@
+Cloud = false
+
+Ignore = [
+    ".databricks",
+]
+
+# The bind flow issues a GET to confirm the remote monitor exists before binding.
+[[Server]]
+Pattern = "GET /api/data-quality/v1/monitors/{object_type}/{object_id}"
+Response.Body = '''
+{
+  "object_type": "table",
+  "object_id": "11111111-2222-3333-4444-555555555555",
+  "data_profiling_config": {
+    "assets_dir": "/Workspace/Users/user@example.com/assets",
+    "output_schema_id": "66666666-7777-8888-9999-000000000000",
+    "snapshot": {}
+  }
+}
+'''
