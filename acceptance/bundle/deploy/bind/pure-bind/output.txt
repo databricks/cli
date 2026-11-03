@@ -1,0 +1,53 @@
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure/default/files...
+Bound and updated jobs.foo
+Created jobs.foo.permissions
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
+
+=== Unbind the job. The bind block is still in config, so the next deploy re-binds it
+>>> [CLI] bundle deployment unbind foo
+Warning: the bind block for resources.jobs.foo re-binds the resource on the next deploy; remove it to keep the resource unbound
+  at targets.default.bind.jobs.foo
+
+
+=== The job now matches the config, so this is a pure bind
+>>> [CLI] bundle plan
+bind jobs.foo (id: [NEW_JOB_ID])
+create jobs.foo.permissions
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged, 1 to bind
+
+>>> [CLI] bundle plan -o json
+json.plan.resources.jobs.foo.bind_id = "[NEW_JOB_ID]";
+json.plan.resources.jobs.foo.action = "bind";
+
+>>> print_requests.py --get --oneline //jobs/get
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure/default/files...
+Bound jobs.foo
+Created jobs.foo.permissions
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 1 bound
+
+=== The re-bind deploy reads the job once, at plan time
+>>> print_requests.py --get --oneline //jobs/get
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+
+>>> print_state.py
+json.state.resources.jobs.foo.__id__ = "[NEW_JOB_ID]";
+json.state.resources.jobs.foo.permissions.__id__ = "/jobs/[NEW_JOB_ID]";
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-pure/default
+
+Destroy: 1 deleted
