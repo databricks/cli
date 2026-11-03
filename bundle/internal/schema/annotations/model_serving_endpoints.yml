@@ -1,0 +1,67 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
+markdown_description: |-
+  The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [\_](/dev-tools/bundles/resources.md#model_serving_endpoints).
+$type:
+  "markdown_description": |-
+    The model_serving_endpoint resource allows you to define [model serving endpoints](/api/workspace/servingendpoints/create). See [_](/machine-learning/model-serving/manage-serving-endpoints.md).
+  "markdown_examples": |-
+    The following example defines a Unity Catalog model serving endpoint:
+
+    ```yaml
+    resources:
+      model_serving_endpoints:
+        uc_model_serving_endpoint:
+          name: "uc-model-endpoint"
+          config:
+            served_entities:
+            - entity_name: "myCatalog.mySchema.my-ads-model"
+              entity_version: "10"
+              workload_size: "Small"
+              scale_to_zero_enabled: "true"
+            traffic_config:
+              routes:
+              - served_model_name: "my-ads-model-10"
+                traffic_percentage: "100"
+          tags:
+          - key: "team"
+            value: "data science"
+    ```
+$fields:
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+  "permissions":
+    "description": |-
+      The permissions to apply to this resource.
+    "markdown_description": |-
+      A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+      See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+    "markdown_examples": |-
+      ```yaml
+      permissions:
+        - level: CAN_VIEW
+          group_name: test-group
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+        - level: CAN_RUN
+          service_principal_name: 123456-abcdef
+      ```
+    "$fields":
+      "group_name":
+        "description": |-
+          The name of the group granted the permission level.
+      "level":
+        "description": |-
+          The permission level to apply. The allowed levels depend on the resource type.
+      "service_principal_name":
+        "description": |-
+          The name of the service principal granted the permission level.
+      "user_name":
+        "description": |-
+          The name of the user granted the permission level.

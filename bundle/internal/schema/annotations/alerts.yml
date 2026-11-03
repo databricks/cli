@@ -1,0 +1,25 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+$fields:
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+  "permissions":
+    "description": |-
+      The permissions to apply to this resource.
+    "markdown_description": |-
+      A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+      See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+    "markdown_examples": |-
+      ```yaml
+      permissions:
+        - level: CAN_VIEW
+          group_name: test-group
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+        - level: CAN_RUN
+          service_principal_name: 123456-abcdef
+      ```

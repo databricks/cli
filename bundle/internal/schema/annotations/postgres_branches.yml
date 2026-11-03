@@ -1,0 +1,24 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The Postgres branch definitions for the bundle, where each key is the name of the branch. Each entry defines a branch of a Lakebase Autoscaling project, holding its own copy of the project's databases and roles.
+$fields:
+  "branch_id":
+    "description": |-
+      The ID to use for the branch; becomes the final component of the branch's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `development` becomes `projects/my-app/branches/development`.
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+  "parent":
+    "description": |-
+      The project containing this branch (API resource hierarchy). Format: projects/{project_id}
+
+      This field indicates where the branch exists in the resource hierarchy. For point-in-time branching from another branch, see `source_branch`.
+  "purge_on_delete":
+    "description": |-
+      When true, permanently delete the branch when the bundle is destroyed. When false or unset, the branch is soft deleted and can be restored within its retention window.
+  "replace_existing":
+    "description": |-
+      When true, take over an existing branch with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a branch that already exists on the project (for example, the production branch created with the project) under bundle management. Only takes effect when the branch is created.

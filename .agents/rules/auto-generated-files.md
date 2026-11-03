@@ -14,7 +14,7 @@ globs:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
-  - "bundle/internal/schema/annotations.generated.yml"
+  - "bundle/internal/schema/annotations/*.generated.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -34,7 +34,7 @@ paths:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
-  - "bundle/internal/schema/annotations.generated.yml"
+  - "bundle/internal/schema/annotations/*.generated.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -69,7 +69,7 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
   - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
 - Bundle schemas:
   - `./task generate-schema`
-  - Upstream docs are sourced from `.codegen/cli.json` at generation time. `bundle/internal/schema/annotations.yml` holds hand-written docs for fields only the CLI defines; `annotations.overrides.yml` holds hand-written entries for fields `cli.json` already defines (overrides, gap fills, deprecations), each a candidate to fix upstream and delete. The generator normalizes both in place, routes entries between them by whether the field exists upstream, and drops entries for fields that no longer exist. `annotations.generated.yml` is fully generated: it lists the fields that have no documentation anywhere as `PLACEHOLDER` entries. To document one, add the entry to `annotations.yml` and regenerate.
+  - Upstream docs are sourced from `.codegen/cli.json` at generation time. `bundle/internal/schema/annotations/*.yml` hold only hand-written CLI-owned docs (one file per resource type plus `root.yml`); the generator normalizes them in place and drops entries for fields that no longer exist. `bundle/internal/schema/annotations/*.generated.yml` are fully generated: they list the fields that have no documentation anywhere as `PLACEHOLDER` entries. To document one, add the entry to the matching hand-written file and regenerate. See `bundle/internal/schema/annotations/README.md`.
   - The docs schema (`jsonschema_for_docs.json`) is not generated on main; it is built and published to the `docgen` branch on release by `.github/workflows/update-schema-docs.yml`.
 - Validation generated code:
   - `./task generate-validation`

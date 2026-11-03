@@ -1,0 +1,18 @@
+# Hand-written documentation for fields that the upstream API spec
+# (.codegen/cli.json) already defines: description overrides, gap fills for
+# undocumented upstream fields, and deprecations the spec does not carry. Every
+# entry here is a candidate to move upstream (fix the proto / OpenAPI docs) and
+# then delete. "task generate-schema" routes entries between the .overrides
+# files and the other hand-written files by whether the field exists upstream,
+# so an entry added elsewhere lands here on the next run.
+$fields:
+  "inference_log":
+    "$fields":
+      "granularities":
+        "description": |-
+          Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+  "time_series":
+    "$fields":
+      "granularities":
+        "description": |-
+          Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.

@@ -230,14 +230,9 @@ func main() {
 	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
-// Names of the annotation files in the generator's work directory: the
-// hand-written docs for CLI-only fields, the hand-written entries for fields
-// cli.json already defines, and the generated list of undocumented fields.
-const (
-	annotationsFileName = "annotations.yml"
-	overridesFileName   = "annotations.overrides.yml"
-	generatedFileName   = "annotations.generated.yml"
-)
+// annotationsDirName is the directory of annotation files in the generator's
+// work directory; see annotations_file.go for its layout.
+const annotationsDirName = "annotations"
 
 // configTypeGraph builds the type graph for the bundle config root with the
 // schema generator's structural field prunes applied, so the annotations file
@@ -248,9 +243,7 @@ func configTypeGraph() (*typeGraph, error) {
 }
 
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
-	annotationsPath := filepath.Join(workdir, annotationsFileName)
-	overridesPath := filepath.Join(workdir, overridesFileName)
-	generatedPath := filepath.Join(workdir, generatedFileName)
+	annotationsDir := filepath.Join(workdir, annotationsDirName)
 
 	// The cli.json schema graph is keyed by SDK type name (e.g.
 	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
@@ -273,13 +266,13 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	// Both hand-written files share one format and are merged into one layer;
+	// Both hand-written layers share one format and are merged into one set;
 	// the split between them is recomputed on save.
-	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
+	fromFile, unknown, err := loadAnnotationsDir(annotationsDir, handSuffix, graph)
 	if err != nil {
 		log.Fatal(err)
 	}
-	overrides, unknownOverrides, err := loadAnnotationsFile(overridesPath, graph)
+	overrides, unknownOverrides, err := loadAnnotationsDir(annotationsDir, overridesSuffix, graph)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -329,9 +322,9 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	// Rewrite the hand-written files in canonical form and the generated file
-	// with the fields that still lack documentation.
-	err = a.syncAnnotationFiles(annotationsPath, overridesPath, generatedPath, graph)
+	// Rewrite the hand-written files in canonical form and the generated
+	// files with the fields that still lack documentation.
+	err = a.syncAnnotationFiles(annotationsDir, graph)
 	if err != nil {
 		log.Fatal(err)
 	}

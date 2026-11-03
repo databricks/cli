@@ -1,0 +1,16 @@
+# Hand-written documentation for fields that the upstream API spec
+# (.codegen/cli.json) already defines: description overrides, gap fills for
+# undocumented upstream fields, and deprecations the spec does not carry. Every
+# entry here is a candidate to move upstream (fix the proto / OpenAPI docs) and
+# then delete. "task generate-schema" routes entries between the .overrides
+# files and the other hand-written files by whether the field exists upstream,
+# so an entry added elsewhere lands here on the next run.
+$fields:
+  "libraries":
+    "$fields":
+      "whl":
+        "deprecation_message": |-
+          This field is deprecated
+  "trigger":
+    "deprecation_message": |-
+      Use continuous instead

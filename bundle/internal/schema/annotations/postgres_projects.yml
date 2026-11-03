@@ -1,0 +1,33 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The Postgres project definitions for the bundle, where each key is the name of the project. Each entry defines a Lakebase Autoscaling project, the top-level container for branches, endpoints, databases, and roles.
+$fields:
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+  "permissions":
+    "description": |-
+      The permissions to apply to this resource.
+    "markdown_description": |-
+      A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+      See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+    "markdown_examples": |-
+      ```yaml
+      permissions:
+        - level: CAN_VIEW
+          group_name: test-group
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+        - level: CAN_RUN
+          service_principal_name: 123456-abcdef
+      ```
+  "project_id":
+    "description": |-
+      The ID to use for the project; becomes the final component of the project's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `my-app` becomes `projects/my-app`.
+  "purge_on_delete":
+    "description": |-
+      When true, permanently delete the project when the bundle is destroyed. When false or unset, the project is soft deleted and can be restored within its retention window.

@@ -1,0 +1,490 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+artifacts:
+  "description": |-
+    Defines the attributes to build an artifact
+  "markdown_description": |-
+    Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [\_](/dev-tools/bundles/settings.md#artifacts).
+
+    Artifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [\_](/dev-tools/bundles/artifact-overrides.md).
+  "markdown_examples": |-
+    ```yaml
+    artifacts:
+      default:
+        type: whl
+        build: poetry build
+        path: .
+    ```
+  "$fields":
+    "build":
+      "description": |-
+        An optional set of build commands to run locally before deployment.
+    "dynamic_version":
+      "description": |-
+        Whether to patch the wheel version dynamically based on the timestamp of the whl file. If this is set to `true`, new code can be deployed without having to update the version in `setup.py` or `pyproject.toml`. This setting is only valid when `type` is set to `whl`. See [\_](/dev-tools/bundles/settings.md#bundle-syntax-mappings-artifacts).
+    "executable":
+      "description": |-
+        The executable type. Valid values are `bash`, `sh`, and `cmd`.
+    "files":
+      "description": |-
+        The relative or absolute path to the built artifact files.
+      "$fields":
+        "source":
+          "description": |-
+            Required. The artifact source file.
+    "git":
+      "description": |-
+        For a `tgz` artifact, snapshot this git ref instead of the working tree. Mutually exclusive with `build`.
+      "$fields":
+        "branch":
+          "description": |-
+            The git branch to snapshot.
+        "commit":
+          "description": |-
+            The git commit to snapshot. Takes precedence over `branch` when both are set.
+    "include":
+      "description": |-
+        For a `tgz` artifact, subpaths of `path` to pack, relative to it; empty packs the whole `path`. `.gitignore` is honored; the bundle-wide sync include/exclude do not apply. Archive entries are named relative to `path`. Mutually exclusive with `build`.
+    "path":
+      "description": |-
+        The local path of the directory for the artifact.
+    "type":
+      "description": |-
+        The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel.
+      "markdown_description": |-
+        The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel.
+bundle:
+  "description": |-
+    The bundle attributes when deploying to this target.
+  "markdown_description": |-
+    The bundle attributes when deploying to this target,
+  "$fields":
+    "cluster_id":
+      "description": |-
+        The ID of a cluster to use to run the bundle.
+      "markdown_description": |-
+        The ID of a cluster to use to run the bundle. See [\_](/dev-tools/bundles/settings.md#cluster_id).
+    "compute_id":
+      "description": |-
+        Deprecated. The ID of the compute to use to run the bundle.
+    "databricks_cli_version":
+      "description": |-
+        The Databricks CLI version to use for the bundle.
+      "markdown_description": |-
+        The Databricks CLI version to use for the bundle. See [\_](/dev-tools/bundles/settings.md#databricks_cli_version).
+    "deployment":
+      "description": |-
+        The definition of the bundle deployment
+      "markdown_description": |-
+        The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
+      "$fields":
+        "deployment_id":
+          "description": |-
+            The ID the deployment metadata service assigned to this bundle's deployment. Output only.
+        "fail_on_active_runs":
+          "description": |-
+            Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
+        "latest_version_id":
+          "description": |-
+            The most recent version the deployment metadata service recorded for this deployment. Output only.
+        "lock":
+          "description": |-
+            The deployment lock attributes.
+          "$fields":
+            "enabled":
+              "description": |-
+                Whether this lock is enabled.
+            "force":
+              "description": |-
+                Whether to force this lock if it is enabled.
+    "engine":
+      "description": |-
+        The deployment engine to use. Valid values are `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "direct".
+      "$type":
+        "enum":
+          - |-
+            direct
+        "x-databricks-enum-descriptions":
+          "direct": |-
+            Deploy by calling the Databricks APIs directly. This is the default.
+    "git":
+      "description": |-
+        The Git version control details that are associated with your bundle.
+      "markdown_description": |-
+        The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
+      "$fields":
+        "branch":
+          "description": |-
+            The Git branch name.
+          "markdown_description": |-
+            The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
+        "origin_url":
+          "description": |-
+            The origin URL of the repository.
+          "markdown_description": |-
+            The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
+    "name":
+      "description": |-
+        The name of the bundle.
+    "uuid":
+      "description": |-
+        Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
+environments:
+  "deprecation_message": |-
+    Deprecated: please use targets instead
+experimental:
+  "description": |-
+    Defines attributes for experimental features.
+  "$fields":
+    "deployment_history":
+      "description": |-
+        Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
+    "immutable_folder":
+      "description": |-
+        Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.
+      "deprecation_message": |-
+        Deprecated: please set workspace.sync_mode to immutable instead
+    "pydabs":
+      "description": |-
+        The PyDABs configuration.
+      "deprecation_message": |-
+        Deprecated: please use python instead
+      "$fields":
+        "enabled":
+          "description": |-
+            Whether or not PyDABs (Private Preview) is enabled
+    "python":
+      "description": |-
+        Configures loading of Python code defined with 'databricks-bundles' package.
+      "$fields":
+        "mutators":
+          "description": |-
+            Mutators contains a list of fully qualified function paths to mutator functions.
+
+            Example: ["my_project.mutators:add_default_cluster"]
+        "resources":
+          "description": |-
+            Resources contains a list of fully qualified function paths to load resources
+            defined in Python code.
+
+            Example: ["my_project.resources:load_resources"]
+        "venv_path":
+          "description": |-
+            VEnvPath is path to the virtual environment.
+
+            If enabled, Python code will execute within this environment. If disabled,
+            it defaults to using the Python interpreter available in the current shell.
+    "python_wheel_wrapper":
+      "description": |-
+        Whether to use a Python wheel wrapper.
+    "scripts":
+      "description": |-
+        The commands to run.
+    "skip_artifact_cleanup":
+      "description": |-
+        Determines whether to skip cleaning up the .internal folder
+    "skip_name_prefix_for_schema":
+      "description": |-
+        Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`
+        is set, to the names of UC schemas defined in the bundle.
+    "use_legacy_run_as":
+      "description": |-
+        Whether to use the legacy run_as behavior.
+include:
+  "description": |-
+    Specifies a list of path globs that contain configuration files to include within the bundle.
+  "markdown_description": |-
+    Specifies a list of path globs that contain configuration files to include within the bundle. See [\_](/dev-tools/bundles/settings.md#include).
+permissions:
+  "description": |-
+    Defines a permission for a specific entity.
+  "markdown_description": |-
+    A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.
+
+    See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "markdown_examples": |-
+    ```yaml
+    permissions:
+      - level: CAN_VIEW
+        group_name: test-group
+      - level: CAN_MANAGE
+        user_name: someone@example.com
+      - level: CAN_RUN
+        service_principal_name: 123456-abcdef
+    ```
+presets:
+  "description": |-
+    Defines bundle deployment presets.
+  "markdown_description": |-
+    Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.md#presets).
+resources:
+  "description": |-
+    A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
+  "markdown_description": |-
+    A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Declarative Automation Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
+
+    ```yaml
+    resources:
+      <resource-type>:
+        <resource-name>:
+          <resource-field-name>: <resource-field-value>
+    ```
+run_as:
+  "description": |-
+    The identity to use when running Declarative Automation Bundles resources.
+  "markdown_description": |-
+    The identity to use when running Declarative Automation Bundles resources. See [\_](/dev-tools/bundles/run-as.md).
+scripts:
+  "$fields":
+    "env":
+      "description": |-
+        A map of environment variables to export when running the script. Values may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` and are resolved before the script runs; reference them from `content` with `$NAME`.
+sync:
+  "description": |-
+    The files and file paths to include or exclude in the bundle.
+  "markdown_description": |-
+    The files and file paths to include or exclude in the bundle. See [\_](/dev-tools/bundles/settings.md#sync).
+targets:
+  "description": |-
+    Defines deployment targets for the bundle.
+  "markdown_description": |-
+    Defines deployment targets for the bundle. See [\_](/dev-tools/bundles/settings.md#targets)
+  "$fields":
+    "artifacts":
+      "description": |-
+        The artifacts to include in the target deployment.
+    "bundle":
+      "description": |-
+        The bundle attributes when deploying to this target.
+    "cluster_id":
+      "description": |-
+        The ID of the cluster to use for this target.
+    "compute_id":
+      "description": |-
+        Deprecated. The ID of the compute to use for this target.
+      "deprecation_message": |-
+        Deprecated: please use cluster_id instead
+    "default":
+      "description": |-
+        Whether this target is the default target.
+    "git":
+      "description": |-
+        The Git version control settings for the target.
+    "mode":
+      "description": |-
+        The deployment mode for the target.
+      "markdown_description": |-
+        The deployment mode for the target. Valid values are `development` or `production`. See [\_](/dev-tools/bundles/deployment-modes.md).
+    "permissions":
+      "description": |-
+        The permissions for deploying and running the bundle in the target.
+    "presets":
+      "description": |-
+        The deployment presets for the target.
+      "$fields":
+        "artifacts_dynamic_version":
+          "description": |-
+            Whether to enable dynamic_version on all artifacts.
+        "jobs_max_concurrent_runs":
+          "description": |-
+            The maximum concurrent runs for a job.
+        "name_prefix":
+          "description": |-
+            The prefix for job runs of the bundle.
+        "pipelines_development":
+          "description": |-
+            Whether pipeline deployments should be locked in development mode.
+        "source_linked_deployment":
+          "description": |-
+            Whether to link the deployment to the bundle source.
+          "deprecation_message": |-
+            Deprecated: please set workspace.sync_mode to in-place instead
+        "tags":
+          "description": |-
+            The tags for the bundle deployment.
+        "trigger_pause_status":
+          "description": |-
+            A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
+    "resources":
+      "description": |-
+        The resource definitions for the target.
+    "run_as":
+      "description": |-
+        The identity to use to run the bundle.
+      "markdown_description": |-
+        The identity to use to run the bundle, see [\_](/dev-tools/bundles/run-as.md).
+    "sync":
+      "description": |-
+        The local paths to sync to the target workspace when a bundle is run or deployed.
+      "$fields":
+        "exclude":
+          "description": |-
+            A list of files or folders to exclude from the bundle.
+        "include":
+          "description": |-
+            A list of files or folders to include in the bundle.
+        "paths":
+          "description": |-
+            The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.
+    "variables":
+      "description": |-
+        The custom variable definitions for the target.
+      "$fields":
+        "default":
+          "description": |-
+            The default value for the variable.
+        "description":
+          "description": |-
+            The description of the variable.
+        "lookup":
+          "description": |-
+            The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+        "type":
+          "description": |-
+            The type of the variable.
+    "workspace":
+      "description": |-
+        The Databricks workspace for the target.
+variables:
+  "description": |-
+    A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.
+  "$type":
+    "description": |-
+      Defines a custom variable for the bundle.
+    "markdown_description": |-
+      Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
+  "$fields":
+    "default":
+      "description": |-
+        The default value for the variable.
+    "description":
+      "description": |-
+        The description of the variable
+    "lookup":
+      "description": |-
+        The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+      "markdown_description": |-
+        The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
+      "$fields":
+        "alert":
+          "description": |-
+            The name of the alert for which to retrieve an ID.
+        "cluster":
+          "description": |-
+            The name of the cluster for which to retrieve an ID.
+        "cluster_policy":
+          "description": |-
+            The name of the cluster_policy for which to retrieve an ID.
+        "dashboard":
+          "description": |-
+            The name of the dashboard for which to retrieve an ID.
+        "instance_pool":
+          "description": |-
+            The name of the instance_pool for which to retrieve an ID.
+        "job":
+          "description": |-
+            The name of the job for which to retrieve an ID.
+        "metastore":
+          "description": |-
+            The name of the metastore for which to retrieve an ID.
+        "notification_destination":
+          "description": |-
+            The name of the notification_destination for which to retrieve an ID.
+        "pipeline":
+          "description": |-
+            The name of the pipeline for which to retrieve an ID.
+        "query":
+          "description": |-
+            The name of the query for which to retrieve an ID.
+        "service_principal":
+          "description": |-
+            The name of the service_principal for which to retrieve an ID.
+        "warehouse":
+          "description": |-
+            The name of the warehouse for which to retrieve an ID.
+    "type":
+      "description": |-
+        The type of the variable.
+workspace:
+  "description": |-
+    Defines the Databricks workspace for the bundle.
+  "markdown_description": |-
+    Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
+  "$fields":
+    "account_id":
+      "description": |-
+        The Databricks account ID.
+    "artifact_path":
+      "description": |-
+        The artifact path to use within the workspace for both deployments and job runs
+    "auth_type":
+      "description": |-
+        The authentication type.
+    "azure_client_id":
+      "description": |-
+        The Azure client ID
+    "azure_environment":
+      "description": |-
+        The Azure environment
+    "azure_login_app_id":
+      "description": |-
+        The Azure login app ID
+    "azure_tenant_id":
+      "description": |-
+        The Azure tenant ID
+    "azure_use_msi":
+      "description": |-
+        Whether to use MSI for Azure
+    "azure_workspace_resource_id":
+      "description": |-
+        The Azure workspace resource ID
+    "client_id":
+      "description": |-
+        The client ID for the workspace
+    "experimental_is_unified_host":
+      "description": |-
+        Deprecated: no-op. Unified hosts are now detected automatically from /.well-known/databricks-config. Retained for schema compatibility with existing databricks.yml files.
+    "file_path":
+      "description": |-
+        The file path to use within the workspace for both deployments and job runs
+    "google_service_account":
+      "description": |-
+        The Google service account name
+    "host":
+      "description": |-
+        The Databricks workspace host URL
+    "profile":
+      "description": |-
+        The Databricks workspace profile name
+    "resource_path":
+      "description": |-
+        The workspace resource path
+    "root_path":
+      "description": |-
+        The Databricks workspace root path
+    "state_path":
+      "description": |-
+        The workspace state path
+    "sync_mode":
+      "description": |-
+        How bundle files are made available to deployed resources. Valid values are `overwrite`, `in-place`, and `immutable`. Defaults to `in-place` for development deployments from the Databricks Workspace and to `overwrite` otherwise.
+      "$type":
+        "enum":
+          - |-
+            overwrite
+          - |-
+            in-place
+          - |-
+            immutable
+        "x-databricks-enum-descriptions":
+          "immutable": |-
+            Upload bundle files and artifacts as a single immutable snapshot and set workspace.file_path and workspace.artifact_path to its location.
+          "in-place": |-
+            Do not upload bundle files. Deployed resources reference the source files in the workspace directly. Available only when deploying from the Databricks Workspace.
+          "overwrite": |-
+            Upload bundle files to workspace.file_path, replacing the files of the previous deployment.
+    "workspace_id":
+      "description": |-
+        The Databricks workspace ID

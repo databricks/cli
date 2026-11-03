@@ -1,0 +1,107 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The dashboard definitions for the bundle, where each key is the name of the dashboard.
+markdown_description: |-
+  The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
+$type:
+  "markdown_description": |-
+    The dashboard resource allows you to manage [AI/BI dashboards](/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [_](/dashboards/index.md).
+  "markdown_examples": |-
+    The following example includes and deploys the sample __NYC Taxi Trip Analysis__ dashboard to the Databricks workspace.
+
+    ``` yaml
+    resources:
+      dashboards:
+        nyc_taxi_trip_analysis:
+          display_name: "NYC Taxi Trip Analysis"
+          file_path: ../src/nyc_taxi_trip_analysis.lvdash.json
+          warehouse_id: ${var.warehouse_id}
+    ```
+    If you use the UI to modify the dashboard, modifications made through the UI are not applied to the dashboard JSON file in the local bundle unless you explicitly update it using `bundle generate`. You can use the `--watch` option to continuously poll and retrieve changes to the dashboard. See [_](/dev-tools/cli/bundle-commands.md#generate).
+
+    In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
+$fields:
+  "create_time":
+    "description": |-
+      The timestamp of when the dashboard was created.
+  "dashboard_id":
+    "description": |-
+      UUID identifying the dashboard.
+  "dataset_catalog":
+    "description": |-
+      Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.
+  "dataset_schema":
+    "description": |-
+      Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
+  "display_name":
+    "description": |-
+      The display name of the dashboard.
+  "etag":
+    "description": |-
+      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
+      has not been modified since the last read.
+      This field is excluded in List Dashboards responses.
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+  "lifecycle_state":
+    "description": |-
+      The state of the dashboard resource. Used for tracking trashed status.
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the dashboard. Includes leading slash and no
+      trailing slash.
+      This field is excluded in List Dashboards responses.
+  "path":
+    "description": |-
+      The workspace path of the dashboard asset, including the file name.
+      Exported dashboards always have the file extension `.lvdash.json`.
+      This field is excluded in List Dashboards responses.
+  "permissions":
+    "description": |-
+      The permissions to apply to this resource.
+    "markdown_description": |-
+      A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+      See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+    "markdown_examples": |-
+      ```yaml
+      permissions:
+        - level: CAN_VIEW
+          group_name: test-group
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+        - level: CAN_RUN
+          service_principal_name: 123456-abcdef
+      ```
+    "$fields":
+      "group_name":
+        "description": |-
+          The name of the group granted the permission level.
+      "level":
+        "description": |-
+          The permission level to apply. The allowed levels depend on the resource type.
+      "service_principal_name":
+        "description": |-
+          The name of the service principal granted the permission level.
+      "user_name":
+        "description": |-
+          The name of the user granted the permission level.
+  "serialized_dashboard":
+    "description": |-
+      The contents of the dashboard in serialized string form.
+      This field is excluded in List Dashboards responses.
+      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
+      to retrieve an example response, which includes the `serialized_dashboard` field.
+      This field provides the structure of the JSON string that represents the dashboard's
+      layout and components.
+  "update_time":
+    "description": |-
+      The timestamp of when the dashboard was last updated by the user.
+      This field is excluded in List Dashboards responses.
+  "warehouse_id":
+    "description": |-
+      The warehouse ID used to run the dashboard.

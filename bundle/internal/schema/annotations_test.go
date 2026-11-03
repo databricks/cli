@@ -115,7 +115,6 @@ func TestSplitOverrides(t *testing.T) {
 			Fields: map[string]annotation.Descriptor{
 				"documented":   {Description: "upstream description"},
 				"undocumented": {},
-				"deprecated":   {Description: "upstream description"},
 			},
 		},
 	}
@@ -133,6 +132,7 @@ func TestSplitOverrides(t *testing.T) {
 			Self: annotation.Descriptor{Description: "cli-only type"},
 		},
 	}
+	extracted[testTypePath].Fields["deprecated"] = annotation.Descriptor{Description: "upstream description"}
 
 	cliOnly, overrides := splitOverrides(fromFile, extracted)
 

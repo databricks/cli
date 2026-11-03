@@ -1,0 +1,71 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The job definitions for the bundle, where each key is the name of the job.
+markdown_description: |-
+  The job definitions for the bundle, where each key is the name of the job. See [\_](/dev-tools/bundles/resources.md#jobs).
+$type:
+  "markdown_description": |-
+    The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a Declarative Automation Bundles template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
+  "markdown_examples": |-
+    The following example defines a job with the resource key `hello-job` with one notebook task:
+
+    ```yaml
+    resources:
+      jobs:
+        hello-job:
+          name: hello-job
+          tasks:
+            - task_key: hello-task
+              notebook_task:
+                notebook_path: ./hello.py
+    ```
+
+    For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
+$fields:
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "$fields":
+      "depends_on":
+        "description": |-
+          Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
+        "$fields":
+          "resource":
+            "description": |-
+              Key of the resource to depend on, as `foo` or `jobs.foo`.
+      "prevent_destroy":
+        "description": |-
+          Lifecycle setting to prevent the resource from being destroyed.
+  "permissions":
+    "description": |-
+      The permissions to apply to this resource.
+    "markdown_description": |-
+      A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+      See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+    "markdown_examples": |-
+      ```yaml
+      permissions:
+        - level: CAN_VIEW
+          group_name: test-group
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+        - level: CAN_RUN
+          service_principal_name: 123456-abcdef
+      ```
+    "$fields":
+      "group_name":
+        "description": |-
+          The name of the group granted the permission level.
+      "level":
+        "description": |-
+          The permission level to apply. The allowed levels depend on the resource type.
+      "service_principal_name":
+        "description": |-
+          The name of the service principal granted the permission level.
+      "user_name":
+        "description": |-
+          The name of the user granted the permission level.

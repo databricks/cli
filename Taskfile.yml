@@ -443,7 +443,7 @@ tasks:
       - NOTICE
       - .codegen/_openapi_sha
       # bundle/internal/schema TestRequiredAnnotationsForNewFields reads these.
-      - bundle/internal/schema/annotations*.yml
+      - bundle/internal/schema/annotations/*
     generates:
       - test-output-unit-root.json
     cmds:
@@ -990,10 +990,9 @@ tasks:
       - go test ./acceptance -run TestAccept/bundle/refschema -update
 
   # Upstream field documentation comes from the checked-in .codegen/cli.json;
-  # bundle/internal/schema/annotations.yml carries the docs for CLI-only fields
-  # and annotations.overrides.yml the hand-written entries for upstream fields
-  # (a burn-down list); both are normalized in place and annotations.generated.yml
-  # lists the fields that still lack documentation.
+  # bundle/internal/schema/annotations/*.yml carry the CLI-owned docs and
+  # overrides and are normalized in place; the *.generated.yml siblings list
+  # the fields that still lack documentation.
   # Editing either input and running `task generate` percolates into
   # jsonschema.json and pydabs. (The docs schema is built only on release by
   # .github/workflows/update-schema-docs.yml and published to the docgen branch.)
@@ -1002,17 +1001,14 @@ tasks:
     sources: &SCHEMA_SOURCES
       - "**/*.go"
       - .codegen/cli.json
-      - bundle/internal/schema/annotations.yml
-      - bundle/internal/schema/annotations.overrides.yml
+      - bundle/internal/schema/annotations/*.yml
       - exclude: "**/*_test.go"
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/schema/jsonschema.json
-      - bundle/internal/schema/annotations.yml
-      - bundle/internal/schema/annotations.overrides.yml
-      - bundle/internal/schema/annotations.generated.yml
+      - bundle/internal/schema/annotations/*.yml
     cmds:
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
 

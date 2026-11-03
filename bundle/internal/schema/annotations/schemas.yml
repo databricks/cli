@@ -1,0 +1,75 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The schema definitions for the bundle, where each key is the name of the schema.
+markdown_description: |-
+  The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
+$type:
+  "markdown_description": |-
+    The schema resource type allows you to define Unity Catalog [schemas](/api/workspace/schemas/create) for tables and other assets in your jobs and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
+
+    - The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.
+    - Only fields supported by the corresponding [Schemas object create API](/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](/api/workspace/schemas/update).
+  "markdown_examples": |-
+    The following example defines a pipeline with the resource key `my_pipeline` that creates a Unity Catalog schema with the key `my_schema` as the target:
+
+    ```yaml
+    resources:
+      pipelines:
+        my_pipeline:
+          name: test-pipeline-{{.unique_id}}
+          libraries:
+            - notebook:
+                path: ./nb.sql
+          development: true
+          catalog: main
+          target: ${resources.schemas.my_schema.id}
+
+      schemas:
+        my_schema:
+          name: test-schema-{{.unique_id}}
+          catalog_name: main
+          comment: This schema was created by DABs.
+    ```
+
+    A top-level grants mapping is not supported by Declarative Automation Bundles, so if you want to set grants for a schema, define the grants for the schema within the `schemas` mapping. For more information about grants, see [_](/data-governance/unity-catalog/manage-privileges/index.md#grant).
+
+    The following example defines a Unity Catalog schema with grants:
+
+    ```yaml
+    resources:
+      schemas:
+        my_schema:
+          name: test-schema
+          grants:
+            - principal: users
+              privileges:
+                - CAN_MANAGE
+            - principal: my_team
+              privileges:
+                - CAN_READ
+          catalog_name: main
+      ```
+$fields:
+  "grants":
+    "description": |-
+      The Unity Catalog privileges to grant to principals on this securable.
+    "markdown_description": |-
+      A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+      See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
+    "markdown_examples": |-
+      ```yaml
+      grants:
+        - principal: account users
+          privileges:
+            - SELECT
+        - principal: data-engineers
+          privileges:
+            - ALL_PRIVILEGES
+      ```
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

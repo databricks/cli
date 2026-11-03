@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -55,24 +57,62 @@ func copyFile(src, dst string) error {
 	return out.Close()
 }
 
-// regenerateAnnotationFiles regenerates the annotation files from the committed ones into
-// a temp dir and returns, per file, the tree paths that were added and the
-// paths that were changed or removed.
+// copyDir copies the regular files of src into dst.
+func copyDir(src, dst string) error {
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		err = copyFile(filepath.Join(src, e.Name()), filepath.Join(dst, e.Name()))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// regenerateAnnotationFiles regenerates the annotations directory from the
+// committed one into a temp dir and returns, per file, the tree paths that
+// were added and the paths that were changed or removed. Files present on only
+// one side are reported as a whole.
 func regenerateAnnotationFiles(t *testing.T) (added, changed map[string][]string) {
 	workdir := t.TempDir()
-	for _, name := range []string{annotationsFileName, overridesFileName, generatedFileName} {
-		require.NoError(t, copyFile(name, path.Join(workdir, name)))
-	}
+	dir := filepath.Join(workdir, annotationsDirName)
+	require.NoError(t, os.Mkdir(dir, 0o755))
+	require.NoError(t, copyDir(annotationsDirName, dir))
 
-	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"), cliJSONPath, false)
+	generateSchema(workdir, filepath.Join(t.TempDir(), "schema.json"), cliJSONPath, false)
 
 	added = map[string][]string{}
 	changed = map[string][]string{}
-	for _, name := range []string{annotationsFileName, overridesFileName, generatedFileName} {
-		originalFile, err := os.ReadFile(name)
+	names := map[string]bool{}
+	for _, d := range []string{annotationsDirName, dir} {
+		entries, err := os.ReadDir(d)
 		require.NoError(t, err)
-		currentFile, err := os.ReadFile(path.Join(workdir, name))
+		for _, e := range entries {
+			names[e.Name()] = true
+		}
+	}
+	for name := range names {
+		originalFile, err := os.ReadFile(filepath.Join(annotationsDirName, name))
+		if errors.Is(err, os.ErrNotExist) {
+			added[name] = append(added[name], "(new file)")
+			continue
+		}
 		require.NoError(t, err)
+		currentFile, err := os.ReadFile(filepath.Join(dir, name))
+		if errors.Is(err, os.ErrNotExist) {
+			changed[name] = append(changed[name], "(file removed)")
+			continue
+		}
+		require.NoError(t, err)
+		if name == "README.md" {
+			continue
+		}
 		original, err := yamlloader.LoadYAML("", bytes.NewBuffer(originalFile))
 		require.NoError(t, err)
 		current, err := yamlloader.LoadYAML("", bytes.NewBuffer(currentFile))
@@ -101,21 +141,33 @@ func regenerateAnnotationFiles(t *testing.T) (added, changed map[string][]string
 // Checks whether descriptions are added for new config fields.
 // If this test fails:
 //  1. run `./task generate-schema` from the repository root; new undocumented
-//     fields appear as PLACEHOLDER entries in annotations.generated.yml
-//  2. document them in annotations.yml at the same tree position if possible
+//     fields appear as PLACEHOLDER entries in annotations/*.generated.yml
+//  2. document them in the matching annotations/*.yml at the same tree
+//     position if possible
 //  3. run `./task generate-schema` again to regenerate the schema with the
-//     new descriptions and drop the entries from annotations.generated.yml
+//     new descriptions and drop the entries from the generated files
 func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	added, changed := regenerateAnnotationFiles(t)
 
-	assert.Empty(t, added[generatedFileName], "Missing JSON-schema descriptions for new config fields; run `./task generate-schema` and document them in bundle/internal/schema/annotations.yml:\n%s", strings.Join(added[generatedFileName], "\n"))
-	assert.Empty(t, changed[generatedFileName], "annotations.generated.yml is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(changed[generatedFileName], "\n"))
-
-	// Regenerating from the committed hand-written files must be a no-op.
-	for _, name := range []string{annotationsFileName, overridesFileName} {
-		assert.Empty(t, added[name], "%s is out of sync; run `./task generate-schema` and commit the result:\n%s", name, strings.Join(added[name], "\n"))
-		assert.Empty(t, changed[name], "%s is out of sync; run `./task generate-schema` and commit the result:\n%s", name, strings.Join(changed[name], "\n"))
+	var missing, stale []string
+	for name, paths := range added {
+		for _, p := range paths {
+			if strings.HasSuffix(name, generatedSuffix+yamlExt) {
+				missing = append(missing, name+": "+p)
+			} else {
+				stale = append(stale, name+": "+p)
+			}
+		}
 	}
+	for name, paths := range changed {
+		for _, p := range paths {
+			stale = append(stale, name+": "+p)
+		}
+	}
+	slices.Sort(missing)
+	slices.Sort(stale)
+	assert.Empty(t, missing, "Missing JSON-schema descriptions for new config fields; run `./task generate-schema` and document them in bundle/internal/schema/annotations/:\n%s", strings.Join(missing, "\n"))
+	assert.Empty(t, stale, "bundle/internal/schema/annotations/ is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(stale, "\n"))
 }
 
 // Checks that the annotations file only contains entries that match the
@@ -124,9 +176,9 @@ func TestNoDetachedAnnotations(t *testing.T) {
 	g, err := configTypeGraph()
 	require.NoError(t, err)
 
-	for _, name := range []string{annotationsFileName, overridesFileName, generatedFileName} {
-		_, unknown, err := loadAnnotationsFile(name, g)
+	for _, suffix := range []string{handSuffix, overridesSuffix, generatedSuffix} {
+		_, unknown, err := loadAnnotationsDir(annotationsDirName, suffix, g)
 		require.NoError(t, err)
-		assert.Empty(t, unknown, "Detached annotations found in %s; run `./task generate-schema` to drop them", name)
+		assert.Empty(t, unknown, "Detached annotations found in *%s.yml; run `./task generate-schema` to drop them", suffix)
 	}
 }

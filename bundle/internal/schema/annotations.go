@@ -164,24 +164,23 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	return s
 }
 
-// syncAnnotationFiles writes the annotation files back in canonical form.
-// annotationsPath receives the hand-written docs for fields only the CLI
-// defines; overridesPath the hand-written entries that touch fields cli.json
-// already defines; generatedPath a placeholder entry for every field that has
-// no documentation anywhere, so new undocumented fields show up as a diff in a
-// file that is visibly generated. Entries for fields that no longer exist in
-// the config are dropped with a warning.
-func (d *annotationHandler) syncAnnotationFiles(annotationsPath, overridesPath, generatedPath string, g *typeGraph) error {
+// syncAnnotationFiles writes the three layers of the annotations directory
+// back in canonical form. The hand-written entries are normalized and routed
+// between the plain and the ".overrides" files by whether the field exists
+// upstream; the ".generated" files receive a placeholder entry for every field
+// that has no documentation anywhere, so new undocumented fields show up as a
+// diff in files that are visibly generated. Entries for fields that no longer
+// exist in the config are dropped with a warning.
+func (d *annotationHandler) syncAnnotationFiles(dir string, g *typeGraph) error {
 	cliOnly, overrides := splitOverrides(d.fileAnnotations, d.extracted)
-	detached, err := saveAnnotationsFile(annotationsPath, annotationsFileHeader, cliOnly, g)
-	if err != nil {
-		return err
+	var detached []string
+	for suffix, data := range map[string]annotation.File{handSuffix: cliOnly, overridesSuffix: overrides} {
+		dropped, err := saveAnnotationsDir(dir, suffix, data, g)
+		if err != nil {
+			return err
+		}
+		detached = append(detached, dropped...)
 	}
-	detachedOverrides, err := saveAnnotationsFile(overridesPath, overridesFileHeader, overrides, g)
-	if err != nil {
-		return err
-	}
-	detached = append(detached, detachedOverrides...)
 	slices.Sort(detached)
 	for _, k := range detached {
 		fmt.Printf("Dropping annotation for `%s`: no matching field in the bundle configuration\n", k)
@@ -189,7 +188,7 @@ func (d *annotationHandler) syncAnnotationFiles(annotationsPath, overridesPath, 
 
 	// Missing annotations are computed from the current config, so nothing can
 	// be detached here.
-	_, err = saveAnnotationsFile(generatedPath, generatedFileHeader, d.missingAnnotations, g)
+	_, err := saveAnnotationsDir(dir, generatedSuffix, d.missingAnnotations, g)
 	return err
 }
 
