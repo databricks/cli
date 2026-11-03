@@ -395,7 +395,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		_, bound := bindIDByKey[resourceKey]
 		if remoteState == nil {
+			// A bind block pins the resource to one ID. Creating a replacement would
+			// re-point the state at a new ID behind the user's back and leave the
+			// block mismatched on every later plan, so report the deletion instead.
+			if bound {
+				logdiag.LogError(ctx, fmt.Errorf("%s: bound resource with ID %q no longer exists in the workspace; remove the bind block to create a new resource", errorPrefix, dbentry.ID))
+				return false
+			}
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
@@ -411,7 +419,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// it is defined, not just during the first bind. Once the resource is in
 		// state, a config change that would recreate or re-ID it still surfaces as an
 		// error so the bind block behaves as a persistent guard (see handleBindPlan).
-		if _, bound := bindIDByKey[resourceKey]; bound && (action == deployplan.Recreate || action == deployplan.UpdateWithID) {
+		if bound && (action == deployplan.Recreate || action == deployplan.UpdateWithID) {
 			logdiag.LogError(ctx, buildBindConflictError("cannot bind "+resourceKey, action, entry.Changes, resourceKey))
 			return false
 		}
