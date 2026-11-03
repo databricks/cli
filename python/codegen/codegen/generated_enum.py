@@ -8,8 +8,7 @@ from codegen.generated_dataclass import _append_description
 from codegen.jsonschema import Schema, is_experimental_stage
 
 # Enums whose platform value set grows faster than the schema. They keep their
-# members for completion, but unknown strings are accepted instead of rejected
-# (see https://github.com/databricks/cli/issues/6770).
+# members for completion, but unknown strings are accepted instead of rejected.
 OPEN_ENUMS = {"catalog.Privilege"}
 
 

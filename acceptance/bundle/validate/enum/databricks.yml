@@ -19,17 +19,6 @@ variables:
     default: "value"
 
 resources:
-  schemas:
-    my_schema:
-      name: my_schema
-      catalog_name: main
-      grants:
-        - principal: user@databricks.com
-          privileges:
-            # Grant privileges are not validated against the enum, so this
-            # does not trigger a warning (the SDK enum lags the platform).
-            - INVALID_PRIVILEGE
-
   jobs:
     my_job_valid:
       tasks:
@@ -68,3 +57,14 @@ resources:
               ebs_volume_type: "INVALID_VOLUME_TYPE"
             node_type_id: "i3.xlarge"
             num_workers: 1
+
+  schemas:
+    my_schema:
+      name: my_schema
+      catalog_name: main
+      grants:
+        - principal: user@databricks.com
+          privileges:
+            # Grant privileges are not validated against the enum, so this
+            # does not trigger a warning (the SDK enum lags the platform).
+            - INVALID_PRIVILEGE
