@@ -36,9 +36,8 @@ trace $CLI postgres get-project "$name" | project_fields
 trace print_requests.py //postgres/projects --method PATCH
 
 title "update_mask=spec with a body that now omits the non-default default_endpoint_settings"
-# 500: masking the whole spec resets the omitted sub-message and its emptied autoscaling
-# limits fail validation. The other fields are applied first, so it is a partial write —
-# the final read below shows display_name changed to changed2 while the response errored.
+# Masking the whole spec keeps the omitted sub-message: the stored endpoint settings
+# survive. (Until 2026-11-02 the API returned 500 here, after a partial write.)
 errcode trace $CLI postgres update-project "$name" spec --json '{"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}' | project_fields
 trace print_requests.py //postgres/projects --method PATCH
 trace $CLI postgres get-project "$name" | project_fields

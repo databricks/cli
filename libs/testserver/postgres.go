@@ -1,8 +1,6 @@
 package testserver
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -17,14 +15,6 @@ import (
 
 func nowTime() *sdktime.Time {
 	return sdktime.New(time.Now().UTC())
-}
-
-// nextTraceID returns a 32-hex-character id shaped like the trace ids the real API puts
-// in error messages, so acceptance goldens normalize local and cloud identically.
-func nextTraceID() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
 }
 
 // Backend defaults applied to a project's status when the spec omits them.
@@ -261,20 +251,8 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 	project.UpdateTime = nowTime()
 	s.PostgresProjects[name] = project
 
-	// Whole-spec mask + a body that omits default_endpoint_settings, while the stored
-	// settings are non-default, makes the real API 500 ("could not be processed"): it
-	// resets the message and the emptied autoscaling limits fail validation. The other
-	// masked fields are applied first, though — the failure is a partial write, so the
-	// mutation above is persisted and only this response reports the error. When the
-	// settings are already default, or the message is masked by its own path, the
-	// omission is tolerated. Probed against a real workspace 2026-09-21.
-	if wholeSpecMasked(req.URL.Query().Get("update_mask")) &&
-		(updateProject.Spec == nil || updateProject.Spec.DefaultEndpointSettings == nil) &&
-		project.Status != nil && isNonDefaultEndpointSettings(project.Status.DefaultEndpointSettings) {
-		return postgresErrorResponse(500, "INTERNAL_ERROR",
-			fmt.Sprintf("The request could not be processed. Please try again later and contact Databricks if the problem persists. [TraceId: %s]", nextTraceID()))
-	}
-
+	// Whole-spec mask + a body that omits default_endpoint_settings keeps the stored
+	// settings. Until 2026-11-02 the real API returned 500 here when they were non-default.
 	return Response{
 		Body: s.createOperationLocked(project.Name, project),
 	}
@@ -995,29 +973,6 @@ func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]
 		return &resp
 	}
 	return nil
-}
-
-// wholeSpecMasked reports whether the update_mask names the whole spec message (a bare
-// "spec" path), as the Terraform provider does.
-func wholeSpecMasked(mask string) bool {
-	for path := range strings.SplitSeq(mask, ",") {
-		if strings.TrimSpace(path) == "spec" {
-			return true
-		}
-	}
-	return false
-}
-
-// isNonDefaultEndpointSettings reports whether the settings differ from what create
-// materializes by default (autoscaling 1..1, 86400s suspend).
-func isNonDefaultEndpointSettings(s *postgres.ProjectDefaultEndpointSettings) bool {
-	if s == nil {
-		return false
-	}
-	if s.AutoscalingLimitMinCu != defaultAutoscalingLimitMinCu || s.AutoscalingLimitMaxCu != defaultAutoscalingLimitMaxCu {
-		return true
-	}
-	return s.SuspendTimeoutDuration != nil && s.SuspendTimeoutDuration.AsDuration() != defaultSuspendTimeout
 }
 
 // wildcardMissingField returns the first spec field that update_mask=* requires but the

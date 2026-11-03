@@ -862,7 +862,7 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
 	}
-	if f.path == "config.compute" && computeOptions != nil {
+	if (f.path == "config.compute" || f.path == "config.compute.accelerator_type") && computeOptions != nil {
 		fmt.Fprintln(w, "\n  Supported accelerator types:")
 		if len(computeOptions) == 0 {
 			fmt.Fprintln(w, "    No accelerator types are currently available for AI Runtime in this workspace.")

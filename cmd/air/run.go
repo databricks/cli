@@ -122,7 +122,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		var computeOptions []computeOption
-		if field.path == "config.compute" {
+		if field.path == "config.compute" || field.path == "config.compute.accelerator_type" {
 			computeOptions = loadComputeOptionsForHelp(c, args)
 		}
 		renderConfigField(c.OutOrStdout(), field, computeOptions)
@@ -243,13 +243,6 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			// Separate the submit summary from the streamed logs.
 			fmt.Fprintln(out)
 			fmt.Fprintln(out, monitoringMessage)
-			if maxRetries > 0 {
-				unit := "times"
-				if maxRetries == 1 {
-					unit = "time"
-				}
-				fmt.Fprintf(out, "Failed attempts will be retried up to %d %s.\n", maxRetries, unit)
-			}
 			printLogsDivider(ctx, out)
 			return handleWatchResult(out, w.Config.Profile, runIDStr, runLogs(watchCtx, cmd, req))
 		}

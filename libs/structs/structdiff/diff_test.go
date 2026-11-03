@@ -1125,3 +1125,31 @@ func TestGetStructDiffPathsSharingPrefix(t *testing.T) {
 	assert.Equal(t, Change{Path: changes[2].Path, Old: nil, New: "2"}, changes[2])
 	assert.Equal(t, Change{Path: changes[3].Path, Old: "1", New: nil}, changes[3])
 }
+
+type PromotedInner struct {
+	A               string   `json:"a,omitempty"`
+	ForceSendFields []string `json:"-"`
+}
+
+type promotedOuter struct {
+	PromotedInner
+	Own string `json:"own,omitempty"`
+}
+
+// The embedded struct's ForceSendFields does not force the outer struct's own fields;
+// the SDK marshaller would reject a name its struct does not have.
+func TestGetStructDiffEmbeddedForceSendFieldsDoNotApplyToOuterFields(t *testing.T) {
+	forced := promotedOuter{ForceSendFields: []string{"A", "Own"}}
+	plain := promotedOuter{}
+
+	changes, err := GetStructDiff(forced, plain, nil)
+	require.NoError(t, err)
+	assert.Equal(t, []ResolvedChange{{Field: "a", Old: "", New: nil}}, resolveChanges(changes))
+	assert.False(t, IsEqual(forced, plain))
+
+	forced.ForceSendFields = []string{"Own"}
+	changes, err = GetStructDiff(forced, plain, nil)
+	require.NoError(t, err)
+	assert.Empty(t, changes)
+	assert.True(t, IsEqual(forced, plain))
+}

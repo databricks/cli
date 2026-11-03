@@ -10,6 +10,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.jobs._models.ai_function_task import (
+    AiFunctionTask,
+    AiFunctionTaskParam,
+)
 from databricks.bundles.jobs._models.ai_runtime_task import (
     AiRuntimeTask,
     AiRuntimeTaskParam,
@@ -34,7 +38,10 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
+from databricks.bundles.jobs._models.for_each_task import (
+    ForEachTask,
+    ForEachTaskParam,
+)
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
     GenAiComputeTaskParam,
@@ -62,10 +69,7 @@ from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTaskParam,
 )
 from databricks.bundles.jobs._models.run_if import RunIf, RunIfParam
-from databricks.bundles.jobs._models.run_job_task import (
-    RunJobTask,
-    RunJobTaskParam,
-)
+from databricks.bundles.jobs._models.run_job_task import RunJobTask, RunJobTaskParam
 from databricks.bundles.jobs._models.spark_jar_task import (
     SparkJarTask,
     SparkJarTaskParam,
@@ -109,6 +113,13 @@ class Task:
     A unique name for the task. This field is used to refer to this task from other tasks.
     This field is required and must be unique within its parent job.
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
+    """
+
+    ai_function_task: VariableOrOptional[AiFunctionTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
@@ -356,6 +367,13 @@ class TaskDict(TypedDict, total=False):
     A unique name for the task. This field is used to refer to this task from other tasks.
     This field is required and must be unique within its parent job.
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
+    """
+
+    ai_function_task: VariableOrOptional[AiFunctionTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]

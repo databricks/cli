@@ -21,18 +21,16 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "provider-listings",
-		Short: `*Public Preview* Listings are the core entities in the Marketplace.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-Listings are the core entities in the Marketplace. They represent the products
+		Short: `Listings are the core entities in the Marketplace.`,
+		Long: `Listings are the core entities in the Marketplace. They represent the products
   that are available for consumption.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -67,16 +65,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `*Public Preview* Create a listing.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a listing.
+	cmd.Short = `Create a listing.`
+	cmd.Long = `Create a listing.
 
   Create a new listing`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -133,16 +129,14 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteListingRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `*Public Preview* Delete a listing.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete a listing.
+	cmd.Short = `Delete a listing.`
+	cmd.Long = `Delete a listing.
 
   Delete a listing`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -202,16 +196,14 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetListingRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `*Public Preview* Get a listing.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get a listing.
+	cmd.Short = `Get a listing.`
+	cmd.Long = `Get a listing.
 
   Get a listing`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -285,16 +277,14 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `*Public Preview* List listings.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List listings.
+	cmd.Short = `List listings.`
+	cmd.Long = `List listings.
 
   List listings owned by this provider`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -347,16 +337,14 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `*Public Preview* Update listing.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update listing.
+	cmd.Short = `Update listing.`
+	cmd.Long = `Update listing.
 
   Update a listing`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

@@ -465,6 +465,32 @@ func AddDefaultHandlers(server *Server) {
 		return data
 	})
 
+	// DBFS (dbfs:/ paths):
+	server.Handle("GET", "/api/2.0/dbfs/get-status", func(req Request) any {
+		return req.Workspace.DbfsGetStatus(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/list", func(req Request) any {
+		return req.Workspace.DbfsList(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/mkdirs", func(req Request) any {
+		return req.Workspace.DbfsMkdirs(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/create", func(req Request) any {
+		return req.Workspace.DbfsCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/add-block", func(req Request) any {
+		return req.Workspace.DbfsAddBlock(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/close", func(req Request) any {
+		return req.Workspace.DbfsClose(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/read", func(req Request) any {
+		return req.Workspace.DbfsRead(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/delete", func(req Request) any {
+		return req.Workspace.DbfsDelete(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req Request) any {
 		return TestMetastore
 	})
