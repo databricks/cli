@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,6 +93,39 @@ func TestMaterializationSetChangeFailuresWithoutFailedMembers(t *testing.T) {
 		},
 	}))
 	assert.Empty(t, materializationSetChangeFailures(nil))
+}
+
+func TestMaterializationSetOperationFailureNamesMembersLeftUnchanged(t *testing.T) {
+	waitErr := errors.New("operation failed: [INTERNAL_ERROR] Changed 0 of 1 materialized features")
+	err := materializationSetOperationFailure(operationStub{
+		name: "operations/abc",
+		metadata: &ml.MaterializationSetOperationMetadata{
+			MaterializationSetId: "set-1",
+			UpdateProgress: &ml.MaterializationSetUpdateProgress{
+				FailedMaterializedFeatures: []ml.MaterializedFeatureChangeFailure{
+					{MaterializedFeatureId: "mf-1", ErrorCode: "INTERNAL_ERROR", Message: "pipeline stuck"},
+				},
+			},
+		},
+	}, waitErr)
+
+	assert.EqualError(t, err, "materialization set set-1: operation failed: [INTERNAL_ERROR] Changed 0 of 1 "+
+		"materialized features; members left unchanged: mf-1 (INTERNAL_ERROR): pipeline stuck")
+	assert.ErrorIs(t, err, waitErr)
+	_, isAPIError := errors.AsType[*apierr.APIError](err)
+	assert.False(t, isAPIError)
+}
+
+func TestMaterializationSetOperationFailureWithoutFailedMembers(t *testing.T) {
+	waitErr := errors.New("operation failed: [INVALID_PARAMETER_VALUE] Batch and streaming features cannot be mixed")
+	err := materializationSetOperationFailure(operationStub{
+		name:     "operations/abc",
+		metadata: &ml.MaterializationSetOperationMetadata{MaterializationSetId: "set-1"},
+	}, waitErr)
+
+	assert.EqualError(t, err, "materialization set set-1: operation failed: [INVALID_PARAMETER_VALUE] Batch and "+
+		"streaming features cannot be mixed")
+	assert.ErrorIs(t, err, waitErr)
 }
 
 // TestMaterializationSetMembershipChangeIsAnUpdate enumerates every path shape the planner hands

@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"slices"
 	"strings"
 	"uuid"
@@ -12,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -128,7 +126,7 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 
 	set, err := operation.Wait(ctx)
 	if err != nil {
-		return "", nil, r.materializationSetOperationFailure(ctx, operation, err)
+		return "", nil, materializationSetOperationFailure(operation, err)
 	}
 	// The id is what the engine records the resource under, so an operation that settles without
 	// one is a failure even though the wait succeeded.
@@ -163,38 +161,16 @@ func materializationSetChangeFailures(metadata *ml.MaterializationSetOperationMe
 	return failures
 }
 
-// materializationSetOperationFailure restates a response operation with FAILED status as an API
-// error.
-//
-// StatusCode is set to 200 because the create, update and delete endpoints always return an
-// operation with FAILED status when an error is raised, except for the errors raised before the
-// action is executed, such as a validation error on the request.
-func (r *ResourceMaterializationSet) materializationSetOperationFailure(
-	ctx context.Context,
-	operation materializationSetOperation,
-	waitErr error,
-) error {
-	target := materializationSetOperationTarget(operation)
-	settled, err := r.client.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
-		Name: operation.Name(),
-	})
-	if err != nil || settled.Error == nil {
-		return fmt.Errorf("%s: %w", target, waitErr)
+// materializationSetOperationFailure names the set a failed wait was changing and appends each
+// member the change left unchanged. The wait error already carries the operation's error code and
+// message.
+func materializationSetOperationFailure(operation materializationSetOperation, waitErr error) error {
+	err := fmt.Errorf("%s: %w", materializationSetOperationTarget(operation), waitErr)
+	metadata, _ := operation.Metadata()
+	if failures := materializationSetChangeFailures(metadata); len(failures) > 0 {
+		return fmt.Errorf("%w; members left unchanged: %s", err, strings.Join(failures, "; "))
 	}
-
-	message := settled.Error.Message
-	if metadata, err := operation.Metadata(); err == nil {
-		if failures := materializationSetChangeFailures(metadata); len(failures) > 0 {
-			message += "; members left unchanged: " + strings.Join(failures, "; ")
-		}
-	}
-	return &apierr.APIError{
-		ErrorCode:       string(settled.Error.ErrorCode),
-		Message:         target + " operation failed: " + message,
-		StatusCode:      http.StatusOK,
-		ResponseWrapper: nil,
-		Details:         nil, //nolint:staticcheck // SA1019: deprecated, but exhaustruct requires every field
-	}
+	return err
 }
 
 // materializationSetOperation is what a create, update and delete operation have in common: the
@@ -233,7 +209,7 @@ func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, co
 
 	set, err := operation.Wait(ctx)
 	if err != nil {
-		return nil, r.materializationSetOperationFailure(ctx, operation, err)
+		return nil, materializationSetOperationFailure(operation, err)
 	}
 	return set, nil
 }
@@ -251,7 +227,7 @@ func (r *ResourceMaterializationSet) DoDelete(ctx context.Context, id string, _ 
 		return err
 	}
 	if err := operation.Wait(ctx); err != nil {
-		return r.materializationSetOperationFailure(ctx, operation, err)
+		return materializationSetOperationFailure(operation, err)
 	}
 	return nil
 }

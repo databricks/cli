@@ -15,8 +15,8 @@ render databricks.yml.tmpl
 trace $CLI bundle deploy
 
 title "A member the server cannot tear down settles the update's operation as FAILED and returns"
-title "it with HTTP 200. The adapter reads the code off the operation and the per-member outcome"
-title "off its metadata, so the deploy fails naming each member left behind."
+title "it with HTTP 200. The deploy fails with the operation's error code and message, naming each"
+title "member left behind from the operation's metadata."
 render drop-failing.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
