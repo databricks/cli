@@ -1,2 +1,4 @@
-# Import block references jobs.bar but only jobs.foo exists in resources
+# Bind block references jobs.bar but only jobs.foo exists in resources.
+# This is caught at validation time, before any plan is attempted.
+trace musterr $CLI bundle validate
 trace musterr $CLI bundle plan
