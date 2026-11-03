@@ -60,7 +60,8 @@ func promptForHost(ctx context.Context) (string, error) {
 			}
 			// Reject hosts that setHost would reject after the prompt,
 			// e.g. "/" or "?o=123", while the user can still edit them.
-			return validateLoginHost(input)
+			_, err := parseLoginHost(input)
+			return err
 		},
 	})
 	return strings.TrimSpace(result), err

@@ -663,13 +663,6 @@ func parseLoginHost(host string) (auth.HostParams, error) {
 	return params, nil
 }
 
-// validateLoginHost returns the error normalizeLoginHost returns for host,
-// without the example host that the host prompt prints above the input.
-func validateLoginHost(host string) error {
-	_, err := parseLoginHost(host)
-	return err
-}
-
 // hasHostname reports whether host, with or without a scheme, is an http or
 // https URL with a hostname.
 func hasHostname(host string) bool {
