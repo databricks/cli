@@ -1,0 +1,26 @@
+
+=== A new template excluded from migration selects only its no_drift variant
+
+>>> cat acceptance/bundle/invariant/migrate/test.toml
+Cloud = false
+EnvMatrixExclude.new = ["INPUT_CONFIG=new.yml.tmpl"]
+
+>>> selection
+Selected 1 changed tests (limit=50, 0 not selected)
+   10  ^bundle$/^invariant$/^no_drift$/^INPUT_CONFIG=new\.yml\.tmpl$
+
+=== Changing the migration script also selects its existing variants
+
+>>> selection
+Selected 2 changed tests (limit=50, 0 not selected)
+   10  ^bundle$/^invariant$/^no_drift$/^INPUT_CONFIG=new\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^migrate$
+
+=== Removing the exclusion selects migration, including the re-enabled variant
+
+>>> cat acceptance/bundle/invariant/migrate/test.toml
+Cloud = false
+
+>>> selection
+Selected 1 changed tests (limit=50, 0 not selected)
+    5  ^bundle$/^invariant$/^migrate$

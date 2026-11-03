@@ -248,15 +248,15 @@ func withoutAddedExclusions(root, diff string) (string, error) {
 			continue
 		}
 		if base == "" {
-			out, err := exec.Command("git", "merge-base", "HEAD", "origin/main").Output()
+			out, err := exec.Command("git", "merge-base", "HEAD", "origin/main").CombinedOutput()
 			if err != nil {
-				return "", fmt.Errorf("finding selection merge base: %w", err)
+				return "", fmt.Errorf("finding selection merge base: %w: %s", err, strings.TrimSpace(string(out)))
 			}
 			base = strings.TrimSpace(string(out))
 		}
-		before, err := exec.Command("git", "show", base+":"+path).Output()
+		before, err := exec.Command("git", "show", base+":"+path).CombinedOutput()
 		if err != nil {
-			return "", fmt.Errorf("reading %s at %s: %w", path, base, err)
+			return "", fmt.Errorf("reading %s at %s: %w: %s", path, base, err, strings.TrimSpace(string(before)))
 		}
 		after, err := os.ReadFile(filepath.Join(root, strings.TrimPrefix(path, acceptanceDirPrefix)))
 		if err != nil {
@@ -285,7 +285,7 @@ func withoutAddedExclusions(root, diff string) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
-// addedExclusions preserves selection for removed/replaced rules and other config changes.
+// addedExclusions returns the new rules if adding exclusions is the only config change.
 func addedExclusions(before, after []byte) map[string][]string {
 	var oldConfig, newConfig internal.TestConfig
 	if metadata, err := toml.Decode(string(before), &oldConfig); err != nil || len(metadata.Undecoded()) > 0 {
@@ -313,22 +313,22 @@ func addedExclusions(before, after []byte) map[string][]string {
 	return newRules
 }
 
-// inheritedExclusions identifies rules a new leaf exclusion would replace.
+// inheritedExclusions returns the ancestor exclusion rule names at base.
 func inheritedExclusions(base, path string) (map[string]bool, error) {
 	args := []string{"ls-tree", "-r", "--full-tree", "--name-only", base, "--"}
 	for dir := filepath.Dir(filepath.Dir(path)); filepath.ToSlash(dir)+"/" != acceptanceDirPrefix; dir = filepath.Dir(dir) {
 		args = append(args, filepath.ToSlash(filepath.Join(dir, internal.ConfigFilename)))
 	}
 	args = append(args, acceptanceDirPrefix+internal.ConfigFilename)
-	out, err := exec.Command("git", args...).Output()
+	out, err := exec.Command("git", args...).CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("listing inherited configs at %s: %w", base, err)
+		return nil, fmt.Errorf("listing inherited configs at %s: %w: %s", base, err, strings.TrimSpace(string(out)))
 	}
 	rules := map[string]bool{}
 	for path := range strings.FieldsSeq(string(out)) {
-		contents, err := exec.Command("git", "show", base+":"+path).Output()
+		contents, err := exec.Command("git", "show", base+":"+path).CombinedOutput()
 		if err != nil {
-			return nil, fmt.Errorf("reading %s at %s: %w", path, base, err)
+			return nil, fmt.Errorf("reading %s at %s: %w: %s", path, base, err, strings.TrimSpace(string(contents)))
 		}
 		var config internal.TestConfig
 		if _, err := toml.Decode(string(contents), &config); err != nil {
