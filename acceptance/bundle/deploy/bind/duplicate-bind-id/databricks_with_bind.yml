@@ -25,10 +25,6 @@ resources:
           environment_key: default
           spark_python_task:
             python_file: ./hello.py
-
-targets:
-  default:
-    bind:
-      jobs:
-        bar:
+      lifecycle:
+        bind:
           id: "PLACEHOLDER_JOB_ID"

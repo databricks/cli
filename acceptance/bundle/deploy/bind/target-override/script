@@ -1,0 +1,8 @@
+# The ID of the resource to adopt differs per target, so it is set through the usual
+# target override of the resource; the root value is a placeholder here.
+NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-bind-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
+add_repl.py $NEW_JOB_ID NEW_JOB_ID
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
+
+trace $CLI bundle validate -o json | jq '.resources.jobs.foo.lifecycle'
+trace $CLI bundle plan

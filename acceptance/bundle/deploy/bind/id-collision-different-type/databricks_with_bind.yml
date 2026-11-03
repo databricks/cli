@@ -17,10 +17,6 @@ resources:
   experiments:
     exp:
       name: /Shared/test-bind-collision-exp
-
-targets:
-  default:
-    bind:
-      experiments:
-        exp:
+      lifecycle:
+        bind:
           id: "PLACEHOLDER_JOB_ID"

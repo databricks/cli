@@ -1,9 +1,0 @@
-bundle:
-  name: test-bind-delete-with-block
-
-targets:
-  default:
-    bind:
-      jobs:
-        foo:
-          id: "PLACEHOLDER_JOB_ID"

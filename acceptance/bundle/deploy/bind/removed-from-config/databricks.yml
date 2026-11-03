@@ -1,15 +1,10 @@
 bundle:
-  name: test-bind-top-level
-
-bind:
-  jobs:
-    foo:
-      id: "123"
+  name: test-bind-removed-from-config
 
 resources:
   jobs:
     foo:
-      name: test-job
+      name: test-bind-job
       environments:
         - environment_key: default
           spec:
@@ -18,4 +13,7 @@ resources:
         - task_key: my_task
           environment_key: default
           spark_python_task:
-            python_file: ./hello.py
+            python_file: /Workspace/test.py
+      lifecycle:
+        bind:
+          id: "PLACEHOLDER_JOB_ID"

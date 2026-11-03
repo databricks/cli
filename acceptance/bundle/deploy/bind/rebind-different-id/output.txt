@@ -7,8 +7,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === A bind block for a resource already in state must carry the state ID; a different ID is not a re-point
 >>> musterr [CLI] bundle plan
-Error: resources.jobs.foo: resource already bound to ID "[FOO_ID]", cannot bind as "999999999"; remove the bind block or unbind the existing resource
-  at targets.default.bind.jobs.foo
+Error: resources.jobs.foo: resource already bound to ID "[FOO_ID]", cannot bind as "999999999"; remove lifecycle.bind or unbind the existing resource
+  at resources.jobs.foo.lifecycle.bind.id
+  in databricks.yml:19:15
 
 Error: bind validation failed
 

@@ -17,11 +17,10 @@ resources:
           environment_key: default
           spark_python_task:
             python_file: /Workspace/test.py
+      lifecycle:
+        bind:
+          id: "PLACEHOLDER_JOB_ID"
 
 targets:
   default:
     mode: development
-    bind:
-      jobs:
-        foo:
-          id: "PLACEHOLDER_JOB_ID"

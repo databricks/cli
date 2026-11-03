@@ -8,8 +8,9 @@ Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 
 === Unbind the job. The bind block is still in config, so the next deploy re-binds it
 >>> [CLI] bundle deployment unbind foo
-Warning: the bind block for resources.jobs.foo re-binds the resource on the next deploy; remove it to keep the resource unbound
-  at targets.default.bind.jobs.foo
+Warning: resources.jobs.foo.lifecycle.bind re-binds the resource on the next deploy; remove it to keep the resource unbound
+  at resources.jobs.foo.lifecycle.bind
+  in databricks.yml:22:11
 
 
 === The job now matches the config, so this is a pure bind

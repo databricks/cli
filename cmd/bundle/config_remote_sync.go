@@ -89,9 +89,7 @@ Examples:
 				// ProcessBundleRet has already opened the direct state for reading.
 				deployBundle := &b.DeploymentBundle
 
-				// Without the target's bind blocks: remote-sync reconciles resources that
-				// are already in state, and adopting new ones is a deploy-time decision.
-				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, nil)
+				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to detect changes: %w", err)

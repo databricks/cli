@@ -462,11 +462,3 @@ func (b *Bundle) IsImmutableFolder() bool {
 func (b *Bundle) IsSourceLinkedDeployment() bool {
 	return b.SyncMode() == config.SyncModeInPlace
 }
-
-// BindConfig returns the selected target's bind blocks, or nil when no target is selected.
-func (b *Bundle) BindConfig() config.Bind {
-	if b.Target == nil {
-		return nil
-	}
-	return b.Target.Bind
-}
