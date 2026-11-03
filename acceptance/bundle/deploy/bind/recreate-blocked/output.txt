@@ -27,6 +27,5 @@ To resolve this issue, you have two options:
        #     foo:
        #       id: <resource_id>
 
-
 Error: planning failed
 

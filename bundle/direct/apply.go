@@ -40,7 +40,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	case deployplan.Create:
 		return d.Create(ctx, db, newState)
 	case deployplan.Bind:
-		return d.Bind(ctx, db, planEntry.BindID, newState)
+		return d.Bind(ctx, db, planEntry.BindID, newState, planEntry)
 	case deployplan.BindAndUpdate:
 		return d.BindAndUpdate(ctx, db, planEntry.BindID, newState, planEntry)
 	}
@@ -66,8 +66,15 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 
 // Bind brings an existing workspace resource under bundle management by persisting
 // its ID to state, without modifying the remote resource.
-func (d *DeploymentUnit) Bind(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
-	err := db.SaveState(ctx, d.ResourceKey, id, newState, d.DependsOn)
+func (d *DeploymentUnit) Bind(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
+	// The remote resource was read during planning and is unchanged by a pure bind;
+	// reuse it so dependents (permissions, grants) do not trigger a second read.
+	err := d.SetRemoteState(planEntry.RemoteState)
+	if err != nil {
+		return err
+	}
+
+	err = db.SaveState(ctx, d.ResourceKey, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
