@@ -1,0 +1,12 @@
+# Deploy foo to create it in state
+trace $CLI bundle deploy --auto-approve
+JOB_ID=$(read_id.py foo)
+
+title "A bind block for a resource already in state must carry the state ID; a different ID is not a re-point"
+cp databricks.yml databricks.yml.bak
+cp databricks_with_bind.yml databricks.yml
+trace musterr $CLI bundle plan
+
+# Cleanup
+cp databricks.yml.bak databricks.yml
+trace $CLI bundle destroy --auto-approve

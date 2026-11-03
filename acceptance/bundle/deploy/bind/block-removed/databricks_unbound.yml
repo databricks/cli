@@ -1,0 +1,14 @@
+bundle:
+  name: test-bind-block-removed
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline
+      storage: /new/storage/path
+      libraries:
+        - notebook:
+            path: ./nb.sql
+
+targets:
+  default:
