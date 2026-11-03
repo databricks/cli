@@ -14,6 +14,7 @@ globs:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
+  - "bundle/internal/schema/annotations.generated.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -33,6 +34,7 @@ paths:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
+  - "bundle/internal/schema/annotations.generated.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -67,7 +69,7 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
   - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
 - Bundle schemas:
   - `./task generate-schema`
-  - Rewrites `bundle/internal/schema/annotations.yml` in place: upstream docs are sourced from `.codegen/cli.json` at generation time, and the file is synced with the config structure (placeholders added, stale entries dropped).
+  - Upstream docs are sourced from `.codegen/cli.json` at generation time. `bundle/internal/schema/annotations.yml` holds only hand-written CLI-owned docs; the generator normalizes it in place and drops entries for fields that no longer exist. `bundle/internal/schema/annotations.generated.yml` is fully generated: it lists the fields that have no documentation anywhere as `PLACEHOLDER` entries. To document one, add the entry to `annotations.yml` and regenerate.
   - The docs schema (`jsonschema_for_docs.json`) is not generated on main; it is built and published to the `docgen` branch on release by `.github/workflows/update-schema-docs.yml`.
 - Validation generated code:
   - `./task generate-validation`

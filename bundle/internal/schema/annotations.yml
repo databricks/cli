@@ -16,11 +16,11 @@
 #   - Each type is expanded exactly once, at its first occurrence; fields of
 #     types that occur again later (for example everything under "targets")
 #     are documented at that first occurrence.
-#   - "description: PLACEHOLDER" marks fields that have no documentation yet.
 #
-# Running "task generate-schema" keeps this file in sync with the
-# configuration structure: it adds placeholders for new undocumented fields
-# and drops entries for fields that no longer exist.
+# Every entry in this file is hand-written. Running "task generate-schema"
+# only normalizes it (key order, formatting) and drops entries for fields that
+# no longer exist. Fields that have no documentation yet are listed in
+# annotations.generated.yml.
 artifacts:
   "description": |-
     Defines the attributes to build an artifact
@@ -151,8 +151,6 @@ bundle:
       "description": |-
         Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
 environments:
-  "description": |-
-    PLACEHOLDER
   "deprecation_message": |-
     Deprecated: please use targets instead
 experimental:
@@ -240,9 +238,6 @@ presets:
     Defines bundle deployment presets.
   "markdown_description": |-
     Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.md#presets).
-python:
-  "description": |-
-    PLACEHOLDER
 resources:
   "description": |-
     A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
@@ -257,54 +252,7 @@ resources:
     ```
   "$fields":
     "alerts":
-      "description": |-
-        PLACEHOLDER
       "$fields":
-        "evaluation":
-          "description": |-
-            PLACEHOLDER
-          "$fields":
-            "notification":
-              "$fields":
-                "subscriptions":
-                  "description": |-
-                    PLACEHOLDER
-                  "$fields":
-                    "destination_id":
-                      "description": |-
-                        PLACEHOLDER
-                    "user_email":
-                      "description": |-
-                        PLACEHOLDER
-            "source":
-              "$fields":
-                "display":
-                  "description": |-
-                    PLACEHOLDER
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-            "threshold":
-              "$fields":
-                "column":
-                  "description": |-
-                    PLACEHOLDER
-                "value":
-                  "description": |-
-                    PLACEHOLDER
-                  "$fields":
-                    "bool_value":
-                      "description": |-
-                        PLACEHOLDER
-                    "double_value":
-                      "description": |-
-                        PLACEHOLDER
-                    "string_value":
-                      "description": |-
-                        PLACEHOLDER
-        "file_path":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -325,53 +273,12 @@ resources:
               - level: CAN_RUN
                 service_principal_name: 123456-abcdef
             ```
-        "schedule":
-          "description": |-
-            PLACEHOLDER
     "apps":
       "description": |-
         The app resource defines a Databricks app.
       "markdown_description": |-
         The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
       "$fields":
-        "app_status":
-          "description": |-
-            PLACEHOLDER
-        "budget_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "compute_size":
-          "description": |-
-            PLACEHOLDER
-        "compute_status":
-          "description": |-
-            PLACEHOLDER
-        "config":
-          "description": |-
-            PLACEHOLDER
-          "$fields":
-            "command":
-              "description": |-
-                PLACEHOLDER
-            "env":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-                "value":
-                  "description": |-
-                    PLACEHOLDER
-                "value_from":
-                  "description": |-
-                    PLACEHOLDER
-        "effective_budget_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "effective_usage_policy_id":
-          "description": |-
-            PLACEHOLDER
         "git_source":
           "description": |-
             Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
@@ -380,12 +287,6 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "oauth2_app_client_id":
-          "description": |-
-            PLACEHOLDER
-        "oauth2_app_integration_id":
-          "description": |-
-            PLACEHOLDER
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -416,116 +317,7 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "resources":
-          "$fields":
-            "app":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "database":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "database_name":
-                  "description": |-
-                    PLACEHOLDER
-                "instance_name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "experiment":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "experiment_id":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "genie_space":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-                "space_id":
-                  "description": |-
-                    PLACEHOLDER
-            "job":
-              "description": |-
-                PLACEHOLDER
-            "postgres":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "branch":
-                  "description": |-
-                    PLACEHOLDER
-                "database":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "secret":
-              "description": |-
-                PLACEHOLDER
-            "serving_endpoint":
-              "description": |-
-                PLACEHOLDER
-            "sql_warehouse":
-              "description": |-
-                PLACEHOLDER
-            "uc_securable":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-                "securable_full_name":
-                  "description": |-
-                    PLACEHOLDER
-                "securable_type":
-                  "description": |-
-                    PLACEHOLDER
-        "service_principal_client_id":
-          "description": |-
-            PLACEHOLDER
-        "service_principal_id":
-          "description": |-
-            PLACEHOLDER
-        "service_principal_name":
-          "description": |-
-            PLACEHOLDER
-        "source_code_path":
-          "description": |-
-            PLACEHOLDER
-        "telemetry_export_destinations":
-          "description": |-
-            PLACEHOLDER
-        "usage_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "user_api_scopes":
-          "description": |-
-            PLACEHOLDER
     "catalogs":
-      "description": |-
-        PLACEHOLDER
       "$fields":
         "grants":
           "description": |-
@@ -547,26 +339,8 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "managed_encryption_settings":
-          "$fields":
-            "azure_encryption_settings":
-              "$fields":
-                "azure_cmk_access_connector_id":
-                  "description": |-
-                    PLACEHOLDER
-                "azure_cmk_managed_identity_id":
-                  "description": |-
-                    PLACEHOLDER
-                "azure_tenant_id":
-                  "description": |-
-                    PLACEHOLDER
     "cluster_policies":
-      "description": |-
-        PLACEHOLDER
       "$fields":
-        "lifecycle":
-          "description": |-
-            PLACEHOLDER
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -706,17 +480,11 @@ resources:
         "display_name":
           "description": |-
             The display name of the dashboard.
-        "embed_credentials":
-          "description": |-
-            PLACEHOLDER
         "etag":
           "description": |-
             The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
             has not been modified since the last read.
             This field is excluded in List Dashboards responses.
-        "file_path":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -779,21 +547,11 @@ resources:
           "description": |-
             The warehouse ID used to run the dashboard.
     "database_catalogs":
-      "description": |-
-        PLACEHOLDER
       "$fields":
-        "create_database_if_not_exists":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "uid":
-          "description": |-
-            PLACEHOLDER
     "database_instances":
-      "description": |-
-        PLACEHOLDER
       "$fields":
         "lifecycle":
           "description": |-
@@ -871,29 +629,7 @@ resources:
               "description": |-
                 The name of the user granted the permission level.
     "external_locations":
-      "description": |-
-        PLACEHOLDER
       "$fields":
-        "effective_file_event_queue":
-          "$fields":
-            "managed_aqs":
-              "description": |-
-                PLACEHOLDER
-            "managed_pubsub":
-              "description": |-
-                PLACEHOLDER
-            "managed_sqs":
-              "description": |-
-                PLACEHOLDER
-            "provided_aqs":
-              "description": |-
-                PLACEHOLDER
-            "provided_pubsub":
-              "description": |-
-                PLACEHOLDER
-            "provided_sqs":
-              "description": |-
-                PLACEHOLDER
         "encryption_details":
           "$fields":
             "sse_encryption_details":
@@ -927,68 +663,11 @@ resources:
         The feature definitions for the bundle, where each key is the name of the feature.
       "markdown_description": |-
         The feature definitions for the bundle, where each key is the name of the feature.
-      "$fields":
-        "filter_condition":
-          "description": |-
-            PLACEHOLDER
-        "function":
-          "$fields":
-            "aggregation_function":
-              "$fields":
-                "time_window":
-                  "$fields":
-                    "continuous":
-                      "description": |-
-                        PLACEHOLDER
-                    "sliding":
-                      "description": |-
-                        PLACEHOLDER
-                    "tumbling":
-                      "description": |-
-                        PLACEHOLDER
-            "extra_parameters":
-              "description": |-
-                PLACEHOLDER
-            "function_type":
-              "description": |-
-                PLACEHOLDER
-        "inputs":
-          "description": |-
-            PLACEHOLDER
-        "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "source":
-          "$fields":
-            "delta_table_source":
-              "$fields":
-                "entity_columns":
-                  "description": |-
-                    PLACEHOLDER
-                "timeseries_column":
-                  "description": |-
-                    PLACEHOLDER
-            "kafka_source":
-              "$fields":
-                "entity_column_identifiers":
-                  "description": |-
-                    PLACEHOLDER
-                "timeseries_column_identifier":
-                  "description": |-
-                    PLACEHOLDER
-        "time_window":
-          "description": |-
-            PLACEHOLDER
     "genie_spaces":
-      "description": |-
-        PLACEHOLDER
       "$fields":
         "description":
           "description": |-
             Description of the Genie space shown alongside the title in the Databricks UI.
-        "etag":
-          "description": |-
-            PLACEHOLDER
         "file_path":
           "description": |-
             Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
@@ -1103,9 +782,6 @@ resources:
                 "on_file_change":
                   "description": |-
                     Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported.
-        "python_named_params":
-          "description": |-
-            PLACEHOLDER
     "jobs":
       "description": |-
         The job definitions for the bundle, where each key is the name of the job.
@@ -1137,16 +813,6 @@ resources:
                 "dependencies":
                   "description": |-
                     List of pip dependencies, as supported by the version of pip in this environment.
-        "git_source":
-          "$fields":
-            "sparse_checkout":
-              "description": |-
-                PLACEHOLDER
-        "health":
-          "$fields":
-            "rules":
-              "description": |-
-                PLACEHOLDER
         "job_clusters":
           "$fields":
             "new_cluster":
@@ -1218,119 +884,6 @@ resources:
             "user_name":
               "description": |-
                 The email of an active workspace user. Non-admin users can only set this field to their own email.
-        "tasks":
-          "$fields":
-            "alert_task":
-              "$fields":
-                "subscribers":
-                  "$fields":
-                    "destination_id":
-                      "description": |-
-                        PLACEHOLDER
-            "dbt_platform_task":
-              "description": |-
-                PLACEHOLDER
-            "gen_ai_compute_task":
-              "$fields":
-                "compute":
-                  "description": |-
-                    PLACEHOLDER
-            "python_operator_task":
-              "$fields":
-                "parameters":
-                  "$fields":
-                    "name":
-                      "description": |-
-                        PLACEHOLDER
-                    "value":
-                      "description": |-
-                        PLACEHOLDER
-            "run_job_task":
-              "$fields":
-                "python_named_params":
-                  "description": |-
-                    PLACEHOLDER
-            "webhook_notifications":
-              "$fields":
-                "on_duration_warning_threshold_exceeded":
-                  "$fields":
-                    "id":
-                      "description": |-
-                        PLACEHOLDER
-        "trigger":
-          "$fields":
-            "model":
-              "description": |-
-                PLACEHOLDER
-            "table_update":
-              "description": |-
-                PLACEHOLDER
-    "mcp_services":
-      "description": |-
-        PLACEHOLDER
-      "$fields":
-        "comment":
-          "description": |-
-            PLACEHOLDER
-        "config":
-          "description": |-
-            PLACEHOLDER
-        "grants":
-          "description": |-
-            PLACEHOLDER
-        "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "mcp_service_id":
-          "description": |-
-            PLACEHOLDER
-        "parent":
-          "description": |-
-            PLACEHOLDER
-    "model_provider_services":
-      "description": |-
-        PLACEHOLDER
-      "$fields":
-        "comment":
-          "description": |-
-            PLACEHOLDER
-        "config":
-          "description": |-
-            PLACEHOLDER
-        "grants":
-          "description": |-
-            PLACEHOLDER
-        "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "model_provider_service_id":
-          "description": |-
-            PLACEHOLDER
-        "parent":
-          "description": |-
-            PLACEHOLDER
-    "model_services":
-      "description": |-
-        PLACEHOLDER
-      "$fields":
-        "comment":
-          "description": |-
-            PLACEHOLDER
-        "config":
-          "description": |-
-            PLACEHOLDER
-        "grants":
-          "description": |-
-            PLACEHOLDER
-        "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "model_service_id":
-          "description": |-
-            PLACEHOLDER
-        "parent":
-          "description": |-
-            PLACEHOLDER
     "model_serving_endpoints":
       "description": |-
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
@@ -1362,31 +915,6 @@ resources:
                   value: "data science"
           ```
       "$fields":
-        "config":
-          "$fields":
-            "served_entities":
-              "$fields":
-                "entity_version":
-                  "description": |-
-                    PLACEHOLDER
-            "served_models":
-              "$fields":
-                "model_name":
-                  "description": |-
-                    PLACEHOLDER
-                "model_version":
-                  "description": |-
-                    PLACEHOLDER
-            "traffic_config":
-              "$fields":
-                "routes":
-                  "$fields":
-                    "served_entity_name":
-                      "description": |-
-                        PLACEHOLDER
-        "description":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1494,66 +1022,6 @@ resources:
         "cascade_on_destroy":
           "description": |-
             Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.
-        "ingestion_definition":
-          "$fields":
-            "objects":
-              "$fields":
-                "schema":
-                  "$fields":
-                    "connector_options":
-                      "$fields":
-                        "gdrive_options":
-                          "description": |-
-                            PLACEHOLDER
-                          "$fields":
-                            "entity_type":
-                              "description": |-
-                                PLACEHOLDER
-                            "file_ingestion_options":
-                              "description": |-
-                                PLACEHOLDER
-                              "$fields":
-                                "corrupt_record_column":
-                                  "description": |-
-                                    PLACEHOLDER
-                                "ignore_corrupt_files":
-                                  "description": |-
-                                    PLACEHOLDER
-                                "infer_column_types":
-                                  "description": |-
-                                    PLACEHOLDER
-                                "rescued_data_column":
-                                  "description": |-
-                                    PLACEHOLDER
-                                "single_variant_column":
-                                  "description": |-
-                                    PLACEHOLDER
-                        "kafka_options":
-                          "description": |-
-                            PLACEHOLDER
-                          "$fields":
-                            "key_transformer":
-                              "$fields":
-                                "avro_options":
-                                  "description": |-
-                                    PLACEHOLDER
-                                "json_options":
-                                  "description": |-
-                                    PLACEHOLDER
-                                "protobuf_options":
-                                  "description": |-
-                                    PLACEHOLDER
-                        "onedrive_options":
-                          "description": |-
-                            PLACEHOLDER
-                        "sharepoint_options":
-                          "description": |-
-                            PLACEHOLDER
-            "source_configurations":
-              "$fields":
-                "google_ads_config":
-                  "description": |-
-                    PLACEHOLDER
         "libraries":
           "$fields":
             "whl":
@@ -1595,20 +1063,6 @@ resources:
         "trigger":
           "deprecation_message": |-
             Use continuous instead
-          "$fields":
-            "cron":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "quartz_cron_schedule":
-                  "description": |-
-                    PLACEHOLDER
-                "timezone_id":
-                  "description": |-
-                    PLACEHOLDER
-            "manual":
-              "description": |-
-                PLACEHOLDER
     "postgres_branches":
       "description": |-
         The Postgres branch definitions for the bundle, where each key is the name of the branch. Each entry defines a branch of a Lakebase Autoscaling project, holding its own copy of the project's databases and roles.
@@ -1799,8 +1253,6 @@ resources:
           ```
       "$fields":
         "inference_log":
-          "description": |-
-            PLACEHOLDER
           "$fields":
             "granularities":
               "description": |-
@@ -1808,9 +1260,6 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "table_name":
-          "description": |-
-            PLACEHOLDER
         "time_series":
           "$fields":
             "granularities":
@@ -2011,14 +1460,6 @@ resources:
       "markdown_description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
       "$fields":
-        "channel":
-          "$fields":
-            "dbsql_version":
-              "description": |-
-                PLACEHOLDER
-            "name":
-              "description": |-
-                PLACEHOLDER
         "enable_photon":
           "description": |-
             Configures whether the warehouse should use Photon optimized clusters.
@@ -2057,35 +1498,12 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "tags":
-          "$fields":
-            "custom_tags":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "key":
-                  "description": |-
-                    PLACEHOLDER
-                "value":
-                  "description": |-
-                    PLACEHOLDER
     "synced_database_tables":
-      "description": |-
-        PLACEHOLDER
       "$fields":
-        "data_synchronization_status":
-          "$fields":
-            "last_sync":
-              "$fields":
-                "delta_table_sync_info":
-                  "description": |-
-                    PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "vector_search_endpoints":
-      "description": |-
-        PLACEHOLDER
       "$fields":
         "lifecycle":
           "description": |-
@@ -2107,22 +1525,7 @@ resources:
               - level: CAN_RUN
                 service_principal_name: 123456-abcdef
             ```
-          "$fields":
-            "group_name":
-              "description": |-
-                PLACEHOLDER
-            "level":
-              "description": |-
-                PLACEHOLDER
-            "service_principal_name":
-              "description": |-
-                PLACEHOLDER
-            "user_name":
-              "description": |-
-                PLACEHOLDER
     "vector_search_indexes":
-      "description": |-
-        PLACEHOLDER
       "$fields":
         "grants":
           "description": |-
@@ -2196,12 +1599,7 @@ run_as:
   "markdown_description": |-
     The identity to use when running Declarative Automation Bundles resources. See [\_](/dev-tools/bundles/run-as.md).
 scripts:
-  "description": |-
-    PLACEHOLDER
   "$fields":
-    "content":
-      "description": |-
-        PLACEHOLDER
     "env":
       "description": |-
         A map of environment variables to export when running the script. Values may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` and are resolved before the script runs; reference them from `content` with `$NAME`.

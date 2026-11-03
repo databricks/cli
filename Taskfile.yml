@@ -1008,6 +1008,7 @@ tasks:
     generates:
       - bundle/schema/jsonschema.json
       - bundle/internal/schema/annotations.yml
+      - bundle/internal/schema/annotations.generated.yml
     cmds:
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
 
