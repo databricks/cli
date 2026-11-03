@@ -1,8 +1,8 @@
 # testing is not in the Go SDK yet, so "pipelines create" would drop it.
 orders_tests='{"sources": [{"glob": {"include": "/Workspace/Users/someone@example.com/orders/tests/**"}}]}'
-pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders", "testing": '"$orders_tests"'}' | jq -r .pipeline_id)
-no_root_pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "no-root", "testing": '"$orders_tests"'}' | jq -r .pipeline_id)
-no_tests_pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "no-tests", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
+pipeline_id=$(MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/pipelines --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders", "testing": '"$orders_tests"'}' | jq -r .pipeline_id)
+no_root_pipeline_id=$(MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/pipelines --json '{"name": "no-root", "testing": '"$orders_tests"'}' | jq -r .pipeline_id)
+no_tests_pipeline_id=$(MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/pipelines --json '{"name": "no-tests", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
 MSYS_NO_PATHCONV=1 $CLI workspace import-dir orders /Workspace/Users/someone@example.com/orders &> LOG.import
 rm "$OUT_REQUESTS"
 
