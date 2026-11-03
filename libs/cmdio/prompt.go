@@ -10,11 +10,13 @@ import (
 )
 
 // Glyphs drawn into the prompt's rendered output. cursorBlock stands in for
-// the (hidden) OS cursor at the current edit position.
+// the (hidden) OS cursor at the current edit position. The glyphs must all be
+// one column wide so the label does not shift when the glyph changes.
 const (
 	cursorBlock  = "█"
 	glyphValid   = "✔"
 	glyphInvalid = "✗"
+	glyphBlank   = " "
 )
 
 // PromptOptions configures a single-line text prompt shown by [RunPrompt].
@@ -105,7 +107,7 @@ func (m *promptModel) glyph() string {
 		return ansiBold + ansiGreen + glyphValid + ansiReset
 	}
 	if !m.touched {
-		return " "
+		return glyphBlank
 	}
 	return ansiBold + ansiRed + glyphInvalid + ansiReset
 }
