@@ -148,6 +148,7 @@ environments.*.variables.*.lookup.pipeline	string	INPUT
 environments.*.variables.*.lookup.query	string	INPUT
 environments.*.variables.*.lookup.service_principal	string	INPUT
 environments.*.variables.*.lookup.warehouse	string	INPUT
+environments.*.variables.*.sensitive	bool	INPUT
 environments.*.variables.*.type	variable.VariableType	INPUT
 environments.*.variables.*.value	any	INPUT
 environments.*.workspace	*config.Workspace	INPUT
@@ -364,6 +365,7 @@ targets.*.variables.*.lookup.pipeline	string	INPUT
 targets.*.variables.*.lookup.query	string	INPUT
 targets.*.variables.*.lookup.service_principal	string	INPUT
 targets.*.variables.*.lookup.warehouse	string	INPUT
+targets.*.variables.*.sensitive	bool	INPUT
 targets.*.variables.*.type	variable.VariableType	INPUT
 targets.*.variables.*.value	any	INPUT
 targets.*.workspace	*config.Workspace	INPUT
@@ -447,6 +449,7 @@ variables.*.lookup.pipeline	string	INPUT
 variables.*.lookup.query	string	INPUT
 variables.*.lookup.service_principal	string	INPUT
 variables.*.lookup.warehouse	string	INPUT
+variables.*.sensitive	bool	INPUT
 variables.*.type	variable.VariableType	INPUT
 variables.*.value	any	INPUT
 workspace	config.Workspace	INPUT
