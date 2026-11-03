@@ -105,7 +105,7 @@ func TestResolveVolumePathReferencesOnlyResources_MissingTarget(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "reference does not exist: ${resources.volumes.missing.volume_path}")
 }
 
-func TestFactory4001DD47A437(t *testing.T) {
+func TestResolveVolumePathReferencesOnlyResources_RejectsUnprefixedSchemaReferences(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
