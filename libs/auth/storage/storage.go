@@ -24,8 +24,33 @@ var ErrNotFound = errors.New("token not found")
 // without changing the Store interface. Backends persist it verbatim and never
 // interpret its contents.
 type Entry struct {
-	// Token is the cached OAuth token. Always set for stored entries.
+	// Token is the cached OAuth token. Set for every stored entry except a
+	// pending login.
 	Token *oauth2.Token
+
+	// PendingLogin is set instead of Token for a login that one CLI
+	// invocation started and a later one completes.
+	PendingLogin *PendingLogin
+}
+
+// PendingLogin is a device code login that is waiting for the user's
+// confirmation code. Keeping the device code in the store means it never
+// leaves the machine that started the login.
+type PendingLogin struct {
+	// DeviceCode is exchanged together with the confirmation code for a token.
+	DeviceCode string `json:"device_code"`
+
+	// UserCode is the code the user enters in the browser. It identifies the
+	// login when a newer one replaced it under the same key.
+	UserCode string `json:"user_code"`
+
+	// Host, ClientID and Scopes are the settings the login was started with.
+	// The device code only works with the same host and client, and the
+	// token gets the scopes of the device authorization, so the login can
+	// only be completed with the same settings.
+	Host     string   `json:"host"`
+	ClientID string   `json:"client_id,omitempty"`
+	Scopes   []string `json:"scopes,omitempty"`
 }
 
 // Store is the CLI's token-storage abstraction: a key/value store with no

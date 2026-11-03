@@ -56,6 +56,7 @@ var knownMissingInRemoteType = map[string][]string{
 	"internal_immutable_snapshots": {
 		"bundle_id",
 		"acl",
+		"can_manage",
 		"zip_path",
 	},
 	"job_runs": {
@@ -81,16 +82,20 @@ var knownMissingInStateType = map[string][]string{
 	},
 	"apps": {
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 	},
 	"clusters": {
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 	},
 	"sql_warehouses": {
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 	},
 	"job_runs": {
 		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 		"lifecycle.triggers",
 	},
 	"dashboards": {

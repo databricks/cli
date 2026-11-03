@@ -38,7 +38,36 @@ type BundleDeployEvent struct {
 	// Per-resource-type metadata (counts and state-size statistics).
 	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
 
+	// Usage of Python support (PyDABs). Set only when the bundle declares
+	// Python resource loaders or mutators.
+	Pydabs *BundleDeployPydabs `json:"pydabs,omitempty"`
+
+	// Git metadata of the source the bundle was deployed from. Nil when the
+	// bundle root is not inside a git repository.
+	Git *BundleGitInfo `json:"git,omitempty"`
+
+	// True when the bundle was deployed from a workspace folder: the CLI ran on a
+	// Databricks cluster with the bundle source under /Workspace/, rather than
+	// from a local checkout. A deployment attribute, not git metadata, so it sits
+	// beside Git rather than inside it.
+	FromWorkspaceFolder bool `json:"from_workspace_folder,omitempty"`
+
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
+}
+
+// BundleGitInfo mirrors the universe proto. Git provenance the CLI resolves during
+// deploy: from `.git` locally, or from the workspace API when deploying from a
+// Databricks Git folder. Values set under `bundle.git` in the configuration take
+// precedence. Mirrors the git_info sent to the Deployment Metadata Service.
+type BundleGitInfo struct {
+	// URL of the "origin" remote, with any userinfo (credentials) stripped.
+	OriginURL string `json:"origin_url,omitempty"`
+
+	// Branch deployed from.
+	Branch string `json:"branch,omitempty"`
+
+	// Full SHA of the HEAD commit deployed.
+	Commit string `json:"commit,omitempty"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There
@@ -74,18 +103,6 @@ type BundleDeployExperimental struct {
 
 	// Execution time per mutator for a selected subset of mutators.
 	BundleMutatorExecutionTimeMs []IntMapEntry `json:"bundle_mutator_execution_time_ms,omitempty"`
-
-	// Number of resources added by PythonMutator
-	PythonAddedResourcesCount int64 `json:"python_added_resources_count,omitempty"`
-
-	// Number of resources updated by PythonMutator
-	PythonUpdatedResourcesCount int64 `json:"python_updated_resources_count,omitempty"`
-
-	// Number of resource loaders declared at 'python/resources' in databricks.yml
-	PythonResourceLoadersCount int64 `json:"python_resource_loaders_count,omitempty"`
-
-	// Number of resource mutators declared at 'python/mutators' in databricks.yml
-	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
 
 	// Number of files in the synced source tree considered for upload: the full
 	// set, not the incremental delta actually transferred (an incremental deploy
@@ -148,6 +165,42 @@ type ResourceMetadata struct {
 	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
 	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
 	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
+}
+
+// BundleDeployPydabs mirrors the universe proto. Usage of Python support
+// (PyDABs) in one bundle deployment.
+type BundleDeployPydabs struct {
+	// Number of resource loaders declared at 'python/resources' (or 'experimental/python/resources').
+	ResourceLoadersCount int64 `json:"resource_loaders_count"`
+
+	// Number of resource mutators declared at 'python/mutators' (or 'experimental/python/mutators').
+	ResourceMutatorsCount int64 `json:"resource_mutators_count"`
+
+	// Number of resources defined in Python.
+	AddedResourcesCount int64 `json:"added_resources_count"`
+
+	// Number of resources modified by Python mutators, including resources
+	// defined in Python, so this can overlap with AddedResourcesCount.
+	UpdatedResourcesCount int64 `json:"updated_resources_count"`
+
+	// One entry per resource type added or updated by Python, ordered by type name.
+	Resources []PydabsResourceTypeCount `json:"resources,omitempty"`
+
+	// Configuration section the user declared Python support in: 'python',
+	// 'experimental/python', or both.
+	ConfigSection PydabsConfigSection `json:"config_section,omitempty"`
+}
+
+// PydabsResourceTypeCount holds PyDABs counts for a single resource type.
+type PydabsResourceTypeCount struct {
+	// Resource type name, same values as ResourceMetadata.ResourceType.
+	ResourceType string `json:"resource_type,omitempty"`
+
+	// Number of resources of this type defined in Python.
+	AddedCount int64 `json:"added_count"`
+
+	// Number of resources of this type modified by Python mutators.
+	UpdatedCount int64 `json:"updated_count"`
 }
 
 type BoolMapEntry struct {

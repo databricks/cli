@@ -79,6 +79,36 @@ type Workspace struct {
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
 	StatePath string `json:"state_path,omitempty"`
+
+	// SyncMode determines how bundle files are made available to deployed resources.
+	// Unset means [SyncModeOverwrite], except for development deployments from the
+	// Databricks Workspace, which default to [SyncModeInPlace].
+	SyncMode SyncMode `json:"sync_mode,omitempty"`
+}
+
+type SyncMode string
+
+const (
+	// SyncModeOverwrite uploads bundle files to [Workspace.FilePath], replacing the
+	// files of the previous deployment.
+	SyncModeOverwrite SyncMode = "overwrite"
+
+	// SyncModeInPlace skips the upload: deployed resources reference the source files
+	// in the workspace directly (source-linked deployment). Works only in the Databricks Workspace.
+	SyncModeInPlace SyncMode = "in-place"
+
+	// SyncModeImmutable uploads bundle files and artifacts as a single immutable snapshot
+	// and points [Workspace.FilePath] and [Workspace.ArtifactPath] at it.
+	SyncModeImmutable SyncMode = "immutable"
+)
+
+// Values returns all valid SyncMode values.
+func (SyncMode) Values() []SyncMode {
+	return []SyncMode{
+		SyncModeOverwrite,
+		SyncModeInPlace,
+		SyncModeImmutable,
+	}
 }
 
 type User struct {

@@ -28,6 +28,9 @@ __all__ = [
     "DeltaTableSource",
     "DeltaTableSourceDict",
     "DeltaTableSourceParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "EntityColumn",
     "EntityColumnDict",
     "EntityColumnParam",
@@ -182,6 +185,11 @@ from databricks.bundles.features._models.delta_table_source import (
     DeltaTableSource,
     DeltaTableSourceDict,
     DeltaTableSourceParam,
+)
+from databricks.bundles.features._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.features._models.entity_column import (
     EntityColumn,

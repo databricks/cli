@@ -123,6 +123,15 @@ func (r *JobRun) ResourceDescription() ResourceDescription {
 	}
 }
 
+// GetLifecycle returns the lifecycle settings. Lifecycle shadows BaseResource.Lifecycle,
+// which therefore stays empty.
+func (r *JobRun) GetLifecycle() LifecycleConfig {
+	if r.Lifecycle == nil {
+		return Lifecycle{}
+	}
+	return r.Lifecycle.Lifecycle
+}
+
 // GetName returns the in-product name, which is empty: a run has no name.
 func (r *JobRun) GetName() string {
 	return ""

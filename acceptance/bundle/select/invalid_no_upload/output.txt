@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle deploy --select jobs.nonexistent
+Error: no such resource: jobs.nonexistent
+
+
+>>> print_requests.py --dms //workspace //api/2.0/bundle

@@ -8,6 +8,9 @@ __all__ = [
     "ChannelParam",
     "CreateWarehouseRequestWarehouseType",
     "CreateWarehouseRequestWarehouseTypeParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "EndpointTagPair",
     "EndpointTagPairDict",
     "EndpointTagPairParam",
@@ -42,6 +45,11 @@ from databricks.bundles.sql_warehouses._models.channel_name import (
 from databricks.bundles.sql_warehouses._models.create_warehouse_request_warehouse_type import (
     CreateWarehouseRequestWarehouseType,
     CreateWarehouseRequestWarehouseTypeParam,
+)
+from databricks.bundles.sql_warehouses._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.sql_warehouses._models.endpoint_tag_pair import (
     EndpointTagPair,

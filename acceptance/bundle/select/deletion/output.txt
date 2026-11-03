@@ -1,0 +1,76 @@
+
+=== Initial deploy
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-del-[UNIQUE_NAME]/default/files...
+Created jobs.gone
+Created jobs.keep
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan --select jobs.gone
+delete jobs.gone
+
+Plan: 0 to add, 0 to change, 1 to delete, 0 unchanged, 1 not selected
+
+=== bundle deploy --select jobs.gone
+
+>>> [CLI] bundle deploy --select jobs.gone
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-del-[UNIQUE_NAME]/default/files...
+Deleted jobs.gone
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 0 unchanged, 1 not selected
+
+>>> print_requests.py --sort //jobs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [GONE_ID]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Redeploy gone, then select it by unqualified name
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-del-[UNIQUE_NAME]/default/files...
+Created jobs.gone
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle plan --select gone
+delete jobs.gone
+
+Plan: 0 to add, 0 to change, 1 to delete, 0 unchanged, 1 not selected
+
+=== bundle deploy --select gone
+
+>>> [CLI] bundle deploy --select gone
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-del-[UNIQUE_NAME]/default/files...
+Deleted jobs.gone
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 0 unchanged, 1 not selected
+
+>>> print_requests.py --sort //jobs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [GONE_ID_2]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.keep
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-del-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

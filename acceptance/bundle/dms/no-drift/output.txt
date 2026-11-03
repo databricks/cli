@@ -35,7 +35,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -50,9 +50,52 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "[FOO_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.pipelines.bar": {
+   "__id__": "[BAR_ID]",
+   "state": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "file": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+      }
+     }
+    ],
+    "name": "bar-[UNIQUE_NAME]",
+    "schema": "default",
+    "serverless": true
+   }
+  }
+ }
 }
 
 === Plan without touching anything: the deployment stamp must not show as drift
@@ -120,7 +163,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/pipelines/[UUID]",
+  "path": "/api/2.0/pipelines/[BAR_ID]",
   "body": {
     "catalog": "main",
     "channel": "CURRENT",
@@ -181,7 +224,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   "lineage": "[UUID]",
   "serial": 2,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -200,9 +243,53 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "[FOO_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.pipelines.bar": {
+   "__id__": "[BAR_ID]",
+   "state": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "2"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "file": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+      }
+     }
+    ],
+    "name": "bar-[UNIQUE_NAME]",
+    "schema": "default",
+    "serverless": true
+   }
+  }
+ }
 }
 
 === Plan again: no residual drift, and the version stamps are ignored

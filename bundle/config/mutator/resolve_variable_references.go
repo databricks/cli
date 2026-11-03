@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -113,7 +112,7 @@ func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 }
 
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
-	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+	if b.IsSourceLinkedDeployment() {
 		if path.String() == "workspace.file_path" {
 			return dyn.V(b.SyncRootPath), nil
 		}

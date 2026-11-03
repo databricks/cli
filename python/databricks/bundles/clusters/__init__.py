@@ -40,6 +40,9 @@ __all__ = [
     "DbfsStorageInfoParam",
     "DependencyMode",
     "DependencyModeParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "DockerBasicAuth",
     "DockerBasicAuthDict",
     "DockerBasicAuthParam",
@@ -170,6 +173,11 @@ from databricks.bundles.clusters._models.dbfs_storage_info import (
 from databricks.bundles.clusters._models.dependency_mode import (
     DependencyMode,
     DependencyModeParam,
+)
+from databricks.bundles.clusters._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.clusters._models.docker_basic_auth import (
     DockerBasicAuth,

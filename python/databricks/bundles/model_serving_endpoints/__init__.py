@@ -57,6 +57,9 @@ __all__ = [
     "DatabricksModelServingConfig",
     "DatabricksModelServingConfigDict",
     "DatabricksModelServingConfigParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "EmailNotifications",
     "EmailNotificationsDict",
     "EmailNotificationsParam",
@@ -226,6 +229,11 @@ from databricks.bundles.model_serving_endpoints._models.databricks_model_serving
     DatabricksModelServingConfig,
     DatabricksModelServingConfigDict,
     DatabricksModelServingConfigParam,
+)
+from databricks.bundles.model_serving_endpoints._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.model_serving_endpoints._models.email_notifications import (
     EmailNotifications,

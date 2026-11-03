@@ -1,6 +1,6 @@
 Action: PUT: hello.py
-Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace/import: failed to upload /Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py: Fault injected by test.
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py
 Uploaded hello.py
 Initial Sync Complete
-/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py
-/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py
+/api/2.0/workspace-files/import-file/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py
+/api/2.0/workspace-files/import-file/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py

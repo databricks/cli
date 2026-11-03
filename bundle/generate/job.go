@@ -41,7 +41,7 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		value["parameters"] = dyn.NewValue(params, []diag.Location{{Line: jobOrder.Get("parameters")}})
 	}
 
-	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, []string{"format", "new_cluster", "existing_cluster_id"}, value)
+	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, []string{"format", "new_cluster", "existing_cluster_id", "deployment"}, value)
 }
 
 func convertTaskToValue(task jobs.Task, order *yamlsaver.Order) (dyn.Value, error) {

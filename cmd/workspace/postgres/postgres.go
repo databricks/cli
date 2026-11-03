@@ -1161,10 +1161,8 @@ func newCreateSnapshot() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-snapshot PARENT SNAPSHOT_ID"
-	cmd.Short = `*Beta* Create a Snapshot.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a Snapshot.
+	cmd.Short = `Create a Snapshot.`
+	cmd.Long = `Create a Snapshot.
 
   Creates a snapshot, an immutable point-in-time copy of a branch's data, within
   the project.
@@ -1180,8 +1178,8 @@ Create a Snapshot.
       snapshot resource name and cannot be changed after creation.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -2236,10 +2234,8 @@ func newDeleteSnapshot() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteSnapshotTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-snapshot NAME"
-	cmd.Short = `*Beta* Delete a Snapshot.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Snapshot.
+	cmd.Short = `Delete a Snapshot.`
+	cmd.Long = `Delete a Snapshot.
 
   Deletes the specified snapshot.
 
@@ -2253,8 +2249,8 @@ Delete a Snapshot.
       projects/{project_id}/snapshots/{snapshot_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3152,10 +3148,8 @@ func newGetSnapshot() *cobra.Command {
 	var getSnapshotReq postgres.GetSnapshotRequest
 
 	cmd.Use = "get-snapshot NAME"
-	cmd.Short = `*Beta* Get a Snapshot.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Snapshot.
+	cmd.Short = `Get a Snapshot.`
+	cmd.Long = `Get a Snapshot.
 
   Retrieves information about the specified snapshot.
 
@@ -3164,8 +3158,8 @@ Get a Snapshot.
       projects/{project_id}/snapshots/{snapshot_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3214,10 +3208,8 @@ func newGetSnapshotSchedule() *cobra.Command {
 	var getSnapshotScheduleReq postgres.GetSnapshotScheduleRequest
 
 	cmd.Use = "get-snapshot-schedule NAME"
-	cmd.Short = `*Beta* Get a Snapshot Schedule.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Snapshot Schedule.
+	cmd.Short = `Get a Snapshot Schedule.`
+	cmd.Long = `Get a Snapshot Schedule.
 
   Retrieves the snapshot schedule for a branch. A branch with no configured
   schedule returns an empty schedule (not NOT_FOUND).
@@ -3227,8 +3219,8 @@ Get a Snapshot Schedule.
       projects/{project_id}/branches/{branch_id}/snapshot-schedule`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3888,10 +3880,8 @@ func newListSnapshots() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-snapshots PARENT"
-	cmd.Short = `*Beta* List Snapshots.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List Snapshots.
+	cmd.Short = `List Snapshots.`
+	cmd.Long = `List Snapshots.
 
   Returns a paginated list of snapshots in the project.
 
@@ -3899,8 +3889,8 @@ List Snapshots.
     PARENT: The project that owns the snapshots. Format: projects/{project_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -4876,7 +4866,13 @@ func newUpdateRole() *cobra.Command {
 	cmd.Short = `Update a Postgres Role for a Branch.`
 	cmd.Long = `Update a Postgres Role for a Branch.
 
-  Update a role for a branch.
+  Updates the mutable fields of a Postgres role for a branch.
+
+  The fields spec.identity_type, spec.auth_method, and spec.postgres_role
+  are fixed when the role is created. UpdateRole ignores values supplied for
+  these fields in the request body and retains their existing values. Explicitly
+  naming one of these fields in update_mask returns an INVALID_PARAMETER_VALUE
+  error.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4886,7 +4882,21 @@ func newUpdateRole() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the role. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. Supported fields are
+      spec.membership_roles, spec.attributes.createdb,
+      spec.attributes.createrole, and spec.attributes.bypassrls.
+
+      spec.identity_type, spec.auth_method, and spec.postgres_role cannot
+      be changed. Values supplied for these fields in the request body are
+      ignored. Including one of these fields as an explicit path in update_mask
+      returns an INVALID_PARAMETER_VALUE error. When spec is the only path in
+      the mask, only the supplied mutable attributes are updated. * by itself,
+      or spec combined with other supported paths, selects all supported
+      mutable fields. For these masks, all three attributes (createdb,
+      createrole, and bypassrls) must be supplied; omitting any returns an
+      INVALID_PARAMETER_VALUE error. Each of these mask forms replaces
+      membership_roles. Omitting it or supplying an empty list clears all
+      memberships, including DATABRICKS_SUPERUSER.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -4998,10 +5008,8 @@ func newUpdateSnapshotSchedule() *cobra.Command {
 	// TODO: array: schedule
 
 	cmd.Use = "update-snapshot-schedule NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a Snapshot Schedule.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a Snapshot Schedule.
+	cmd.Short = `Update a Snapshot Schedule.`
+	cmd.Long = `Update a Snapshot Schedule.
 
   Sets the snapshot schedule for a branch. The schedule field is replaced
   wholesale; an empty schedule disables automatic snapshots.
@@ -5018,8 +5026,8 @@ Update a Snapshot Schedule.
       the entire set of cadences.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

@@ -20,12 +20,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BurntSushi/toml"
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
+
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	serverlessRuntime = dbr.Environment{IsDbr: true, Version: "client.4.9"}
+	dedicatedRuntime  = dbr.Environment{IsDbr: true, Version: "16.4"}
 )
 
 func TestPrependPath(t *testing.T) {
@@ -188,6 +198,15 @@ func TestEnsureBinary(t *testing.T) {
 	defer srv.Close()
 
 	home := t.TempDir()
+	// Older installs: an unversioned one from a CLI before versioned installs, and a
+	// previous version. Neither counts as the pinned version being installed.
+	depsRoot := filepath.Join(home, agentDepsDir)
+	for _, dir := range []string{"node", "node-v1"} {
+		writeFakeExec(t, filepath.Join(depsRoot, dir, "bin"), "npm", ":")
+	}
+	for _, dir := range []string{"uv", "uv-1"} {
+		writeFakeExec(t, filepath.Join(depsRoot, dir), "uv", ":")
+	}
 	for _, c := range []struct {
 		spec       archiveSpec
 		wantBinDir string
@@ -198,8 +217,9 @@ func TestEnsureBinary(t *testing.T) {
 				binaryName: "npm",
 				checksum:   hex.EncodeToString(nodeSum[:]),
 				dirName:    "node",
+				version:    "v2",
 				binDirName: "bin",
-			}, wantBinDir: filepath.Join(home, agentDepsDir, "node", "bin"),
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "node-v2", "bin"),
 		},
 		{
 			spec: archiveSpec{
@@ -207,7 +227,8 @@ func TestEnsureBinary(t *testing.T) {
 				binaryName: "uv",
 				checksum:   hex.EncodeToString(uvSum[:]),
 				dirName:    "uv",
-			}, wantBinDir: filepath.Join(home, agentDepsDir, "uv"),
+				version:    "2",
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "uv-2"),
 		},
 	} {
 		t.Run("downloads, extracts, and returns the bin dir ("+c.spec.binaryName+")", func(t *testing.T) {
@@ -253,8 +274,8 @@ func TestEnsureToolchain(t *testing.T) {
 		t.Run(fmt.Sprintf("no-op when the toolchain is already present (staleLock=%v)", staleLock), func(t *testing.T) {
 			home := t.TempDir()
 			writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
-			writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
-			writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+			writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
+			writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
 			if staleLock {
 				// left by a session killed mid-install
 				writeFakeExec(t, filepath.Join(home, agentRootDir), setupLockName, "")
@@ -272,8 +293,8 @@ func TestEnsureToolchain(t *testing.T) {
 		home := t.TempDir()
 		// uv and npm are present; ug is not, so only ug gets installed and no
 		// download happens
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
 		marker := filepath.Join(t.TempDir(), "uv.log")
 		t.Setenv("FAKE_UV_LOG", marker)
 		t.Setenv("PATH", t.TempDir())
@@ -288,11 +309,33 @@ func TestEnsureToolchain(t *testing.T) {
 		assert.NoFileExists(t, filepath.Join(home, agentRootDir, setupLockName), "the setup lock is released once setup finishes")
 	})
 
+	t.Run("replaces a Unity Gateway CLI from another commit with the pinned one", func(t *testing.T) {
+		home := t.TempDir()
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
+		// Installs from an older pin and from a CLI before installs were versioned. Both
+		// put a ug on PATH, but neither is the pinned commit.
+		depsRoot := filepath.Join(home, agentDepsDir)
+		oldBinDirs := []string{filepath.Join(depsRoot, "uv_tools_bin"), filepath.Join(depsRoot, "uv_tools_bin-oldcommit")}
+		for _, dir := range oldBinDirs {
+			writeFakeExec(t, dir, ugExecutable, ":")
+		}
+		marker := filepath.Join(t.TempDir(), "uv.log")
+		t.Setenv("FAKE_UV_LOG", marker)
+		t.Setenv("PATH", strings.Join(oldBinDirs, string(os.PathListSeparator)))
+
+		require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
+
+		out, err := os.ReadFile(marker)
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "tool install git+https://github.com/"+ugRepo+"@"+ugCommit)
+	})
+
 	t.Run("recheck after acquiring the lock skips a redundant install", func(t *testing.T) {
 		home := t.TempDir()
 		// uv is present and records if it ever installs; it must not be called once a
 		// concurrent client finishes the toolchain while we wait for the lock.
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
 		marker := filepath.Join(t.TempDir(), "uv.log")
 		t.Setenv("FAKE_UV_LOG", marker)
 		t.Setenv("PATH", t.TempDir())
@@ -308,7 +351,7 @@ func TestEnsureToolchain(t *testing.T) {
 		// The other client finishes: publish ug+npm into the PATH dir, then release
 		// the lock so the waiting ensureToolchain can proceed.
 		writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
 		unlock()
 
 		require.NoError(t, <-done)
@@ -316,35 +359,13 @@ func TestEnsureToolchain(t *testing.T) {
 	})
 }
 
-func TestSupportedAgents(t *testing.T) {
-	names := SupportedAgentNames()
-	assert.Equal(t, []string{"claude", "codex"}, names)
-
-	// Each agent injects context by exactly one mechanism (flag OR home file);
-	// the two are never both set.
-	expect := map[string]struct{ flag, home string }{
-		"claude": {flag: "--append-system-prompt-file"},
-		"codex":  {home: ".codex/AGENTS.md"},
-	}
-	for name, want := range expect {
-		a, ok := agentByName(name)
-		require.True(t, ok)
-		assert.Equal(t, want.flag, a.contextFlag, "%s contextFlag", name)
-		assert.Equal(t, want.home, a.contextHomeFile, "%s contextHomeFile", name)
-	}
-
-	_, ok := agentByName("not-an-agent")
-	assert.False(t, ok)
-}
-
 func TestInjectAgentContext(t *testing.T) {
-	claude, _ := agentByName("claude")
-	codex, _ := agentByName("codex")
-	noContext := agentSpec{name: "none"} // an agent with neither mechanism
+	claude, _ := agentlauncher.AgentByName("claude")
+	codex, _ := agentlauncher.AgentByName("codex")
 
-	t.Run("flag agent writes a scratch file and returns the flag", func(t *testing.T) {
+	t.Run("claude gets the context as a scratch file", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(t.Context(), home, claude)
+		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, claude)
 		require.NoError(t, err)
 		require.Len(t, args, 2)
 		assert.Equal(t, "--append-system-prompt-file", args[0])
@@ -353,44 +374,57 @@ func TestInjectAgentContext(t *testing.T) {
 		assert.Contains(t, string(data), "databricks ssh connect")
 	})
 
-	t.Run("home-file agent writes the global instructions file, no args", func(t *testing.T) {
+	t.Run("codex gets the context as a TOML config override", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(t.Context(), home, codex)
+		ctx := env.Set(dbr.MockRuntime(t.Context(), serverlessRuntime), workspaceHomeEnv, "/Workspace/Users/a\"b@example.com")
+		args, err := injectAgentContext(ctx, home, codex)
 		require.NoError(t, err)
-		assert.Nil(t, args)
-		data, err := os.ReadFile(filepath.Join(home, ".codex", "AGENTS.md"))
-		require.NoError(t, err)
-		assert.Contains(t, string(data), "databricks ssh connect")
-	})
-
-	t.Run("home-file agent does not clobber an existing file", func(t *testing.T) {
-		home := t.TempDir()
-		target := filepath.Join(home, ".codex", "AGENTS.md")
-		require.NoError(t, os.MkdirAll(filepath.Dir(target), 0o755))
-		require.NoError(t, os.WriteFile(target, []byte("user's own instructions"), 0o644))
-		args, err := injectAgentContext(t.Context(), home, codex)
-		require.NoError(t, err)
-		assert.Nil(t, args)
-		data, err := os.ReadFile(target)
-		require.NoError(t, err)
-		assert.Equal(t, "user's own instructions", string(data))
-	})
-
-	t.Run("agent without a mechanism writes nothing", func(t *testing.T) {
-		home := t.TempDir()
-		args, err := injectAgentContext(t.Context(), home, noContext)
-		require.NoError(t, err)
-		assert.Nil(t, args)
+		require.Len(t, args, 2)
+		assert.Equal(t, "-c", args[0])
+		// codex splits the override on the first '=' and parses the rest as TOML
+		var got map[string]string
+		require.NoError(t, toml.Unmarshal([]byte(args[1]), &got))
+		assert.Equal(t, map[string]string{"developer_instructions": agentSystemContext("/Workspace/Users/a\"b@example.com", true)}, got)
 		entries, err := os.ReadDir(home)
 		require.NoError(t, err)
 		assert.Empty(t, entries)
 	})
+
+	t.Run("context describes the compute the shim runs on", func(t *testing.T) {
+		for _, c := range []struct {
+			runtime dbr.Environment
+			want    string
+		}{
+			{serverlessRuntime, "Databricks serverless cluster."},
+			{dedicatedRuntime, "Databricks dedicated cluster."},
+		} {
+			home := t.TempDir()
+			args, err := injectAgentContext(dbr.MockRuntime(t.Context(), c.runtime), home, claude)
+			require.NoError(t, err)
+			require.Len(t, args, 2)
+			data, err := os.ReadFile(args[1])
+			require.NoError(t, err)
+			assert.Contains(t, string(data), c.want)
+		}
+	})
 }
 
 func TestAgentSystemContext(t *testing.T) {
-	assert.Contains(t, agentSystemContext("/Workspace/Users/me@example.com"), "working directory is /Workspace/Users/me@example.com")
-	// Falls back to a generic phrase when the workspace home is unknown.
-	assert.Contains(t, agentSystemContext(""), "working directory is the user's Databricks workspace home directory")
+	wsHome := "/Workspace/Users/me@example.com"
+	for _, serverless := range []bool{true, false} {
+		assert.Contains(t, agentSystemContext(wsHome, serverless), "user's Databricks workspace home directory is "+wsHome)
+		assert.NotContains(t, agentSystemContext("", serverless), "user's Databricks workspace home directory")
+	}
+
+	serverless := agentSystemContext(wsHome, true)
+	assert.Contains(t, serverless, "Databricks serverless cluster.")
+	assert.Contains(t, serverless, "This container is ephemeral")
+
+	dedicated := agentSystemContext(wsHome, false)
+	assert.Contains(t, dedicated, "Databricks dedicated cluster.")
+	assert.Contains(t, dedicated, "until the cluster restarts or terminates")
+	assert.NotContains(t, dedicated, "serverless")
+	assert.NotContains(t, dedicated, "ephemeral")
 }
 
 func newProbeClient(t *testing.T, host string) *databricks.WorkspaceClient {
@@ -565,9 +599,9 @@ func TestProbeModelServicesPageError(t *testing.T) {
 }
 
 func TestBuildAgentShimEvent(t *testing.T) {
-	for _, agent := range supportedAgents {
-		t.Run(agent.name+" has an appropriate enum for telemetry", func(t *testing.T) {
-			got := buildAgentShimEvent(agent.name, agentShimOutcome{}, 0)
+	for _, agent := range agentlauncher.SupportedAgents {
+		t.Run(agent.Name+" has an appropriate enum for telemetry", func(t *testing.T) {
+			got := buildAgentShimEvent(agent.Name, agentShimOutcome{}, 0)
 			assert.NotEqual(t, protos.SshAgentShimAgentUnspecified, got.Agent)
 		})
 	}
@@ -654,7 +688,7 @@ func TestBootstrapToolchain(t *testing.T) {
 	t.Run("returns the path to the Unity Gateway CLI", func(t *testing.T) {
 		home := t.TempDir()
 		writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), npmExecutable, ":")
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), npmExecutable, ":")
 		t.Setenv("PATH", t.TempDir())
 
 		ugPath, err := bootstrapToolchain(cmdio.MockDiscard(t.Context()), home)
@@ -665,8 +699,8 @@ func TestBootstrapToolchain(t *testing.T) {
 	t.Run("reports UNITY_GATEWAY_CLI_NOT_FOUND when the install leaves no CLI on PATH", func(t *testing.T) {
 		home := t.TempDir()
 		// uv "succeeds" without installing anything, so the post-setup lookup fails.
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", ":")
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), npmExecutable, ":")
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", ":")
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), npmExecutable, ":")
 		t.Setenv("PATH", t.TempDir())
 
 		_, err := bootstrapToolchain(cmdio.MockDiscard(t.Context()), home)
@@ -713,7 +747,7 @@ func TestRunAgentConfiguration(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		return
 	}
-	agent, ok := agentByName("claude")
+	agent, ok := agentlauncher.AgentByName("claude")
 	require.True(t, ok)
 
 	t.Run("configures the agent for the workspace", func(t *testing.T) {
@@ -743,15 +777,24 @@ func TestRunAgentConfiguration(t *testing.T) {
 }
 
 func TestPrepareAgentLaunch(t *testing.T) {
-	agent, ok := agentByName("claude")
+	agent, ok := agentlauncher.AgentByName("claude")
 	require.True(t, ok)
 
-	t.Run("passes the context args before the user's agent args", func(t *testing.T) {
+	t.Run("passes the context args after the user's args", func(t *testing.T) {
 		home := t.TempDir()
-		argv, environ, err := prepareAgentLaunch(t.Context(), home, agent, []string{"--resume"})
+		argv, environ, err := prepareAgentLaunch(dbr.MockRuntime(t.Context(), serverlessRuntime), home, agent, []string{"--resume"})
 		require.NoError(t, err)
 		require.NotEmpty(t, argv)
-		assert.Equal(t, []string{"claude", "--", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile), "--resume"}, argv[1:])
+		assert.Equal(t, []string{"claude", "--", "--resume", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile)}, argv[1:])
+		assert.Equal(t, os.Environ(), environ)
+	})
+
+	t.Run("passes the context args before a '--' arg", func(t *testing.T) {
+		home := t.TempDir()
+		argv, environ, err := prepareAgentLaunch(dbr.MockRuntime(t.Context(), serverlessRuntime), home, agent, []string{"--max-budget-usd", "1", "--", "hello there"})
+		require.NoError(t, err)
+		require.NotEmpty(t, argv)
+		assert.Equal(t, []string{"claude", "--", "--max-budget-usd", "1", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile), "--", "hello there"}, argv[1:])
 		assert.Equal(t, os.Environ(), environ)
 	})
 
@@ -761,7 +804,7 @@ func TestPrepareAgentLaunch(t *testing.T) {
 		home := filepath.Join(t.TempDir(), "home")
 		require.NoError(t, os.WriteFile(home, nil, 0o644))
 
-		_, _, err := prepareAgentLaunch(t.Context(), home, agent, nil)
+		_, _, err := prepareAgentLaunch(dbr.MockRuntime(t.Context(), serverlessRuntime), home, agent, nil)
 		require.Error(t, err)
 		assert.Equal(t, protos.SshAgentShimErrorCategoryAgentContextSetupFailed, agentShimOutcome{err: err}.category())
 	})

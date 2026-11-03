@@ -1,0 +1,5 @@
+Cloud = true
+RecordRequests = true
+# databricks.yml is generated at runtime from the committed templates; the serialized
+# plan embeds local/cloud-specific state, so it is kept out of the recorded output.
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json"]

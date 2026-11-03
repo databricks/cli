@@ -34,7 +34,7 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${d
 title "The raw state after failed recreate shows no resource"
 trace print_state.py --no-dms
 
-title "Planning from DMS state alone creates the schema, which is what has to happen: it no longer exists"
+title "Planning after pulling remote file state creates the schema, which is what has to happen: it no longer exists"
 rm -rf .databricks
 $CLI bundle plan &> LOG.plan_final
 # Ensure "$OUT_REQUESTS" is not left behind (RecordRequests creates it when running tests)

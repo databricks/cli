@@ -28,14 +28,14 @@ GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/reque
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files/databricks.yml overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock overwrite=false
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock overwrite=false
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/metadata.json overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json overwrite=true
 POST /api/2.0/workspace/delete
 POST /api/2.0/workspace/delete
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
 POST /api/2.0/workspace/mkdirs
 POST /api/2.0/workspace/mkdirs
 POST /api/2.0/workspace/mkdirs
@@ -57,12 +57,12 @@ GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/reque
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.2/jobs/get job_id=[FOO_ID]
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock overwrite=false
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/metadata.json overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json overwrite=true
 POST /api/2.0/workspace/delete
 POST /api/2.0/workspace/delete
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
-POST /api/2.0/workspace/import
 POST /api/2.0/workspace/mkdirs
 
 >>> [CLI] bundle destroy --auto-approve
@@ -81,7 +81,7 @@ GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/reque
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.2/jobs/get job_id=[FOO_ID]
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock overwrite=false
 POST /api/2.0/workspace/delete
 POST /api/2.0/workspace/delete
-POST /api/2.0/workspace/import
 POST /api/2.2/jobs/delete
