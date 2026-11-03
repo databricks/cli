@@ -1,0 +1,58 @@
+title "Create a pre-defined job and schema:\n"
+
+PYTHON_FILE="/Workspace/Users/${CURRENT_USER_NAME}/initial_hello_world.py"
+
+JOB_ID=$($CLI jobs create --json '
+{
+  "name": "test-job-bind-'${UNIQUE_NAME}'",
+  "tasks": [
+    {
+      "task_key": "my_task",
+      "environment_key": "default",
+      "spark_python_task": {
+        "python_file": "'${PYTHON_FILE}'"
+      }
+    }
+  ],
+  "environments": [
+    {
+      "environment_key": "default",
+      "spec": {
+        "environment_version": "4"
+      }
+    }
+  ]
+}' | jq -r '.job_id')
+add_repl "$JOB_ID" JOB_ID
+echo "Created job with ID: $JOB_ID"
+
+export SCHEMA_NAME="test-schema-${UNIQUE_NAME}"
+$CLI schemas create ${SCHEMA_NAME} main | jq '{full_name, catalog_name}'
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Delete the pre-defined job and schema (both must have survived the destroy):"
+    $CLI jobs delete $JOB_ID
+    echo $?
+    $CLI schemas delete main.${SCHEMA_NAME}
+    echo $?
+}
+trap cleanup EXIT
+
+title "Bind the job while the state holds no snapshot yet:"
+trace $CLI bundle deployment bind foo $JOB_ID --auto-approve
+trace $CLI bundle plan
+
+title "Deploy the job, which deploys the snapshot it depends on:"
+trace $CLI bundle deploy --select jobs.foo
+trace $CLI jobs get $JOB_ID | jq '.settings.tasks[0].spark_python_task.python_file'
+
+title "Bind the schema now that the state holds a snapshot the config does not declare:"
+trace $CLI bundle deployment bind schema1 main.${SCHEMA_NAME} --auto-approve
+trace $CLI bundle plan
+
+title "Unbind both and destroy the bundle:"
+trace $CLI bundle deployment unbind foo
+trace $CLI bundle deployment unbind schema1
+trace $CLI bundle destroy --auto-approve
