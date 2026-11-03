@@ -1786,6 +1786,12 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
+                      },
+                      "notifications": {
+                        "description": "[Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are\napplied to every job and pipeline that materializes a feature in this set. Features which are\nmaterialized in the same pipeline will share the same notification.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       }
                     },
                     "additionalProperties": false
@@ -14673,7 +14679,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Notifications for the jobs and pipelines that materialize a feature, one field per trigger.",
+                  "description": "Notifications for the jobs and pipelines that materialize the features in a set, one field per\ntrigger.",
                   "properties": {
                     "on_failure": {
                       "description": "[Private Preview] Who to notify when a run fails, and on which attempts.",
@@ -14758,12 +14764,6 @@
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
-                    "notifications": {
-                      "description": "[Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are\napplied to every job and pipeline that materializes this feature. Features which are\nmaterialized in the same pipeline will share the same notification.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
                     "offline_store_config": {
                       "description": "Destination for writing feature values to an offline Delta table. The resulting table is\nreturned as `table_name`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig",
@@ -14775,10 +14775,12 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "pipeline_schedule_state": {
-                      "description": "[Private Preview] The schedule state of the materialization pipeline.\nHidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.",
+                      "description": "[Private Preview] Deprecated: This legacy pipeline setting does not control batch job scheduling.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "streaming_mode": {
                       "description": "The Structured Streaming trigger mode used for materialization. Real-time mode (RTM) targets\nsub-second latency for operational workloads; micro-batch mode (MBM) favors cost efficiency\nfor ETL and analytics workloads.",

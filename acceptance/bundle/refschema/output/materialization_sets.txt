@@ -55,4 +55,16 @@ resources.materialization_sets.*.materialized_features[*].table_trigger.wait_aft
 resources.materialization_sets.*.materialized_features[*].tags	map[string]string	ALL
 resources.materialization_sets.*.materialized_features[*].tags.*	string	ALL
 resources.materialization_sets.*.modified_status	string	INPUT
+resources.materialization_sets.*.notifications	*ml.MaterializationNotifications	ALL
+resources.materialization_sets.*.notifications.on_failure	*ml.MaterializationFailureNotification	ALL
+resources.materialization_sets.*.notifications.on_failure.destination_ids	[]string	ALL
+resources.materialization_sets.*.notifications.on_failure.destination_ids[*]	string	ALL
+resources.materialization_sets.*.notifications.on_failure.email_addresses	[]string	ALL
+resources.materialization_sets.*.notifications.on_failure.email_addresses[*]	string	ALL
+resources.materialization_sets.*.notifications.on_failure.final_attempt_only	bool	ALL
+resources.materialization_sets.*.notifications.on_success	*ml.MaterializationSuccessNotification	ALL
+resources.materialization_sets.*.notifications.on_success.destination_ids	[]string	ALL
+resources.materialization_sets.*.notifications.on_success.destination_ids[*]	string	ALL
+resources.materialization_sets.*.notifications.on_success.email_addresses	[]string	ALL
+resources.materialization_sets.*.notifications.on_success.email_addresses[*]	string	ALL
 resources.materialization_sets.*.url	string	INPUT

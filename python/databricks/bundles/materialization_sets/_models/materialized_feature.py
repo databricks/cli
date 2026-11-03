@@ -14,14 +14,6 @@ from databricks.bundles.materialization_sets._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.materialization_sets._models.materialization_notifications import (
-    MaterializationNotifications,
-    MaterializationNotificationsParam,
-)
-from databricks.bundles.materialization_sets._models.materialized_feature_pipeline_schedule_state import (
-    MaterializedFeaturePipelineScheduleState,
-    MaterializedFeaturePipelineScheduleStateParam,
-)
 from databricks.bundles.materialization_sets._models.offline_store_config import (
     OfflineStoreConfig,
     OfflineStoreConfigParam,
@@ -74,15 +66,6 @@ class MaterializedFeature:
     Server-assigned unique identifier for the materialized feature.
     """
 
-    notifications: VariableOrOptional[MaterializationNotifications] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are
-    applied to every job and pipeline that materializes this feature. Features which are
-    materialized in the same pipeline will share the same notification.
-    """
-
     offline_store_config: VariableOrOptional[OfflineStoreConfig] = None
     """
     Destination for writing feature values to an offline Delta table. The resulting table is
@@ -93,16 +76,6 @@ class MaterializedFeature:
     """
     Destination for writing feature values to an online Lakebase table. The resulting table is
     returned as `table_name`.
-    """
-
-    pipeline_schedule_state: VariableOrOptional[
-        MaterializedFeaturePipelineScheduleState
-    ] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The schedule state of the materialization pipeline.
-    Hidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.
     """
 
     streaming_mode: VariableOrOptional[StreamingMode] = None
@@ -164,15 +137,6 @@ class MaterializedFeatureDict(TypedDict, total=False):
     Server-assigned unique identifier for the materialized feature.
     """
 
-    notifications: VariableOrOptional[MaterializationNotificationsParam]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are
-    applied to every job and pipeline that materializes this feature. Features which are
-    materialized in the same pipeline will share the same notification.
-    """
-
     offline_store_config: VariableOrOptional[OfflineStoreConfigParam]
     """
     Destination for writing feature values to an offline Delta table. The resulting table is
@@ -183,16 +147,6 @@ class MaterializedFeatureDict(TypedDict, total=False):
     """
     Destination for writing feature values to an online Lakebase table. The resulting table is
     returned as `table_name`.
-    """
-
-    pipeline_schedule_state: VariableOrOptional[
-        MaterializedFeaturePipelineScheduleStateParam
-    ]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The schedule state of the materialization pipeline.
-    Hidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.
     """
 
     streaming_mode: VariableOrOptional[StreamingModeParam]

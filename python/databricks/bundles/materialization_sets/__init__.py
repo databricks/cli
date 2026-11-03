@@ -27,8 +27,6 @@ __all__ = [
     "MaterializedFeature",
     "MaterializedFeatureDict",
     "MaterializedFeatureParam",
-    "MaterializedFeaturePipelineScheduleState",
-    "MaterializedFeaturePipelineScheduleStateParam",
     "OfflineStoreConfig",
     "OfflineStoreConfigDict",
     "OfflineStoreConfigParam",
@@ -91,10 +89,6 @@ from databricks.bundles.materialization_sets._models.materialized_feature import
     MaterializedFeature,
     MaterializedFeatureDict,
     MaterializedFeatureParam,
-)
-from databricks.bundles.materialization_sets._models.materialized_feature_pipeline_schedule_state import (
-    MaterializedFeaturePipelineScheduleState,
-    MaterializedFeaturePipelineScheduleStateParam,
 )
 from databricks.bundles.materialization_sets._models.offline_store_config import (
     OfflineStoreConfig,

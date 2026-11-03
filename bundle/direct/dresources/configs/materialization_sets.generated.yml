@@ -30,6 +30,8 @@ ignore_remote_changes:
     reason: spec:output_only
   - field: materialized_features[*].materialization_set_id
     reason: spec:output_only
+  - field: materialized_features[*].notifications
+    reason: spec:output_only
   - field: materialized_features[*].pipeline_id
     reason: spec:output_only
   - field: materialized_features[*].table_name
