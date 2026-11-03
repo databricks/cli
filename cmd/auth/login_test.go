@@ -166,15 +166,15 @@ func TestSetHost(t *testing.T) {
 	profile2 := loadTestProfile(t, ctx, "profile-2")
 
 	// Test error when both flag and argument are provided
-	authArguments.Host = "val from --host"
-	err := setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
+	authArguments.Host = "https://www.host-from-flag.test"
+	err := setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host-from-arg.test"})
 	assert.EqualError(t, err, "please only provide a host as an argument or a flag, not both")
 
 	// Test setting host from flag
-	authArguments.Host = "val from --host"
+	authArguments.Host = "https://www.host-from-flag.test"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "val from --host", authArguments.Host)
+	assert.Equal(t, "https://www.host-from-flag.test", authArguments.Host)
 
 	// Test setting host from flag with trailing slash is stripped
 	authArguments.Host = "https://www.host1.test/"
@@ -184,9 +184,9 @@ func TestSetHost(t *testing.T) {
 
 	// Test setting host from argument
 	authArguments.Host = ""
-	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host-from-arg.test"})
 	assert.NoError(t, err)
-	assert.Equal(t, "val from [HOST]", authArguments.Host)
+	assert.Equal(t, "https://www.host-from-arg.test", authArguments.Host)
 
 	// Test setting host from argument with trailing slash is stripped
 	authArguments.Host = ""
@@ -205,6 +205,72 @@ func TestSetHost(t *testing.T) {
 	err = setHostAndAccountId(ctx, profile2, &authArguments, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://www.host2.test", authArguments.Host)
+
+	// Test host that is empty after normalization from flag
+	authArguments.Host = "?o=123"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.ErrorIs(t, err, errInvalidHost)
+
+	// Test host that is empty after normalization from argument
+	authArguments.Host = ""
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"/"})
+	assert.ErrorIs(t, err, errInvalidHost)
+
+	// Test host that is empty after normalization from profile
+	authArguments.Host = ""
+	err = setHostAndAccountId(ctx, &profile.Profile{Host: "/"}, &authArguments, []string{})
+	assert.ErrorIs(t, err, errInvalidHost)
+
+	// Test host of only spaces from flag
+	authArguments.Host = "  "
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "  ". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
+
+	// Test host with a scheme but no hostname from flag
+	authArguments.Host = "https://"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "https://". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
+
+	// Test host with a scheme and query params but no hostname from flag
+	authArguments.Host = "https://?o=123"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "https://?o=123". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
+
+	// Test host that is not a URL from flag
+	authArguments.Host = "my workspace.test"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "my workspace.test". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
+
+	// Test host with a scheme that is not a URL from flag
+	authArguments.Host = "https://my workspace.test"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "https://my workspace.test". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
+
+	// Test hosts with a malformed or unsupported scheme from flag
+	for _, host := range []string{"https//www.host1.test", "https:www.host1.test", "//www.host1.test", "ftp://www.host1.test"} {
+		authArguments.Host = host
+		err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+		assert.ErrorIs(t, err, errInvalidHost, host)
+	}
+
+	// Test host with an uppercase scheme from flag
+	authArguments = auth.AuthArguments{Host: "HTTPS://WWW.HOST1.TEST"}
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "HTTPS://WWW.HOST1.TEST", authArguments.Host)
+
+	// Test host:port without a scheme from flag
+	authArguments = auth.AuthArguments{Host: "www.host1.test:8080"}
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "www.host1.test:8080", authArguments.Host)
+
+	// Test spaces around the host are trimmed before the query params are extracted
+	authArguments = auth.AuthArguments{Host: " https://www.host1.test/?o=123 "}
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
+	assert.Equal(t, "123", authArguments.WorkspaceID)
 
 	// Test host is not set. Should prompt.
 	authArguments.Host = ""
@@ -777,6 +843,13 @@ func TestGetProfileName(t *testing.T) {
 	}
 }
 
+func TestNormalizeLoginHostKeepsArgumentsOnError(t *testing.T) {
+	args := &auth.AuthArguments{Host: "https://?o=123", WorkspaceID: "456"}
+	err := normalizeLoginHost(args)
+	assert.ErrorIs(t, err, errInvalidHost)
+	assert.Equal(t, &auth.AuthArguments{Host: "https://?o=123", WorkspaceID: "456"}, args)
+}
+
 // TestSkipWorkspaceProfileNameUsesDiscoveredAccountID verifies that the
 // pre-naming discovery block populates AccountID from .well-known so the
 // profile-name prompt suggests ACCOUNT-<account-id> instead of the host-based
@@ -791,11 +864,7 @@ func TestSkipWorkspaceProfileNameUsesDiscoveredAccountID(t *testing.T) {
 	args := &auth.AuthArguments{Host: server.URL}
 
 	// Mirrors the pre-naming block in newLoginCommand's RunE for --skip-workspace.
-	params := auth.ExtractHostQueryParams(args.Host)
-	args.Host = params.Host
-	if args.AccountID == "" {
-		args.AccountID = params.AccountID
-	}
+	require.NoError(t, normalizeLoginHost(args))
 	runHostDiscovery(ctx, args)
 
 	assert.Equal(t, "abc-123", args.AccountID)
@@ -1461,6 +1530,64 @@ func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
 	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
+}
+
+func TestLoginSkipWorkspaceRejectsInvalidHost(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, ""))
+	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	authArgs := &auth.AuthArguments{Host: "?a=123"}
+	cmd := newLoginCommand(authArgs)
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--skip-workspace"})
+	err := cmd.Execute()
+	assert.EqualError(t, err, `invalid host "?a=123". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
+}
+
+func TestLoginRejectsInvalidHostBeforeProfileNamePrompt(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "slash", args: []string{"--host", "/"}},
+		{name: "no hostname", args: []string{"--host", "https://"}},
+		{name: "positional arg without hostname", args: []string{"https://?o=123"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Without --profile, login would otherwise wait at the profile name prompt.
+			tm := startLogin(t, "", tt.args...)
+			_, err := tm.Result()
+			assert.ErrorIs(t, err, errInvalidHost)
+		})
+	}
+}
+
+func TestLoginProfileNamePromptSuggestsNameFromHost(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		want string
+	}{
+		{name: "spaces", host: " https://myworkspace.test ", want: "[myworkspace]"},
+		// Without --skip-workspace this is a workspace login, so the account
+		// ID must not turn the suggestion into ACCOUNT-<id>.
+		{name: "workspace and account ID", host: "https://myworkspace.test/?w=456&account_id=123", want: "[myworkspace]"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := startLogin(t, "", "--host", tt.host)
+			tm.WaitFor("Databricks profile name " + tt.want)
+			tm.Type(termtest.KeyCtrlC)
+			_, err := tm.Result()
+			assert.EqualError(t, err, "^C")
+		})
+	}
 }
 
 func TestPromptForProfileRejectsTakenName(t *testing.T) {

@@ -23,8 +23,17 @@ const advisoryBaseURL = "https://pkg.go.dev/vuln/"
 
 // advisory identifies a Go vulnerability and its CVE alias.
 type advisory struct {
-	ID  string // GO-YYYY-NNNN, always present.
+	ID  string // GO-YYYY-NNNN, or GHSA-xxxx-xxxx-xxxx for repository advisories; always present.
 	CVE string // CVE-YYYY-NNNN, empty until one is assigned (it can lag the Go advisory by days).
+	URL string // Advisory page from the osv record; empty means the Go vulnerability database page.
+}
+
+// link is the advisory page the label points to.
+func (a advisory) link() string {
+	if a.URL != "" {
+		return a.URL
+	}
+	return advisoryBaseURL + a.ID
 }
 
 // label is the link text for an advisory: the CVE when known, else the Go ID.
@@ -54,10 +63,14 @@ type govulncheckFinding struct {
 }
 
 // govulncheckOSV mirrors the "osv" message emitted by `govulncheck -format json`,
-// which carries the full advisory record including its CVE aliases.
+// which carries the full advisory record including its CVE aliases and, for
+// repository advisories, the page URL.
 type govulncheckOSV struct {
-	ID      string   `json:"id"`
-	Aliases []string `json:"aliases"`
+	ID               string   `json:"id"`
+	Aliases          []string `json:"aliases"`
+	DatabaseSpecific struct {
+		URL string `json:"url"`
+	} `json:"database_specific"`
 }
 
 // parseBumps reads the concatenated JSON stream from `govulncheck -format json`
@@ -73,7 +86,7 @@ func parseBumps(r io.Reader) ([]bump, error) {
 	byModule := map[string]*acc{}
 	// govulncheck emits a separate "osv" message per advisory; collect the CVE
 	// aliases so findings (which carry only the Go ID) can be labelled with it.
-	cveByID := map[string]string{}
+	osvByID := map[string]govulncheckOSV{}
 
 	dec := json.NewDecoder(r)
 	for {
@@ -90,7 +103,7 @@ func parseBumps(r io.Reader) ([]bump, error) {
 		}
 
 		if o := msg.OSV; o != nil {
-			cveByID[o.ID] = firstCVE(o.Aliases)
+			osvByID[o.ID] = *o
 		}
 
 		f := msg.Finding
@@ -119,7 +132,8 @@ func parseBumps(r io.Reader) ([]bump, error) {
 	for module, a := range byModule {
 		var advisories []advisory
 		for _, id := range slices.Sorted(maps.Keys(a.advisories)) {
-			advisories = append(advisories, advisory{ID: id, CVE: cveByID[id]})
+			o := osvByID[id]
+			advisories = append(advisories, advisory{ID: id, CVE: firstCVE(o.Aliases), URL: o.DatabaseSpecific.URL})
 		}
 		bumps = append(bumps, bump{
 			Module:       module,
@@ -158,7 +172,7 @@ func renderSummary(bumps []bump) string {
 				continue
 			}
 			seen[adv.label()] = struct{}{}
-			fmt.Fprintf(&refs, "[%s]: %s%s\n", adv.label(), advisoryBaseURL, adv.ID)
+			fmt.Fprintf(&refs, "[%s]: %s\n", adv.label(), adv.link())
 		}
 		fmt.Fprintf(&list, "- %s → %s (fixes %s)\n",
 			bump.Module, bump.FixedVersion, strings.Join(labels, ", "))

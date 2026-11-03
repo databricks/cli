@@ -101,6 +101,15 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
+	if len(b.Config.Resources.DataQualityMonitors) > 0 {
+		diags = diags.Extend(reportRunAsNotSupported(
+			"data_quality_monitors",
+			b.Config.GetLocation("resources.data_quality_monitors"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
+	}
+
 	// Dashboards do not support run_as in the API.
 	if len(b.Config.Resources.Dashboards) > 0 {
 		for key, dashboard := range b.Config.Resources.Dashboards {

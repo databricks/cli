@@ -1,0 +1,1 @@
+* Detect notebooks with the same rule as the workspace: a `.py`, `.sql`, `.scala` or `.r` file is a notebook when its first line contains `Databricks notebook source`, for example after a byte order mark. Previously such a file was tracked as a plain file, so removing it locally left the remote notebook behind. ([#7290](https://github.com/databricks/cli/pull/7290))

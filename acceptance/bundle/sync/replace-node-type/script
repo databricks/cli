@@ -27,6 +27,4 @@ trace list
 title "Remove both local files and sync again\n"
 rm bom.sql plain.sql
 trace $CLI bundle sync --output text 2>&1 | sort
-
-title "BUG: bom remains after sync reports deleting bom.sql\n"
 trace list
