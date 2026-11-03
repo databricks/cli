@@ -43,6 +43,8 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 		return d.Bind(ctx, db, planEntry.BindID, newState, planEntry)
 	case deployplan.BindAndUpdate:
 		return d.BindAndUpdate(ctx, db, planEntry.BindID, newState, planEntry)
+	default:
+		// The remaining actions operate on the ID recorded in state.
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)
