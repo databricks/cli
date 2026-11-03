@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
@@ -29,6 +30,11 @@ const pendingLoginKeySuffix = "#device-code"
 // startNewLoginHint ends the errors of a non-interactive device code login
 // that cannot be completed.
 const startNewLoginHint = "Run the same command without --user-code and --confirmation-code to start a new login"
+
+// deviceCodeAgentNote starts the note that tells an AI agent to pass the login
+// on to the user.
+const deviceCodeAgentNote = "give the URL and the code above to the user.\n" +
+	"Do not open the URL or approve the login yourself: the user must approve it.\n"
 
 // deviceCodeIncompatibleFlags lists flags that device code login cannot honor.
 var deviceCodeIncompatibleFlags = []string{
@@ -198,7 +204,8 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("store pending login: %w", err)
 	}
-	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da),
+	agentNote := deviceCodeAgentNote + "Ask the user for the confirmation code their browser shows."
+	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da, agentNote),
 		"Once finished, complete the login by running the same command with",
 		"--user-code "+formatCode(da.UserCode)+" and --confirmation-code set to the confirmation code",
 		"provided in your browser.",
@@ -247,7 +254,14 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	case err == nil:
 		l.deletePendingLogin(ctx)
 	case errors.Is(err, u2m.ErrInvalidConfirmationCode):
-		return nil, fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
+		err = fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
+		// The agent runs this step, so the error above is addressed to it.
+		// Only the user may approve the login.
+		if note := agent.AgentNote("ask the user to check the confirmation code\n" +
+			"and to approve the login if they haven't. Do not approve it yourself"); note != "" {
+			err = fmt.Errorf("%w\n\n%s", err, note)
+		}
+		return nil, err
 	case errors.Is(err, u2m.ErrDeviceCodeRateLimited):
 		return nil, fmt.Errorf("%w. Rerun this command later. %s if it still fails", err, startNewLoginHint)
 	case errors.Is(err, u2m.ErrInvalidDeviceCode):
@@ -291,7 +305,9 @@ func sameCode(a, b string) bool {
 // and asks again.
 func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, lastErr error, attemptsLeft int) (string, error) {
 	if lastErr == nil {
-		cmdio.LogString(ctx, strings.Join(append(approvalInstructions(da),
+		agentNote := deviceCodeAgentNote + "Ask the user for the confirmation code their browser shows, and enter it\n" +
+			`at the "Confirmation code" prompt of this command.`
+		cmdio.LogString(ctx, strings.Join(append(approvalInstructions(da, agentNote),
 			"Once finished, enter the confirmation code provided in your browser.",
 		), "\n"))
 	} else {
@@ -314,8 +330,10 @@ func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, 
 
 // approvalInstructions returns the lines that show the user where to approve
 // the login. Both flows print them before saying how to complete the login.
-func approvalInstructions(da u2m.DeviceAuthorization) []string {
-	return []string{
+// An AI agent also gets a note to pass the login on to the user, whether or
+// not it runs the command in a terminal.
+func approvalInstructions(da u2m.DeviceAuthorization, agentNote string) []string {
+	lines := []string{
 		"Using a browser on another device, visit:",
 		da.VerificationURI,
 		"",
@@ -323,6 +341,10 @@ func approvalInstructions(da u2m.DeviceAuthorization) []string {
 		formatCode(da.UserCode),
 		"",
 	}
+	if note := agent.AgentNote(agentNote); note != "" {
+		lines = append(lines, note, "")
+	}
+	return lines
 }
 
 // formatCode displays an 8-character device code as two groups of four

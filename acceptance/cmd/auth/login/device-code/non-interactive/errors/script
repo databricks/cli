@@ -39,6 +39,7 @@ start_login LOG.wrong-code $CLI auth login --host $DATABRICKS_HOST --profile tes
 
 title "Wrong confirmation code\n"
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-0001 --confirmation-code AAAA-AAAA
+trace AGENT=test-agent musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-0001 --confirmation-code AAAA-AAAA
 
 # A wrong confirmation code leaves the device code valid, so the pending
 # login is kept.
