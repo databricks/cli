@@ -247,10 +247,11 @@ a new profile is created.
 			}
 		}
 
-		// setHost normalizes the host only after the keyring probe and the
-		// profile name prompt, so reject an invalid host before them.
+		// Normalize the host before the keyring probe and the profile name
+		// prompt, so an invalid host fails before them and the prompt suggests
+		// a name based on the normalized host and account ID.
 		if authArguments.Host != "" {
-			if err := validateLoginHost(authArguments.Host); err != nil {
+			if err := normalizeLoginHost(authArguments); err != nil {
 				return err
 			}
 		}

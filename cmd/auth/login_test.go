@@ -1561,6 +1561,26 @@ func TestLoginRejectsInvalidHostBeforeProfileNamePrompt(t *testing.T) {
 	}
 }
 
+func TestLoginProfileNamePromptSuggestsNameFromNormalizedHost(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		want string
+	}{
+		{name: "spaces", host: " https://myworkspace.test ", want: "[myworkspace]"},
+		{name: "account ID", host: "https://myworkspace.test/?a=123", want: "[ACCOUNT-123]"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := startLogin(t, "", "--host", tt.host)
+			tm.WaitFor("Databricks profile name " + tt.want)
+			tm.Type(termtest.KeyCtrlC)
+			_, err := tm.Result()
+			assert.EqualError(t, err, "^C")
+		})
+	}
+}
+
 func TestPromptForProfileRejectsTakenName(t *testing.T) {
 	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
 		return promptForProfile(ctx, "DEFAULT", []string{"DEFAULT", "taken"})
