@@ -17,6 +17,11 @@ trace musterr $CLI pipelines test --pipeline-id 1234 --resume 5678 --no-wait
 trace musterr $CLI pipelines test --pipeline-id 1234 --no-wait --timeout 10m
 trace musterr $CLI pipelines test --pipeline-id 1234 --resume "5678' OR '1'='1"
 trace musterr $CLI pipelines test --pipeline-id 1234 --resume ""
+trace musterr $CLI pipelines test --pipeline-id 1234 --no-wait --junit-xml out.no-wait.xml
+
+title "An invalid flag replaces an older report"
+echo '<testsuites><testsuite name="1234" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.flag-error.xml
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-x --junit-xml out.flag-error.xml
 
 title "JSON output is not supported"
 trace musterr $CLI pipelines test --pipeline-id 1234 -o json

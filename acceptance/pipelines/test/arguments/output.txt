@@ -28,10 +28,16 @@ collected and none failed or errored. --no-wait returns after the update starts.
 --timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
 to read the results later. To stop the update, run 'pipelines stop'.
 
+--junit-xml writes one entry per test with its outcome and duration. An
+incomplete run, a run without tests, or a timeout adds a failing entry that
+names the cause. With workspace.sync_mode immutable, test names keep the path
+of the deployed snapshot, which changes with each deployment.
+
 Usage:
   databricks pipelines test [PIPELINE_KEY] [TEST_SELECTION...] [flags] [--pytest-arg=ARG ...]
 
 Pipeline Test Flags:
+      --junit-xml string         Write the results as a JUnit XML report to this file, replacing it.
       --no-wait                  Return after the test update starts, without waiting for results.
       --pipeline-id string       ID of the pipeline to test, instead of a PIPELINE_KEY.
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
@@ -81,6 +87,13 @@ Error: --resume "5678' OR '1'='1" is not an update ID; pass the update ID that p
 
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 
 Error: --resume "" is not an update ID; pass the update ID that pipelines test printed
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --junit-xml out.no-wait.xml
+Error: --junit-xml cannot be used with --no-wait because no results are available when the command returns
+
+=== An invalid flag replaces an older report
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x --junit-xml out.flag-error.xml
+Error: unsupported pytest argument "-x": only -k and -m are supported
 
 === JSON output is not supported
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json

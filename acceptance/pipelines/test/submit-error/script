@@ -5,3 +5,7 @@ rm "$OUT_REQUESTS"
 title "A submit error from the service is shown as is, and no update ID is printed"
 trace musterr $CLI pipelines test --pipeline-id $pipeline_id
 trace print_requests.py //updates
+
+title "A submit error replaces an older report"
+echo '<testsuites><testsuite name="orders" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.start-failed.xml
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id --junit-xml out.start-failed.xml

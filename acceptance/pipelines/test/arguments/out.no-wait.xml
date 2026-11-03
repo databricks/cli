@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="1234" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="pipelines test">
+      <error message="--junit-xml cannot be used with --no-wait because no results are available when the command returns">--junit-xml cannot be used with --no-wait because no results are available when the command returns</error>
+    </testcase>
+  </testsuite>
+</testsuites>

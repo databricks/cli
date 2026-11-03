@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="my_pipeline" tests="3" failures="1" errors="1" skipped="0">
+    <testcase classname="tests.test_late_failure" name="test_backfill_fails" time="1.000">
+      <failure message="AssertionError: assert 100 == 150">AssertionError: assert 100 == 150</failure>
+    </testcase>
+    <testcase classname="tests.test_late_failure" name="test_breaks_update_after_summary" time="1.000"></testcase>
+    <testcase name="update [UUID]">
+      <error message="update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.">update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.</error>
+    </testcase>
+  </testsuite>
+</testsuites>

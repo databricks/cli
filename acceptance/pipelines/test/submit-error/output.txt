@@ -11,3 +11,7 @@ Error: An active update '[UUID]' already exists for pipeline '1234'.
     "test_only": true
   }
 }
+
+=== A submit error replaces an older report
+>>> musterr [CLI] pipelines test --pipeline-id [UUID] --junit-xml out.start-failed.xml
+Error: An active update '[UUID]' already exists for pipeline '1234'.
