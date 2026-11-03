@@ -358,7 +358,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, b.BindConfig())
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return nil

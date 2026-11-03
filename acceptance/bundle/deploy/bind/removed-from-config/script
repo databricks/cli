@@ -2,19 +2,14 @@
 NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-bind-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
 add_repl.py $NEW_JOB_ID NEW_JOB_ID
 update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
-update_file.py databricks_nores.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
 
 trace $CLI bundle deploy --auto-approve
 
-title "Remove the resource from config but keep its bind block: the block must prevent the delete"
-cp databricks.yml databricks.yml.bak
+title "Remove the resource from config. Its lifecycle.bind goes with it, so, as with prevent_destroy, the protection ends and the deploy deletes the job"
 cp databricks_nores.yml databricks.yml
-trace musterr $CLI bundle plan
-trace musterr $CLI bundle deploy --auto-approve
-
-title "The bound job still exists"
-trace $CLI jobs get $NEW_JOB_ID | jq -r .settings.name
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace musterr $CLI jobs get $NEW_JOB_ID
 
 # Cleanup
-cp databricks.yml.bak databricks.yml
 trace $CLI bundle destroy --auto-approve

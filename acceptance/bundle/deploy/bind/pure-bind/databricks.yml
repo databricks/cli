@@ -17,10 +17,6 @@ resources:
       permissions:
         - group_name: users
           level: CAN_VIEW
-
-targets:
-  default:
-    bind:
-      jobs:
-        foo:
+      lifecycle:
+        bind:
           id: "PLACEHOLDER_JOB_ID"

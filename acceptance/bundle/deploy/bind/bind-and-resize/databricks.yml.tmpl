@@ -12,10 +12,6 @@ resources:
       node_type_id: $NODE_TYPE_ID
       instance_pool_id: $TEST_INSTANCE_POOL_ID
       num_workers: 3
-
-targets:
-  default:
-    bind:
-      clusters:
-        test_cluster:
+      lifecycle:
+        bind:
           id: "PLACEHOLDER_CLUSTER_ID"

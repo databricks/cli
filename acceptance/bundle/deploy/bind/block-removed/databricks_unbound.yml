@@ -9,6 +9,3 @@ resources:
       libraries:
         - notebook:
             path: ./nb.sql
-
-targets:
-  default:

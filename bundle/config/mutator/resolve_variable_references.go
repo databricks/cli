@@ -164,11 +164,15 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		prefixes[i] = dyn.MustPathFromString(prefix)
 	}
 
+	// The path ${var.foo} is a shorthand for ${variables.foo.value}.
+	// We rewrite it here to make the resolution logic simpler.
+	varPath := dyn.NewPath(dyn.Key("var"))
+
 	var diags diag.Diagnostics
 	maxRounds := 1 + m.extraRounds
 
 	for round := range maxRounds {
-		hasUpdates, newDiags := m.resolveOnce(b, prefixes)
+		hasUpdates, newDiags := m.resolveOnce(b, prefixes, varPath)
 
 		diags = diags.Extend(newDiags)
 
@@ -197,27 +201,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	return diags
 }
 
-// varPath is the ${var.foo} shorthand prefix for ${variables.foo.value}.
-var varPath = dyn.NewPath(dyn.Key("var"))
-
-// rewriteVarShorthand rewrites the shorthand path ${var.foo} into ${variables.foo.value},
-// so that resolution only has to deal with the long form.
-func rewriteVarShorthand(path dyn.Path) dyn.Path {
-	if !path.HasPrefix(varPath) {
-		return path
-	}
-	newPath := dyn.NewPath(
-		dyn.Key("variables"),
-		path[1],
-		dyn.Key("value"),
-	)
-	if len(path) > 2 {
-		newPath = newPath.Append(path[2:]...)
-	}
-	return newPath
-}
-
-func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path) (bool, diag.Diagnostics) {
+func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	hasUpdates := false
 	err := m.selectivelyMutate(b, func(root dyn.Value) (dyn.Value, error) {
@@ -240,7 +224,20 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// Resolve variable references in all values.
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
-				path = rewriteVarShorthand(path)
+				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
+				if path.HasPrefix(varPath) {
+					newPath := dyn.NewPath(
+						dyn.Key("variables"),
+						path[1],
+						dyn.Key("value"),
+					)
+
+					if len(path) > 2 {
+						newPath = newPath.Append(path[2:]...)
+					}
+
+					path = newPath
+				}
 
 				// If the path starts with "artifacts", we need to add a metric to track if this reference is used.
 				if path.HasPrefix(artifactPath) {

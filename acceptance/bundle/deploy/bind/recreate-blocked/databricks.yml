@@ -9,10 +9,6 @@ resources:
       libraries:
         - notebook:
             path: ./nb.sql
-
-targets:
-  default:
-    bind:
-      pipelines:
-        foo:
+      lifecycle:
+        bind:
           id: "PLACEHOLDER_PIPELINE_ID"

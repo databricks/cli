@@ -1,10 +1,12 @@
 
 >>> musterr [CLI] bundle plan
-Error: bind block for "resources.jobs.bar" has the same ID "12345" as bind block(s) for resources.jobs.foo; each workspace resource can only be bound once
-  at targets.default.bind.jobs.bar
+Error: resources.jobs.bar has the same lifecycle.bind ID "12345" as resources.jobs.foo; each workspace resource can only be bound once
+  at resources.jobs.bar.lifecycle.bind.id
+  in databricks.yml:33:15
 
-Error: bind block for "resources.jobs.foo" has the same ID "12345" as bind block(s) for resources.jobs.bar; each workspace resource can only be bound once
-  at targets.default.bind.jobs.foo
+Error: resources.jobs.foo has the same lifecycle.bind ID "12345" as resources.jobs.bar; each workspace resource can only be bound once
+  at resources.jobs.foo.lifecycle.bind.id
+  in databricks.yml:19:15
 
 Error: bind validation failed
 

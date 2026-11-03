@@ -14,16 +14,12 @@ resources:
           environment_key: default
           spark_python_task:
             python_file: /Workspace/test.py
+      lifecycle:
+        bind:
+          id: "PLACEHOLDER_JOB_ID"
     bar:
       name: test-bind-runner
       tasks:
         - task_key: run_foo
           run_job_task:
             job_id: ${resources.jobs.foo.id}
-
-targets:
-  default:
-    bind:
-      jobs:
-        foo:
-          id: "PLACEHOLDER_JOB_ID"

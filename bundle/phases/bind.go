@@ -146,12 +146,15 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	statemgmt.PushResourcesState(ctx, b)
 
 	// Bind is state-less: nothing records that the resource was just unbound, so a
-	// bind block still in config re-adopts it on the next deploy.
-	if _, ok := b.BindConfig()[group][resourceKey]; ok {
+	// lifecycle.bind block still in config re-adopts it on the next deploy.
+	resource, _, err := b.Config.Resources.ResolveKey(group + "." + resourceKey)
+	if err == nil && resource.GetLifecycle().GetBind() != nil {
+		bindPath := structpath.NewPath(nil, "resources", group, resourceKey, "lifecycle", "bind")
 		logdiag.LogDiag(ctx, diag.Diagnostic{
-			Severity: diag.Warning,
-			Summary:  fmt.Sprintf("the bind block for %s re-binds the resource on the next deploy; remove it to keep the resource unbound", fullResourceKey),
-			Paths:    structpath.NewPathSlice("targets", b.Config.Bundle.Target, "bind", group, resourceKey),
+			Severity:  diag.Warning,
+			Summary:   fullResourceKey + ".lifecycle.bind re-binds the resource on the next deploy; remove it to keep the resource unbound",
+			Locations: b.Config.GetLocationsOf(bindPath),
+			Paths:     []*structpath.PathNode{bindPath},
 		})
 	}
 }

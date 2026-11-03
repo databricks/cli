@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -18,98 +19,102 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-// bindBlockPath returns the config path of a bind block, used to point
-// diagnostics at the offending entry.
-func bindBlockPath(targetName, resourceType, resourceName string) *structpath.PathNode {
-	return structpath.NewPath(nil, "targets", targetName, "bind", resourceType, resourceName)
+// lifecycleBindIDs collects lifecycle.bind IDs by resource key. A nil configRoot
+// (destroy) has no bind blocks.
+func lifecycleBindIDs(configRoot *config.Root) map[string]string {
+	result := map[string]string{}
+	if configRoot == nil {
+		return result
+	}
+	for _, group := range configRoot.Resources.AllResources() {
+		for name, resource := range group.Resources {
+			bind := resource.GetLifecycle().GetBind()
+			if bind == nil {
+				continue
+			}
+			result["resources."+group.Description.PluralName+"."+name] = bind.ID
+		}
+	}
+	return result
 }
 
-// validateBindConfig logs diagnostics for invalid bind entries. Returns false if any
-// errors were logged.
-func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *config.Root, bindConfig config.Bind) bool {
+// bindIDPath returns the config path of a resource's lifecycle.bind.id, used to point
+// diagnostics at the offending entry.
+func bindIDPath(resourceKey string) *structpath.PathNode {
+	resourceType, resourceName := splitResourceKey(resourceKey)
+	return structpath.NewPath(nil, "resources", resourceType, resourceName, "lifecycle", "bind", "id")
+}
+
+func (b *DeploymentBundle) logBindError(ctx context.Context, configRoot *config.Root, resourceKey, summary string) {
+	path := bindIDPath(resourceKey)
+	logdiag.LogDiag(ctx, diag.Diagnostic{
+		Severity:  diag.Error,
+		Summary:   summary,
+		Locations: configRoot.GetLocationsOf(path),
+		Paths:     []*structpath.PathNode{path},
+	})
+}
+
+// validateBindConfig logs diagnostics for lifecycle.bind entries that conflict with the
+// state. Returns false if any errors were logged.
+func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *config.Root, bindIDByKey map[string]string) bool {
 	hasError := false
-	targetName := configRoot.Bundle.Target
+	keys := slices.Sorted(maps.Keys(bindIDByKey))
 
-	// Bind blocks referencing resources missing from config are rejected by
-	// mutator.ValidateBindResources before planning; the checks below need state.
-
-	// A resource that is already in state cannot be re-bound to a different ID: the
-	// bind block is meant to import a resource for the first time. When the IDs match
-	// the bind is a no-op and the resource just deploys normally.
-	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-		key := "resources." + resourceType + "." + resourceName
+	// A resource that is already in state cannot be re-bound to a different ID:
+	// lifecycle.bind adopts a resource for the first time. When the IDs match the bind
+	// is a no-op and the resource just deploys normally.
+	for _, key := range keys {
+		bindID := bindIDByKey[key]
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(key)
 		if !hasEntry || dbentry.ID == "" || dbentry.ID == bindID {
-			return
+			continue
 		}
-		bindPath := bindBlockPath(targetName, resourceType, resourceName)
-		logdiag.LogDiag(ctx, diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("%s: resource already bound to ID %q, cannot bind as %q; remove the bind block or unbind the existing resource", key, dbentry.ID, bindID),
-			Locations: configRoot.GetLocationsOf(bindPath),
-			Paths:     []*structpath.PathNode{bindPath},
-		})
+		b.logBindError(ctx, configRoot, key, fmt.Sprintf("%s: resource already bound to ID %q, cannot bind as %q; remove lifecycle.bind or unbind the existing resource", key, dbentry.ID, bindID))
 		hasError = true
-	})
+	}
 
-	// Two bind blocks must not point at the same workspace ID. Otherwise both would
-	// be bound for the first time and create two state entries managing one remote
-	// resource; reject the collision instead of silently double-managing it.
-	bindKeysByID := map[string][]string{}
-	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-		bindKey := "resources." + resourceType + "." + resourceName
-		bindKeysByID[bindID] = append(bindKeysByID[bindID], bindKey)
-	})
-	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-		keys := bindKeysByID[bindID]
-		if len(keys) < 2 {
-			return
+	// Two resources must not bind the same workspace ID. Otherwise both would be
+	// adopted and two state entries would manage one remote resource. IDs are only
+	// unique within a resource type (a job and an experiment can share a numeric ID),
+	// so only resources of the same type can collide.
+	keysByTypeAndID := map[string][]string{}
+	for _, key := range keys {
+		keysByTypeAndID[typeAndID(key, bindIDByKey[key])] = append(keysByTypeAndID[typeAndID(key, bindIDByKey[key])], key)
+	}
+	for _, key := range keys {
+		bindID := bindIDByKey[key]
+		others := slices.DeleteFunc(slices.Clone(keysByTypeAndID[typeAndID(key, bindID)]), func(k string) bool { return k == key })
+		if len(others) == 0 {
+			continue
 		}
-		bindKey := "resources." + resourceType + "." + resourceName
-		others := slices.DeleteFunc(slices.Clone(keys), func(k string) bool { return k == bindKey })
-		bindPath := bindBlockPath(targetName, resourceType, resourceName)
-		logdiag.LogDiag(ctx, diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("bind block for %q has the same ID %q as bind block(s) for %s; each workspace resource can only be bound once", bindKey, bindID, strings.Join(others, ", ")),
-			Locations: configRoot.GetLocationsOf(bindPath),
-			Paths:     []*structpath.PathNode{bindPath},
-		})
+		b.logBindError(ctx, configRoot, key, fmt.Sprintf("%s has the same lifecycle.bind ID %q as %s; each workspace resource can only be bound once", key, bindID, strings.Join(others, ", ")))
 		hasError = true
-	})
+	}
 
 	// A bind ID must not collide with another resource's ID in state. Such a collision
 	// would let a bind silently redirect a delete/recreate/update_id at a resource the
 	// user is also trying to import; reject it instead of choosing one over the other.
-	// IDs are only unique within a resource type (a job and an experiment can share a
-	// numeric ID), so only entries of the bind's own type can collide.
-	stateKeys := make([]string, 0, len(b.StateDB.Data.State))
-	for stateKey := range b.StateDB.Data.State {
-		stateKeys = append(stateKeys, stateKey)
-	}
-	slices.Sort(stateKeys)
-
-	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-		bindKey := "resources." + resourceType + "." + resourceName
+	stateKeys := slices.Sorted(maps.Keys(b.StateDB.Data.State))
+	for _, key := range keys {
+		bindID := bindIDByKey[key]
 		for _, stateKey := range stateKeys {
-			stateEntry := b.StateDB.Data.State[stateKey]
-			if stateKey == bindKey || stateEntry.ID != bindID {
+			if stateKey == key || b.StateDB.Data.State[stateKey].ID != bindID || typeAndID(stateKey, bindID) != typeAndID(key, bindID) {
 				continue
 			}
-			if stateType, _ := splitResourceKey(stateKey); stateType != resourceType {
-				continue
-			}
-			bindPath := bindBlockPath(targetName, resourceType, resourceName)
-			logdiag.LogDiag(ctx, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("bind block for %q has the same ID %q as existing resource %q; remove the bind block or the conflicting resource", bindKey, bindID, stateKey),
-				Locations: configRoot.GetLocationsOf(bindPath),
-				Paths:     []*structpath.PathNode{bindPath},
-			})
+			b.logBindError(ctx, configRoot, key, fmt.Sprintf("%s has the same lifecycle.bind ID %q as existing resource %q; remove lifecycle.bind or the conflicting resource", key, bindID, stateKey))
 			hasError = true
 		}
-	})
+	}
 
 	return !hasError
+}
+
+// typeAndID keys a bind by resource type and workspace ID, the scope within which IDs
+// are unique.
+func typeAndID(resourceKey, bindID string) string {
+	resourceType, _ := splitResourceKey(resourceKey)
+	return resourceType + ":" + bindID
 }
 
 // handleBindPlan reads the remote resource for a resource that is being bound for
@@ -205,7 +210,7 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 
 // buildBindConflictError formats a multi-line message that names the fields whose
 // changes forced an incompatible action (Recreate / UpdateWithID) and shows the two
-// concrete resolutions: drop the offending fields, or drop the bind block. firstBind
+// concrete resolutions: drop the offending fields, or drop lifecycle.bind. firstBind
 // tells a resource being adopted apart from one that is already bound in state.
 func buildBindConflictError(resourceKey string, action deployplan.ActionType, changes deployplan.Changes, firstBind bool) error {
 	problematicFields := make([]string, 0, len(changes))
@@ -224,16 +229,16 @@ func buildBindConflictError(resourceKey string, action deployplan.ActionType, ch
 	// action types are guarded by the caller.
 	switch { //nolint:exhaustive
 	case action == deployplan.Recreate && firstBind:
-		headline = "cannot bind " + resourceKey + ": cannot recreate resource with bind block"
+		headline = "cannot bind " + resourceKey + ": cannot recreate resource with lifecycle.bind"
 		effect = "This would destroy and recreate the existing workspace resource, changing its ID."
 	case action == deployplan.Recreate:
-		headline = "cannot plan " + resourceKey + ": bind block prevents recreating the bound resource"
+		headline = "cannot plan " + resourceKey + ": lifecycle.bind prevents recreating the bound resource"
 		effect = "This would destroy and recreate the bound workspace resource, changing its ID."
 	case action == deployplan.UpdateWithID && firstBind:
-		headline = "cannot bind " + resourceKey + ": cannot update resource ID with bind block"
+		headline = "cannot bind " + resourceKey + ": cannot update resource ID with lifecycle.bind"
 		effect = "This would replace the existing workspace resource with a new ID."
 	case action == deployplan.UpdateWithID:
-		headline = "cannot plan " + resourceKey + ": bind block prevents changing the ID of the bound resource"
+		headline = "cannot plan " + resourceKey + ": lifecycle.bind prevents changing the ID of the bound resource"
 		effect = "This would replace the bound workspace resource with a new ID."
 	}
 	if firstBind {
@@ -271,15 +276,15 @@ func buildBindConflictError(resourceKey string, action deployplan.ActionType, ch
 		fmt.Fprintf(&msg, "         # %s: ...\n", field)
 	}
 	msg.WriteString("\n")
-	msg.WriteString("2. Remove the bind block if you want to allow the resource to be recreated/updated:\n\n")
-	msg.WriteString("   targets:\n")
-	msg.WriteString("     <target_name>:\n")
-	msg.WriteString("       # Remove the bind block:\n")
-	msg.WriteString("       # bind:\n")
-	fmt.Fprintf(&msg, "       #   %s:\n", resourceType)
-	fmt.Fprintf(&msg, "       #     %s:\n", resourceName)
+	msg.WriteString("2. Remove lifecycle.bind if you want to allow the resource to be recreated/updated:\n\n")
+	msg.WriteString("   resources:\n")
+	fmt.Fprintf(&msg, "     %s:\n", resourceType)
+	fmt.Fprintf(&msg, "       %s:\n", resourceName)
+	msg.WriteString("         lifecycle:\n")
+	msg.WriteString("           # Remove the bind block:\n")
+	msg.WriteString("           # bind:\n")
 	// No trailing newline: error strings must not end with one.
-	msg.WriteString("       #       id: <resource_id>")
+	msg.WriteString("           #   id: <resource_id>")
 
 	return errors.New(msg.String())
 }

@@ -6,8 +6,9 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> musterr [CLI] bundle plan
-Error: bind block for "resources.jobs.bar" has the same ID "[FOO_ID]" as existing resource "resources.jobs.foo"; remove the bind block or the conflicting resource
-  at targets.default.bind.jobs.bar
+Error: resources.jobs.bar has the same lifecycle.bind ID "[FOO_ID]" as existing resource "resources.jobs.foo"; remove lifecycle.bind or the conflicting resource
+  at resources.jobs.bar.lifecycle.bind.id
+  in databricks.yml:30:15
 
 Error: bind validation failed
 

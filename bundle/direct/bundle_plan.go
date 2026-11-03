@@ -162,10 +162,9 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
 //
-// bindConfig carries the target's declarative bind blocks; resources listed there
-// that are not yet in state are planned as Bind / BindAndUpdate instead of Create.
-// Pass an empty Bind when there is nothing to bind (e.g. destroy).
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, bindConfig config.Bind) (*deployplan.Plan, error) {
+// Resources with lifecycle.bind that are not yet in state are planned as Bind /
+// BindAndUpdate instead of Create; a nil configRoot (destroy) binds nothing.
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -185,17 +184,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 	b.Plan = plan
 
-	// Validate bind blocks against the full plan and state before walking the graph,
-	// then index them by resource key so the per-resource planning below can select
-	// Bind / BindAndUpdate for resources that are being bound for the first time.
-	bindIDByKey := map[string]string{}
-	if !bindConfig.IsEmpty() {
-		if !b.validateBindConfig(ctx, configRoot, bindConfig) {
-			return nil, errors.New("bind validation failed")
-		}
-		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-			bindIDByKey["resources."+resourceType+"."+resourceName] = bindID
-		})
+	// Validate bind blocks against the state before walking the graph; the per-resource
+	// planning below selects Bind / BindAndUpdate for resources being bound for the
+	// first time and guards the ones already bound.
+	bindIDByKey := lifecycleBindIDs(configRoot)
+	if len(bindIDByKey) > 0 && !b.validateBindConfig(ctx, configRoot, bindIDByKey) {
+		return nil, errors.New("bind validation failed")
 	}
 
 	g, err := makeGraph(plan)
@@ -400,7 +394,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// re-point the state at a new ID behind the user's back and leave the
 			// block mismatched on every later plan, so report the deletion instead.
 			if bound {
-				logdiag.LogError(ctx, fmt.Errorf("%s: bound resource with ID %q no longer exists in the workspace; remove the bind block to create a new resource", errorPrefix, dbentry.ID))
+				logdiag.LogError(ctx, fmt.Errorf("%s: bound resource with ID %q no longer exists in the workspace; remove lifecycle.bind to create a new resource", errorPrefix, dbentry.ID))
 				return false
 			}
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here

@@ -131,18 +131,6 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
 	}
 
-	// A root-level bind block is a misplaced target-level block. Normalize would drop
-	// it as an unknown field with only a warning, and the deploy would then create the
-	// resources it names instead of binding the existing ones.
-	if bind, err := dyn.GetByPath(v, dyn.NewPath(dyn.Key("bind"))); err == nil {
-		return nil, diag.Diagnostics{{
-			Severity:  diag.Error,
-			Summary:   "bind blocks are only supported under targets.<target>.bind, not at the root of the configuration",
-			Locations: bind.Locations(),
-			Paths:     structpath.NewPathSlice("bind"),
-		}}
-	}
-
 	// Normalize dynamic configuration tree according to configuration type.
 	v, diags := convert.Normalize(r, v)
 

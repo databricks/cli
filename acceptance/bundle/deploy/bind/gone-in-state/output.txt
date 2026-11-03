@@ -9,14 +9,14 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 >>> [CLI] jobs delete [NEW_JOB_ID]
 
 >>> musterr [CLI] bundle plan
-Error: cannot plan resources.jobs.foo: bound resource with ID "[NEW_JOB_ID]" no longer exists in the workspace; remove the bind block to create a new resource
+Error: cannot plan resources.jobs.foo: bound resource with ID "[NEW_JOB_ID]" no longer exists in the workspace; remove lifecycle.bind to create a new resource
 
 Error: planning failed
 
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state/default/files...
-Error: cannot plan resources.jobs.foo: bound resource with ID "[NEW_JOB_ID]" no longer exists in the workspace; remove the bind block to create a new resource
+Error: cannot plan resources.jobs.foo: bound resource with ID "[NEW_JOB_ID]" no longer exists in the workspace; remove lifecycle.bind to create a new resource
 
 Error: planning failed
 

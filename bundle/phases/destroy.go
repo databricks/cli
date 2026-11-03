@@ -322,12 +322,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	// bundle destroy is allowed even when bind blocks reference resources in
-	// state: naming destroy explicitly captures the user's intent to tear the
-	// deployment down. The bind block only guards against accidental deletion
-	// during a normal deploy (a bound resource dropped from config or a change
-	// that would recreate it), not against a deliberate destroy.
-	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil, nil)
+	// Planned without config, so lifecycle.bind plays no role: naming destroy explicitly
+	// captures the intent to tear the deployment down, bound resources included. The
+	// block only guards against a recreate during a normal deploy.
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
