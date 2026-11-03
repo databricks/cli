@@ -1175,8 +1175,10 @@ func newGetMemoryStorePermission() *cobra.Command {
 	var getMemoryStorePermissionReq agentkit.GetMemoryStorePermissionRequest
 
 	cmd.Use = "get-memory-store-permission NAME"
-	cmd.Short = `Get memory store permission.`
-	cmd.Long = `Get memory store permission.
+	cmd.Short = `*Beta* Get memory store permission.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get memory store permission.
 
   Retrieves the current caller's effective memory store permission. Returns
   PERMISSION_LEVEL_UNSPECIFIED when the caller has no access.
@@ -1184,12 +1186,9 @@ func newGetMemoryStorePermission() *cobra.Command {
   Arguments:
     NAME: Resource name in the form memory-stores/{managed_memory_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1361,8 +1360,10 @@ func newGetSessionStorePermission() *cobra.Command {
 	var getSessionStorePermissionReq agentkit.GetSessionStorePermissionRequest
 
 	cmd.Use = "get-session-store-permission NAME"
-	cmd.Short = `Get session store permission.`
-	cmd.Long = `Get session store permission.
+	cmd.Short = `*Beta* Get session store permission.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get session store permission.
 
   Retrieves the current caller's effective session store permission. Returns
   PERMISSION_LEVEL_UNSPECIFIED when the caller has no access.
@@ -1370,12 +1371,9 @@ func newGetSessionStorePermission() *cobra.Command {
   Arguments:
     NAME: Resource name in the form session-stores/{session_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1427,8 +1425,10 @@ func newGrantMemoryStorePermission() *cobra.Command {
 	cmd.Flags().Var(&grantMemoryStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "grant-memory-store-permission NAME"
-	cmd.Short = `Grant memory store permission.`
-	cmd.Long = `Grant memory store permission.
+	cmd.Short = `*Beta* Grant memory store permission.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Grant memory store permission.
 
   Grants a READ or WRITE permission on a memory store to a principal. Only the
   owner or a workspace admin may grant permissions.
@@ -1436,12 +1436,9 @@ func newGrantMemoryStorePermission() *cobra.Command {
   Arguments:
     NAME: Resource name in the form memory-stores/{managed_memory_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1507,8 +1504,10 @@ func newGrantSessionStorePermission() *cobra.Command {
 	cmd.Flags().Var(&grantSessionStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "grant-session-store-permission NAME"
-	cmd.Short = `Grant session store permission.`
-	cmd.Long = `Grant session store permission.
+	cmd.Short = `*Beta* Grant session store permission.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Grant session store permission.
 
   Grants a READ or WRITE permission on a session store to a principal. Only the
   owner or a workspace admin may grant permissions.
@@ -1516,12 +1515,9 @@ func newGrantSessionStorePermission() *cobra.Command {
   Arguments:
     NAME: Resource name in the form session-stores/{session_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1683,8 +1679,10 @@ func newListMemoryStorePermissions() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-memory-store-permissions PARENT"
-	cmd.Short = `List memory store permissions.`
-	cmd.Long = `List memory store permissions.
+	cmd.Short = `*Beta* List memory store permissions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List memory store permissions.
 
   Lists explicit memory store grants. Only the owner or a workspace admin may
   list permissions.
@@ -1693,12 +1691,9 @@ func newListMemoryStorePermissions() *cobra.Command {
     PARENT: Resource name of the store, in the form
       memory-stores/{managed_memory_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1914,8 +1909,10 @@ func newListSessionStorePermissions() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-session-store-permissions PARENT"
-	cmd.Short = `List session store permissions.`
-	cmd.Long = `List session store permissions.
+	cmd.Short = `*Beta* List session store permissions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List session store permissions.
 
   Lists explicit session store grants. Only the owner or a workspace admin may
   list permissions.
@@ -1924,12 +1921,9 @@ func newListSessionStorePermissions() *cobra.Command {
     PARENT: Resource name of the store, in the form
       session-stores/{session_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2198,8 +2192,10 @@ func newRevokeMemoryStorePermission() *cobra.Command {
 	cmd.Flags().Var(&revokeMemoryStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "revoke-memory-store-permission NAME"
-	cmd.Short = `Revoke memory store permission.`
-	cmd.Long = `Revoke memory store permission.
+	cmd.Short = `*Beta* Revoke memory store permission.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Revoke memory store permission.
 
   Removes a principal's explicit READ and WRITE grants on a memory store. Only
   the owner or a workspace admin may revoke permissions. Ownership and inherited
@@ -2208,12 +2204,9 @@ func newRevokeMemoryStorePermission() *cobra.Command {
   Arguments:
     NAME: Resource name in the form memory-stores/{managed_memory_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2279,8 +2272,10 @@ func newRevokeSessionStorePermission() *cobra.Command {
 	cmd.Flags().Var(&revokeSessionStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "revoke-session-store-permission NAME"
-	cmd.Short = `Revoke session store permission.`
-	cmd.Long = `Revoke session store permission.
+	cmd.Short = `*Beta* Revoke session store permission.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Revoke session store permission.
 
   Removes a principal's explicit READ and WRITE grants on a session store. Only
   the owner or a workspace admin may revoke permissions. Ownership and inherited
@@ -2289,12 +2284,9 @@ func newRevokeSessionStorePermission() *cobra.Command {
   Arguments:
     NAME: Resource name in the form session-stores/{session_store_id}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
