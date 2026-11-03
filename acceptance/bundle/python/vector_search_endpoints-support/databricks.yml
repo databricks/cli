@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_vector_search_endpoint"
+
+resources:
+  vector_search_endpoints:
+    my_endpoint_1:
+      name: "my_endpoint_1"
+      endpoint_type: "STANDARD"

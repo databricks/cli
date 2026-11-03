@@ -8,7 +8,7 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "fs",
 		Short:   "Filesystem related commands",
-		Long:    `Commands to do file system operations on DBFS and UC Volumes.`,
+		Long:    `Commands to do file system operations on DBFS, UC Volumes and UC Skills.`,
 		GroupID: "workspace",
 	}
 

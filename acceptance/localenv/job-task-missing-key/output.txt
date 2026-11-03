@@ -1,0 +1,5 @@
+✗ Setup failed while resolving your compute target.
+
+  specify a job task: job 12345 has multiple tasks; specify one: --job-task 12345.<task-key> (available: ingest, transform)
+
+Re-run with --debug for details, or --output json for a structured report.

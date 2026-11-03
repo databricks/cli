@@ -1,5 +1,508 @@
 # Version changelog
 
+## Release v1.23.0 (2026-10-29)
+
+### CLI
+
+ * Fix GitHub API rate limit errors in `aitools list` and plugin installs by pinning skills to `0.2.32`. ([#7159](https://github.com/databricks/cli/pull/7159))
+ * `databricks ssh connect` now makes `claude` and `codex` available on dedicated clusters. ([#7190](https://github.com/databricks/cli/pull/7190))
+ * `databricks ssh connect` on serverless now makes `claude` and `codex` available in IDE sessions (`--ide`) and to non-interactive commands (e.g. `databricks ssh connect -- 'claude -p "..."'`). ([#7123](https://github.com/databricks/cli/pull/7123))
+
+### AI Runtime
+
+ * Add workload support for the GPU_1xRTX6000 accelerator type in enabled workspaces. ([#7214](https://github.com/databricks/cli/pull/7214))
+ * Show only the accelerator types available in the current workspace in `databricks air run -h config.compute`. ([#6993](https://github.com/databricks/cli/pull/6993))
+
+### Bundles
+
+ * Fixed `bundle validate` failing with "expected a map to index" when a job `schedule`, `trigger` or `continuous` is a reference to a whole block, such as `${resources.jobs.base.schedule}`. ([#7225](https://github.com/databricks/cli/pull/7225))
+ * Added `lifecycle.depends_on` to order resources without referencing their fields. ([#7120](https://github.com/databricks/cli/pull/7120))
+ * Immutable-folder deploys now refuse to deploy onto a snapshot that was modified outside the bundle (break glass); `bundle deploy --force` moves the deployment to a fresh snapshot. ([#6774](https://github.com/databricks/cli/pull/6774))
+ * Fix `--include-locations` failing when a resource is missing a required field. ([#7185](https://github.com/databricks/cli/pull/7185))
+ * Removed spurious "required field is not set" warnings for a field whose value is a reference to a whole block, such as `schedule: ${resources.jobs.base.schedule}`. ([#7226](https://github.com/databricks/cli/pull/7226))
+ * Revert bundle file uploads to the legacy `/workspace-files/import-file` endpoint, rolling back [#6149](https://github.com/databricks/cli/pull/6149) and [#7034](https://github.com/databricks/cli/pull/7034) released in [v1.21.0](https://github.com/databricks/cli/releases/tag/v1.21.0). This fixes notebooks being uploaded as plain files and deployments failing (for example SQL notebooks in [#7216](https://github.com/databricks/cli/issues/7216)). A remote file or notebook whose type differs from the local one is now deleted and replaced instead of blocking the deploy. ([#7218](https://github.com/databricks/cli/pull/7218))
+ * Support selecting resources for deletion with `bundle deploy --select`. ([#7023](https://github.com/databricks/cli/pull/7023))
+ * Add the `workspace.sync_mode` setting with the values `overwrite` (default), `in-place`, and `immutable`. It replaces `presets.source_linked_deployment` (use `in-place`) and `experimental.immutable_folder` (use `immutable`), which are now deprecated and emit a warning. ([#7183](https://github.com/databricks/cli/pull/7183))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7213](https://github.com/databricks/cli/pull/7213))
+ * Update the Go SDK to [v0.190.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.190.0). ([#7155](https://github.com/databricks/cli/pull/7155))
+ * Update the Go SDK to [v0.191.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.191.0). ([#7211](https://github.com/databricks/cli/pull/7211))
+ * Bump Node.js downloaded by the `ssh` agent shim from v24.21.0 to v24.22.2. ([#7246](https://github.com/databricks/cli/pull/7246))
+
+
+## Release v1.22.1 (2026-10-22)
+
+### CLI
+
+ * Fix GitHub API rate limit errors in `aitools list` and plugin installs by pinning skills to `0.2.32`. ([#7159](https://github.com/databricks/cli/pull/7159))
+
+## Release v1.22.0 (2026-10-22)
+
+### CLI
+
+ * Fix `databricks aitools install` overwriting newer raw skills with an older pinned release. CLI 1.22.0 and newer now install the latest published skills and prevent automatic downgrades. ([#7069](https://github.com/databricks/cli/pull/7069))
+ * Fix `auth login --timeout` not applying to the browser login, which waited for the OAuth redirect indefinitely. ([#7103](https://github.com/databricks/cli/pull/7103))
+ * Remove the 50-workspace limit in `auth login` and support searching workspaces by name or ID. ([#7071](https://github.com/databricks/cli/pull/7071))
+ * `databricks ssh connect` now fails right away with the workspace's reason when port forwarding to serverless compute is disabled, instead of waiting out the server start timeout. ([#7057](https://github.com/databricks/cli/pull/7057))
+
+### AI Runtime
+
+ * `air run` now spends less time before submitting: it fetches only the user name from SCIM. ([#7153](https://github.com/databricks/cli/pull/7153))
+ * Align multi-image container name validation with backend services: allow hyphens and up to 32 characters, and reject uppercase letters and underscores. ([#7154](https://github.com/databricks/cli/pull/7154))
+
+### Bundles
+
+ * The `compute_id` deprecation warning for a target now shows the full path (`targets.<name>.compute_id`). ([#7048](https://github.com/databricks/cli/pull/7048))
+ * Add `DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH`, which requires a target's host and workspace ID to match exactly one profile in the config file before authenticating. Targets without a host or workspace ID are not affected. ([#7109](https://github.com/databricks/cli/pull/7109))
+ * Zero-value overrides of `presets`, `lifecycle.prevent_destroy` and `deployment` settings in includes now replace non-zero base values, and `bundle validate -o json` shows explicit zero presets. ([#7117](https://github.com/databricks/cli/pull/7117))
+ * `bundle deployment bind` and `unbind` now accept a resource as `type.key`, e.g. `jobs.foo`. ([#7128](https://github.com/databricks/cli/pull/7128))
+ * Retry more transient server errors during `bundle deploy` and `bundle destroy`, including when releasing the deploy lock and reading state. ([#7129](https://github.com/databricks/cli/pull/7129))
+ * Fix migration from Terraform failing when a deployed resource references a resource that was never deployed. ([#7157](https://github.com/databricks/cli/pull/7157))
+ * Add `app-appkit` to bundle templates to simplify starting a Databricks Apps project. ([#7004](https://github.com/databricks/cli/pull/7004), [#7007](https://github.com/databricks/cli/pull/7007))
+ * Add support for the `features` resource type. ([#6952](https://github.com/databricks/cli/pull/6952))
+ * Fix `bundle validate` warning that `sync.include` and `sync.exclude` patterns do not match any files when `sync.paths` includes a directory outside the bundle root. ([#7122](https://github.com/databricks/cli/pull/7122))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7083](https://github.com/databricks/cli/pull/7083))
+ * Bump Go to 1.27.2. Release binaries now require macOS 13 Ventura or later. ([#7052](https://github.com/databricks/cli/pull/7052))
+ * Update the Go SDK to [v0.189.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.189.0). ([#7138](https://github.com/databricks/cli/pull/7138))
+ * Bump Go toolchain to 1.27.3. ([#7116](https://github.com/databricks/cli/pull/7116))
+
+
+## Release v1.21.0 (2026-10-14)
+
+### CLI
+
+ * Support pipeline IDs in `pipelines history`. ([#6995](https://github.com/databricks/cli/pull/6995))
+ * Show a hint for previewing more rows in `pipelines show`. ([#6995](https://github.com/databricks/cli/pull/6995))
+ * `databricks environments setup-local` now uses the environment in `UV_PROJECT_ENVIRONMENT` when it is set, as `uv sync` does. ([#7026](https://github.com/databricks/cli/pull/7026))
+ * `databricks environments setup-local` now supports uv workspace members: it uses the shared `.venv` at the workspace root and writes the dependency constraints to the root `pyproject.toml`. ([#7018](https://github.com/databricks/cli/pull/7018))
+
+### AI Runtime
+
+ * Limit `databricks air run` submission preflight validation to one five-second attempt before continuing when the service is unavailable. ([#6994](https://github.com/databricks/cli/pull/6994))
+
+### Bundles
+
+ * Bundle file uploads now use the multipart `POST /api/2.0/workspace/import` endpoint instead of the deprecated `POST /api/2.0/workspace-files/import-file`, raising the per-workspace upload rate limit and improving deploy throughput under concurrency. ([#6149](https://github.com/databricks/cli/pull/6149))
+ * Diagnostic paths now quote map keys that are not identifiers, e.g. `resources.jobs['${var.env}_job']`. ([#6980](https://github.com/databricks/cli/pull/6980))
+ * No longer include `CLAUDE.md` in the bundle templates, now that Claude supports `AGENTS.md`. ([#7000](https://github.com/databricks/cli/pull/7000))
+ * Fix `bundle deployment bind` silently binding over a deployment state it could not read, which could take over a resource that was already managed by the bundle. ([#6331](https://github.com/databricks/cli/pull/6331))
+ * `databricks bundle deploy`, `databricks bundle sync` and `databricks sync` now retry file, library, state and metadata uploads that fail with a transient server error (5xx or 408), instead of failing. ([#7014](https://github.com/databricks/cli/pull/7014))
+ * `databricks bundle deploy`, `databricks bundle sync` and `databricks sync` now retry the workspace path check (`workspace/get-status`) when it fails with a transient server error (5xx or 408) or an HTTP/2 `REFUSED_STREAM`, instead of failing. ([#7044](https://github.com/databricks/cli/pull/7044))
+ * Fixed `experimental.immutable_folder` failing validation for targets with `mode: development` ("file_path must start with '~/' or contain the current username"). ([#7027](https://github.com/databricks/cli/pull/7027))
+ * Fixed `experimental.immutable_folder` failing with `experimental.deployment_history` ("workspace_info.file_path must be an absolute workspace path") and failing `bundle validate` when top-level `permissions` are set. ([#7001](https://github.com/databricks/cli/pull/7001))
+ * Translate relative `.env` file paths in a job's `environment_variables[].spec.files` to their deployed workspace locations. ([#6985](https://github.com/databricks/cli/pull/6985))
+ * Resolve job `project_environment` paths relative to the YAML file that defines them. ([#6983](https://github.com/databricks/cli/pull/6983))
+
+### Dependency Updates
+
+ * Bump Go toolchain to 1.26.9. ([#6996](https://github.com/databricks/cli/pull/6996))
+ * Update Go SDK to 0.188.0. ([#7038](https://github.com/databricks/cli/pull/7038))
+
+
+## Release v1.20.0 (2026-10-07)
+
+### Notable Changes
+
+ * Remove the Terraform deployment engine. `bundle.engine: terraform` and `DATABRICKS_BUNDLE_ENGINE=terraform` now error, and a failed migration of existing Terraform state is reported as an error instead of falling back to Terraform. To keep deploying with Terraform, use Databricks CLI v1.19.x. ([#6888](https://github.com/databricks/cli/pull/6888), [#6889](https://github.com/databricks/cli/pull/6889))
+
+### CLI
+
+ * `databricks aitools install` now supports Kiro, installing Databricks agent skills into its skills directory. ([#6908](https://github.com/databricks/cli/pull/6908))
+ * Fixed `databricks api` corrupting integers larger than 2^53 (such as job and pipeline ids) — request bodies and responses now preserve them exactly. ([#6884](https://github.com/databricks/cli/pull/6884))
+ * Added `--auth-mode` and `--set <plugin>.<resourceKey>.authMode=obo|sp|both` to `databricks apps init` so AppKit resources can be accessed on behalf of the user, by the service principal, or both. The default stays service principal. ([#6886](https://github.com/databricks/cli/pull/6886))
+ * `databricks apps init` now requires a value for every field a service principal resource binding references, prompting for missing values in an interactive terminal and otherwise failing with the `--set` key to use, instead of creating a project with unset variables. ([#6903](https://github.com/databricks/cli/pull/6903))
+ * Add `databricks apps init --package-manager <npm|pnpm>` to select the package manager for Node.js templates. Infer the default quietly from template lockfiles and AppKit version, check prerequisites before creating files, and preserve template formatting and pnpm version pins. ([#6902](https://github.com/databricks/cli/pull/6902))
+ * Select npm or pnpm from `packageManager` declarations and lockfiles for `apps validate` and project validation during `apps deploy`. ([#6892](https://github.com/databricks/cli/pull/6892))
+ * Fix `auth docker host` reporting the credential helper as configured when its executable is missing from `PATH`. ([#6880](https://github.com/databricks/cli/pull/6880))
+ * Warn when the CLI binary was built more than 6 months ago and recommend updating. ([#6898](https://github.com/databricks/cli/pull/6898))
+
+### AI Runtime
+
+ * Add an experimental rank-partitioned container images to AI Runtime jobs. ([#6841](https://github.com/databricks/cli/pull/6841))
+ * Support snapshot fields directly under `code_source` without requiring `type` or a nested `snapshot` block. ([#6927](https://github.com/databricks/cli/pull/6927))
+ * Map AIR priority and Unity Catalog image fields when converting run configurations to bundles. ([#6905](https://github.com/databricks/cli/pull/6905))
+ * Add workspace backend validation to `air run --dry-run`. ([#6934](https://github.com/databricks/cli/pull/6934))
+
+### Bundles
+
+ * Warn that `bundle.terraform` is deprecated and has no effect since the Terraform deployment engine was removed. ([#6940](https://github.com/databricks/cli/pull/6940))
+ * Direct engine now detects and applies an explicitly configured zero-value boolean or float (e.g. `gcp_attributes.use_preemptible_executors: false`, `azure_attributes.spot_bid_max_price: 0`) added to a resource first deployed without the field, matching the existing handling of an explicit integer zero. ([#6882](https://github.com/databricks/cli/pull/6882))
+ * Fix `bundle deployment migrate` failing with "no such file or directory" when the Terraform state has no resources or the configuration no longer declares any of them. ([#6958](https://github.com/databricks/cli/pull/6958))
+ * `bundle run` and `pipelines run` now send the per-update `development` parameter for pipelines in development mode targets. Setting `development` on a pipeline is deprecated and now emits a warning; use `mode: development` instead. ([#6863](https://github.com/databricks/cli/pull/6863))
+ * Remove the hidden `bundle debug terraform` command. ([#6933](https://github.com/databricks/cli/pull/6933))
+ * Add support for `run_as.group_name` at the bundle and target levels for jobs and pipelines. ([#6676](https://github.com/databricks/cli/pull/6676))
+ * Fix recreating a secret scope that was deleted outside of the bundle with the direct deployment engine. ([#6970](https://github.com/databricks/cli/pull/6970))
+ * Accept title-case booleans (`True`/`False`, as rendered by Azure Pipelines) for boolean variables, and accept the same boolean strings (`yes`/`no`, `on`/`off`, ...) in Python bundles as in YAML. ([#6942](https://github.com/databricks/cli/pull/6942))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.182.0 to v0.185.0. ([#6928](https://github.com/databricks/cli/pull/6928))
+
+
+## Release v1.19.0 (2026-09-30)
+
+### CLI
+
+ * Honor `CLAUDE_CONFIG_DIR` in `aitools` commands. ([#6838](https://github.com/databricks/cli/pull/6838))
+ * Added `--ttl` and `--no-expiry` flags to `databricks postgres create-branch` so a branch's expiration can be set without hand-writing a `--json` spec. `--ttl` accepts the REST API duration form (`604800s`), a Go duration (`168h`), or day/week units (`7d`, `3w`); `--no-expiry` creates a branch that never expires. One of `--ttl`, `--no-expiry`, or a spec expiration in `--json` is required. ([#6313](https://github.com/databricks/cli/pull/6313))
+ * `databricks ssh connect` serverless sessions now provide Claude Code and Codex configured with Unity Gateway out of the box. ([#6885](https://github.com/databricks/cli/pull/6885))
+
+### AI Runtime
+
+ * Add `databricks air images push` (Preview) to configure Docker authentication and push container images to Databricks Artifact Registry. ([#6869](https://github.com/databricks/cli/pull/6869))
+ * `air run` now grants the configured `permissions` on the MLflow experiment as well as the job. ([#6870](https://github.com/databricks/cli/pull/6870))
+
+### Bundles
+
+ * Add libraries field to clusters. ([#6831](https://github.com/databricks/cli/pull/6831))
+ * Error out when a configured `workspace_id` does not match the connected workspace, instead of silently using it in resource URLs emitted by `bundle summary`. ([#6754](https://github.com/databricks/cli/pull/6754))
+ * Fix spurious recreation of Lakebase (Postgres) branches, roles, and catalogs when the referenced project is updated in place: an in-place project change (e.g. `display_name`) no longer forces a delete + create of resources that reference the project's or branch's `name`. ([#6865](https://github.com/databricks/cli/pull/6865))
+ * Direct engine now detects and applies an explicitly configured integer zero (e.g. `gcp_attributes.local_ssd_count: 0`) added to a resource first deployed without the field. ([#6867](https://github.com/databricks/cli/pull/6867))
+ * Migrate existing Terraform deployment state to the direct engine before deploying (previously done after a Terraform deploy), so the deploy runs on the direct engine. ([#6749](https://github.com/databricks/cli/pull/6749))
+ * The `postgres_snapshot_schedules` resource (introduced in [v1.16.0](https://github.com/databricks/cli/releases/tag/v1.16.0)) is now marked Beta and is no longer available in PyDABs, matching the other `postgres_*` resources; configure it in YAML instead. ([#6887](https://github.com/databricks/cli/pull/6887))
+
+
+## Release v1.18.0 (2026-09-24)
+
+### CLI
+
+ * The AI Runtime commands have moved to `databricks air`. The previous `databricks experimental air` path now directs users to the new command. ([#6722](https://github.com/databricks/cli/pull/6722))
+ * Write local state, cache, and config files atomically so an interrupted or concurrent write cannot corrupt them. ([#6708](https://github.com/databricks/cli/pull/6708))
+ * Deprecate `--region` in `databricks auth docker configure` ahead of its removal in the next release, infer the Artifact Registry region when it is omitted, and add `databricks auth docker host --profile <name>` to show the profile's registry host and credential-helper status. ([#6782](https://github.com/databricks/cli/pull/6782))
+ * Return `UNAUTHENTICATED` instead of `INVALID_REFRESH_TOKEN` when `databricks auth token --output json` cannot refresh a cached U2M token. ([#6731](https://github.com/databricks/cli/pull/6731))
+ * Retry the current-user (SCIM `Me`) lookup on transient HTTP 500 responses so a temporarily-unavailable backend no longer fails bundle commands outright. ([#6766](https://github.com/databricks/cli/pull/6766))
+ * Preserve workspace-file and volume access for SSH server descendants when the bootstrap notebook exits and the server survives. ([#6645](https://github.com/databricks/cli/pull/6645))
+ * `ssh connect` and `ssh setup` now accept a `--keep-detached-processes` flag to keep processes detached from the SSH session (`tmux`, `setsid`, `nohup`) running after the tunnel shuts down. Teardown then terminates only the tunnel's own process group, and the bootstrap job run is held open while any detached process is still running, so the survivors keep their `/Workspace` and `/Volumes` access. A held-open run also suppresses cluster autotermination, so the flag is off by default, is bounded by `--server-timeout`, and is dedicated-cluster only. Without it, the server now logs a warning naming the detached processes it is about to destroy, instead of sweeping them silently. ([#6387](https://github.com/databricks/cli/pull/6387))
+
+### Bundles
+
+ * direct: Allow clearing a catalog's or schema's `custom_max_retention_hours` by removing it from configuration. ([#6792](https://github.com/databricks/cli/pull/6792))
+ * direct: Allow clearing a genie space's `description` and a secret's `comment` by removing them from configuration. ([#6789](https://github.com/databricks/cli/pull/6789))
+ * Fix direct-engine deploy recreating an MLflow experiment on every deploy when its `trace_location` was set out-of-band. ([#6787](https://github.com/databricks/cli/pull/6787))
+ * direct: Store a Genie space's `serialized_space` in state as a content hash instead of its full contents. ([#6707](https://github.com/databricks/cli/pull/6707))
+ * Fix `bundle deploy` failing with "Invalid python file reference" for jobs that use `git_source` with a `spark_python_task` on the direct engine. ([#6751](https://github.com/databricks/cli/pull/6751))
+ * Fixed the direct engine mishandling UC grants that combine `ALL_PRIVILEGES` with a privilege it does not imply (`MANAGE`, `READ_METADATA`, `EXTERNAL_USE_SCHEMA`, `EXTERNAL_USE_LOCATION`): such privileges were dropped when granted and left behind when revoked, so the deployment never converged. ([#6733](https://github.com/databricks/cli/pull/6733), [#6743](https://github.com/databricks/cli/pull/6743))
+ * Don't fail migration if clean up actions fail. ([#6772](https://github.com/databricks/cli/pull/6772))
+ * Ignore the backend-provided `spark.sql.ansi.enabled: "true"` pipeline configuration default when detecting direct-engine drift. ([#6816](https://github.com/databricks/cli/pull/6816))
+ * Fix recreating a postgres synced table sometimes failing with a 409 ALREADY_EXISTS error while the previous table is still being deleted. ([#6728](https://github.com/databricks/cli/pull/6728))
+ * Direct engine no longer recreates a resource when an immutable field the config omits was populated by the backend. ([#6790](https://github.com/databricks/cli/pull/6790))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#6723](https://github.com/databricks/cli/pull/6723))
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.178.0 to v0.182.0. ([#6817](https://github.com/databricks/cli/pull/6817))
+ * Bump the Databricks Terraform provider from v1.132.0 to v1.134.0. ([#6818](https://github.com/databricks/cli/pull/6818))
+
+
+## Release v1.17.0 (2026-09-16)
+
+### Notable Changes
+
+ * Bump the direct deployment state version to 3. Clients older than v1.8.0 will reject bundles deployed with this release. ([#6713](https://github.com/databricks/cli/pull/6713))
+
+### CLI
+
+ * Add an `INVALID_REFRESH_TOKEN` error code to `databricks auth token --output json` failures. ([#6684](https://github.com/databricks/cli/pull/6684))
+ * Add experimental `databricks auth docker configure` to configure Docker credential helper access for Databricks Artifact Registry. ([#6700](https://github.com/databricks/cli/pull/6700))
+ * Add experimental `databricks auth docker token` to generate Docker credentials for Databricks Artifact Registry. ([#6699](https://github.com/databricks/cli/pull/6699))
+ * `databricks environments setup-local` now reports the `E_PROVISION_CONFLICT` error code instead of the generic `E_PROVISION` when `uv sync` fails to resolve a dependency conflict. ([#6666](https://github.com/databricks/cli/pull/6666))
+ * Preserve SSH sessions across temporary tunnel disconnects, with bounded replay and backpressure for large transfers. ([#6650](https://github.com/databricks/cli/pull/6650))
+ * Allow OAuth U2M logins to override the CLI client ID with `--client-id`, profile `client_id`, or `DATABRICKS_CLIENT_ID`. ([#6594](https://github.com/databricks/cli/pull/6594))
+
+### Bundles
+
+ * direct: Store a dashboard's `serialized_dashboard` in state as a content hash instead of its full contents. ([#6105](https://github.com/databricks/cli/pull/6105))
+ * direct: Fix pipelines recreation when the whole `ingestion_definition` block is added or removed. ([#6589](https://github.com/databricks/cli/pull/6589))
+ * `bundle plan`, `deploy`, and `destroy` no longer report removing `permissions`, `grants`, or secret scope ACLs from a bundle as a deletion, since it leaves the resource untouched. ([#6647](https://github.com/databricks/cli/pull/6647))
+ * `bundle plan` and `deploy` no longer list or count a resource that was already deleted remotely as a deletion, matching `bundle destroy`; applying still cleans up its stale state entry. ([#6675](https://github.com/databricks/cli/pull/6675))
+ * Fix `bundle run` failing with `expected an int, found a string` when an unrelated resource references another resource that is not deployed. `bundle run` now resolves `${resources.*}` references only within the resource being run. ([#6690](https://github.com/databricks/cli/pull/6690))
+ * Add grants support for the AI Gateway `model_service`, `mcp_service`, and `model_provider_service` resources (direct engine). ([#6635](https://github.com/databricks/cli/pull/6635))
+ * Add bundle support for the AI Gateway `mcp_service` resource (direct engine). ([#6633](https://github.com/databricks/cli/pull/6633))
+ * Add bundle support for the AI Gateway `model_provider_service` resource (direct engine). ([#6634](https://github.com/databricks/cli/pull/6634))
+ * Add bundle support for the AI Gateway `model_service` resource (direct engine). ([#6525](https://github.com/databricks/cli/pull/6525))
+ * Prevent resource drift on catalogs if `storage_root` contained a trailing slash in the URL. ([#6622](https://github.com/databricks/cli/pull/6622))
+ * Fixed a "lineage mismatch in state files" error that could occur after destroying a bundle and redeploying it from another machine. `bundle destroy` now removes the local state file so no stale lineage is left behind, and prunes the state directories it leaves empty (such as `.internal/` and `sync-snapshots/`). ([#6210](https://github.com/databricks/cli/pull/6210), [#6685](https://github.com/databricks/cli/pull/6685))
+ * direct: `bundle plan` no longer reports a permanent update on a cluster that uses a cluster policy: when the cluster spec sets `policy_id`, a field present in the remote but absent from the bundle config is not treated as drift. ([#6531](https://github.com/databricks/cli/pull/6531))
+ * `bundle deploy` on the direct engine now reports each resource as soon as it is deployed, instead of listing them all after the deployment finishes. A deploy that fails part way through now reports the resources it did apply. ([#6361](https://github.com/databricks/cli/pull/6361))
+ * Direct-engine bundles no longer flag phantom drift on server-populated nested fields under reused config types (e.g. `external_locations` file-event-queue resource IDs, `database_instances` parent-instance refs, `apps` git credential ID). ([#6618](https://github.com/databricks/cli/pull/6618))
+ * `databricks bundle generate app` now reproduces a git-backed app's `git_repository` and `git_source` configuration instead of emitting a workspace `source_code_path`, so generating from a Git-deployed app no longer silently converts it to workspace source. ([#6656](https://github.com/databricks/cli/pull/6656))
+ * Improved configuration load time for bundles with many included files. ([#6195](https://github.com/databricks/cli/pull/6195))
+ * `bundle destroy` no longer deletes triggered job runs, leaving them untouched on the backend. ([#6672](https://github.com/databricks/cli/pull/6672))
+ * direct: resources.job\_runs: new lifecycle.triggers.on\_file\_change setting to restart the run when monitored files change. Can be set to a series of paths or globs. ([#6309](https://github.com/databricks/cli/pull/6309))
+ * Bundle summary now shows a name for Postgres branches, endpoints, databases, and roles instead of a blank Name field. ([#6663](https://github.com/databricks/cli/pull/6663))
+ * Added PyDABs (Python) support for cluster policies, dashboards, and Genie spaces. ([#6585](https://github.com/databricks/cli/pull/6585))
+ * CLI commands no longer imply that a resource whose type has no workspace URL is merely not deployed yet. ([#6583](https://github.com/databricks/cli/pull/6583))
+ * Capture the implicit dependency a vector search index has on a catalog or schema defined in the same bundle, so the catalog and schema are deployed first. ([#6655](https://github.com/databricks/cli/pull/6655))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#6695](https://github.com/databricks/cli/pull/6695))
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.177.0 to v0.178.0. ([#6673](https://github.com/databricks/cli/pull/6673))
+ * Bump Terraform provider from v1.131.0 to v1.132.0. ([#6671](https://github.com/databricks/cli/pull/6671))
+
+
+## Release v1.16.1 (2026-09-10)
+
+### CLI
+
+ * Revert tunnel resume layer to fix SSH transfer regression in v1.16.0 affecting transfers larger than 1 MiB. ([#6608](https://github.com/databricks/cli/pull/6608), [#6612](https://github.com/databricks/cli/pull/6612))
+
+
+## Release v1.16.0 (2026-09-09)
+
+### CLI
+
+ * `aitools install` now registers the official Claude marketplace if it is missing before installing the Databricks Claude plugin. ([#6485](https://github.com/databricks/cli/pull/6485))
+ * `databricks aitools install --output json` now reports an `error_category` for a failed or skipped install (per agent, and at the top level for a failure with no per-agent entry), giving coding agents and CI a stable classification of why an install did not complete. ([#6482](https://github.com/databricks/cli/pull/6482))
+ * `databricks aitools install` honors `--output json`, emitting a structured `{scope, agents[...]}` document that reports each agent's delivery and install status so coding agents and CI can consume the result without scraping the text output. JSON mode requires `--scope` and `--agents` so the command runs without interactive prompts. ([#6481](https://github.com/databricks/cli/pull/6481))
+ * `databricks bundle sync` now prints sync progress (`Action: PUT`, `Uploaded ...`) by default, matching `databricks sync`. Previously it was silent unless `--output` was passed. Use `--output json` for machine-readable output. ([#6568](https://github.com/databricks/cli/pull/6568))
+ * Support major-only DBR runtime versions such as `19.x-scala2.13` in the cluster picker used by `databricks auth login --configure-cluster` and `databricks labs`. ([#6574](https://github.com/databricks/cli/pull/6574))
+ * Deprecated the `databricks environments setup-local --constraints-only` flag in favour of the orthogonal `--no-dbconnect`; the flag still works as a hidden alias but is hidden from `--help` and prints a one-line deprecation notice, and will be removed in a later release. ([#6470](https://github.com/databricks/cli/pull/6470))
+ * Add orthogonal `--no-constraints` and `--no-dbconnect` flags to `databricks environments setup-local`: `--no-constraints` skips writing the remote Python-version and dependency pins, and `--no-dbconnect` skips the databricks-connect dependency. ([#6464](https://github.com/databricks/cli/pull/6464))
+ * `databricks environments setup-local` now reports a distinct `E_PROVISION_CONFLICT` error code in `--output json` when the project's dependencies conflict with the pins written for the target environment, making the requirements unsatisfiable (the same conflict surfaced as a `W_USER_CONSTRAINT_CONFLICT` warning); it is reported after the project files are written, without attempting the doomed provisioning, while other provisioning failures continue to report `E_PROVISION`. ([#6479](https://github.com/databricks/cli/pull/6479))
+ * `databricks ssh connect` and `ssh setup` now verify the tunnel's SSH host key against the key the workspace published for the connection, recorded in `~/.databricks/ssh-tunnel-known-hosts/<name>` instead of `~/.ssh/known_hosts`. Reconnecting with a name used before no longer fails with `Host key verification failed` when the compute behind that name changed, and no longer needs a manual `ssh-keygen -R`; host blocks written by an earlier `databricks ssh setup` pick this up once you re-run it. ([#6557](https://github.com/databricks/cli/pull/6557))
+ * Stop `databricks ssh connect --ide` from adding a duplicate entry to the IDE's Remote Explorer on every connect: the remote authority is now the SSH host alias alone, instead of embedding the per-instance remote OS user. ([#6550](https://github.com/databricks/cli/pull/6550))
+ * Add `--max-clients` and `--server-timeout` flags to `databricks ssh setup`, and `--server-timeout` to `databricks ssh connect`. Both are fixed when the SSH tunnel server job is submitted, so `ssh setup` now serializes them into the generated `ProxyCommand` instead of falling back to the built-in defaults. ([#6547](https://github.com/databricks/cli/pull/6547))
+ * `ssh connect` sessions no longer end when the tunnel's websocket connection is lost. The CLI reattaches to the running session and replays the bytes that were missed, so the shell and everything running in it stay intact, and a transient failure to open a replacement connection for the periodic auth refresh is retried rather than ending the session. Reattaching requires an SSH server started by a CLI that supports it; against an older server the connection behaves as before. ([#6558](https://github.com/databricks/cli/pull/6558))
+
+### Bundles
+
+ * Added PyDABs (Python) support for secrets: `Resources.add_secret` and the `secret_mutator` decorator. ([#6553](https://github.com/databricks/cli/pull/6553))
+ * Fix job and pipeline environment dependencies with a `*` version wildcard (e.g. `numpy==2.5.*`) being treated as local file paths. ([#6555](https://github.com/databricks/cli/pull/6555))
+ * Add the `postgres_snapshot_schedules` bundle resource for managing a Lakebase Postgres branch's automatic-snapshot schedule (direct deployment engine only). ([#6449](https://github.com/databricks/cli/pull/6449))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.175.0 to v0.177.0. ([#6448](https://github.com/databricks/cli/pull/6448))
+ * Bump Terraform provider from v1.128.0 to v1.131.0. ([#6544](https://github.com/databricks/cli/pull/6544))
+
+
+## Release v1.15.0 (2026-09-03)
+
+### CLI
+
+ * When `uv python install` fails, `databricks environments setup-local` now falls back to a compatible Python interpreter already installed on the machine. ([#6457](https://github.com/databricks/cli/pull/6457))
+ * Allow `databricks environments setup-local` to update `pyproject.toml` files containing TOML multi-line strings. ([#6445](https://github.com/databricks/cli/pull/6445))
+
+### Bundles
+
+ * Before committing the automatic terraform→direct migration, run a deployment plan against the converted state; if the plan fails the migration is abandoned. ([#6486](https://github.com/databricks/cli/pull/6486))
+ * The `dbt-sql` bundle template now uses Databricks Runtime 16.4 LTS (up from 15.4 LTS) for classic (non-serverless) compute. ([#6418](https://github.com/databricks/cli/pull/6418))
+ * Fixed the direct engine silently ignoring edits to duration and timestamp fields, such as a Lakebase endpoint's `suspend_timeout_duration`. Such a change planned `0 to change` and was never applied. ([#6377](https://github.com/databricks/cli/pull/6377))
+ * Fixed `$${...}` not escaping a literal `${...}` on the direct engine, which failed with an `invalid dependency` error. ([#6484](https://github.com/databricks/cli/pull/6484), [#6489](https://github.com/databricks/cli/pull/6489))
+ * Remove forward_user_access_token from update_mask for Apps because it's not supported. Fixes regression in 1.14.1. ([#6510](https://github.com/databricks/cli/pull/6510))
+ * direct: Fix deploying an update to `postgres_projects.default_endpoint_settings`. ([#6440](https://github.com/databricks/cli/pull/6440))
+ * direct: Fix deploying an update to `postgres_endpoints.settings.pg_settings`. ([#6441](https://github.com/databricks/cli/pull/6441))
+ * direct: Fix deploying an update to `expire_time`, `ttl` or `suspend_timeout_duration` on Lakebase resources. ([#6443](https://github.com/databricks/cli/pull/6443))
+ * Added PyDABs (Python) support for catalogs: `Resources.add_catalog` and the `catalog_mutator` decorator. ([#6408](https://github.com/databricks/cli/pull/6408))
+ * Bundle templates now use serverless [environment version 5](https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/five), which offers better performance, and `databricks-connect` 16.4. ([#6378](https://github.com/databricks/cli/pull/6378))
+ * Fixed a job with a `table_update` trigger never converging on the direct engine. ([#6442](https://github.com/databricks/cli/pull/6442))
+
+### Dependency Updates
+
+ * Bump Go toolchain to 1.26.8. ([#6476](https://github.com/databricks/cli/pull/6476))
+
+
+## Release v1.14.1 (2026-08-28)
+
+### Bundles
+
+ * Fix `bundle deploy` failing with `deployment_source.source_code_path cannot be set on UpdateApp` (400) when updating an app that has an active deployment ([#6401](https://github.com/databricks/cli/issues/6401)).
+ * Fixed `${resources...}` references to resource keys starting with an underscore (e.g. `_my_job`). On the direct engine, deploying such a resource with `permissions` or `grants` failed with `cannot parse "/jobs/${resources.jobs._my_job.id}"`, and user-written references to it were silently left unresolved.
+
+
+## Release v1.14.0 (2026-08-26)
+
+### Notable Changes
+
+ * Bundles still on Terraform state are now migrated to the direct engine automatically, after a deploy whose dry-run conversion comes back clean. To opt out, set `engine: terraform` under `bundle` or `DATABRICKS_BUNDLE_ENGINE=terraform`. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+### CLI
+
+ * Fixed idle `databricks ssh connect` sessions disconnecting after a few minutes, on dedicated clusters and on serverless. The tunnel now keeps itself warm: the SSH client and the SSH server on the compute exchange keepalives every 30 seconds, and the CLI's proxy pings the tunnel's websocket every 20 seconds. A session nobody is typing into stays connected, with no need to set `ServerAliveInterval` by hand.
+
+### Bundles
+
+ * `bundle plan` no longer reports a permanent, unconvergeable update on `securable_kind` for Unity Catalog `TABLE` securables declared under an app's `resources`. The field is computed by the backend (output-only), so it is now ignored during drift detection. Direct engine only ([#6342](https://github.com/databricks/cli/issues/6342)).
+ * Add support for the `cluster_policies` resource type in Declarative Automation Bundles. Cluster policies are only supported in direct deployment mode.
+ * `bundle destroy` no longer counts resources that are already gone remotely in its `Destroy: N deleted` summary. Such deletes only clean up stale state and are not listed under the deletion prompt, so they are now excluded from the count as well, matching the terraform engine.
+ * `bundle destroy` now also removes the directory named after the bundle, not just the target directory beneath it, when `workspace.root_path` ends in `${bundle.name}/${bundle.target}` — which includes the default root path. It is removed non-recursively, so it stays in place while another target of the same bundle is still deployed there. Previously every destroy left an empty directory behind ([#6317](https://github.com/databricks/cli/pull/6317)).
+ * `job_runs` now plans skip for a run that is still in progress and when `on_bundle_deploy` is removed, instead of treating either case as an update. ([#6357](https://github.com/databricks/cli/pull/6357))
+ * Added `DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT` (in seconds) to cap how long deploy and destroy wait for a resource. Direct engine only.
+ * Fixed `bundle deploy` on the direct engine failing with `Nothing to update`, or reporting a change it never applied, when a schema, catalog, volume, registered model or external location field was removed from the configuration or set outside the bundle. The update now sends the fields the plan reports as cleared instead of dropping them.
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.171.0 to v0.175.0 ([#6322](https://github.com/databricks/cli/pull/6322)).
+ * Bump Terraform provider from v1.127.0 to v1.128.0 ([#6323](https://github.com/databricks/cli/pull/6323)).
+
+
+## Release v1.13.0 (2026-08-20)
+
+### Notable Changes
+
+ * `bundle deploy` now reports the per-resource actions it took, how many files it synced, and a summary of created/changed/deleted/unchanged resources; `bundle destroy` reports how many resources it deleted. `-q` prints only the summaries, `-qq` only warnings and errors. ([#5720](https://github.com/databricks/cli/pull/5720))
+
+### CLI
+
+ * `databricks aitools install` now supports Goose, installing Databricks agent skills into its skills directory.
+ * Error messages for failed key lookups and variable references now suggest the closest matching key if one is found. ([#6208](https://github.com/databricks/cli/pull/6208))
+ * Released binaries are now built against the FIPS 140-3 validated Go Cryptographic Module, with FIPS 140-3 mode enabled by default. TLS connections negotiate only FIPS-approved cipher suites, which drops ChaCha20 and CBC from what the client offers. FIPS mode can be disabled at startup with `GODEBUG=fips140=off`, which restores the previous TLS behaviour ([#6262](https://github.com/databricks/cli/pull/6262)).
+ * `databricks environments setup-local` now removes a `databricks-connect` pin from `[project].dependencies`, an optional-dependency extra, or a dependency group when its version range conflicts with the compute target's `databricks-connect` version, so `uv sync` no longer fails with an unsatisfiable resolution when a template ships a conflicting pin. A pin that co-resolves, carries no version, or is marker-gated is left untouched, and each removed pin is reported with the new `W_DBCONNECT_CONSOLIDATED` warning. Wildcard version pins such as `==15.1.*` are now also checked for conflicts with the environment's constraints.
+
+### Bundles
+
+ * Allow dashes in the catalog and schema names prompted by `databricks bundle init`, and backtick-quote the catalog and schema identifiers in the SQL generated by the built-in templates so names with dashes work at runtime.
+ * Fixed `bundle.git.branch`, `bundle.git.commit`, and `bundle.git.origin_url` being empty for bundles deployed from a workspace Git folder that has Git CLI access. The workspace API does not report git metadata for those folders, so it is now read from the Repos API instead.
+ * direct: job_runs deploy progress lines now include the resource key (e.g. `Output from job_runs.foo: id=123: ...`) so concurrent runs are easier to tell apart.
+ * direct: `resources.job_runs` can set `lifecycle.triggers.on_bundle_deploy: true` to re-fire the run on every bundle deploy. Removing the trigger does not recreate the existing run.
+ * When migrating a bundle to the direct deployment engine, resources that only the direct engine supports (e.g. instance pools, catalogs) are now skipped by the deploy that migrates the state instead of failing it. They are created by the next deploy, which runs on the migrated state.
+ * Warn on invalid `secret_scopes` permission levels (`READ`, `WRITE`, `MANAGE`); fail under `bundle validate --strict`.
+ * Reject secret scope permissions that name no principal, instead of failing after the scope is created.
+ * Write the deployment state atomically so an interrupted save cannot leave a state file that the CLI refuses to read.
+ * Warn when the deployment state was last written by a newer CLI version than the one running.
+ * Support pip extras (e.g. `[train]`) on local wheels in a job environment's `dependencies` ([#1602](https://github.com/databricks/cli/issues/1602)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.170.0 to v0.171.0 ([#6320](https://github.com/databricks/cli/pull/6320)).
+ * Bump the Databricks Terraform provider to 1.127.0 ([#6319](https://github.com/databricks/cli/pull/6319)).
+ * Bump Go toolchain to 1.26.6 ([#6266](https://github.com/databricks/cli/pull/6266)).
+ * Bump Go toolchain to 1.26.7 ([#6325](https://github.com/databricks/cli/pull/6325)).
+
+
+## Release v1.12.1 (2026-08-12)
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.166.0 to v0.170.0 ([#6251](https://github.com/databricks/cli/pull/6251)).
+
+
+## Release v1.12.0 (2026-08-12)
+
+### CLI
+
+ * `databricks aitools install` now supports Gemini CLI, installing Databricks agent skills into its skills directory.
+ * `databricks aitools install` now supports Pi, installing Databricks agent skills into its skills directory.
+ * A locally built CLI (`go build`, without release flags) now reports the next release version with a `-dev` prerelease, e.g. `1.12.0-dev+abcdef123456`, instead of `0.0.0-dev+abcdef123456`. The old string sorted below every published release even though a local build is newer than the latest release; the new one sorts above the latest release and below the release it will become, matching what goreleaser already produces for snapshot builds.
+ * Added the `databricks environments setup-local` command, which provisions (or updates) a local Python environment matched to a Databricks compute target. It resolves the target to an environment key, fetches the pinned Python version, databricks-connect version, and dependency constraints published for that key, then provisions a matched `.venv` with uv.
+
+### Bundles
+
+ * Added a `cascade_on_destroy` field to the pipeline resource to control whether destroying a pipeline also deletes its datasets (MVs, STs, Views). When unset, the server default applies; set `cascade_on_destroy: false` to retain the datasets on destroy. Supported with the direct deployment engine ([#5846](https://github.com/databricks/cli/pull/5846)).
+ * Fix `bundle.deployment.lock.force` being ignored. The `--force-lock` flag's default value overwrote the value configured in `databricks.yml`, so setting the field had no effect and a stale deployment lock could only be overridden with the flag. ([#6188](https://github.com/databricks/cli/pull/6188))
+ * direct: experimental `job_runs` now sends a CLI-managed idempotency token on every run-now, so an SDK retry after a lost response returns the same run. Configured `idempotency_token` values are rejected.
+ * direct: the experimental `job_runs` resource now waits for the triggered run to finish, so other resources can reference its outcome (e.g. `${resources.job_runs.nightly.state.result_state}`). A run that does not succeed fails the deploy, naming the failed task, and is run again on the next deploy. If a deploy is interrupted while waiting, the next one resumes waiting on the same run.
+ * direct: Fixed model serving `telemetry_config` drift and applied planned telemetry updates. Unsupported endpoint types now fail when telemetry is applied; create may still succeed because it drops the field ([#6106](https://github.com/databricks/cli/pull/6106)).
+ * The `cli_version` field in the direct engine's deployment state (`resources.json`) now records the CLI version that last wrote the state. Previously it kept the version of the CLI that first created the state.
+ * Add support for UC secrets resource ([#5861](https://github.com/databricks/cli/pull/5861))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.166.0 to v0.169.0.
+ * Bump Terraform provider from v1.124.0 to v1.126.0 ([#6250](https://github.com/databricks/cli/pull/6250)).
+
+
+## Release v1.11.0 (2026-08-06)
+
+### CLI
+
+ * Fixed `databricks repos get/update/delete` failing with `object at path "..." is not a repo` for Git-CLI-enabled folders (currently in preview), which the workspace API reports as directories rather than repos ([#6181](https://github.com/databricks/cli/pull/6181)).
+ * Support `dbfs:/Skills/...` paths in `databricks fs` commands, routed to the Files API. ([#6147](https://github.com/databricks/cli/pull/6147))
+
+### Bundles
+
+ * For jobs where `ai_runtime_task.code_source_path` is a relative path to a local directory, the directory is now packaged into a tarball (honoring `.gitignore` and `sync.include`/`sync.exclude`), uploaded during deployment, and `code_source_path` is rewritten to the uploaded workspace path. ([#6110](https://github.com/databricks/cli/pull/6110))
+ * Added JSON output to `bundle init`. Running `databricks bundle init <template> -o json` now reports the files the template wrote, relative to the output directory. This lets callers that pass `--output-dir` learn where the template materialized instead of assuming the output is a single directory named after the project. The default text output is unchanged. ([#6161](https://github.com/databricks/cli/pull/6161))
+ * The terraform deployment engine is deprecated and will stop working in a future version of the CLI. Setting `bundle.engine: terraform` now emits a deprecation warning. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine. ([#6099](https://github.com/databricks/cli/pull/6099))
+ * Fixed the direct deployment engine planning a spurious `create` for an empty `grants: []` list. Terraform records no grants resource for such a list, so `bundle plan` after `bundle deployment migrate` no longer reports an action for it. Emptying a previously deployed list still revokes the grants, after which the node is dropped from the deployment state instead of being reported as unchanged forever. ([#6039](https://github.com/databricks/cli/pull/6039))
+ * Fixed `bundle generate` downloading notebooks found inside a folder without their file extension. They are now exported like top-level notebooks, so a Python notebook lands as `notebook.py` instead of an extensionless file ([#6144](https://github.com/databricks/cli/pull/6144)).
+ * direct: `webhook_notifications.on_*` destinations on jobs, tasks, and `for_each_task` are now compared as unordered sets. Previously the Jobs API returning these lists in a different order than submitted produced a phantom diff that `bundle plan` and `bundle deploy` could never converge past, reporting `1 to change` on every run ([#6060](https://github.com/databricks/cli/pull/6060)).
+ * Fixed a pipeline with `allow_duplicate_names: true` never converging on the direct engine: the field is only accepted on create/update and is never returned by the pipelines GET API, so every subsequent `bundle plan` reported the pipeline as a perpetual update. ([#6076](https://github.com/databricks/cli/pull/6076))
+ * direct: A local change to an input-only field (one the API accepts on write but never returns on read, e.g. pipelines' `run_as` or external locations' `skip_validation`) is no longer silently skipped when the new value coincidentally matches the field's fabricated remote value. Previously such a change could hit the `remote_already_set` shortcut and be dropped from the plan. ([#6112](https://github.com/databricks/cli/pull/6112))
+ * Revert usage of RedactiveSenstiveFields (added in [#5896](https://github.com/databricks/cli/pull/5896), released in 1.10.0) which lead to incorrect behaviour (permanent drift) for duration field in Postgres resources ([#6179](https://github.com/databricks/cli/pull/6179)).
+ * Document postgres resource fields in the json schema ([#6164](https://github.com/databricks/cli/pull/6164), [#6163](https://github.com/databricks/cli/pull/6163)).
+ * direct: Recreating a `vector_search_indexes` resource no longer fails with "Index ... is currently pending deletion" when the backend has not yet released the index name. The create is now retried until the name becomes available. ([#6143](https://github.com/databricks/cli/pull/6143))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.165.0 to v0.166.0. ([#6175](https://github.com/databricks/cli/pull/6175))
+ * Upgrade Terraform provider to 1.124.0. ([#6174](https://github.com/databricks/cli/pull/6174))
+
+
+## Release v1.10.0 (2026-07-29)
+
+### CLI
+
+ * `ssh connect` now supports specifying a serverless usage policy with `--usage-policy-id`
+
+### Bundles
+
+ * Fixed `bundle deploy`/`bundle destroy` failing when an app enters the transient DELETING state between plan and apply (e.g. with a saved plan); the delete is now treated as complete instead of erroring (direct engine only).
+ * Fixed `bundle deploy`/`bundle destroy` failing when an app is still in the transient DELETING state; the delete is now treated as complete instead of erroring (direct engine only).
+ * `bundle destroy --force-lock` now proceeds without a deployment lock when the workspace directory is at its child-node limit and cannot accept the lock file, so a deployment can still be torn down when the workspace is full.
+ * Empty-string values on optional (omitempty) resource fields are now dropped before deployment instead of being sent to the backend. This fixes deploys failing with errors like `'' is not a valid cluster policy ID` when a field such as `policy_id` was set to `""` (often via a variable that resolved to an empty string). The behavior now matches between the terraform and direct engines and is reflected in `bundle validate -o json`.
+ * `bundle validate` and `bundle deploy` now reject a grant that is missing a `principal` with an error instead of a warning. Previously the deploy would start and, on the direct engine, create the securable before the grants PATCH failed (`400 INVALID_PARAMETER_VALUE`), leaving a partially-applied deployment.
+ * `bundle validate` and `bundle deploy` now reject a grant with an empty `privileges` list with an error. Previously, on the direct engine, such a grant never converged: the backend drops principals with no privileges, so every subsequent `bundle plan` reported the grant as a perpetual update.
+ * Fixes [#6030](https://github.com/databricks/cli/issues/6030): spurious `update` on catalog/schema/volume grants (direct engine); a principal granted `ALL_PRIVILEGES` no longer drifts when the backend also reports the concrete privileges it implies ([#6064](https://github.com/databricks/cli/pull/6064)).
+ * Use vector search endpoint permission types that are supported by the backend ([#6022](https://github.com/databricks/cli/pull/6022)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.160.0 to v0.165.0.
+ * Upgrade Terraform provider to 1.123.0
+
+
+## Release v1.9.0 (2026-07-22)
+
+### CLI
+
+ * `databricks auth profiles` no longer stalls on an unreachable workspace and instead fails validation after 5 seconds per host ([#5928](https://github.com/databricks/cli/pull/5928)).
+ * Fixed `databricks fs rm -r` failing on UC Volumes backed by GCS when a directory becomes empty during recursive deletion ([#5958](https://github.com/databricks/cli/pull/5958)).
+ * You can now ask questions about your data directly from the CLI with `databricks genie ask "..."`. Genie answers natural-language questions ("what were total sales last month?", "which tables are in the sales catalog?"), runs the query inside Databricks, and renders the answer in the terminal. This promotes the former `databricks experimental genie ask` command; the experimental alias still works but is deprecated and will be removed in a future release ([#6010](https://github.com/databricks/cli/pull/6010)).
+
+### Bundles
+
+ * `bundle validate` now reports a clear error when a `sql_warehouse` is missing a `name` (including whitespace-only names), and a warning when a grant is missing a `principal` ([#5818](https://github.com/databricks/cli/pull/5818)).
+ * Bundle templates now scaffold an `AGENTS.md` that points coding agents at Databricks AI Tools, alongside a minimal `CLAUDE.md` that includes it via `@AGENTS.md` ([#5996](https://github.com/databricks/cli/pull/5996)).
+ * `bundle generate job` can now download workspace files referenced by `spark_python_task`, rewriting them to a relative path like it already does for notebooks. This is opt-in via the `--download-spark-python-files` flag ([#5799](https://github.com/databricks/cli/pull/5799)).
+ * Simplified the `default-minimal` bundle template and added an alias `databricks bundle init empty` ([#5899](https://github.com/databricks/cli/pull/5899)).
+ * Add support for the `instance_pools` resource type in Declarative Automation Bundles. Instance pools are only supported in direct deployment mode.
+ * Do not emit "unknown field" warnings for YAML anchors grouped in a list or map, matching the existing suppression for standalone anchors ([#5975](https://github.com/databricks/cli/pull/5975)).
+ * Provide an actionable error message if databricks.yml is missing or DATABRICKS_BUNDLE_ROOT is invalid ([#5953](https://github.com/databricks/cli/pull/5953)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.154.0 to v0.160.0 ([#5982](https://github.com/databricks/cli/pull/5982)).
+ * Bump Terraform provider from v1.121.0 to v1.122.0 ([#5977](https://github.com/databricks/cli/pull/5977)).
+
+
+## Release v1.8.0 (2026-07-15)
+
+### Notable Changes
+
+ * Auto-migrate a bundle from terraform to the direct engine when `bundle.engine` is `"direct"` (or `DATABRICKS_BUNDLE_ENGINE=direct`) and the post-deploy dry-run migration is clean; a warning is emitted if the dry-run surfaces errors or warnings so the automatic migration is skipped.
+
+### CLI
+
+ * experimental `ssh connect`: bare `python`/`pip` in an interactive session now resolve to the environment interpreter (`$DATABRICKS_VIRTUAL_ENV`) instead of the system or cluster-libraries interpreter, so packages installed in the environment are importable without extra setup. The interactive shell is now non-login (`bash -i`) and the server seeds a `~/.bashrc` snippet that re-prepends the environment's bin directory to `PATH` ([#5888](https://github.com/databricks/cli/pull/5888)).
+ * When Claude Code runs the CLI without the Databricks AI tooling installed, the CLI now prints a one-line recommendation on stderr to run `databricks aitools install`. The recommendation is shown at most once per hour per Claude session, and never for human callers or `aitools` commands.
+ * Fixed `databricks auth describe` misattributing a profile selected via `DATABRICKS_CONFIG_PROFILE` as `(from bundle)` when run inside a bundle root ([#5904](https://github.com/databricks/cli/pull/5904)).
+
+### Bundles
+
+ * `bundle generate` now warns when the generated configuration file is not matched by any pattern in the `include` section of `databricks.yml` ([#5868](https://github.com/databricks/cli/pull/5868)).
+ * direct: Match UC Auto Upgrade managed property defaults with a wildcard pattern instead of enumerating each key ([#5877](https://github.com/databricks/cli/pull/5877)).
+ * Recognize `ssh://` template URLs in `databricks bundle init` ([#5891](https://github.com/databricks/cli/pull/5891)).
+ * `databricks bundle init` now reports an actionable error when given a template URL with an unsupported protocol (`http://`, `git://`, `ftp://`, `ftps://`) instead of failing with a confusing "not a bundle template" message ([#5902](https://github.com/databricks/cli/pull/5902)).
+ * Added an `env:` section to `scripts.<name>` for declaring environment variables that may reference `${bundle.*}`, `${workspace.*}`, and `${var.*}` ([#4179](https://github.com/databricks/cli/issues/4179), [#5299](https://github.com/databricks/cli/pull/5299)).
+
+
 ## Release v1.7.0 (2026-07-09)
 
 ### CLI

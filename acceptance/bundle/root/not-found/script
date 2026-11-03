@@ -1,0 +1,2 @@
+# No databricks.yml in this directory or any parent: getRootWithTraversal fails.
+musterr trace $CLI bundle validate

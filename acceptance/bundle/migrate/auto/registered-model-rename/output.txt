@@ -1,0 +1,46 @@
+
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Rename the model (an immutable id field) and deploy on direct
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: migration to direct: registered_models.my_model: name differs between config ("themodel-[UNIQUE_NAME]-renamed") and terraform state ("themodel-[UNIQUE_NAME]"); this resource will be recreated.
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Migrated 2 resources to direct deployment engine.
+Recreated registered_models.my_model
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_migration_telemetry
+direct_migrate_recreate_planned true
+direct_migrated_via_env true
+
+=== Redeploy on direct: the model now matches config, so the plan is a clean no-op
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+=== The model exists under the new name and the local state is direct
+>>> [CLI] registered-models get main.mschema-[UNIQUE_NAME].themodel-[UNIQUE_NAME]-renamed
+{
+  "full_name": "main.mschema-[UNIQUE_NAME].themodel-[UNIQUE_NAME]-renamed"
+}
+
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
+.databricks/bundle/default/resources.json
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== Cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.my_model
+  delete resources.schemas.parent
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.parent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 2 deleted

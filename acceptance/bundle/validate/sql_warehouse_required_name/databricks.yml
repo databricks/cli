@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+resources:
+  sql_warehouses:
+    # Missing name (required by the backend).
+    my_warehouse:
+      cluster_size: "2X-Small"
+    # Whitespace-only name, treated as missing (name.trim.nonEmpty).
+    blank_warehouse:
+      name: "   "
+      cluster_size: "2X-Small"

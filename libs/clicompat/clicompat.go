@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
@@ -46,11 +47,6 @@ const (
 
 	// localManifestFile is the filename for the locally cached manifest.
 	localManifestFile = "compat-manifest.json"
-
-	// devVersionPrefix identifies dev builds whose semver (0.0.0) is lower than
-	// all real CLI versions. These are treated as bleeding-edge and resolve to
-	// the highest versioned entry.
-	devVersionPrefix = "0.0.0-dev"
 
 	maxFetchAttempts  = 3
 	fetchRetryBackoff = 300 * time.Millisecond
@@ -167,9 +163,9 @@ func ResolveEmbeddedAppKitVersion() (string, error) {
 	return entry.AppKit, nil
 }
 
-// ResolveEmbeddedAgentSkillsVersion resolves the Agent Skills version from only
-// the embedded manifest for the current CLI version. Used as a fallback when the
-// primary version points to a non-existent tag.
+// ResolveEmbeddedAgentSkillsVersion resolves the fallback for the current CLI
+// without fetching compatibility data. Ranges tracking latest use the tested
+// release compiled into the binary.
 func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	m, err := parseEmbeddedManifest()
 	if err != nil {
@@ -178,6 +174,9 @@ func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	entry, err := Resolve(m, build.GetInfo().Version)
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest resolve: %w", err)
+	}
+	if entry.AgentSkills == AgentSkillsLatest {
+		return build.AgentSkillsFallbackVersion, nil
 	}
 	return entry.AgentSkills, nil
 }
@@ -208,7 +207,7 @@ func IsNotFoundError(err error) bool {
 // and all versions above it, up to (but not including) the next entry.
 //
 // Resolution order:
-//  1. Dev builds (version starts with "0.0.0-dev") use the highest versioned entry.
+//  1. Dev builds (a -dev prerelease) use the highest versioned entry.
 //  2. Exact match on CLI version.
 //  3. Nearest lower version (semver-sorted). This also handles CLI versions
 //     newer than all entries, returning the highest known entry.
@@ -224,10 +223,11 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 		return Entry{}, errors.New("compatibility manifest has no versioned entries")
 	}
 
-	// Dev builds (0.0.0-dev*) have semver lower than all real CLI versions,
-	// so they would incorrectly resolve to the lowest entry. Use the highest
-	// versioned entry instead, since dev builds represent the bleeding edge.
-	if strings.HasPrefix(cliVersion, devVersionPrefix) {
+	// Dev builds are built from main and may carry changes that no released
+	// version has, so resolving them by semver would pick the entry for the
+	// previous release. Use the highest versioned entry instead, since dev
+	// builds represent the bleeding edge.
+	if build.IsDevelopmentVersion(cliVersion) {
 		return m[versions[0]], nil
 	}
 
@@ -322,8 +322,7 @@ func readLocalManifest(path string) (cachedManifest, error) {
 	return cachedManifest{manifest: m, modTime: info.ModTime()}, nil
 }
 
-// writeLocalManifest writes the manifest to the local cache path using a
-// temp-file-then-rename pattern for atomicity.
+// writeLocalManifest writes the manifest to the local cache path atomically.
 func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 	if path == "" {
 		return
@@ -333,31 +332,8 @@ func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 		log.Debugf(ctx, "Failed to marshal manifest for cache: %v", err)
 		return
 	}
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		log.Warnf(ctx, "Failed to create cache directory %s: %v", dir, err)
-		return
-	}
-	tmp, err := os.CreateTemp(dir, ".compat-manifest-*.tmp")
-	if err != nil {
-		log.Warnf(ctx, "Failed to create temp cache file: %v", err)
-		return
-	}
-	tmpPath := tmp.Name()
-	defer func() {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-	}()
-	if _, err := tmp.Write(data); err != nil {
-		log.Debugf(ctx, "Failed to write temp cache file: %v", err)
-		return
-	}
-	if err := tmp.Close(); err != nil {
-		log.Debugf(ctx, "Failed to close temp cache file: %v", err)
-		return
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		log.Warnf(ctx, "Failed to rename temp cache file: %v", err)
+	if err := atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700)); err != nil {
+		log.Warnf(ctx, "Failed to write cache file: %v", err)
 	}
 }
 

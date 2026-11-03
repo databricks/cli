@@ -1,0 +1,45 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    $CLI bundle destroy --auto-approve -qq
+}
+trap cleanup EXIT
+
+# Each level starts from the same state -- nothing deployed -- so the three outputs
+# differ only by the flag. Destroying in between costs a little time but makes the
+# comparison meaningful: otherwise the second deploy has nothing to create and the
+# third nothing to change, and the counts differ for that reason instead.
+
+title "plan: actions and summary"
+trace $CLI bundle plan
+
+title "plan -q: summary only"
+trace $CLI bundle plan -q
+
+title "plan -qq: nothing"
+trace $CLI bundle plan -qq
+
+title "deploy: per-resource lines, progress and summary"
+trace $CLI bundle deploy
+trace $CLI bundle destroy --auto-approve -qq
+
+title "deploy -q: summary only, no per-resource lines"
+trace $CLI bundle deploy -q
+trace $CLI bundle destroy --auto-approve -qq
+
+title "deploy -qq: nothing"
+trace $CLI bundle deploy -qq
+
+title "destroy: approval list and summary"
+trace $CLI bundle destroy --auto-approve
+
+title "destroy -q: same as default, there are no per-resource lines to drop"
+trace $CLI bundle deploy -qq
+trace $CLI bundle destroy --auto-approve -q
+
+# Only suppressed because --auto-approve makes the listing informational. Without it the
+# CLI is about to ask for consent and the listing prints at any -q level; that path needs
+# a TTY, so TestApprovalForDestroyQuietWhilePrompting covers it.
+title "destroy --auto-approve -qq: nothing"
+trace $CLI bundle deploy -qq
+trace $CLI bundle destroy --auto-approve -qq

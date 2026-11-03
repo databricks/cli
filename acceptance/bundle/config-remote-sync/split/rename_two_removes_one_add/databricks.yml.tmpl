@@ -1,0 +1,29 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Two tasks with IDENTICAL bodies apart from the key, one per block. Deleting one and
+# renaming the other in the same run yields two removes and a single add, and by
+# content either removal could be the renamed one. Pairing the first and deleting the
+# rest would move the new key into a block the user did not choose -- here promoting a
+# top-level task, visible to every target, into the dev-only block.
+
+resources:
+  jobs:
+    two_removes_job:
+      tasks:
+        - task_key: task_toplevel
+          max_retries: 2
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        two_removes_job:
+          tasks:
+            - task_key: task_target
+              max_retries: 2
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/nb

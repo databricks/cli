@@ -1,0 +1,15 @@
+
+=== State written by a newer CLI: warn, but proceed
+
+>>> [CLI] bundle plan
+Warn: State was last deployed with CLI version 99.0.0 but current version is [CLI_VERSION]
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== State written by this CLI: no warning
+
+>>> [CLI] bundle plan
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

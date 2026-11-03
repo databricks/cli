@@ -71,25 +71,26 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 // RemapState maps the remote SqlWarehouseRemote to SqlWarehouseState for diff comparison.
 // Started is derived from warehouse state so the planner can detect start/stop changes.
 func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
-	started := warehouse.State == sql.StateRunning
 	return &SqlWarehouseState{
-		CreateWarehouseRequest: sql.CreateWarehouseRequest{
-			AutoStopMins:            warehouse.AutoStopMins,
-			Channel:                 warehouse.Channel,
-			ClusterSize:             warehouse.ClusterSize,
-			CreatorName:             warehouse.CreatorName,
-			EnablePhoton:            warehouse.EnablePhoton,
-			EnableServerlessCompute: warehouse.EnableServerlessCompute,
-			InstanceProfileArn:      warehouse.InstanceProfileArn,
-			MaxNumClusters:          warehouse.MaxNumClusters,
-			MinNumClusters:          warehouse.MinNumClusters,
-			Name:                    warehouse.Name,
-			SpotInstancePolicy:      warehouse.SpotInstancePolicy,
-			Tags:                    warehouse.Tags,
-			WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-			ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-		},
-		Lifecycle: &StateLifecycle{Started: &started},
+		AutoStopMins:                warehouse.AutoStopMins,
+		Channel:                     warehouse.Channel,
+		ClusterSize:                 warehouse.ClusterSize,
+		CreatorName:                 warehouse.CreatorName,
+		CustomerVersionLabel:        warehouse.CustomerVersionLabel,
+		EnablePhoton:                warehouse.EnablePhoton,
+		EnableServerlessCompute:     warehouse.EnableServerlessCompute,
+		InstanceProfileArn:          warehouse.InstanceProfileArn,
+		MaxDbu:                      warehouse.MaxDbu,
+		MaxNumClusters:              warehouse.MaxNumClusters,
+		MinNumClusters:              warehouse.MinNumClusters,
+		Name:                        warehouse.Name,
+		ReydenClusterSizeMultiplier: warehouse.ReydenClusterSizeMultiplier,
+		SpotInstancePolicy:          warehouse.SpotInstancePolicy,
+		StatementTimeout:            warehouse.StatementTimeout,
+		Tags:                        warehouse.Tags,
+		WarehouseType:               sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
+		ForceSendFields:             utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
+		Lifecycle:                   warehouse.Lifecycle,
 	}
 }
 
@@ -134,23 +135,28 @@ func hasWarehouseChanges(entry *PlanEntry) bool {
 
 // DoUpdate updates the warehouse in place.
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
-	if hasWarehouseChanges(entry) {
+	edited := hasWarehouseChanges(entry)
+	if edited {
 		request := sql.EditWarehouseRequest{
-			AutoStopMins:            config.AutoStopMins,
-			Channel:                 config.Channel,
-			ClusterSize:             config.ClusterSize,
-			CreatorName:             config.CreatorName,
-			EnablePhoton:            config.EnablePhoton,
-			EnableServerlessCompute: config.EnableServerlessCompute,
-			Id:                      id,
-			InstanceProfileArn:      config.InstanceProfileArn,
-			MaxNumClusters:          config.MaxNumClusters,
-			MinNumClusters:          config.MinNumClusters,
-			Name:                    config.Name,
-			SpotInstancePolicy:      config.SpotInstancePolicy,
-			Tags:                    config.Tags,
-			WarehouseType:           sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
-			ForceSendFields:         utils.FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
+			AutoStopMins:                config.AutoStopMins,
+			Channel:                     config.Channel,
+			ClusterSize:                 config.ClusterSize,
+			CreatorName:                 config.CreatorName,
+			CustomerVersionLabel:        config.CustomerVersionLabel,
+			EnablePhoton:                config.EnablePhoton,
+			EnableServerlessCompute:     config.EnableServerlessCompute,
+			Id:                          id,
+			InstanceProfileArn:          config.InstanceProfileArn,
+			MaxDbu:                      config.MaxDbu,
+			MaxNumClusters:              config.MaxNumClusters,
+			MinNumClusters:              config.MinNumClusters,
+			Name:                        config.Name,
+			ReydenClusterSizeMultiplier: config.ReydenClusterSizeMultiplier,
+			SpotInstancePolicy:          config.SpotInstancePolicy,
+			StatementTimeout:            config.StatementTimeout,
+			Tags:                        config.Tags,
+			WarehouseType:               sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
+			ForceSendFields:             utils.FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
 		}
 
 		waiter, err := r.client.Warehouses.Edit(ctx, request)
@@ -169,6 +175,12 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 
 	desiredStarted := *config.Lifecycle.Started
 	alreadyRunning := remoteWarehouseIsRunning(entry)
+	if edited {
+		// Edit restarts the warehouse: its long-running op waits for RUNNING
+		// (SDK WaitGetWarehouseRunning), so reconcile from RUNNING, not the
+		// stale pre-plan state.
+		alreadyRunning = true
+	}
 	if desiredStarted && !alreadyRunning {
 		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
 		_, err := r.client.Warehouses.Start(ctx, sql.StartRequest{Id: id})

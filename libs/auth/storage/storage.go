@@ -16,8 +16,7 @@ import (
 // ErrNotFound is returned by Store.Lookup when no entry exists for the key, or
 // when a stored entry cannot be decoded by this CLI version (an unknown format
 // is treated as a miss so the caller re-mints rather than failing). It is the
-// CLI-owned counterpart to the SDK's u2m_cache.ErrNotFound; the adapter in
-// ToU2MTokenCache translates between the two.
+// signal to callers that they need to mint or otherwise obtain a token.
 var ErrNotFound = errors.New("token not found")
 
 // Entry is the value held in the CLI token store. It wraps the credential so
@@ -25,16 +24,39 @@ var ErrNotFound = errors.New("token not found")
 // without changing the Store interface. Backends persist it verbatim and never
 // interpret its contents.
 type Entry struct {
-	// Token is the cached OAuth token. Always set for stored entries.
+	// Token is the cached OAuth token. Set for every stored entry except a
+	// pending login.
 	Token *oauth2.Token
+
+	// PendingLogin is set instead of Token for a login that one CLI
+	// invocation started and a later one completes.
+	PendingLogin *PendingLogin
+}
+
+// PendingLogin is a device code login that is waiting for the user's
+// confirmation code. Keeping the device code in the store means it never
+// leaves the machine that started the login.
+type PendingLogin struct {
+	// DeviceCode is exchanged together with the confirmation code for a token.
+	DeviceCode string `json:"device_code"`
+
+	// UserCode is the code the user enters in the browser. It identifies the
+	// login when a newer one replaced it under the same key.
+	UserCode string `json:"user_code"`
+
+	// Host, ClientID and Scopes are the settings the login was started with.
+	// The device code only works with the same host and client, and the
+	// token gets the scopes of the device authorization, so the login can
+	// only be completed with the same settings.
+	Host     string   `json:"host"`
+	ClientID string   `json:"client_id,omitempty"`
+	Scopes   []string `json:"scopes,omitempty"`
 }
 
 // Store is the CLI's token-storage abstraction: a key/value store with no
 // policy of its own. Implementations are the plaintext file cache and the OS
-// keyring cache. The interface is owned by the CLI rather than the SDK so the
-// entry schema can evolve (metadata, per-entry resilience) without being
-// constrained by the SDK's U2M-internal u2m_cache.TokenCache, which only
-// carries a bare *oauth2.Token.
+// keyring and in-memory stores. The entry schema can evolve with additive
+// metadata without changing the Store interface.
 type Store interface {
 	// Put writes e under key, replacing any existing entry.
 	Put(key string, e Entry) error

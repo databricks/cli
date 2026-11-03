@@ -1,7 +1,5 @@
-Local = true
 Cloud = true
 RecordRequests = false
-RequiresUnityCatalog = true
 
 Ignore = [
     ".databricks",
@@ -9,6 +7,3 @@ Ignore = [
     "catalog.yml",
     "test-file-*.txt",
 ]
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]

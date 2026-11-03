@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  model_serving_endpoints:
+    foo:
+      name: test-endpoint-$UNIQUE_NAME
+      config:
+        served_entities:
+          - name: prod
+            entity_name: main.default.test_model
+            entity_version: "1"
+            workload_size: Small
+            scale_to_zero_enabled: true
+      telemetry_config:
+        table_names:
+          logs_table: main.default.test_logs
+          traces_table: main.default.test_traces
+        inference_table_config:
+          sampling_fraction: 0.5

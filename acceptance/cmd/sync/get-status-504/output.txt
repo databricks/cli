@@ -1,0 +1,4 @@
+Warn: retrying after 504 Gateway Timeout from GET /api/2.0/workspace/get-status
+Action: PUT: hello.py
+Uploaded hello.py
+Initial Sync Complete

@@ -9,13 +9,27 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
+
+// clientAliveIntervalSeconds is how often sshd asks the client to confirm it is still there. It
+// drives the keepalive from the server end of the tunnel; sshconfig.ServerAliveIntervalSeconds
+// documents why an SSH keepalive is what keeps the leg past the driver proxy from being reaped.
+// Configuring it here covers clients the CLI does not configure — a hand-written ProxyCommand host
+// block, or an IDE that supplies its own ssh options — where nothing sets ServerAliveInterval.
+// The two intervals are deliberately independent: neither package imports the other, and each end
+// keeps its own leg warm, so they need not track a single shared value.
+//
+// It also brings in ClientAliveCountMax (OpenSSH default 3), so sshd reclaims a session whose
+// client has gone away after ~90s instead of holding it open until the server's shutdown delay.
+const clientAliveIntervalSeconds = 30
 
 func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
 	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
@@ -55,13 +69,50 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", err
 	}
 
+	setEnv := sshdSetEnv(os.Environ(), homeDir, opts)
+	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent(keyPath, authKeysPath, setEnv)), 0o600); err != nil {
+		return "", err
+	}
+
+	if err := os.MkdirAll("/run/sshd", 0o755); err != nil {
+		// On shared clusters this will fail, but there it's not needed, as we execute it as a non-root user
+		// TODO: fail if this happens on dedicated clusters
+		log.Warn(ctx, "Failed to create /run/sshd directory, SSHD may not work properly")
+	}
+
+	return sshdConfig, nil
+}
+
+// sshdConfigContent assembles the configuration the tunnel's sshd runs with.
+func sshdConfigContent(hostKeyPath, authorizedKeysPath, setEnv string) string {
+	return "PubkeyAuthentication yes\n" +
+		"PasswordAuthentication no\n" +
+		"ChallengeResponseAuthentication no\n" +
+		"ClientAliveInterval " + strconv.Itoa(clientAliveIntervalSeconds) + "\n" +
+		"Subsystem sftp internal-sftp\n" +
+		"HostKey " + hostKeyPath + "\n" +
+		"AuthorizedKeysFile " + authorizedKeysPath + "\n" +
+		setEnv + "\n"
+}
+
+// sshdSetEnv returns the SetEnv directive that seeds every session's environment.
+func sshdSetEnv(environ []string, homeDir string, opts ServerOptions) string {
 	// Set all available env vars, wrapping values in quotes, escaping quotes, and stripping newlines
 	var setEnvBuf strings.Builder
 	setEnvBuf.WriteString("SetEnv")
-	for _, env := range os.Environ() {
+	for _, env := range environ {
 		parts := strings.SplitN(env, "=", 2)
 		if len(parts) == 2 {
-			fmt.Fprintf(&setEnvBuf, ` %s="%s"`, parts[0], escapeEnvValue(parts[1]))
+			value := parts[1]
+			// sshd applies SetEnv before any shell starts, so this puts the agent
+			// launchers (see installAgentLaunchers) on PATH for every session:
+			// interactive or not, IDE or terminal, bash or sh, with no startup file
+			// involved. Appended (not prepended) so the launchers never shadow a real
+			// binary of the same name earlier on PATH.
+			if parts[0] == "PATH" {
+				value += ":" + path.Join(homeDir, agentlauncher.BinDir)
+			}
+			fmt.Fprintf(&setEnvBuf, ` %s="%s"`, parts[0], escapeEnvValue(value))
 		}
 	}
 	setEnvBuf.WriteString(" DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel")
@@ -74,27 +125,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	if opts.Serverless {
 		setEnvBuf.WriteString(" DATABRICKS_JUPYTER_SERVERLESS=true")
 	}
-	setEnv := setEnvBuf.String()
-
-	sshdConfigContent := "PubkeyAuthentication yes\n" +
-		"PasswordAuthentication no\n" +
-		"ChallengeResponseAuthentication no\n" +
-		"Subsystem sftp internal-sftp\n" +
-		"HostKey " + keyPath + "\n" +
-		"AuthorizedKeysFile " + authKeysPath + "\n" +
-		setEnv + "\n"
-
-	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent), 0o600); err != nil {
-		return "", err
-	}
-
-	if err := os.MkdirAll("/run/sshd", 0o755); err != nil {
-		// On shared clusters this will fail, but there it's not needed, as we execute it as a non-root user
-		// TODO: fail if this happens on dedicated clusters
-		log.Warn(ctx, "Failed to create /run/sshd directory, SSHD may not work properly")
-	}
-
-	return sshdConfig, nil
+	return setEnvBuf.String()
 }
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {

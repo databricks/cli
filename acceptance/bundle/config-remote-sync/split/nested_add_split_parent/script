@@ -1,0 +1,25 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py nested_add_job)"
+
+title "Add a task, then depend on it from the split task zzz_shared"
+edit_resource.py jobs $job_id <<PYEDIT
+r["tasks"].append({"task_key": "mid_new",
+                   "notebook_task": {"notebook_path": "/Users/{{workspace_user_name}}/nb"}})
+for task in r["tasks"]:
+    if task["task_key"] == "zzz_shared":
+        task["depends_on"].append({"task_key": "mid_new"})
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+title "The dependency lands on zzz_shared, in the block that defines it"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "task_key: mid_new" databricks.yml
+rm databricks.yml.backup

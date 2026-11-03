@@ -28,6 +28,7 @@ Main Commands
   logs                  Retrieve events for a pipeline
   open                  Open a pipeline in the browser
   run                   Run a pipeline
+  show                  Preview a table's columns and sample rows
   stop                  Stop a pipeline
 
 Management Commands

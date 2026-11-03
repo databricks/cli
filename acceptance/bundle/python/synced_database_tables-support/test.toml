@@ -1,0 +1,4 @@
+Cloud = false # tests don't interact with APIs
+
+# synced_database_tables are only supported in the current version of the wheel
+EnvMatrix.PYDAB_VERSION = ["current"]

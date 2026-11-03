@@ -1,0 +1,57 @@
+
+>>> [CLI] bundle validate
+Warning: expected string, found sequence
+  at resources.secret_scopes.wrong_type_principal.permissions[0].group_name
+  in databricks.yml:22:23
+
+Error: secret scope permission principal is required
+  at resources.secret_scopes.empty_principal.permissions[0]
+  in databricks.yml:12:7
+
+Set one of user_name, group_name or service_principal_name
+
+Error: secret scope permission principal is required
+  at resources.secret_scopes.wrong_type_principal.permissions[0]
+  in databricks.yml:18:7
+
+Set one of user_name, group_name or service_principal_name
+
+Error: secret scope permission principal is required
+  at resources.secret_scopes.no_principal.permissions[0]
+  in databricks.yml:7:7
+
+Set one of user_name, group_name or service_principal_name
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 3 errors and 1 warning
+
+>>> [CLI] bundle deploy
+Warning: expected string, found sequence
+  at resources.secret_scopes.wrong_type_principal.permissions[0].group_name
+  in databricks.yml:22:23
+
+Error: secret scope permission principal is required
+  at resources.secret_scopes.empty_principal.permissions[0]
+  in databricks.yml:12:7
+
+Set one of user_name, group_name or service_principal_name
+
+Error: secret scope permission principal is required
+  at resources.secret_scopes.wrong_type_principal.permissions[0]
+  in databricks.yml:18:7
+
+Set one of user_name, group_name or service_principal_name
+
+Error: secret scope permission principal is required
+  at resources.secret_scopes.no_principal.permissions[0]
+  in databricks.yml:7:7
+
+Set one of user_name, group_name or service_principal_name
+
+
+>>> print_requests.py //secrets

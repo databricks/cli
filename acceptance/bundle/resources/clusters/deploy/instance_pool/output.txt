@@ -1,9 +1,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-instance-pool/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created clusters.cluster1
+Created clusters.cluster2
+Created clusters.cluster3
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters/create
 {
@@ -13,7 +15,7 @@ Deployment complete!
     "autotermination_minutes": 60,
     "aws_attributes": {},
     "cluster_name": "test-cluster-1",
-    "instance_pool_id": "ip-[NUMID]",
+    "instance_pool_id": "ip-1234567890",
     "num_workers": 2,
     "spark_conf": {
       "spark.executor.memory": "2g"
@@ -28,7 +30,7 @@ Deployment complete!
     "autotermination_minutes": 60,
     "azure_attributes": {},
     "cluster_name": "test-cluster-2",
-    "instance_pool_id": "ip-[NUMID]",
+    "instance_pool_id": "ip-1234567890",
     "num_workers": 2,
     "spark_conf": {
       "spark.executor.memory": "2g"
@@ -43,7 +45,7 @@ Deployment complete!
     "autotermination_minutes": 60,
     "cluster_name": "test-cluster-3",
     "gcp_attributes": {},
-    "instance_pool_id": "ip-[NUMID]",
+    "instance_pool_id": "ip-1234567890",
     "num_workers": 2,
     "spark_conf": {
       "spark.executor.memory": "2g"

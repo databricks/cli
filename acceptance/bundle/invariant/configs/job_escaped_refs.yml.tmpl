@@ -1,0 +1,28 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  catalog_name:
+    default: main
+
+resources:
+  jobs:
+    example_ingestion_job:
+      name: test-job-$UNIQUE_NAME
+      tasks:
+        - task_key: run_generic_ingestion
+          notebook_task:
+            # Workspace-absolute so no local notebook file is needed; the
+            # base_parameters below are verbatim from the issue.
+            notebook_path: /Shared/notebook
+            # Set explicitly: terraform sends this default, direct does not, and
+            # bundle/escaped_refs asserts one payload for both engines.
+            source: WORKSPACE
+            base_parameters:
+              generic_config: '{"source": {"path": "landing/$${p_folder}/$${source_file}_*.csv"}, "schema": {"columns": [{"name": "w_batch_id", "expression": "$${batch_id}"}, {"name": "w_business_dt", "expression": "cast(''$${business_date[0..9]}'' as date)"}]}, "target": {"table": "${var.catalog_name}.$${p_env_stg}.$${target_table}"}}'
+              parameters_list: '[{"source_file": "TableA", "target_table": "table_a", "p_env_stg": "stg_example", "p_folder": "foldera"}, {"source_file": "TableB", "target_table": "table_b", "p_env_stg": "stg_example", "p_folder": "folderb"}]'
+      parameters:
+        - name: batch_id
+          default: '{{job.id}}'
+        - name: business_date
+          default: '{{job.start_time.iso_date}}'

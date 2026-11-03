@@ -1,0 +1,7 @@
+# config-remote-sync -o json on the removed terraform engine: in JSON mode the
+# command exits 0 and reports status failed; telemetry records the error payload.
+trace errcode $CLI bundle config-remote-sync -o json
+
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
+
+rm "$OUT_REQUESTS"

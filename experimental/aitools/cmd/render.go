@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -113,6 +114,6 @@ func renderStaticTable(w io.Writer, columns []string, rows [][]string) error {
 }
 
 // renderInteractiveTable displays query results in the interactive table browser.
-func renderInteractiveTable(w io.Writer, columns []string, rows [][]string) error {
-	return tableview.Run(w, columns, rows)
+func renderInteractiveTable(ctx context.Context, w io.Writer, columns []string, rows [][]string) error {
+	return tableview.Run(ctx, w, columns, rows)
 }

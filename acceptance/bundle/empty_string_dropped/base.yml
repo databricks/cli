@@ -1,0 +1,101 @@
+bundle:
+  name: test-bundle
+
+# Deployable skeleton per resource. gen_empty_config.py fills every settable
+# string leaf under the blocks present here with "" and records it. Coverage is
+# scoped to the blocks below: we include one side of each mutually-exclusive
+# choice (aws_attributes not gcp, s3 log conf not dbfs/volumes, git_source
+# present) because including both would make terraform abort. Only resources that
+# deploy on BOTH engines belong here.
+#
+# Fields set to a real value here are treated as required/meaningful and left
+# alone; everything else settable-and-string is emptied.
+resources:
+  apps:
+    my_app:
+      # App names are globally unique in the workspace; the two targets deploy to
+      # the same fake workspace, so scope the name per target to avoid a 409.
+      name: test-app-${bundle.target}
+      source_code_path: ./app
+
+  clusters:
+    my_cluster:
+      num_workers: 1
+      # spark_version is tagged omitempty in the SDK but required by terraform's
+      # schema and the backend, so it must have a real value or the deploy fails.
+      spark_version: 13.3.x-scala2.12
+      aws_attributes:
+        availability: SPOT
+      cluster_log_conf:
+        s3:
+          destination: s3://test-bucket/logs
+
+  jobs:
+    my_job:
+      max_concurrent_runs: 1
+      git_source:
+        git_url: https://example.com/repo
+        git_provider: gitHub
+        git_branch: main
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster:
+            num_workers: 1
+            spark_version: 13.3.x-scala2.12
+            aws_attributes:
+              availability: SPOT
+            cluster_log_conf:
+              s3:
+                destination: s3://test-bucket/logs
+
+  pipelines:
+    my_pipeline:
+      libraries:
+        - file:
+            path: pipeline.py
+      clusters:
+        - label: default
+          aws_attributes:
+            availability: SPOT
+
+  sql_warehouses:
+    my_warehouse:
+      name: test-warehouse
+      cluster_size: 2X-Small
+      auto_stop_mins: 10
+      max_num_clusters: 1
+      min_num_clusters: 1
+
+  models:
+    my_model:
+      name: test-model
+
+  experiments:
+    my_experiment:
+      name: /Users/${workspace.current_user.userName}/test-experiment
+
+  registered_models:
+    my_registered_model:
+      name: test-registered-model
+      catalog_name: main
+      schema_name: default
+
+  schemas:
+    my_schema:
+      catalog_name: main
+      name: test-schema
+
+  volumes:
+    my_volume:
+      name: test-volume
+      catalog_name: main
+      schema_name: default
+
+  database_instances:
+    my_db_instance:
+      name: test-db-instance
+      capacity: CU_1
+
+targets:
+  tf:
+  direct:

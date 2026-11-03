@@ -51,6 +51,7 @@ func (c GenieSpaceConfig) MarshalJSON() ([]byte, error) {
 
 type GenieSpace struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	GenieSpaceConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`
@@ -60,6 +61,14 @@ type GenieSpace struct {
 	// as metadata which is needed for `databricks bundle generate genie-space --resource <key>` to work.
 	// This is not part of GenieSpaceConfig because we don't need to store this in the resource state.
 	FilePath string `json:"file_path,omitempty"`
+}
+
+func (r *GenieSpace) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r GenieSpace) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
 }
 
 func (*GenieSpace) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
@@ -95,8 +104,4 @@ func (r *GenieSpace) InitializeURL(baseURL url.URL) {
 
 func (r *GenieSpace) GetName() string {
 	return r.Title
-}
-
-func (r *GenieSpace) GetURL() string {
-	return r.URL
 }

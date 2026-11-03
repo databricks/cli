@@ -1,0 +1,10 @@
+EnvMatrix.READPLAN = ["", "1"]
+
+RecordRequests = true
+Ignore = [
+    'code.tgz',
+    '.databricks',
+]
+
+# The Terraform provider dropped `code_source_path` from `ai_runtime_task` in
+# v1.122.0, so this feature is only exercisable via the direct engine.

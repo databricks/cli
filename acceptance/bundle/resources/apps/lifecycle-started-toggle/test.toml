@@ -1,4 +1,3 @@
-Local = true
 Cloud = true
 RecordRequests = true
 
@@ -9,6 +8,3 @@ Ignore = [".databricks", "databricks.yml"]
 [[Repls]]
 Old = '(?m)^✓ [^\n]*\n'
 New = ""
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]

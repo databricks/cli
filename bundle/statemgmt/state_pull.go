@@ -1,6 +1,7 @@
 package statemgmt
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,18 +17,23 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/databricks/cli/libs/shortid"
 )
 
 type AlwaysPull bool
 
+// zipMagic starts every ZIP archive; a state file is JSON and never does.
+var zipMagic = []byte("PK\x03\x04")
+
 type StateDesc struct {
-	Serial  int    `json:"serial"`
-	Lineage string `json:"lineage"`
+	Serial   int                 `json:"serial"`
+	Lineage  string              `json:"lineage"`
+	Features map[string]struct{} `json:"features,omitempty"`
 
 	// additional fields describing state:
 	SourcePath string
@@ -47,6 +53,15 @@ func (s *StateDesc) String() string {
 	return fmt.Sprintf("%s: %s %s state serial=%d lineage=%q", s.SourcePath, source, s.Engine, s.Serial, s.Lineage)
 }
 
+// LineageHash returns the lineage in the compact form reported in the user agent
+// and telemetry, or "" when the state has no lineage yet (nothing deployed).
+func (s *StateDesc) LineageHash() string {
+	if s.Lineage == "" {
+		return ""
+	}
+	return shortid.Hash(s.Lineage)
+}
+
 func (s *StateDesc) HasRemoteTerraformState() bool {
 	for _, s := range s.AllStates {
 		if !s.Engine.IsDirect() && !s.IsLocal {
@@ -54,6 +69,12 @@ func (s *StateDesc) HasRemoteTerraformState() bool {
 		}
 	}
 	return false
+}
+
+// IsDMS reports whether the state records deployment history in the deployment metadata service.
+func (s *StateDesc) IsDMS() bool {
+	_, ok := s.Features["deployment_history"]
+	return ok
 }
 
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
@@ -96,6 +117,11 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, er
 	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
+		// The workspace exports a directory as a ZIP archive rather than failing, so a directory
+		// at the state path reads fine and only shows up here.
+		if bytes.HasPrefix(content, zipMagic) {
+			return nil, errors.New("not a file: the workspace has a directory at this path")
+		}
 		return nil, fmt.Errorf("parsing state: %w", err)
 	}
 
@@ -118,27 +144,25 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 }
 
 // PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
-// If state is present and the requested engine disagrees, a warning is issued and the state's engine is used.
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) (context.Context, *StateDesc) {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
-	// We read all 4 possible states: terraform/direct X local/remote and then use env var to validate that correct one is used.
-	// However, states and env var cannot disagree.
+	// We read all 4 possible states: terraform/direct X local/remote and pick the most recent one.
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
-		return ctx, nil
+		return nil
 	}
 
 	var winner *StateDesc
 
 	if len(states) == 0 {
 		winner = &StateDesc{
-			// No state, go with user-provided or default
-			Engine:  requiredEngine.Type.ThisOrDefault(),
+			// No state: a new deployment uses the direct engine.
+			Engine:  engine.EngineDirect,
 			IsLocal: true,
 			// Lineage and Serial are empty
 		}
@@ -152,31 +176,16 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	err = validateStates(states)
 	if err != nil {
 		logStatesError(ctx, err.Error(), states)
-		return ctx, winner
+		return winner
 	}
-
-	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
-		msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
-		// Warn only when the config also disagrees with the state. If the env var overrides
-		// a config that matches the state, log at info level to avoid noise.
-		if requiredEngine.ConfigType != engine.EngineNotSet && requiredEngine.ConfigType != winner.Engine {
-			logStatesWarning(ctx, msg, states)
-		} else {
-			log.Infof(ctx, "%s", msg)
-		}
-	}
-
-	// Set the engine in the user agent
-	// XXX move this outside this function to bundle/config/engine
-	ctx = useragent.InContext(ctx, "engine", string(winner.Engine))
 
 	if len(states) == 0 {
-		return ctx, winner
+		return winner
 	}
 
 	if winner.IsLocal {
 		// local state is fresh, nothing to do
-		return ctx, winner
+		return winner
 	}
 
 	if !winner.IsLocal {
@@ -187,23 +196,14 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			localStatePath = localPathDirect
 		}
 
-		localStateDir := filepath.Dir(localStatePath)
-
-		err := os.MkdirAll(localStateDir, 0o700)
+		err := atomicfile.Write(localStatePath, winner.Content, 0o600, atomicfile.MkDir(0o700))
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx, winner
-		}
-
-		// TODO: write + rename
-		err = os.WriteFile(localStatePath, winner.Content, 0o600)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx, winner
+			return winner
 		}
 	}
 
-	return ctx, winner
+	return winner
 }
 
 func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
@@ -288,10 +288,6 @@ func validateStates(states []*StateDesc) error {
 
 func logStatesError(ctx context.Context, msg string, states []*StateDesc) {
 	logStatesDiag(ctx, diag.Error, msg, states)
-}
-
-func logStatesWarning(ctx context.Context, msg string, states []*StateDesc) {
-	logStatesDiag(ctx, diag.Warning, msg, states)
 }
 
 func logStatesDiag(ctx context.Context, severity diag.Severity, msg string, states []*StateDesc) {

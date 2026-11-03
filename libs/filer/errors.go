@@ -106,6 +106,10 @@ func (err cannotDeleteRootError) Is(other error) bool {
 // when attempting to create a directory but lacking write permissions.
 type permissionError struct {
 	path string
+	// err is the underlying API error, preserved so callers can inspect its
+	// error_code (e.g. to distinguish a real permission denial from a workspace
+	// directory that is at its child-node limit, which the API also reports as 403).
+	err error
 }
 
 func (err permissionError) Error() string {
@@ -114,4 +118,8 @@ func (err permissionError) Error() string {
 
 func (err permissionError) Is(other error) bool {
 	return other == fs.ErrPermission
+}
+
+func (err permissionError) Unwrap() error {
+	return err.err
 }

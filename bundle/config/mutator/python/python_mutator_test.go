@@ -11,6 +11,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
@@ -23,6 +24,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,7 +56,7 @@ resources:
       name: job_0
 workspace: { current_user: { userName: test }}`)
 
-	// set rootPath so that we can make absolute paths in dyn.Location
+	// set rootPath so that we can make absolute paths in diag.Location
 	b.BundleRootPath = rootPath
 
 	ctx := withProcessStub(
@@ -124,7 +126,7 @@ workspace: { current_user: { userName: test }}`)
 		// location is databricks.yml, because output contains resource as-is
 		jobName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.name"))
 		require.NoError(t, err)
-		assert.Equal(t, []dyn.Location{
+		assert.Equal(t, []diag.Location{
 			{
 				File:   "databricks.yml",
 				Line:   9,
@@ -134,7 +136,7 @@ workspace: { current_user: { userName: test }}`)
 
 		jobName1, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job1.name"))
 		require.NoError(t, err)
-		assert.Equal(t, []dyn.Location{
+		assert.Equal(t, []diag.Location{
 			{
 				File:   filepath.Join(rootPath, "src/examples/job1.py"),
 				Line:   5,
@@ -144,7 +146,7 @@ workspace: { current_user: { userName: test }}`)
 
 		pipelineName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.pipelines.pipeline0.name"))
 		require.NoError(t, err)
-		assert.Equal(t, []dyn.Location{
+		assert.Equal(t, []diag.Location{
 			{
 				File:   filepath.Join(rootPath, "src/examples/pipeline0.py"),
 				Line:   7,
@@ -156,12 +158,9 @@ workspace: { current_user: { userName: test }}`)
 	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, int64(2), b.Metrics.PythonAddedResourcesCount)
-	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
-
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
-	assert.Equal(t, []dyn.Location{
+	assert.Equal(t, []diag.Location{
 		{
 			File:   "src/examples/file.py",
 			Line:   10,
@@ -236,9 +235,24 @@ resources:
 		return v, nil
 	})
 	assert.NoError(t, err)
+}
 
-	assert.Equal(t, int64(0), b.Metrics.PythonAddedResourcesCount)
-	assert.Equal(t, int64(1), b.Metrics.PythonUpdatedResourcesCount)
+func TestPythonConfigSection(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		expected protos.PydabsConfigSection
+	}{
+		{"none", `bundle: {name: test}`, protos.PydabsConfigSectionUnspecified},
+		{"both", `
+python: {resources: ["resources:load"]}
+experimental: {python: {resources: ["resources:load"]}}`, protos.PydabsConfigSectionBoth},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, pythonConfigSection(loadYaml("databricks.yml", tc.yaml)))
+		})
+	}
 }
 
 func TestPythonMutator_badOutput(t *testing.T) {

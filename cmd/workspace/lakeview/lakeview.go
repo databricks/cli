@@ -90,7 +90,12 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
 
-  Create a draft dashboard.`
+  Create a draft dashboard.
+
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -164,6 +169,13 @@ func newCreateSchedule() *cobra.Command {
 	cmd.Use = "create-schedule DASHBOARD_ID CRON_SCHEDULE"
 	cmd.Short = `Create dashboard schedule.`
 	cmd.Long = `Create dashboard schedule.
+
+  Create dashboard schedule.
+
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
@@ -256,6 +268,16 @@ func newCreateSubscription() *cobra.Command {
 	cmd.Short = `Create schedule subscription.`
 	cmd.Long = `Create schedule subscription.
 
+  Create schedule subscription.
+
+  The caller must be a workspace user with one of the following [entitlements]:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
+
+  [entitlements]: https://docs.databricks.com/security/auth/entitlements
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.
@@ -345,6 +367,13 @@ func newDeleteSchedule() *cobra.Command {
 	cmd.Short = `Delete dashboard schedule.`
 	cmd.Long = `Delete dashboard schedule.
 
+  Delete dashboard schedule.
+
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.`
@@ -404,6 +433,16 @@ func newDeleteSubscription() *cobra.Command {
 	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Delete schedule subscription.`
 	cmd.Long = `Delete schedule subscription.
+
+  Delete schedule subscription.
+
+  The caller must be a workspace user with one of the following [entitlements]:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
+
+  [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
@@ -467,6 +506,11 @@ func newGet() *cobra.Command {
 
   Get a draft dashboard.
 
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -526,6 +570,12 @@ func newGetPublished() *cobra.Command {
 
   Get the current published dashboard.
 
+  The caller must be a workspace user with one of the following entitlements:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
 
@@ -582,6 +632,16 @@ func newGetSchedule() *cobra.Command {
 	cmd.Use = "get-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Get dashboard schedule.`
 	cmd.Long = `Get dashboard schedule.
+
+  Get dashboard schedule.
+
+  The caller must be a workspace user with one of the following [entitlements]:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
+
+  [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
@@ -641,6 +701,16 @@ func newGetSubscription() *cobra.Command {
 	cmd.Use = "get-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Get schedule subscription.`
 	cmd.Long = `Get schedule subscription.
+
+  Get schedule subscription.
+
+  The caller must be a workspace user with one of the following [entitlements]:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
+
+  [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
@@ -716,7 +786,14 @@ func newList() *cobra.Command {
 
 	cmd.Use = "list"
 	cmd.Short = `List dashboards.`
-	cmd.Long = `List dashboards.`
+	cmd.Long = `List dashboards.
+
+  List dashboards.
+
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -785,6 +862,16 @@ func newListSchedules() *cobra.Command {
 	cmd.Use = "list-schedules DASHBOARD_ID"
 	cmd.Short = `List dashboard schedules.`
 	cmd.Long = `List dashboard schedules.
+
+  List dashboard schedules.
+
+  The caller must be a workspace user with one of the following [entitlements]:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
+
+  [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedules belongs.`
@@ -859,6 +946,16 @@ func newListSubscriptions() *cobra.Command {
 	cmd.Short = `List schedule subscriptions.`
 	cmd.Long = `List schedule subscriptions.
 
+  List schedule subscriptions.
+
+  The caller must be a workspace user with one of the following [entitlements]:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
+
+  [entitlements]: https://docs.databricks.com/security/auth/entitlements
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard which the subscriptions belongs.
     SCHEDULE_ID: UUID identifying the schedule which the subscriptions belongs.`
@@ -928,7 +1025,8 @@ func newMigrate() *cobra.Command {
 	cmd.Short = `Migrate dashboard.`
 	cmd.Long = `Migrate dashboard.
 
-  Migrates a classic SQL dashboard to Lakeview.
+  Deprecated: Legacy dashboard migration is no longer supported. Use Lakeview
+  (AI/BI) dashboards instead.
 
   Arguments:
     SOURCE_DASHBOARD_ID: UUID of the dashboard to be migrated.`
@@ -1016,6 +1114,11 @@ func newPublish() *cobra.Command {
 
   Publish the current draft dashboard.
 
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to be published.`
 
@@ -1090,6 +1193,11 @@ func newRevert() *cobra.Command {
 
   Revert a dashboard's definition in draft mode to the last published version.
 
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1161,6 +1269,11 @@ func newTrash() *cobra.Command {
 
   Trash a dashboard.
 
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1218,6 +1331,11 @@ func newUnpublish() *cobra.Command {
 	cmd.Long = `Unpublish dashboard.
 
   Unpublish the dashboard.
+
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -1286,6 +1404,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update dashboard.
 
   Update a draft dashboard.
+
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
@@ -1363,6 +1486,13 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE"
 	cmd.Short = `Update dashboard schedule.`
 	cmd.Long = `Update dashboard schedule.
+
+  Update dashboard schedule.
+
+  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
+  in addition to Workspace access.
+
+  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.

@@ -1,0 +1,24 @@
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '''
+{
+    "job_id": 11223344,
+    "settings": {
+        "name": "gitjob",
+        "git_source": {
+            "git_url":      "https://git.databricks.com",
+            "git_provider": "github",
+            "git_branch":   "main",
+            "git_commit":   "abcdef"
+        },
+        "tasks": [
+            {
+                "task_key": "test_task",
+                "notebook_task": {
+                    "notebook_path": "some/test/notebook.py"
+                }
+            }
+        ]
+    }
+}
+'''

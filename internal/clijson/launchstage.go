@@ -31,6 +31,26 @@ var LaunchStages = []LaunchStage{
 	LaunchStagePrivatePreview,
 }
 
+// launchStageRank orders stages from least to most restrictive:
+// GA < Public Preview < Public Beta < Private Preview. The empty string is GA,
+// the implicit default emitted for a field with no stage (see ParseLaunchStage
+// and normalizeLaunchStage in bundle/internal/schema). Extending LaunchStages
+// with a new stage means ranking it here too.
+var launchStageRank = map[LaunchStage]int{
+	"":                        0,
+	LaunchStageGA:             0,
+	LaunchStagePublicPreview:  1,
+	LaunchStagePublicBeta:     2,
+	LaunchStagePrivatePreview: 3,
+}
+
+// MoreRestrictive reports whether stage a is more restrictive than stage b in
+// the launch-stage hierarchy (GA < Public Preview < Public Beta < Private
+// Preview).
+func MoreRestrictive(a, b LaunchStage) bool {
+	return launchStageRank[a] > launchStageRank[b]
+}
+
 // ParseLaunchStage converts a raw launch_stage string from the contract into a
 // LaunchStage, mapping the empty string to GA (the implicit default). It errors
 // on any value outside the closed set.

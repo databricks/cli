@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_secret_scope"
+
+resources:
+  secret_scopes:
+    my_scope_1:
+      name: "my_scope_1"
+      backend_type: "DATABRICKS"

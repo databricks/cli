@@ -1,3 +1,5 @@
+EnvMatrix.READPLAN = ["", "1"]
+
 [[Repls]]
 Old = '\\\\'
 New = '/'

@@ -5,17 +5,17 @@ cleanup() {
    # The soft-delete case leaves a record in the trash; --purge clears it.
    $CLI postgres delete-project --purge "projects/test-pg-proj-hard-${UNIQUE_NAME}" 2>>LOG.delete-project || true
    $CLI postgres delete-project --purge "projects/test-pg-proj-soft-${UNIQUE_NAME}" 2>>LOG.delete-project || true
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 trace $CLI bundle validate
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
-trace $CLI postgres get-project "projects/test-pg-proj-hard-${UNIQUE_NAME}" | jq 'del(.create_time, .update_time)'
-trace $CLI postgres get-project "projects/test-pg-proj-soft-${UNIQUE_NAME}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-project "projects/test-pg-proj-hard-${UNIQUE_NAME}" | project_fields
+trace $CLI postgres get-project "projects/test-pg-proj-soft-${UNIQUE_NAME}" | project_fields
 
 trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.json
 

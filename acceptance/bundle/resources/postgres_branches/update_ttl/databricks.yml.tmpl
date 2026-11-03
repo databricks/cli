@@ -1,0 +1,18 @@
+bundle:
+  name: update-postgres-branch-ttl-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Branch TTL Update"
+      pg_version: 16
+
+  postgres_branches:
+    dev_branch:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: dev-branch
+      ttl: 604800s

@@ -1,0 +1,6 @@
+{
+  "ID": "12345678-1234-1234-1234-123456789abc",
+  "AcquisitionTime": "2024-01-15T15:40:00Z",
+  "IsForced": false,
+  "User": "user-with-lock@databricks.com"
+}

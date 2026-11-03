@@ -7,7 +7,7 @@ workspace:
 
 variables:
   workspace_root:
-    description: "root directory in the Databricks workspace to store the asset bundle and associated artifacts"
+    description: "root directory in the Databricks workspace to store the Declarative Automation Bundle and associated artifacts"
     default: /Users/${workspace.current_user.userName}
 
 targets:

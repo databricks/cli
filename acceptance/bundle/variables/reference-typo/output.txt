@@ -1,0 +1,99 @@
+
+=== Typo of a defined variable: single suggestion
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.hst}
+
+did you mean:
+  ${var.host}
+
+Name: reference-typo
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo/default
+
+Found 1 error
+
+=== Typo close to two defined variables: multiple suggestions
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.hst}
+
+did you mean one of:
+  ${var.host}
+  ${var.hosts}
+
+Name: reference-typo-multiple
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-multiple/default
+
+Found 1 error
+
+=== Typo in a non-variable reference (workspace field): multiple suggestions
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${workspace.stot_path}
+
+did you mean one of:
+  ${workspace.root_path}
+  ${workspace.state_path}
+
+Name: reference-typo-non-var-multiple
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-non-var-multiple/default
+
+Found 1 error
+
+=== Nested complex variable with multiple typos: only the first is reported
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.cluster.spark_versio}
+
+did you mean:
+  ${var.cluster.spark_version}
+
+Name: reference-typo-multiple-typos
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-multiple-typos/default
+
+Found 1 error
+
+=== Two typos in one reference: lookup fails at the outermost key
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.clustr.spark_versio}
+
+did you mean:
+  ${var.cluster.spark_versio}
+
+Name: reference-typo-double-nested-typo
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-double-nested-typo/default
+
+Found 1 error
+
+=== Two typos in one reference, outermost close to two variables: multiple suggestions
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.clustr.spark_versio}
+
+did you mean one of:
+  ${var.cluster.spark_versio}
+  ${var.clusters.spark_versio}
+
+Name: reference-typo-double-nested-typo-multiple
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-double-nested-typo-multiple/default
+
+Found 1 error

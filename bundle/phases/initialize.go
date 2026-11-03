@@ -26,6 +26,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
 	bundle.ApplySeqContext(ctx, b,
+		// Reads (dynamic): resources.internal_immutable_snapshots (and other internal keys)
+		// Warns and removes any internal resource fields set by the user.
+		mutator.RejectInternalResources(),
+
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -33,6 +37,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
+		mutator.ValidateSecretValueIsVariable(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -66,12 +71,14 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Loads git repository information and updates bundle configuration with git details
 		mutator.LoadGitDetails(),
 
+		// Reads (typed): b.Config.Workspace.SyncMode, b.Config.Presets.SourceLinkedDeployment, b.Config.Experimental.ImmutableFolder (warns about the deprecated settings)
+		// Updates (typed): b.Config.Workspace.SyncMode (in-place for development deployments in the Databricks Workspace, overwrite where in-place is unavailable)
 		// This mutator needs to be run before variable interpolation and defining default workspace paths
 		// because it affects how workspace variables are resolved.
-		mutator.ApplySourceLinkedDeploymentPreset(),
+		mutator.ApplySyncMode(),
 
 		// Reads (env): __TEST_DATABRICKS_IMMUTABLE_FOLDER (non-empty value enables immutable folder mode)
-		// Updates (typed): b.Config.Experimental.ImmutableFolder (forces to true when env var is set)
+		// Updates (typed): b.Config.Workspace.SyncMode (forces to immutable when env var is set)
 		// Allows running the full test suite against the immutable folder code path without
 		// modifying any databricks.yml files.
 		mutator.OverrideImmutableFolder(),
@@ -148,17 +155,33 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Warn when the deprecated pipeline-level development property is set by the user.
+		// Must run after PythonMutator to see development values set by Python mutators.
+		validate.PipelineDevelopmentDeprecated(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
 		mutator.InitializeVolumePaths(),
 		mutator.ResolveVolumePathReferencesOnlyResources(),
 
-		// Resolve --select selectors against the materialized resources: normalize
-		// each to its "type.name" form and validate it exists. Runs after all resource
-		// mutations so that dynamically added resources are visible. This does not
-		// filter resources; the direct engine selects against the resolved keys later.
-		mutator.ResolveSelect(),
+		// Default the `source` field on job tasks (GIT for git_source jobs, else
+		// WORKSPACE). Runs after PythonMutator so it sees the final git_source/tasks
+		// and does not expose the injected default to Python code, while remaining
+		// visible in `bundle validate`/`summary`.
+		resourcemutator.ApplyDefaultTaskSource(),
+
+		// Drop empty-string values on omitempty resource fields so they are not
+		// force-sent to the backend. Runs after variable resolution (a variable may
+		// resolve to "") and after all resource mutations, before validation so that
+		// required fields (no omitempty) still error if empty.
+		mutator.DropEmptyStrings(),
+
+		// Record in telemetry whether --select was used. Selectors are validated once
+		// state is open (process.go) and resolved against the computed plan
+		// (Plan.FilterToSelected), so resources removed from config and planned for
+		// deletion are selectable too.
+		mutator.MarkSelectUsed(),
 
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
@@ -177,9 +200,19 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
+		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
+		validate.ValidateJobRunIdempotencyToken(),
+
+		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+		mutator.ValidateJobRunTriggers(),
+
+		// Reads (dynamic): resources.*.*.lifecycle.depends_on
+		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.
+		validate.LifecycleDependsOn(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
-		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
-		// points to a Terraform-only field with no DABs equivalent.
+		// Errors when a cross-resource reference points to a Terraform-only field
+		// with no DABs equivalent.
 		validate.TFOnlyReferences(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
@@ -189,7 +222,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		mutator.TranslatePaths(),
 
-		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
+		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Workspace.SyncMode (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),

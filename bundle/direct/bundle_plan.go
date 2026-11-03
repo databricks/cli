@@ -20,12 +20,14 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -39,21 +41,28 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-// ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
-// If the plan has no lineage (first deployment), validation is skipped.
+// ValidatePlanAgainstState rejects a saved plan that no longer matches the state it was built
+// against: its features, its lineage and its serial.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
-	if plan.Lineage == "" {
-		return nil
-	}
-
 	stateDB.AssertOpenedForReadOrWrite()
 
+	// A plan is built against a set of state features, and the stamps it carries follow from
+	// them, so applying it to a target with a different set would deploy the wrong shape.
+	// The state is the target's source of truth and carries its features even on a first
+	// recorded deploy (unlike the version ids, which are empty then).
+	if !maps.Equal(plan.Features, stateDB.StateFeatures()) {
+		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
+	}
+
+	// A plan taken before the first deploy carries no lineage, so both sides are empty then and this
+	// passes. If a deployment has happened since, the lineage no longer matches.
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
-	if plan.Serial != stateDB.Data.Serial {
-		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	expected := stateDB.GetSerial()
+	if plan.Serial != expected {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
 	}
 
 	return nil
@@ -114,6 +123,42 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
+// StampDeploymentIdForFirstVersion fills deploymentID into the plan's jobs and pipelines that still lack one, in
+// both the state cache the apply reads and the plan JSON. It is called after approval creates the
+// deployment, for a first deploy whose deployment_id did not exist at plan time.
+//
+// For subsequent deployments, the deployment_id is already stamped in the plan.
+func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string) error {
+	for resourceKey, entry := range b.Plan.Plan {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
+			continue
+		}
+		sv, ok := b.StateCache.Load(resourceKey)
+		if !ok {
+			continue
+		}
+		var stamped bool
+		switch v := sv.Value.(type) {
+		case *jobs.JobSettings:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		case *dresources.PipelineState:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		}
+		if stamped {
+			if err := sv.SyncToJSON(entry.NewState); err != nil {
+				return fmt.Errorf("%s: stamping deployment into plan: %w", resourceKey, err)
+			}
+		}
+	}
+	return nil
+}
+
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
 //
@@ -132,6 +177,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
+
+	// The plan records the state it was built against so deploy --plan can reject a plan built for a
+	// target of a different shape or a state that has moved on since.
+	plan.Features = b.StateDB.StateFeatures()
+	plan.Serial = b.StateDB.GetSerial()
 
 	b.Plan = plan
 
@@ -195,7 +245,17 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteState, err := retryOnTransient(ctx, func() (any, error) {
+			if !adapter.HasDoDelete() {
+				// Deleting this resource has no backend effect, so applying the
+				// Delete only drops the state entry. The remote read below exists
+				// solely to detect an already-deleted/gone resource and skip the
+				// delete call — pointless when there is no delete call — so skip it
+				// and mark the entry state-only.
+				entry.StateOnly = true
+				return true
+			}
+
+			remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
@@ -208,6 +268,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
 				}
+			} else if adapter.IsGone(remoteState) {
+				// The resource is in a transient terminal-teardown state (e.g. an app in
+				// DELETING) that a GET still returns but a second delete would reject.
+				// Treat it as gone: apply cleans up state without re-issuing the delete.
+				entry.Gone = true
 			}
 
 			entry.RemoteState = remoteState
@@ -245,6 +310,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// Compact the saved state so hashed_fields fields are hashes
+		compactedSavedState, err := dresources.CompactState(adapter.ResourceConfig(), savedState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
+			return false
+		}
+
 		// Note, currently we're diffing static structs, not dynamic value.
 		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
 		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
@@ -256,13 +328,20 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
+		// Compact a copy for comparison only; sv.Value keeps the full contents, which
+		// the deploy sends to the API.
+		localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
+			return false
+		}
+		localDiff, err := structdiff.GetStructDiff(compactedSavedState, localState, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
 		}
 
-		remoteState, err := retryOnTransient(ctx, func() (any, error) {
+		remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
@@ -289,20 +368,28 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+			// Compact the remapped remote on the same fields, so a hashed_fields field
+			// is a hash on all three sides of the diff (saved, local, remote)
+			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false
 			}
 		}
 
-		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, compactedSavedState, remoteStateComparable)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
 
-		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+		err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
@@ -346,6 +433,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	for _, entry := range plan.Plan {
 		if entry.Action == deployplan.Skip {
 			entry.NewState = nil
+		}
+	}
+
+	for resourceKey, entry := range plan.Plan {
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
+		}
+		if err := redactPlanEntry(adapter, entry); err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
 		}
 	}
 
@@ -402,7 +499,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 	return m, nil
 }
 
-func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
+func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, newState, remoteState any) error {
 	cfg := adapter.ResourceConfig()
 	generatedCfg := adapter.GeneratedResourceConfig()
 
@@ -414,10 +511,16 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if structdiff.IsEqual(ch.Remote, ch.New) {
+		// RemoteAlreadySet only holds when ch.Remote is a real remote value we can compare
+		// against ch.New. Skip it for fields whose remote value is fabricated and thus
+		// meaningless: declared ignore_remote_changes (present in RemoteType but read back
+		// backend-managed/input-only), or absent from RemoteType (a guaranteed-nil
+		// placeholder, since RemapState is a dumb copy). Otherwise a coincidental
+		// new == remote (both nil, say) wrongly skips a real local change.
+		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
+		} else if allEmptyChange(ch) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmpty
 		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
@@ -447,12 +550,18 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
-		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
-			ch.Action = deployplan.Recreate
+			// remote_addition is the broadest skip (any config-absent remote field inside a gated
+			// object), so it runs after every more specific skip classifier above. It MUST stay
+			// above recreate: a policy-supplied field must not trigger a delete+create. And after
+			// backend_default (both share the Old==nil,New==nil,Remote!=nil shape) so known defaults
+			// keep their own reason for config-remote-sync (#6631). See shouldSkipRemoteAddition.
+		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
+			ch.Action = deployplan.Skip
 			ch.Reason = reason
-		} else if reason, ok := findMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
-			ch.Action = deployplan.Recreate
-			ch.Reason = reason
+		} else if reason, ok := findMatchingRuleBidirectional(path, cfg.RecreateOnChanges); ok {
+			ch.Action, ch.Reason = recreateOrBackendDefault(ch, reason)
+		} else if reason, ok := findMatchingRuleBidirectional(path, generatedCfg.RecreateOnChanges); ok {
+			ch.Action, ch.Reason = recreateOrBackendDefault(ch, reason)
 		} else {
 			ch.Action = deployplan.Update
 		}
@@ -484,8 +593,28 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
+func ignoreRemoteChanges(cfg1, cfg2 *dresources.ResourceLifecycleConfig, path *structpath.PathNode) bool {
+	if _, ok := findMatchingRule(path, cfg1.IgnoreRemoteChanges); ok {
+		return true
+	}
+
+	if _, ok := findMatchingRule(path, cfg2.IgnoreRemoteChanges); ok {
+		return true
+	}
+
+	return false
+}
+
 // isFieldMissingInRemote reports whether path exists in StateType but is absent from RemoteType.
 // Such fields are accepted by the API on write but not returned by GET.
+//
+// Because RemapState is a dumb subset copy (see the "RemapState is a dumb copy" section in
+// dresources/README.md), a field absent from RemoteType is always nil/zero in the remapped
+// remote state the planner compares against (ch.Remote): there is nothing for RemapState to
+// copy it from, so it can never appear. That guarantee is what makes this a sound signal that
+// the field's remote value is meaningless. Fields the API returns under a different path are
+// added to RemoteType and populated in DoRead, so they are NOT missing here and keep their
+// real remote value.
 func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNode) bool {
 	if structaccess.ValidatePath(adapter.StateType(), path) != nil {
 		return false
@@ -500,6 +629,32 @@ func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (
 		}
 	}
 	return "", false
+}
+
+// findMatchingRuleBidirectional matches rules in both directions: the usual
+// descendant match, plus a rule on foo.bar matching a change recorded at foo,
+// because a whole block added or removed is one block-level change and the field
+// the rule names is part of it. Callers must only use this for escalating actions
+// (currently recreate): a whole block that merely contains a leaf named by a
+// suppressing rule (ignore_remote/ignore_local, backend_default, normalize) is
+// still a real change, so those keep the descendant-only findMatchingRule.
+func findMatchingRuleBidirectional(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
+	for _, r := range rules {
+		if matchesFieldRuleBidirectional(path, r.Field) {
+			return r.Reason, true
+		}
+	}
+	return "", false
+}
+
+func matchesFieldRuleBidirectional(path *structpath.PathNode, pattern *structpath.PatternNode) bool {
+	if path.HasPatternPrefix(pattern) {
+		return true
+	}
+	if path.Len() < pattern.Len() {
+		return path.HasPatternPrefix(pattern.Prefix(path.Len()))
+	}
+	return false
 }
 
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
@@ -563,6 +718,75 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 		return reason, true
 	}
 	return "", false
+}
+
+// shouldSkipRemoteAddition skips a field the backend added to an object it co-owns.
+//
+// It fires only on an addition: absent from both old state and new config, present in the
+// remote. A disagreement between config and remote (New != nil) is left alone and still
+// reports an update, and so does a field the user removed from config (Old != nil) — that
+// is a deletion the user asked for, not a backend addition.
+//
+// The rule is gated on a field within the same object (ignore_remote_additions.when_set).
+// For cluster specs that gate is policy_id: an attached cluster policy supplies values
+// server-side — "fixed" elements always, "defaultValue" elements when the request sets
+// apply_policy_default_values — so the remote spec is legitimately a superset of what the
+// bundle declares. See acceptance/bundle/resources/jobs/cluster_policy (fixed_addition, default_flag)
+// for the measured backend behavior.
+//
+// Suppressed values are never echoed back on write: an update sends the config spec as-is
+// and the backend re-supplies the policy values.
+//
+// Order in the ladder: this is the broadest skip (any config-absent remote field inside a
+// gated object), so it runs last among the skip classifiers — after backend_default,
+// normalized, and missing_in_remote (all mutually exclusive with it or more specific), and
+// before recreate (a policy-supplied field must not trigger a delete+create). The
+// after-backend_default part is load-bearing: the cluster rule is root-level so it also
+// matches known backend defaults; classifying those as backend_default first keeps
+// remote_addition to genuine, unrecognized additions. config-remote-sync relies on this — it
+// captures remote_addition entries but excludes backend defaults, so mislabeling a default as
+// remote_addition would sync it into config (#6631).
+func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc, newState any) (string, bool) {
+	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+		return "", false
+	}
+	for _, rule := range cfg.IgnoreRemoteAdditions {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		// Resolve the gate in two steps: the concrete object the rule matched, then the gate
+		// path relative to it. The wildcards in Field are filled in from the change path, so
+		// each object is gated on its own value.
+		object, err := structaccess.Get(newState, path.Prefix(rule.Field.Len()))
+		if err != nil {
+			// The gated object is absent from the config entirely (e.g. the remote grew a
+			// whole new_cluster the bundle does not declare), so there is no policy to gate
+			// on and the addition is real drift. Rule typos cannot reach here: the patterns
+			// are validated against the state type by TestResourcesYMLRemoteAdditionGates.
+			continue
+		}
+		value, err := structaccess.Get(object, rule.WhenSet)
+		if err != nil || allEmpty(value) {
+			continue
+		}
+		return deployplan.ReasonRemoteAddition, true
+	}
+	return "", false
+}
+
+// recreateOrBackendDefault decides the action for a change that matched a
+// recreate_on_changes rule. An immutable field the config never set (old and new
+// nil) but the backend populated (remote set) is treated as a backend default and
+// left in place: the user does not manage it, and recreating to drop it would be
+// destructive (e.g. dropping an out-of-band UC trace location on an MLflow
+// experiment). This makes the backend default implicit for every optional immutable
+// field, so an explicit backend_defaults entry is only needed for a non-recreate
+// field. Any other change to an immutable field still recreates.
+func recreateOrBackendDefault(ch *deployplan.ChangeDesc, reason string) (deployplan.ActionType, string) {
+	if ch.Old == nil && ch.New == nil && ch.Remote != nil {
+		return deployplan.Skip, deployplan.ReasonImmutableBackendValue
+	}
+	return deployplan.Recreate, reason
 }
 
 // shouldSkipBackendDefault checks if a change should be skipped because the remote value
@@ -644,6 +868,49 @@ func allEmpty(values ...any) bool {
 	return true
 }
 
+// allEmptyChange reports whether a change is an empty no-op that should be skipped.
+// All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero scalar, "", empty map).
+//
+// The one exception is a genuine local change involving an explicit zero scalar: a value
+// force-sent on either side of the diff that differs from the other side is a real change the
+// config makes, so it must be applied rather than dismissed as empty. This covers both setting
+// gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field (Old nil,
+// New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes for a field
+// nobody set (Old and New empty) or a value the config did not actually change (Old == New,
+// e.g. an unchanged num_workers: 0) stays a no-op.
+//
+// The check reads only Old (saved state) and New (desired state); both are derived from config
+// (saveState persists newState, never the remote read), so a non-nil zero here always means the
+// value was explicitly configured. The backend-supplied Remote value is only consulted by the
+// allEmpty gate above, so backend normalization of a zero (e.g. "" <-> null) never triggers this.
+func allEmptyChange(ch *deployplan.ChangeDesc) bool {
+	if !allEmpty(ch.Old, ch.New, ch.Remote) {
+		return false
+	}
+	if (isZeroScalar(ch.Old) || isZeroScalar(ch.New)) && !structdiff.IsEqual(ch.Old, ch.New) {
+		return false
+	}
+	return true
+}
+
+// isZeroScalar reports whether v is a number or bool holding its zero value (0, 0.0, false).
+// Strings are left out to stay in line with the DropEmptyStrings mutator, which drops an
+// explicit "" before the plan runs.
+func isZeroScalar(v any) bool {
+	if v == nil {
+		return false
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.Bool:
+		return rv.IsZero()
+	default:
+		return false
+	}
+}
+
 func isEmpty(rv reflect.Value) bool {
 	// certain fields can change between "" and null when processed by backend.
 	// in some cases, e.g. model_serving_endpoints.descriptions those fields are also marked as recreate, so we ignore such cases
@@ -685,6 +952,13 @@ func isEmptyStruct(rv reflect.Value) bool {
 	}
 
 	rt := rv.Type()
+
+	// Opaque structs (duration.Duration, types/time.Time) have no exported
+	// fields to inspect, so the loop below would call every value empty.
+	if structdiff.IsOpaqueStruct(rt) {
+		return false
+	}
+
 	for i := range rt.NumField() {
 		field := rt.Field(i)
 
@@ -715,12 +989,6 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
-	// template string is preserved in the plan output rather than causing an error.
-	if path.String() == "workspace.snapshot_path" {
-		return nil, errDelayed
-	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -778,9 +1046,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	adapter := b.Adapters[targetGroup]
-	if adapter == nil {
-		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
+	adapter, err := b.getAdapterForKey(targetResourceKey)
+	if err != nil {
+		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
 	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
@@ -801,7 +1069,14 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return value, nil
 	}
 
-	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.FieldTriggersRecreate(fieldPath))
+	// A field is safe to read from the remote cache when the target either has no
+	// changes (Skip) or keeps its ID and the field cannot have changed: an
+	// immutable field (FieldTriggersRecreate) or a backend-assigned stable output
+	// like an AIP name derived from the ID (FieldIsStableOutput). The latter lets
+	// ${resources.X.name} resolve during an in-place update instead of delaying,
+	// which would otherwise recreate dependents that reference it as their parent.
+	canReadRemoteCache := targetAction == deployplan.Skip ||
+		(targetAction.KeepsID() && (adapter.FieldTriggersRecreate(fieldPath) || adapter.FieldIsStableOutput(fieldPath)))
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
@@ -954,7 +1229,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	slices.Sort(nodes)
-
 	for _, node := range nodes {
 		delete(existingKeys, node)
 
@@ -969,39 +1243,36 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		baseRefs := map[string]string{}
-
-		if strings.HasSuffix(node, ".permissions") {
-			var inputConfigStructVar *structvar.StructVar
-			var err error
-
-			if strings.HasPrefix(node, "resources.secret_scopes.") {
-				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
-				if !ok {
-					return nil, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", prefix, inputConfig)
-				}
-				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
-			} else {
-				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
-			}
-
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
-		} else if strings.HasSuffix(node, ".grants") {
-			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
-		}
-
-		newStateConfig, err := adapter.PrepareState(inputConfig)
+		inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
+		// gets deployed and saved.
+		//
+		// This runs on the typed state rather than the dynamic config so that
+		// extractReferences below still sees the escaped form and does not mistake
+		// these placeholders for bundle references.
+		if err := unescapeRefs(newStateConfig); err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
+		// Apply drops the state entry once the node is empty, so it is skipped from then on.
+		if _, hasState := db.State[node]; !hasState {
+			empty, err := adapter.IsEmptyState(newStateConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", prefix, err)
+			}
+			if empty {
+				continue
+			}
 		}
 
 		// Note, we're extracting references in input config but resolving them in newState.Config which is PrepareState(inputConfig)
@@ -1013,7 +1284,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
 
-		maps.Copy(refs, baseRefs)
+		maps.Copy(refs, inputStructVar.Refs)
 
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
@@ -1030,11 +1301,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
-				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-				// snapshot.Upload(), not by the direct engine — skip it here.
-				if targetPath == "workspace.snapshot_path" {
-					continue
-				}
 
 				fullRef := "${" + targetPath + "}"
 
@@ -1054,6 +1320,16 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 		}
 
+		lifecycleDeps, err := LifecycleDependsOn(configRoot, inputConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+		for _, dep := range lifecycleDeps {
+			if !slices.Contains(dependsOn, dep) {
+				dependsOn = append(dependsOn, dep)
+			}
+		}
+
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
@@ -1061,15 +1337,31 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return strings.Compare(a.Label, b.Label)
 		})
 
+		// Store an unredacted copy in the cache so Apply can deploy with the
+		// actual values. The original newStateConfig is redacted below and used
+		// only for the plan output.
+		stateType := adapter.StateType()
+		cacheCopyPtr := reflect.New(stateType.Elem())
+		cacheCopyPtr.Elem().Set(reflect.ValueOf(newStateConfig).Elem())
+		b.StateCache.Store(node, &structvar.StructVar{
+			Value: cacheCopyPtr.Interface(),
+			Refs:  refs,
+		})
+
+		// Redact sensitive fields before serialising. Sensitive values always come
+		// from bundle variables (enforced by ValidateSecretValueIsVariable), which
+		// are resolved before plan time, so SyncToJSON (called when cross-resource
+		// refs are resolved during planNode) will never re-serialise these fields.
+		if err := redactStruct(adapter, newStateConfig); err != nil {
+			return nil, fmt.Errorf("%s: cannot redact state: %w", node, err)
+		}
+
 		newState := &structvar.StructVar{
 			Value: newStateConfig,
 			Refs:  refs,
 		}
 
-		// Store in cache for use during planning phase
-		b.StateCache.Store(node, newState)
-
-		// Convert to JSON for serialization in plan
+		// Convert to JSON for serialization in plan (values already redacted above).
 		newStateJSON, err := newState.ToJSON()
 		if err != nil {
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
@@ -1081,6 +1373,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		p.Plan[node] = &e
+	}
+
+	// lifecycle.depends_on only orders resources: a target that is not in the plan
+	// (e.g. skipped as empty) needs no ordering.
+	for _, entry := range p.Plan {
+		entry.DependsOn = slices.DeleteFunc(entry.DependsOn, func(dep deployplan.DependsOnEntry) bool {
+			return dep.Label == lifecycleDependsOnLabel && p.Plan[dep.Node] == nil
+		})
 	}
 
 	for n, entry := range existingKeys {
@@ -1181,4 +1481,29 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	}
 
 	return adapter, nil
+}
+
+const lifecycleDependsOnLabel = "depends_on"
+
+// LifecycleDependsOn returns the edges declared in lifecycle.depends_on of a resource,
+// given its config as returned by [config.Root.GetResourceConfig].
+func LifecycleDependsOn(configRoot *config.Root, inputConfig any) ([]deployplan.DependsOnEntry, error) {
+	// Not every node has a lifecycle, e.g. permissions and grants.
+	resource, ok := inputConfig.(interface {
+		GetLifecycle() resources.LifecycleConfig
+	})
+	if !ok {
+		return nil, nil
+	}
+
+	var result []deployplan.DependsOnEntry
+	for _, dep := range resource.GetLifecycle().GetDependsOn() {
+		res, key, err := configRoot.Resources.ResolveKey(dep.Resource)
+		if err != nil {
+			return nil, fmt.Errorf("lifecycle.depends_on: %w", err)
+		}
+		target := "resources." + res.ResourceDescription().PluralName + "." + key
+		result = append(result, deployplan.DependsOnEntry{Node: target, Label: lifecycleDependsOnLabel})
+	}
+	return result, nil
 }

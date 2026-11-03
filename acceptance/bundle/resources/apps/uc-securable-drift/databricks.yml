@@ -1,0 +1,19 @@
+bundle:
+  name: apps-uc-securable-drift
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: ./app
+      resources:
+        - name: my-table
+          uc_securable:
+            securable_full_name: main.default.my_table
+            securable_type: TABLE
+            permission: SELECT
+        - name: my-volume
+          uc_securable:
+            securable_full_name: main.default.my_volume
+            securable_type: VOLUME
+            permission: READ_VOLUME

@@ -1,0 +1,19 @@
+bundle:
+  name: deploy-model-provider-service-test-$UNIQUE_NAME
+
+resources:
+  model_provider_services:
+    mps:
+      parent: schemas/main.default
+      model_provider_service_id: test_mps_$UNIQUE_NAME
+      comment: "Routes to a custom OpenAI-compatible provider"
+      config:
+        provider_type: EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM
+        targets:
+          - model: gpt-4o
+            native_api_types: ["openai/v1/chat/completions"]
+        custom:
+          direct:
+            base_url: https://api.example.com/v1
+            api_key:
+              plaintext: dummy-api-key

@@ -9,10 +9,10 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.job.id')
-echo "$job_id:JOB_ID" >> ACC_REPLS
+add_repl "$job_id" JOB_ID
 
 sql_warehouse_id=$($CLI bundle summary --output json | jq -r '.resources.sql_warehouses.warehouse.id')
-echo "$sql_warehouse_id:SQL_WAREHOUSE_ID" >> ACC_REPLS
+add_repl "$sql_warehouse_id" SQL_WAREHOUSE_ID
 
 user=deco-test-user@databricks.com
 

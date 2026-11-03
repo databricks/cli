@@ -7,7 +7,7 @@ create jobs.independent
 
 Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> print_requests.py --sort //jobs
+>>> print_requests.py --nostamp --sort //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -64,7 +64,7 @@ Resources:
       URL:  (not deployed)
     independent:
       Name: independent
-      URL:  [DATABRICKS_URL]/jobs/[INDEPENDENT_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[INDEPENDENT_ID]?w=[WORKSPACE_ID]
 
 === Plan should still contain foo and bar
 >>> [CLI] bundle plan
@@ -75,7 +75,7 @@ create jobs.foo
 Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Expecting no difference in the output between first and second deploy
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -101,10 +101,9 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

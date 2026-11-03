@@ -36,8 +36,10 @@ def substitute_variables(text):
         # If the environment variable is not set, replace with an empty string.
         return os.environ.get(var_name, "")
 
-    # Match both $VAR and ${VAR} formats
-    pattern = r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)"
+    # Match both $VAR and ${VAR} formats. A reference preceded by "$" is left
+    # untouched, so a config can carry a literal $${VAR} through rendering
+    # (bundle configs use that form to escape ${...} from variable resolution).
+    pattern = r"(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)\}|(?<!\$)\$([A-Za-z_][A-Za-z0-9_]*)"
     return re.sub(pattern, replace_var, text)
 
 

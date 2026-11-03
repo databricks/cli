@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  job_runs:
+    my_run:
+      job_id: 1234567890
+      idempotency_token: "mine"

@@ -1,6 +1,6 @@
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    # destroy deletes the triggered run via jobs/runs/delete (also unlinks out.requests.txt)
+    # destroy leaves the triggered run alone: no jobs/runs/delete (also unlinks "$OUT_REQUESTS")
     trace print_requests.py //jobs/runs/delete
 }
 trap cleanup EXIT
@@ -20,6 +20,8 @@ trace $CLI bundle summary
 title "exactly one run-now request was made"
 trace print_requests.py //jobs/run-now
 
-title "the triggered run id is stored in state"
-trace read_id.py my_run
-trace read_id.py my_job
+# result_state is a planning sentinel and is cleared before SaveState.
+title "the triggered run id is stored in state, without result_state"
+trace read_state.py job_runs my_run id result_state
+read_id.py my_run > /dev/null
+read_id.py my_job > /dev/null

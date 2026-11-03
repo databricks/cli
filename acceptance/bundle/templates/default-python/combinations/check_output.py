@@ -9,8 +9,10 @@ INCLUDE_PYTHON = os.environ["PY"] == "yes"
 READPLAN = os.environ["READPLAN"] != ""
 
 CLOUD_ENV = os.environ.get("CLOUD_ENV")
-if CLOUD_ENV and SERVERLESS and not os.environ.get("TEST_METASTORE_ID"):
-    sys.exit(f"SKIP_TEST SERVERLESS=yes but TEST_METASTORE_ID is empty in this env {CLOUD_ENV=}")
+if CLOUD_ENV and SERVERLESS:
+    # Serverless needs Unity Catalog. Every cloud test env has a metastore, so
+    # crash here rather than silently skipping if one ever stops providing it.
+    os.environ["TEST_METASTORE_ID"]
 
 BUILDING = "Building python_artifact"
 UPLOADING_WHL = re.compile(r"^Uploading .*whl\.\.\.$", re.M)
@@ -22,7 +24,8 @@ def is_printable_line(line):
     if line.startswith(BUILDING):
         return False
 
-    # only shown when include_python=yes and READPLAN is not set
+    # shown when include_python=yes (READPLAN=0: after build; READPLAN=1: pre-built wheel)
+    # filtered from output.txt to keep goldens stable across variants
     if UPLOADING_WHL.match(line):
         return False
 
@@ -37,9 +40,16 @@ p = subprocess.run(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
 try:
     assert p.returncode == 0, p.returncode
     assert p.stdout == ""
-    if INCLUDE_PYTHON and not READPLAN:
-        assert BUILDING in p.stderr, BUILDING
+    if INCLUDE_PYTHON:
+        # The wheel is always uploaded when Python is included — whether the build
+        # command ran (READPLAN=0) or FindLibraries discovered the pre-built wheel
+        # from plan time (READPLAN=1).
         assert UPLOADING_WHL.search(p.stderr), UPLOADING_WHL
+        if READPLAN:
+            # With --plan the build command is not re-run.
+            assert BUILDING not in p.stderr, BUILDING
+        else:
+            assert BUILDING in p.stderr, BUILDING
     else:
         assert BUILDING not in p.stderr, BUILDING
         assert not UPLOADING_WHL.search(p.stderr), UPLOADING_WHL

@@ -1,0 +1,7 @@
+{
+    "project_name": "my_default_scala",
+    "compute_type": "standard cluster",
+    "artifacts_dest_path": "/Volumes/test-folder",
+    "default_catalog": "main",
+    "personal_schemas": "yes"
+}

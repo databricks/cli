@@ -5,6 +5,7 @@ resources:
   pipelines:
     foo:
       name: test-pipeline-$UNIQUE_NAME
+      development: true # CAN_REMOVE
       libraries:
         - file:
             path: pipeline.py

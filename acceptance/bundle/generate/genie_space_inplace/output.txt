@@ -5,9 +5,9 @@
 === deploy initial genie space
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie space update inplace/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created genie_spaces.test_genie_space
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === update the genie space
 >>> [CLI] genie update-space [GENIE_SPACE_ID] --serialized-space {"a":"b"}
@@ -20,6 +20,8 @@ Deployment complete!
   "warehouse_id": "my-warehouse-1234"
 }
 
+>>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
+
 === update the genie space file using bundle generate
 >>> [CLI] bundle generate genie-space --resource test_genie_space --force
 Writing genie space to space.geniespace.json
@@ -28,3 +30,5 @@ Writing genie space to space.geniespace.json
 {
   "a": "b"
 }
+
+>>> print_requests.py --dms //api/2.0/bundle --get --oneline

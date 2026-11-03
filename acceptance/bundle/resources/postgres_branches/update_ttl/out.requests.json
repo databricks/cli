@@ -1,0 +1,12 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch",
+  "q": {
+    "update_mask": "spec.expiration"
+  },
+  "body": {
+    "spec": {
+      "ttl": "259200s"
+    }
+  }
+}

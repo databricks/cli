@@ -1,0 +1,51 @@
+# A user destroys a bundle on one machine and redeploys it (under the same name)
+# from another machine that has no local state. Local state is scoped by target
+# only (.databricks/bundle/<target>), while remote state lives under
+# ~/.bundle/<bundle name>/<target>/state, so the two can diverge.
+#
+# Destroy removes the local state file, so a clean destroy leaves no stale lineage
+# behind. But if that cleanup does not happen (e.g. the process dies after the remote
+# state is deleted), the lingering local lineage no longer matches the new one a fresh
+# redeploy mints, and every command that pulls remote state fails. Cover both cases.
+
+title "Machine A: deploy, then destroy\n"
+trace $CLI bundle deploy
+
+# Snapshot machine A's local state (lineage L1) while it exists, so the lingering-state
+# case below can replay a destroy whose local cleanup did not happen.
+LINEAGE_A=$(print_state.py | jq -r .lineage)
+add_repl "$LINEAGE_A" LINEAGE_A
+cp -r .databricks .databricks.machineA
+
+trace $CLI bundle destroy --auto-approve
+
+title "A clean destroy removes the local state file, so no stale lineage is left behind:\n"
+trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
+
+# Print the whole state tree so any empty scaffolding dir or stray file shows up. The
+# terraform engine dir is pruned: its contents differ by engine and embed the provider
+# version and OS/arch, which would make the golden fragile (the state file it holds is
+# already asserted gone above). The bundle scaffolding we care about lives directly
+# under the target dir, so it is still covered.
+title "and leaves the bundle state dir clean, with no empty scaffolding directories:\n"
+trace find .databricks -name terraform -prune -o -print | sort
+
+# Wipe whatever remains so the next deploy behaves like a fresh machine.
+rm -rf .databricks
+
+title "Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)\n"
+trace $CLI bundle deploy
+
+# Mask machine B's (remote) lineage.
+LINEAGE_B=$(print_state.py | jq -r .lineage)
+add_repl "$LINEAGE_B" LINEAGE_B
+
+# Back on machine A, but this time destroy's local cleanup did not happen: restore the
+# stale local state that still carries L1.
+rm -rf .databricks
+mv .databricks.machineA .databricks
+
+title "Machine A with a lingering local state: any command that pulls remote state now fails\n"
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle destroy --auto-approve

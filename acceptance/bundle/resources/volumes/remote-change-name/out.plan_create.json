@@ -1,0 +1,17 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "plan": {
+    "resources.volumes.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "mycatalog",
+          "name": "myname",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        }
+      }
+    }
+  }
+}

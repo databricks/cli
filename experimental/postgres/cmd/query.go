@@ -235,7 +235,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		if err != nil {
 			// Render the successful prefix, then surface the error with
 			// rich pgError formatting if applicable.
-			if rerr := renderPartial(out, stderr, format, results, r, err); rerr != nil {
+			if rerr := renderPartial(ctx, out, stderr, format, results, r, err); rerr != nil {
 				// Best-effort partial render failed; surface the original
 				// error to the user, the renderer error to debug logs.
 				fmt.Fprintln(stderr, "warning: failed to render partial result:", rerr)
@@ -254,9 +254,9 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 
 	switch format {
 	case sqlcli.OutputJSON:
-		return renderJSONMulti(out, stderr, results, nil, "")
+		return renderJSONMulti(ctx, out, stderr, results, nil, "")
 	default:
-		return renderTextMulti(out, results)
+		return renderTextMulti(ctx, out, results)
 	}
 }
 
@@ -312,14 +312,14 @@ func newSinkInteractive(format sqlcli.Format, out, stderr io.Writer, interactive
 // renderPartial emits the rendered output for the prefix of units that ran
 // successfully before a unit errored. For multi-input json this also writes
 // the error envelope as the last array element.
-func renderPartial(out, stderr io.Writer, format sqlcli.Format, results []*unitResult, errored *unitResult, err error) error {
+func renderPartial(ctx context.Context, out, stderr io.Writer, format sqlcli.Format, results []*unitResult, errored *unitResult, err error) error {
 	switch format {
 	case sqlcli.OutputJSON:
-		return renderJSONMulti(out, stderr, results, errored, formatPgError(err))
+		return renderJSONMulti(ctx, out, stderr, results, errored, formatPgError(err))
 	default:
 		// Text: render whatever ran cleanly. The error message goes through
 		// cobra's default error path on stderr after we return.
-		return renderTextMulti(out, results)
+		return renderTextMulti(ctx, out, results)
 	}
 }
 

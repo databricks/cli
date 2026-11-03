@@ -1,0 +1,3 @@
+RecordRequests = true
+
+# Catalogs and schemas are only supported by the direct engine.

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "command": "environments setup-local",
+  "ok": false,
+  "mode": "default",
+  "dryRun": false,
+  "greenfield": false,
+  "phases": [
+    {
+      "phase": "preflight",
+      "status": "error"
+    },
+    {
+      "phase": "resolve",
+      "status": "pending"
+    },
+    {
+      "phase": "fetch",
+      "status": "pending"
+    },
+    {
+      "phase": "merge",
+      "status": "pending"
+    },
+    {
+      "phase": "provision",
+      "status": "pending"
+    },
+    {
+      "phase": "validate",
+      "status": "pending"
+    }
+  ],
+  "warnings": [],
+  "error": {
+    "code": "E_USAGE",
+    "failurePhase": "preflight",
+    "message": "invalid compute target flags: flags --cluster-id and --serverless-version are mutually exclusive; specify at most one",
+    "diskMutated": false
+  },
+  "durationMs": [DURATION_MS]
+}

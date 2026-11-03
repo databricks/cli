@@ -1,2 +1,1 @@
-Local = true
 Cloud = false # tests don't interact with APIs

@@ -28,8 +28,8 @@ from databricks.bundles.core import (
     Resources,
     Severity,
     job_mutator,
+    pipeline_mutator,
 )
-from databricks.bundles.core._resource_mutator import pipeline_mutator
 from databricks.bundles.jobs import Job
 from databricks.bundles.pipelines._models.pipeline import Pipeline
 

@@ -28,7 +28,7 @@ func New() *cobra.Command {
 		Args:  root.NoArgs,
 		Short: "Print an introduction to the Databricks CLI",
 		Long: `Print a short introduction to the Databricks CLI: authentication, profiles,
-building with Databricks Asset Bundles, and where to go next.
+building with Declarative Automation Bundles, and where to go next.
 
 Prints a human-friendly guide by default. When stdout is not an interactive
 terminal (for example, when a coding agent runs the command), it prints a

@@ -13,8 +13,10 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
@@ -30,11 +32,31 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 const internalFolder = ".internal"
+
+// QuietLevel is how much of the informational output to suppress, controlled by
+// repeating -q. Warnings and errors are never suppressed.
+type QuietLevel int
+
+const (
+	// QuietNone prints everything.
+	QuietNone QuietLevel = iota
+
+	// QuietSummary (-q) drops the per-resource action lines, keeping the summary.
+	QuietSummary
+
+	// QuietAll (-qq) also drops the summary and the progress lines ("Uploading
+	// bundle files to ...", "Building ...", "Executing 'postdeploy' script"), so
+	// only warnings and errors remain.
+	QuietAll
+)
+
+// SuppressProgress reports whether progress and summary output should be skipped.
+func (b *Bundle) SuppressProgress() bool {
+	return b.Quiet >= QuietAll
+}
 
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
@@ -42,25 +64,34 @@ const resourcesFilename = "resources.json"
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=terraform
 const terraformStateFilename = "terraform.tfstate"
 
-// Filename where config snapshot is stored for experimental YAML sync
-const configSnapshotFilename = "resources-config-sync-snapshot.json"
-
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount      int64
-	TargetCount                 int64
-	DeploymentId                uuid.UUID
-	BoolValues                  []protos.BoolMapEntry
-	PythonAddedResourcesCount   int64
-	PythonUpdatedResourcesCount int64
-	ExecutionTimes              []protos.IntMapEntry
-	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+	ConfigurationFileCount   int64
+	TargetCount              int64
+	DeploymentId             uuid.UUID
+	BoolValues               []protos.BoolMapEntry
+	ExecutionTimes           []protos.IntMapEntry
+	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// Number of resources added and updated by the Python mutator, keyed by resource type.
+	PythonAddedResources   map[string]int64
+	PythonUpdatedResources map[string]int64
+
+	// Configuration section Python support is declared in.
+	PythonConfigSection protos.PydabsConfigSection
+
+	// StateEngine is the engine that ran (or would have run) the deploy. Set to the
+	// requested engine as soon as it is resolved, then refined to the state's engine
+	// once the state is pulled, so deploy telemetry reports it even when the deploy
+	// fails or is cancelled before applying resources. Empty only when the deploy
+	// fails before the engine is resolved.
+	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
 	// captured right after the deploy. It carries each resource's state-size in
 	// bytes so deploy telemetry can be derived without re-reading or re-parsing
-	// the state file. Nil for terraform deploys.
+	// the state file.
 	ResourceState resourcestate.ExportedResourcesMap
 }
 
@@ -116,8 +147,19 @@ type Bundle struct {
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
+	// includePatterns holds the raw (unexpanded) 'include' patterns from the root
+	// databricks.yml. ProcessRootIncludes overwrites Config.Include with the
+	// expanded list of loaded files, so this preserves the original patterns for
+	// IsFileIncluded. Set via SetIncludePatterns.
+	includePatterns []string
+
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
+
+	// RootPathIsNameTargetScoped reports whether workspace.root_path ends in the bundle
+	// name and target. Recorded before variable resolution, so a path that only happens
+	// to end in those two segments does not count.
+	RootPathIsNameTargetScoped bool
 
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
@@ -133,17 +175,12 @@ type Bundle struct {
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
 
-	// Stores an initialized copy of this bundle's Terraform wrapper.
-	Terraform *tfexec.Terraform
+	// FileCounts is how many files the deploy uploaded and deleted. Unlike Files,
+	// which lists everything tracked, this counts only what actually changed.
+	FileCounts libsync.FileCounts
 
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
-
-	// TerraformPlanPath is the path to the plan from the terraform CLI
-	TerraformPlanPath string
-
-	// If true, the plan is empty and applying it will not do anything
-	TerraformPlanIsEmpty bool
 
 	// (direct only) deployment implementation and state
 	DeploymentBundle direct.DeploymentBundle
@@ -155,6 +192,22 @@ type Bundle struct {
 	// Select contains resource selectors passed via --select flag.
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
+
+	// MigratingToDirect is set when the existing state still uses terraform, so it is
+	// migrated to the direct engine in memory before the command runs (statemgmt.Migrate).
+	// Deploy and destroy commit the migration (statemgmt.CommitMigration); other commands
+	// leave the terraform state untouched.
+	MigratingToDirect bool
+
+	// AllowTerraformEngineConfig reports a terraform bundle.engine as a warning instead
+	// of an error and skips the DATABRICKS_BUNDLE_ENGINE check. Set by read-only commands
+	// (bundle summary) so users can still inspect a bundle that pins the removed engine.
+	AllowTerraformEngineConfig bool
+
+	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
+	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally
+	// drops the summary and progress lines, leaving warnings and errors.
+	Quiet QuietLevel
 
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
@@ -191,9 +244,11 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 // MustLoad returns a bundle configuration.
 // The errors are recorded by logdiag, check with logdiag.HasError().
 func MustLoad(ctx context.Context) *Bundle {
-	root, err := mustGetRoot(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	root, diags := mustGetRoot(ctx)
+	if diags.HasError() {
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
 		return nil
 	}
 
@@ -211,9 +266,11 @@ func MustLoad(ctx context.Context) *Bundle {
 // The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
 func TryLoad(ctx context.Context) *Bundle {
-	root, err := tryGetRoot(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	root, diags := tryGetRoot(ctx)
+	if diags.HasError() {
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
 		return nil
 	}
 
@@ -348,7 +405,8 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*"))), nil
+	includes := append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*")))
+	return includes, nil
 }
 
 // AuthEnv returns a map with environment variables and their values
@@ -375,12 +433,40 @@ func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 	return terraformStateFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename))
 }
 
-// StateFilenameConfigSnapshot returns (relative remote path, relative local path) for config snapshot state
-func (b *Bundle) StateFilenameConfigSnapshot(ctx context.Context) (string, string) {
-	return configSnapshotFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), configSnapshotFilename))
+// SyncMode returns workspace.sync_mode or, if it is not set, the sync mode selected by the
+// deprecated experimental.immutable_folder or presets.source_linked_deployment setting, in that
+// order of precedence. It returns "" if none of them is set.
+func (b *Bundle) SyncMode() config.SyncMode {
+	sourceLinked := b.Config.Presets.SourceLinkedDeployment
+	switch {
+	case b.Config.Workspace.SyncMode != "":
+		return b.Config.Workspace.SyncMode
+	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+		return config.SyncModeImmutable
+	case config.IsExplicitlyEnabled(sourceLinked):
+		return config.SyncModeInPlace
+	case config.IsExplicitlyDisabled(sourceLinked):
+		return config.SyncModeOverwrite
+	default:
+		return ""
+	}
 }
 
-// IsImmutableFolder reports whether experimental.immutable_folder is enabled.
+// IsImmutableFolder reports whether bundle files and artifacts are deployed as an immutable snapshot.
 func (b *Bundle) IsImmutableFolder() bool {
-	return b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder
+	return b.SyncMode() == config.SyncModeImmutable
+}
+
+// IsSourceLinkedDeployment reports whether deployed resources reference the source files in the
+// workspace directly instead of uploaded copies.
+func (b *Bundle) IsSourceLinkedDeployment() bool {
+	return b.SyncMode() == config.SyncModeInPlace
+}
+
+// BindConfig returns the selected target's bind blocks, or nil when no target is selected.
+func (b *Bundle) BindConfig() config.Bind {
+	if b.Target == nil {
+		return nil
+	}
+	return b.Target.Bind
 }

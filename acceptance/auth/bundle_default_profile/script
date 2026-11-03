@@ -3,18 +3,7 @@ sethome "./home"
 # Save the test server host so we can pin a bundle-with-host variant below.
 host_value="$DATABRICKS_HOST"
 
-cat > "./home/.databrickscfg" <<EOF
-[default-target]
-host  = $DATABRICKS_HOST
-token = $DATABRICKS_TOKEN
-
-[other]
-host  = https://other.test
-token = other-token
-
-[__settings__]
-default_profile = default-target
-EOF
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
 unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN

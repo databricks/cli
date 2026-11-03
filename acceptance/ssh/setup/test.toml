@@ -1,0 +1,6 @@
+# `ssh setup` only reads the cluster and writes local SSH config, so a real workspace adds nothing.
+Cloud = false
+
+Ignore = [
+  "home",
+]

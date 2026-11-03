@@ -35,24 +35,24 @@ type AppEnvVar struct {
 
 type App struct {
 	BaseResource
-	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
+	apps.App        //nolint:govet // apps.App.{Id,Url} and our depth-0 {ID,URL} fields carry the same json names; the depth-0 fields win
+	ID       string `json:"id,omitempty" bundle:"readonly"`
+	URL      string `json:"url,omitempty" bundle:"internal"`
+
 	// Note: apps.App already includes GitRepository field from the SDK
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
 	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
 
-	// SourceCodePath is a required field used by DABs to point to Databricks app source code
-	// on local disk and to the corresponding workspace path during app deployment.
-	SourceCodePath string `json:"source_code_path,omitempty"`
+	// SourceCodePath and GitSource come from the embedded apps.App. DABs treats them as
+	// deploy-only: source_code_path points at app source on local disk and is translated to
+	// its workspace path, and both are passed to the Deploy API rather than sent as resource
+	// attributes. Declaring them here too would duplicate their json tags and break diffing.
 
 	// Config represents inline app.yaml configuration for the app.
 	// When specified, this configuration is written to an app.yaml file in the source code path during deployment.
 	// This allows users to define app configuration directly in the bundle YAML instead of maintaining a separate app.yaml file.
 	Config *AppConfig `json:"config,omitempty"`
-
-	// GitSource specifies the git reference (branch, tag, or commit) to use during deployment.
-	// This is used in conjunction with GitRepository (from apps.App) and is passed to the Deploy API.
-	GitSource *apps.GitSource `json:"git_source,omitempty"`
 
 	Permissions []AppPermission `json:"permissions,omitempty"`
 }
@@ -104,8 +104,4 @@ func (a *App) GetName() string {
 		return a.ID
 	}
 	return a.Name
-}
-
-func (a *App) GetURL() string {
-	return a.URL
 }

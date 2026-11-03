@@ -1,0 +1,6 @@
+# database_fields is the allow-list of database fields the acceptance tests
+# assert on. Anything the backend returns outside this list is dropped, so a new
+# field in the API response does not break the golden.
+database_fields() {
+    jq '{database_id, name, parent, status: (.status | {database_id, postgres_database, role})}'
+}

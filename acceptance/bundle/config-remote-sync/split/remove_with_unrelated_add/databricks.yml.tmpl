@@ -1,0 +1,30 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# "shared" is defined in both blocks, so removing it is held back: the halves of a
+# suspected key change cannot be told apart from a removal plus an unrelated addition.
+# That hold-back must not extend to an addition that is genuinely unrelated -- a brand
+# new task in the same sequence is not the other half of anything.
+
+resources:
+  jobs:
+    unrelated_add_job:
+      tasks:
+        - task_key: shared
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: keep
+          max_retries: 2
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        unrelated_add_job:
+          tasks:
+            - task_key: shared
+              timeout_seconds: 45

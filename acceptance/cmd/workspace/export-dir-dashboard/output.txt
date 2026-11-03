@@ -1,0 +1,9 @@
+
+>>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]
+
+>>> [CLI] workspace export-dir /Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME] [TEST_TMP_DIR]/export
+Exporting files from /Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]
+/Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]/export-dir-dashboard-[UNIQUE_NAME].lvdash.json -> [TEST_TMP_DIR]/export/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
+Export complete
+
+>>> assert_exists.py [TEST_TMP_DIR]/export/export-dir-dashboard-[UNIQUE_NAME].lvdash.json

@@ -1,4 +1,0 @@
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}

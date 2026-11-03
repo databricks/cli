@@ -1,0 +1,21 @@
+title "Production target: update does not send development"
+trace $CLI bundle deploy -t prod
+rm "$OUT_REQUESTS"
+trace $CLI bundle run my_pipeline -t prod
+trace print_requests.py //pipelines
+
+title "Development target: update sends development: true"
+trace $CLI bundle deploy -t dev
+rm "$OUT_REQUESTS"
+trace $CLI bundle run my_pipeline -t dev
+trace print_requests.py //pipelines
+
+title "Development target via pipelines run: update sends development: true"
+trace $CLI pipelines run my_pipeline -t dev
+trace print_requests.py //pipelines
+
+title "Development target with pipelines_development preset disabled: update does not send development"
+trace $CLI bundle deploy -t dev_preset_off
+rm "$OUT_REQUESTS"
+trace $CLI bundle run my_pipeline -t dev_preset_off
+trace print_requests.py //pipelines

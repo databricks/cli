@@ -118,6 +118,19 @@ func TestKeyringStore_Lookup_ReturnsStoredToken(t *testing.T) {
 	assert.Equal(t, "Bearer", got.Token.TokenType)
 }
 
+func TestKeyringStore_Lookup_ReturnsStoredPendingLogin(t *testing.T) {
+	backend := newFakeBackend()
+	c := newTestStore(backend)
+
+	want := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	require.NoError(t, c.Put("my-profile#device-code", Entry{PendingLogin: want}))
+
+	got, err := c.Lookup("my-profile#device-code")
+	require.NoError(t, err)
+	assert.Nil(t, got.Token)
+	assert.Equal(t, want, got.PendingLogin)
+}
+
 func TestKeyringStore_Lookup_MissingReturnsCacheErrNotFound(t *testing.T) {
 	backend := newFakeBackend()
 	c := newTestStore(backend)
@@ -145,7 +158,7 @@ func TestKeyringStore_Lookup_PropagatesOtherErrors(t *testing.T) {
 }
 
 // ErrNotFound has to pass through unwrapped because callers branch on it
-// (cache.ErrNotFound is the "no token, please log in" signal). Wrapping it
+// (ErrNotFound is the "no token, please log in" signal). Wrapping it
 // with the unreachability hint would mislead the user.
 func TestKeyringStore_Lookup_NotFoundIsNotWrapped(t *testing.T) {
 	backend := newFakeBackend()

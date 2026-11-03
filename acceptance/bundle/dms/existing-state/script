@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create ordinary file state, then force the next command to pull it from the workspace.
+$CLI bundle deploy &> LOG.setup
+read_id.py one > /dev/null
+rm -rf .databricks
+
+title "Enable history on existing remote file state without replacing the job"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+trace jq '{features: (.features // {}), job_id: .state["resources.jobs.one"].__id__}' .databricks/bundle/default/resources.json
+
+title "Disable history without replacing the job"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle deploy
+trace jq '{features: (.features // {}), job_id: .state["resources.jobs.one"].__id__}' .databricks/bundle/default/resources.json
+
+rm -f "$OUT_REQUESTS"

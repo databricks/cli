@@ -1,0 +1,12 @@
+# MCP service lifecycle, also runs against a real workspace. An MCP service must
+# point at an existing UC connection (config.source_connection). The script
+# creates a SCHEMA-SCOPED connection out-of-band on cloud (under the deploy
+# schema) and tears it down via trap: schema-level connections need only schema
+# privileges (not metastore CREATE CONNECTION). They can't set is_mcp_connection
+# (metastore-level only), but the mcp_service accepts a plain HTTP connection.
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

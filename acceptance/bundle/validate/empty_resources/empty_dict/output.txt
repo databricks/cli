@@ -161,6 +161,10 @@ app resource 'rname' should have either source_code_path or git_source field
 }
 
 === resources.sql_warehouses.rname ===
+Error: sql_warehouse name is required
+  at resources.sql_warehouses.rname
+  in databricks.yml:6:12
+
 {
   "sql_warehouses": {
     "rname": {

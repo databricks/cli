@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+resources:
+  catalogs:
+    my_catalog:
+      name: my_catalog
+      grants:
+        # Missing principal: rejected.
+        - privileges:
+            - ALL_PRIVILEGES
+  schemas:
+    my_schema:
+      catalog_name: my_catalog
+      name: my_schema
+      grants:
+        # Valid grant (principal set).
+        - principal: alice@example.com
+          privileges:
+            - USE_SCHEMA

@@ -1,0 +1,6 @@
+[project]
+name = "demo"
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]

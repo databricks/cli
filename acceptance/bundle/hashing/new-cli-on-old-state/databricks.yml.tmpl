@@ -1,0 +1,10 @@
+bundle:
+  name: hashing-upgrade-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    dashboard1:
+      display_name: hashing-upgrade-$UNIQUE_NAME
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      file_path: dashboard.lvdash.json
+      parent_path: /Users/$CURRENT_USER_NAME

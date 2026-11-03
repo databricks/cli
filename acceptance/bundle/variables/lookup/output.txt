@@ -7,7 +7,7 @@
   },
   "sp": {
     "lookup": {
-      "service_principal": "deco-test-spn"
+      "service_principal": "[TEST_SP_DISPLAY_NAME]"
     },
     "value": "[UUID]"
   }

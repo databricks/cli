@@ -1,0 +1,26 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py unrelated_add_job)"
+
+# The removal of the two-block element is expected to be held back. brand_new shares
+# nothing with it but the sequence, so it has to be applied in the same run.
+title "Remove the two-block task AND add an unrelated new task in one run"
+edit_resource.py jobs $job_id <<PYEDIT
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "shared"]
+r["tasks"].append({"task_key": "brand_new", "max_retries": 9,
+                   "notebook_task": {"notebook_path": "/Users/{{workspace_user_name}}/nb"}})
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+title "brand_new is added even though the removal of shared was held back"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "task_key: brand_new" databricks.yml
+errcode trace grep -c "task_key: keep" databricks.yml
+rm databricks.yml.backup

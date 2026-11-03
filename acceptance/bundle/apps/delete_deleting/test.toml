@@ -1,0 +1,6 @@
+Cloud = false
+RecordRequests = false
+
+# Saved-plan deploy (`--plan`) and the IsGone gone-detection are direct-engine only.
+
+Ignore = [".databricks", "databricks.yml", "plan_delete.json"]

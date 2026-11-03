@@ -1,0 +1,26 @@
+# Runs the failing job for real, so the message the deploy names the task with is
+# one a workspace reported. Serverless needs Unity Catalog.
+Cloud = true
+
+# databricks.yml is rendered by the script, and the deploy fails mid-way, leaving
+# local deployment state behind.
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+# The host and the workspace selector in the run URL differ per workspace; the URL
+# form itself is covered by libs/workspaceurls.
+[[Repls]]
+Old = 'Run URL: .*'
+New = 'Run URL: [RUN_URL]'
+
+[[Repls]]
+Old = 'run page: .*'
+New = 'run page: [RUN_URL]'
+
+# [DATABRICKS_URL] is the recording proxy's host, not the workspace host the Jobs
+# API reports here.
+[[Repls]]
+Old = '"run_page_url": ".*"'
+New = '"run_page_url": "[RUN_URL]"'

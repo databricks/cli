@@ -1,0 +1,5 @@
+# Test selection has nothing to do with the deployment engine.
+
+# Git Bash rewrites an "A:..." argument as a Windows path (A: reads as a drive letter),
+# so the statuses would not survive to the command.
+GOOS.windows = false

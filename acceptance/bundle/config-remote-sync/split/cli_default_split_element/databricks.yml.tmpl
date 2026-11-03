@@ -1,0 +1,32 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# cluster_id makes OverrideCompute replace each task's compute with
+# existing_cluster_id. It builds that value in Go, so the leaf is present in the
+# merged config but carries no source location -- unlike a field absent from the
+# config, which has no value either. Routing by location therefore finds nothing, and
+# on a task defined in both blocks there is no winning definition to fall back on. The
+# field is not declared anywhere, so writing it is an addition.
+
+resources:
+  jobs:
+    cli_default_job:
+      tasks:
+        - task_key: shared
+          max_retries: 1
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    cluster_id: 0101-000000-abcd1234
+    resources:
+      jobs:
+        cli_default_job:
+          tasks:
+            - task_key: shared
+              timeout_seconds: 45

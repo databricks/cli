@@ -1,0 +1,8 @@
+Ignore = ["home"]
+RecordRequests = true
+
+Timeout = "30s"
+
+# The Docker credential-helper installation path is covered separately on
+# Windows; this test focuses on the complete air images push workflow.
+GOOS.windows = false

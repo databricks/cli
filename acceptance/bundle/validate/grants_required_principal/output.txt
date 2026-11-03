@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle validate
+Error: grant principal is required
+  at resources.catalogs.my_catalog.grants[0]
+  in databricks.yml:10:11
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+>>> [CLI] bundle deploy
+Error: grant principal is required
+  at resources.catalogs.my_catalog.grants[0]
+  in databricks.yml:10:11
+
+
+>>> print_requests.py //unity-catalog

@@ -8,6 +8,7 @@ This file only contains template directives; it is skipped for the actual output
 {{$notebook_job := eq .include_job "yes"}}
 {{$python_package := eq .include_python "yes"}}
 {{$sql_language := eq .language "sql"}}
+{{$python_language := eq .language "python"}}
 {{$lakeflow_only := eq .lakeflow_only "yes"}}
 {{$pydabs := eq .enable_pydabs "yes"}}
 {{$has_python_package_dir := and (or $python_package $notebook_job $pipeline) (not $lakeflow_only)}}
@@ -35,15 +36,16 @@ This file only contains template directives; it is skipped for the actual output
   {{skip "{{.project_name}}/src/{{.project_name}}_etl/transformations/*.sql"}}
 {{end}}
 
-{{if or $sql_language $lakeflow_only}}
+{{if or (not $python_language) $lakeflow_only}}
   {{skip "{{.project_name}}/tests"}}
   {{skip "{{.project_name}}/fixtures"}}
 {{else if not (or $python_package $notebook_job $pipeline)}}
   {{skip "{{.project_name}}/tests/sample_*.py"}}
 {{end}}
 
-{{if $sql_language}}
+{{if not $python_language}}
   {{skip "{{.project_name}}/pyproject.toml"}}
+  {{skip "{{.project_name}}/.vscode/__builtins__.pyi"}}
 {{end}}
 
 {{if $pydabs}}

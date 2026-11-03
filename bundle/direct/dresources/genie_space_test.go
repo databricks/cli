@@ -122,8 +122,9 @@ func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
 	// the response is persisted, for drift detection on the next plan.
 	m.GetMockGenieAPI().EXPECT().
 		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-			SpaceId: "space-id",
-			Title:   "new",
+			SpaceId:         "space-id",
+			Title:           "new",
+			ForceSendFields: []string{"Description"},
 		}).
 		Return(&dashboards.GenieSpace{
 			SpaceId: "space-id",
@@ -159,6 +160,7 @@ func TestGenieSpaceDoUpdateAlwaysSendsSerializedSpace(t *testing.T) {
 			SpaceId:         "space-id",
 			Title:           "new",
 			SerializedSpace: "{\"converge\":\"me\"}",
+			ForceSendFields: []string{"Description"},
 		}).
 		Return(&dashboards.GenieSpace{
 			SpaceId:         "space-id",

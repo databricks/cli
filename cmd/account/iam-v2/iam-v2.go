@@ -23,33 +23,683 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iam-v2",
-		Short: `*Beta* These APIs are used to manage identities and the workspace access of these identities in <Databricks>.`,
-		Long: `This command is in Beta and may change without notice.
-
-These APIs are used to manage identities and the workspace access of these
-  identities in <Databricks>.`,
+		Short: `These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
+		Long: `These APIs are used to manage identities and the workspace access of these
+  identities in Databricks.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
+	cmd.AddCommand(newCreateDirectGroupMember())
+	cmd.AddCommand(newCreateGroup())
+	cmd.AddCommand(newCreateIdentityVisibilityFilter())
+	cmd.AddCommand(newCreateServicePrincipal())
+	cmd.AddCommand(newCreateUser())
+	cmd.AddCommand(newCreateWorkspaceAssignment())
 	cmd.AddCommand(newCreateWorkspaceAssignmentDetail())
+	cmd.AddCommand(newDeleteDirectGroupMember())
+	cmd.AddCommand(newDeleteGroup())
+	cmd.AddCommand(newDeleteIdentityVisibilityFilter())
+	cmd.AddCommand(newDeleteServicePrincipal())
+	cmd.AddCommand(newDeleteUser())
+	cmd.AddCommand(newDeleteWorkspaceAssignment())
 	cmd.AddCommand(newDeleteWorkspaceAssignmentDetail())
+	cmd.AddCommand(newGetDirectGroupMember())
+	cmd.AddCommand(newGetExternalGroup())
+	cmd.AddCommand(newGetExternalServicePrincipal())
+	cmd.AddCommand(newGetExternalUser())
+	cmd.AddCommand(newGetGroup())
+	cmd.AddCommand(newGetIdentityVisibilityFilter())
+	cmd.AddCommand(newGetServicePrincipal())
+	cmd.AddCommand(newGetUser())
 	cmd.AddCommand(newGetWorkspaceAccessDetail())
+	cmd.AddCommand(newGetWorkspaceAssignment())
 	cmd.AddCommand(newGetWorkspaceAssignmentDetail())
+	cmd.AddCommand(newListDirectGroupMembers())
+	cmd.AddCommand(newListGroups())
+	cmd.AddCommand(newListIdentityVisibilityFilters())
+	cmd.AddCommand(newListServicePrincipals())
+	cmd.AddCommand(newListTransitiveParentGroups())
+	cmd.AddCommand(newListUsers())
 	cmd.AddCommand(newListWorkspaceAssignmentDetails())
+	cmd.AddCommand(newListWorkspaceAssignments())
 	cmd.AddCommand(newResolveGroup())
 	cmd.AddCommand(newResolveServicePrincipal())
 	cmd.AddCommand(newResolveUser())
+	cmd.AddCommand(newUpdateGroup())
+	cmd.AddCommand(newUpdateServicePrincipal())
+	cmd.AddCommand(newUpdateUser())
+	cmd.AddCommand(newUpdateWorkspaceAssignment())
 	cmd.AddCommand(newUpdateWorkspaceAssignmentDetail())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create-direct-group-member command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createDirectGroupMemberOverrides []func(
+	*cobra.Command,
+	*iamv2.CreateDirectGroupMemberRequest,
+)
+
+func newCreateDirectGroupMember() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createDirectGroupMemberReq iamv2.CreateDirectGroupMemberRequest
+	createDirectGroupMemberReq.DirectGroupMember = iamv2.DirectGroupMember{}
+	var createDirectGroupMemberJson flags.JsonFlag
+
+	cmd.Flags().Var(&createDirectGroupMemberJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createDirectGroupMemberReq.DirectGroupMember.Name, "name", createDirectGroupMemberReq.DirectGroupMember.Name, `The resource name of the group membership.`)
+
+	cmd.Use = "create-direct-group-member PARENT PRINCIPAL_ID"
+	cmd.Short = `*Beta* Create a direct group membership.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a direct group membership.
+
+  Creates a group membership (assigns a principal to a group).
+
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
+
+  Arguments:
+    PARENT: The parent resource name of the group to add the member to. Format:
+      accounts/{account_id}/groups/{group_id}
+    PRINCIPAL_ID: Internal ID of the principal in Databricks.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'principal_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createDirectGroupMemberJson.Unmarshal(&createDirectGroupMemberReq.DirectGroupMember)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createDirectGroupMemberReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createDirectGroupMemberReq.DirectGroupMember.PrincipalId)
+			if err != nil {
+				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
+			}
+
+		}
+
+		response, err := a.IamV2.CreateDirectGroupMember(ctx, createDirectGroupMemberReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createDirectGroupMemberOverrides {
+		fn(cmd, &createDirectGroupMemberReq)
+	}
+
+	return cmd
+}
+
+// start create-group command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createGroupOverrides []func(
+	*cobra.Command,
+	*iamv2.CreateGroupRequest,
+)
+
+func newCreateGroup() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createGroupReq iamv2.CreateGroupRequest
+	createGroupReq.Group = iamv2.Group{}
+	var createGroupJson flags.JsonFlag
+
+	cmd.Flags().Var(&createGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createGroupReq.Group.ExternalId, "external-id", createGroupReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
+	cmd.Flags().StringVar(&createGroupReq.Group.GroupName, "group-name", createGroupReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&createGroupReq.Group.Name, "name", createGroupReq.Group.Name, `The resource name of the group.`)
+
+	cmd.Use = "create-group PARENT"
+	cmd.Short = `*Beta* Create a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a group in the account.
+
+  Creates a local group in the Databricks account and returns the created group.
+  A local group is one that is not synced from the customer's identity provider,
+  and can be created whether or not Account Identity Management (AIM) is
+  enabled.
+
+  When AIM is enabled, supplying an external ID returns an error. To provision
+  the identity from your identity provider, resolve it by its external ID with
+  ResolveGroup; to read an existing external identity, use the ExternalGroup
+  resource.
+
+  Arguments:
+    PARENT: The parent resource name of the account in which to create the group.
+      Format: accounts/{account_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createGroupJson.Unmarshal(&createGroupReq.Group)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createGroupReq.Parent = args[0]
+
+		response, err := a.IamV2.CreateGroup(ctx, createGroupReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createGroupOverrides {
+		fn(cmd, &createGroupReq)
+	}
+
+	return cmd
+}
+
+// start create-identity-visibility-filter command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createIdentityVisibilityFilterOverrides []func(
+	*cobra.Command,
+	*iamv2.CreateIdentityVisibilityFilterRequest,
+)
+
+func newCreateIdentityVisibilityFilter() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createIdentityVisibilityFilterReq iamv2.CreateIdentityVisibilityFilterRequest
+	createIdentityVisibilityFilterReq.IdentityVisibilityFilter = iamv2.IdentityVisibilityFilter{}
+	var createIdentityVisibilityFilterJson flags.JsonFlag
+
+	cmd.Flags().Var(&createIdentityVisibilityFilterJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, "identity-visibility-filter-id", createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, `Optional.`)
+	// TODO: complex arg: exact
+	// TODO: complex arg: prefix
+	// TODO: complex arg: regex
+
+	cmd.Use = "create-identity-visibility-filter PARENT PRINCIPAL_TYPE"
+	cmd.Short = `Create an identity-visibility filter in the account.`
+	cmd.Long = `Create an identity-visibility filter in the account.
+
+  Creates a group visibility filter in the account. Requires account admin
+  privileges. Set principal_type to GROUP and specify exactly one of exact
+  (external ID), prefix (display-name starts with), or regex (full RE2
+  display-name match). The filter applies across all workspaces in the account.
+  A duplicate filter ID or an existing rule with the same type and match value
+  returns ALREADY_EXISTS. Filters are immutable; to change a rule, delete it
+  and create a new one.
+
+  Arguments:
+    PARENT: Required. The parent account. Format: accounts/{account_id}
+    PRINCIPAL_TYPE: The type of principal this rule applies to. Set to GROUP when creating a
+      filter. Other principal types are not supported for creation.
+      Supported values: [GROUP, SERVICE_PRINCIPAL, USER]`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'principal_type' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createIdentityVisibilityFilterJson.Unmarshal(&createIdentityVisibilityFilterReq.IdentityVisibilityFilter)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createIdentityVisibilityFilterReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createIdentityVisibilityFilterReq.IdentityVisibilityFilter.PrincipalType)
+			if err != nil {
+				return fmt.Errorf("invalid PRINCIPAL_TYPE: %s", args[1])
+			}
+
+		}
+
+		response, err := a.IamV2.CreateIdentityVisibilityFilter(ctx, createIdentityVisibilityFilterReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createIdentityVisibilityFilterOverrides {
+		fn(cmd, &createIdentityVisibilityFilterReq)
+	}
+
+	return cmd
+}
+
+// start create-service-principal command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createServicePrincipalOverrides []func(
+	*cobra.Command,
+	*iamv2.CreateServicePrincipalRequest,
+)
+
+func newCreateServicePrincipal() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createServicePrincipalReq iamv2.CreateServicePrincipalRequest
+	createServicePrincipalReq.ServicePrincipal = iamv2.ServicePrincipal{}
+	var createServicePrincipalJson flags.JsonFlag
+
+	cmd.Flags().Var(&createServicePrincipalJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createServicePrincipalReq.ServicePrincipal.ExternalId, "external-id", createServicePrincipalReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&createServicePrincipalReq.ServicePrincipal.Name, "name", createServicePrincipalReq.ServicePrincipal.Name, `The resource name of the service principal.`)
+
+	cmd.Use = "create-service-principal PARENT DISPLAY_NAME ACCOUNT_SP_STATUS"
+	cmd.Short = `*Beta* Create a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a service principal in the account.
+
+  Creates a local service principal in the Databricks account and returns the
+  created service principal. A local service principal is one that is not synced
+  from the customer's identity provider, and can be created whether or not
+  Account Identity Management (AIM) is enabled.
+
+  When AIM is enabled, supplying an external ID returns an error. To provision
+  the identity from your identity provider, resolve it by its external ID with
+  ResolveServicePrincipal; to read an existing external identity, use the
+  ExternalServicePrincipal resource.
+
+  Arguments:
+    PARENT: The parent resource name of the account in which to create the service
+      principal. Format: accounts/{account_id}
+    DISPLAY_NAME: Display name of the service principal.
+    ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
+      Supported values: [ACTIVE, INACTIVE]`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'account_sp_status' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createServicePrincipalJson.Unmarshal(&createServicePrincipalReq.ServicePrincipal)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createServicePrincipalReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			createServicePrincipalReq.ServicePrincipal.DisplayName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &createServicePrincipalReq.ServicePrincipal.AccountSpStatus)
+			if err != nil {
+				return fmt.Errorf("invalid ACCOUNT_SP_STATUS: %s", args[2])
+			}
+
+		}
+
+		response, err := a.IamV2.CreateServicePrincipal(ctx, createServicePrincipalReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createServicePrincipalOverrides {
+		fn(cmd, &createServicePrincipalReq)
+	}
+
+	return cmd
+}
+
+// start create-user command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createUserOverrides []func(
+	*cobra.Command,
+	*iamv2.CreateUserRequest,
+)
+
+func newCreateUser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createUserReq iamv2.CreateUserRequest
+	createUserReq.User = iamv2.User{}
+	var createUserJson flags.JsonFlag
+
+	cmd.Flags().Var(&createUserJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createUserReq.User.ExternalId, "external-id", createUserReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&createUserReq.User.Name, "name", createUserReq.User.Name, `The resource name of the user.`)
+
+	cmd.Use = "create-user PARENT USERNAME FULL_NAME ACCOUNT_USER_STATUS"
+	cmd.Short = `*Beta* Create a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a user in the account.
+
+  Creates a local user in the Databricks account and returns the created user. A
+  local user is one that is not synced from the customer's identity provider,
+  and can be created whether or not Account Identity Management (AIM) is
+  enabled.
+
+  When AIM is enabled, supplying an external ID returns an error. To provision
+  the identity from your identity provider, resolve it by its external ID with
+  ResolveUser; to read an existing external identity, use the ExternalUser
+  resource.
+
+  Arguments:
+    PARENT: The parent resource name of the account in which to create the user.
+      Format: accounts/{account_id}
+    USERNAME: Username/email of the user.
+    FULL_NAME:
+    ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.
+      Supported values: [ACTIVE, INACTIVE]`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createUserJson.Unmarshal(&createUserReq.User)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createUserReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			createUserReq.User.Username = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &createUserReq.User.FullName)
+			if err != nil {
+				return fmt.Errorf("invalid FULL_NAME: %s", args[2])
+			}
+
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &createUserReq.User.AccountUserStatus)
+			if err != nil {
+				return fmt.Errorf("invalid ACCOUNT_USER_STATUS: %s", args[3])
+			}
+
+		}
+
+		response, err := a.IamV2.CreateUser(ctx, createUserReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createUserOverrides {
+		fn(cmd, &createUserReq)
+	}
+
+	return cmd
+}
+
+// start create-workspace-assignment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createWorkspaceAssignmentOverrides []func(
+	*cobra.Command,
+	*iamv2.CreateWorkspaceAssignmentRequest,
+)
+
+func newCreateWorkspaceAssignment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createWorkspaceAssignmentReq iamv2.CreateWorkspaceAssignmentRequest
+	createWorkspaceAssignmentReq.WorkspaceAssignment = iamv2.WorkspaceAssignment{}
+	var createWorkspaceAssignmentJson flags.JsonFlag
+
+	cmd.Flags().Var(&createWorkspaceAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: effective_entitlements
+	// TODO: array: entitlements
+	cmd.Flags().StringVar(&createWorkspaceAssignmentReq.WorkspaceAssignment.Name, "name", createWorkspaceAssignmentReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
+
+	cmd.Use = "create-workspace-assignment PARENT PRINCIPAL_ID"
+	cmd.Short = `*Beta* Create a workspace assignment.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a workspace assignment.
+
+  Creates a workspace assignment for a principal. Entitlements are granted one
+  at a time rather than atomically. If the request fails partway through, the
+  principal stays assigned to the workspace with only some of the requested
+  entitlements. Get the assignment afterwards to confirm which entitlements were
+  granted.
+
+  Arguments:
+    PARENT: The parent resource name of the workspace to assign the principal to.
+      Format: accounts/{account_id}/workspaces/{workspace_id}
+    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks. Set when
+      the assignment is created and cannot be changed afterwards; to assign a
+      different principal, create a new assignment.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'principal_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createWorkspaceAssignmentJson.Unmarshal(&createWorkspaceAssignmentReq.WorkspaceAssignment)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createWorkspaceAssignmentReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createWorkspaceAssignmentReq.WorkspaceAssignment.PrincipalId)
+			if err != nil {
+				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
+			}
+
+		}
+
+		response, err := a.IamV2.CreateWorkspaceAssignment(ctx, createWorkspaceAssignmentReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createWorkspaceAssignmentOverrides {
+		fn(cmd, &createWorkspaceAssignmentReq)
 	}
 
 	return cmd
@@ -73,17 +723,14 @@ func newCreateWorkspaceAssignmentDetail() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment-detail WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Create a workspace assignment detail.`
 	cmd.Long = `Create a workspace assignment detail.
 
-  Creates a workspace assignment detail for a principal. Entitlement grants are
-  applied individually and non-atomically — if a failure occurs partway
-  through, the principal will be assigned to the workspace but with only a
-  subset of the requested entitlements. Use GetWorkspaceAssignmentDetail to
-  confirm which entitlements were successfully granted.
+  Creates a workspace assignment detail for a principal.
 
   Arguments:
     WORKSPACE_ID: Required. The workspace ID for which the workspace assignment detail is
@@ -159,6 +806,384 @@ func newCreateWorkspaceAssignmentDetail() *cobra.Command {
 	return cmd
 }
 
+// start delete-direct-group-member command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteDirectGroupMemberOverrides []func(
+	*cobra.Command,
+	*iamv2.DeleteDirectGroupMemberRequest,
+)
+
+func newDeleteDirectGroupMember() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteDirectGroupMemberReq iamv2.DeleteDirectGroupMemberRequest
+
+	cmd.Use = "delete-direct-group-member NAME"
+	cmd.Short = `*Beta* Delete a direct group membership.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a direct group membership.
+
+  Deletes a group membership (unassigns a principal from a group).
+
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
+
+  Arguments:
+    NAME: The resource name of the group membership. Format:
+      accounts/{account_id}/groups/{group_id}/direct-members/{principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		deleteDirectGroupMemberReq.Name = args[0]
+
+		err = a.IamV2.DeleteDirectGroupMember(ctx, deleteDirectGroupMemberReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteDirectGroupMemberOverrides {
+		fn(cmd, &deleteDirectGroupMemberReq)
+	}
+
+	return cmd
+}
+
+// start delete-group command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteGroupOverrides []func(
+	*cobra.Command,
+	*iamv2.DeleteGroupRequest,
+)
+
+func newDeleteGroup() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteGroupReq iamv2.DeleteGroupRequest
+
+	cmd.Use = "delete-group NAME"
+	cmd.Short = `*Beta* Delete a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a group in the account.
+
+  Deletes a group from the Databricks account by its internal ID.
+
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
+
+  Arguments:
+    NAME: The resource name of the group. Format:
+      accounts/{account_id}/groups/{group_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		deleteGroupReq.Name = args[0]
+
+		err = a.IamV2.DeleteGroup(ctx, deleteGroupReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteGroupOverrides {
+		fn(cmd, &deleteGroupReq)
+	}
+
+	return cmd
+}
+
+// start delete-identity-visibility-filter command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteIdentityVisibilityFilterOverrides []func(
+	*cobra.Command,
+	*iamv2.DeleteIdentityVisibilityFilterRequest,
+)
+
+func newDeleteIdentityVisibilityFilter() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteIdentityVisibilityFilterReq iamv2.DeleteIdentityVisibilityFilterRequest
+
+	cmd.Use = "delete-identity-visibility-filter NAME"
+	cmd.Short = `Delete an identity-visibility filter.`
+	cmd.Long = `Delete an identity-visibility filter.
+
+  Deletes a group visibility filter by its resource name. Requires account admin
+  privileges. Deleting a filter does not delete groups or revoke access. Groups
+  covered only by this rule stop being discoverable unless they or a transitive
+  parent are already provisioned in the account. If no group filters remain, all
+  groups become visible again. Deleting a filter that does not exist succeeds
+  without making any changes.
+
+  Arguments:
+    NAME: Required. The resource name of the filter. Format:
+      accounts/{account_id}/identity-visibility-filters/{identity_visibility_filter_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		deleteIdentityVisibilityFilterReq.Name = args[0]
+
+		err = a.IamV2.DeleteIdentityVisibilityFilter(ctx, deleteIdentityVisibilityFilterReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteIdentityVisibilityFilterOverrides {
+		fn(cmd, &deleteIdentityVisibilityFilterReq)
+	}
+
+	return cmd
+}
+
+// start delete-service-principal command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteServicePrincipalOverrides []func(
+	*cobra.Command,
+	*iamv2.DeleteServicePrincipalRequest,
+)
+
+func newDeleteServicePrincipal() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteServicePrincipalReq iamv2.DeleteServicePrincipalRequest
+
+	cmd.Use = "delete-service-principal NAME"
+	cmd.Short = `*Beta* Delete a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a service principal in the account.
+
+  Deletes a service principal from the Databricks account by its internal ID.
+
+  Arguments:
+    NAME: The resource name of the service principal. Format:
+      accounts/{account_id}/service-principals/{service_principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		deleteServicePrincipalReq.Name = args[0]
+
+		err = a.IamV2.DeleteServicePrincipal(ctx, deleteServicePrincipalReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteServicePrincipalOverrides {
+		fn(cmd, &deleteServicePrincipalReq)
+	}
+
+	return cmd
+}
+
+// start delete-user command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteUserOverrides []func(
+	*cobra.Command,
+	*iamv2.DeleteUserRequest,
+)
+
+func newDeleteUser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteUserReq iamv2.DeleteUserRequest
+
+	cmd.Use = "delete-user NAME"
+	cmd.Short = `*Beta* Delete a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a user in the account.
+
+  Deletes a user from the Databricks account by its internal ID.
+
+  Arguments:
+    NAME: The resource name of the user. Format:
+      accounts/{account_id}/users/{user_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		deleteUserReq.Name = args[0]
+
+		err = a.IamV2.DeleteUser(ctx, deleteUserReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteUserOverrides {
+		fn(cmd, &deleteUserReq)
+	}
+
+	return cmd
+}
+
+// start delete-workspace-assignment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteWorkspaceAssignmentOverrides []func(
+	*cobra.Command,
+	*iamv2.DeleteWorkspaceAssignmentRequest,
+)
+
+func newDeleteWorkspaceAssignment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteWorkspaceAssignmentReq iamv2.DeleteWorkspaceAssignmentRequest
+
+	cmd.Use = "delete-workspace-assignment NAME"
+	cmd.Short = `*Beta* Delete a workspace assignment.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a workspace assignment.
+
+  Deletes a workspace assignment for a principal, revoking all of its
+  entitlements. Entitlements are revoked one at a time rather than atomically.
+  If the request fails partway through, the principal stays assigned with some
+  of its original entitlements. Retrying is safe.
+
+  Arguments:
+    NAME: The resource name of the workspace assignment. Format:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		deleteWorkspaceAssignmentReq.Name = args[0]
+
+		err = a.IamV2.DeleteWorkspaceAssignment(ctx, deleteWorkspaceAssignmentReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteWorkspaceAssignmentOverrides {
+		fn(cmd, &deleteWorkspaceAssignmentReq)
+	}
+
+	return cmd
+}
+
 // start delete-workspace-assignment-detail command
 
 // Slice with functions to override default command behavior.
@@ -177,11 +1202,10 @@ func newDeleteWorkspaceAssignmentDetail() *cobra.Command {
 	cmd.Short = `Delete a workspace assignment detail.`
 	cmd.Long = `Delete a workspace assignment detail.
 
-  Deletes a workspace assignment detail for a principal, revoking all associated
-  entitlements. Entitlement revocations are applied individually and
-  non-atomically — if a failure occurs partway through, the principal remains
-  assigned with a subset of its original entitlements, and the operation is safe
-  to retry.
+  Deletes a workspace assignment detail for a principal, revoking all of its
+  entitlements. Entitlements are revoked one at a time rather than atomically.
+  If the request fails partway through, the principal stays assigned with some
+  of its original entitlements. Retrying is safe.
 
   Arguments:
     WORKSPACE_ID: The workspace ID where the principal has access.
@@ -234,6 +1258,509 @@ func newDeleteWorkspaceAssignmentDetail() *cobra.Command {
 	return cmd
 }
 
+// start get-direct-group-member command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDirectGroupMemberOverrides []func(
+	*cobra.Command,
+	*iamv2.GetDirectGroupMemberRequest,
+)
+
+func newGetDirectGroupMember() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDirectGroupMemberReq iamv2.GetDirectGroupMemberRequest
+
+	cmd.Use = "get-direct-group-member NAME"
+	cmd.Short = `*Beta* Get a direct group member.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a direct group member.
+
+  Gets a provisioned direct member of a group.
+
+  Arguments:
+    NAME: The resource name of the group membership. Format:
+      accounts/{account_id}/groups/{group_id}/direct-members/{principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getDirectGroupMemberReq.Name = args[0]
+
+		response, err := a.IamV2.GetDirectGroupMember(ctx, getDirectGroupMemberReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDirectGroupMemberOverrides {
+		fn(cmd, &getDirectGroupMemberReq)
+	}
+
+	return cmd
+}
+
+// start get-external-group command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExternalGroupOverrides []func(
+	*cobra.Command,
+	*iamv2.GetExternalGroupRequest,
+)
+
+func newGetExternalGroup() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExternalGroupReq iamv2.GetExternalGroupRequest
+
+	cmd.Use = "get-external-group NAME"
+	cmd.Short = `*Beta* Get an external group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an external group in the account.
+
+  Retrieves an external group with the given external ID from the customer's
+  IdP. If the group does not exist, it will be created in the account. If the
+  customer is not onboarded onto Automatic Identity Management (AIM), this will
+  return an error.
+
+  Arguments:
+    NAME: Required. The resource name of the external group. Format:
+      accounts/{account_id}/external-groups/{external_group_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getExternalGroupReq.Name = args[0]
+
+		response, err := a.IamV2.GetExternalGroup(ctx, getExternalGroupReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExternalGroupOverrides {
+		fn(cmd, &getExternalGroupReq)
+	}
+
+	return cmd
+}
+
+// start get-external-service-principal command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExternalServicePrincipalOverrides []func(
+	*cobra.Command,
+	*iamv2.GetExternalServicePrincipalRequest,
+)
+
+func newGetExternalServicePrincipal() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExternalServicePrincipalReq iamv2.GetExternalServicePrincipalRequest
+
+	cmd.Use = "get-external-service-principal NAME"
+	cmd.Short = `*Beta* Get an external service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an external service principal in the account.
+
+  Retrieves an external service principal with the given external ID from the
+  customer's IdP. If the service principal does not exist, it will be created.
+  If the customer is not onboarded onto Automatic Identity Management (AIM),
+  this will return an error.
+
+  Arguments:
+    NAME: Required. The resource name of the external service principal. Format:
+      accounts/{account_id}/external-service-principals/{external_service_principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getExternalServicePrincipalReq.Name = args[0]
+
+		response, err := a.IamV2.GetExternalServicePrincipal(ctx, getExternalServicePrincipalReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExternalServicePrincipalOverrides {
+		fn(cmd, &getExternalServicePrincipalReq)
+	}
+
+	return cmd
+}
+
+// start get-external-user command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExternalUserOverrides []func(
+	*cobra.Command,
+	*iamv2.GetExternalUserRequest,
+)
+
+func newGetExternalUser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExternalUserReq iamv2.GetExternalUserRequest
+
+	cmd.Use = "get-external-user NAME"
+	cmd.Short = `*Beta* Get an external user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an external user in the account.
+
+  Retrieves an external user with the given external ID from the customer's IdP.
+  If the user does not exist, it will be created. If the customer is not
+  onboarded onto Automatic Identity Management (AIM), this will return an error.
+
+  Arguments:
+    NAME: Required. The resource name of the external user. Format:
+      accounts/{account_id}/external-users/{external_user_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getExternalUserReq.Name = args[0]
+
+		response, err := a.IamV2.GetExternalUser(ctx, getExternalUserReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExternalUserOverrides {
+		fn(cmd, &getExternalUserReq)
+	}
+
+	return cmd
+}
+
+// start get-group command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getGroupOverrides []func(
+	*cobra.Command,
+	*iamv2.GetGroupRequest,
+)
+
+func newGetGroup() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getGroupReq iamv2.GetGroupRequest
+
+	cmd.Use = "get-group NAME"
+	cmd.Short = `*Beta* Get a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a group in the account.
+
+  Fetches a group from the Databricks account by its internal ID.
+
+  Arguments:
+    NAME: The resource name of the group. Format:
+      accounts/{account_id}/groups/{group_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getGroupReq.Name = args[0]
+
+		response, err := a.IamV2.GetGroup(ctx, getGroupReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getGroupOverrides {
+		fn(cmd, &getGroupReq)
+	}
+
+	return cmd
+}
+
+// start get-identity-visibility-filter command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getIdentityVisibilityFilterOverrides []func(
+	*cobra.Command,
+	*iamv2.GetIdentityVisibilityFilterRequest,
+)
+
+func newGetIdentityVisibilityFilter() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getIdentityVisibilityFilterReq iamv2.GetIdentityVisibilityFilterRequest
+
+	cmd.Use = "get-identity-visibility-filter NAME"
+	cmd.Short = `Get an identity-visibility filter.`
+	cmd.Long = `Get an identity-visibility filter.
+
+  Gets a group visibility filter by its resource name. Requires account admin
+  privileges. Returns the filter rule, not the groups matched by the rule.
+
+  Arguments:
+    NAME: Required. The resource name of the filter. Format:
+      accounts/{account_id}/identity-visibility-filters/{identity_visibility_filter_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getIdentityVisibilityFilterReq.Name = args[0]
+
+		response, err := a.IamV2.GetIdentityVisibilityFilter(ctx, getIdentityVisibilityFilterReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getIdentityVisibilityFilterOverrides {
+		fn(cmd, &getIdentityVisibilityFilterReq)
+	}
+
+	return cmd
+}
+
+// start get-service-principal command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getServicePrincipalOverrides []func(
+	*cobra.Command,
+	*iamv2.GetServicePrincipalRequest,
+)
+
+func newGetServicePrincipal() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getServicePrincipalReq iamv2.GetServicePrincipalRequest
+
+	cmd.Use = "get-service-principal NAME"
+	cmd.Short = `*Beta* Get a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a service principal in the account.
+
+  Fetches a service principal from the Databricks account by its internal ID.
+
+  Arguments:
+    NAME: The resource name of the service principal. Format:
+      accounts/{account_id}/service-principals/{service_principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getServicePrincipalReq.Name = args[0]
+
+		response, err := a.IamV2.GetServicePrincipal(ctx, getServicePrincipalReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getServicePrincipalOverrides {
+		fn(cmd, &getServicePrincipalReq)
+	}
+
+	return cmd
+}
+
+// start get-user command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getUserOverrides []func(
+	*cobra.Command,
+	*iamv2.GetUserRequest,
+)
+
+func newGetUser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getUserReq iamv2.GetUserRequest
+
+	cmd.Use = "get-user NAME"
+	cmd.Short = `*Beta* Get a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a user in the account.
+
+  Fetches a user from the Databricks account by its internal ID.
+
+  Arguments:
+    NAME: The resource name of the user. Format:
+      accounts/{account_id}/users/{user_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getUserReq.Name = args[0]
+
+		response, err := a.IamV2.GetUser(ctx, getUserReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getUserOverrides {
+		fn(cmd, &getUserReq)
+	}
+
+	return cmd
+}
+
 // start get-workspace-access-detail command
 
 // Slice with functions to override default command behavior.
@@ -250,7 +1777,7 @@ func newGetWorkspaceAccessDetail() *cobra.Command {
 
 	cmd.Flags().Var(&getWorkspaceAccessDetailReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`)
 
-	cmd.Use = "get-workspace-access-detail WORKSPACE_ID PRINCIPAL_ID"
+	cmd.Use = "get-workspace-access-detail NAME"
 	cmd.Short = `*Beta* Get workspace access details for a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -264,17 +1791,15 @@ Get workspace access details for a principal.
   what fields are returned (BASIC by default or FULL).
 
   Arguments:
-    WORKSPACE_ID: Required. The workspace ID for which the access details are being
-      requested.
-    PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
-      access details are being requested.`
+    NAME: The resource name of the workspace access detail. Format:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-access-details/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -283,15 +1808,7 @@ Get workspace access details for a principal.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAccessDetailReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &getWorkspaceAccessDetailReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		getWorkspaceAccessDetailReq.Name = args[0]
 
 		response, err := a.IamV2.GetWorkspaceAccessDetail(ctx, getWorkspaceAccessDetailReq)
 		if err != nil {
@@ -308,6 +1825,68 @@ Get workspace access details for a principal.
 	// Apply optional overrides to this command.
 	for _, fn := range getWorkspaceAccessDetailOverrides {
 		fn(cmd, &getWorkspaceAccessDetailReq)
+	}
+
+	return cmd
+}
+
+// start get-workspace-assignment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getWorkspaceAssignmentOverrides []func(
+	*cobra.Command,
+	*iamv2.GetWorkspaceAssignmentRequest,
+)
+
+func newGetWorkspaceAssignment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getWorkspaceAssignmentReq iamv2.GetWorkspaceAssignmentRequest
+
+	cmd.Use = "get-workspace-assignment NAME"
+	cmd.Short = `*Beta* Get a workspace assignment for a principal.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a workspace assignment for a principal.
+
+  Returns the assignment for a principal in a workspace.
+
+  Arguments:
+    NAME: The resource name of the workspace assignment. Format:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getWorkspaceAssignmentReq.Name = args[0]
+
+		response, err := a.IamV2.GetWorkspaceAssignment(ctx, getWorkspaceAssignmentReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getWorkspaceAssignmentOverrides {
+		fn(cmd, &getWorkspaceAssignmentReq)
 	}
 
 	return cmd
@@ -386,6 +1965,469 @@ func newGetWorkspaceAssignmentDetail() *cobra.Command {
 	return cmd
 }
 
+// start list-direct-group-members command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listDirectGroupMembersOverrides []func(
+	*cobra.Command,
+	*iamv2.ListDirectGroupMembersRequest,
+)
+
+func newListDirectGroupMembers() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listDirectGroupMembersReq iamv2.ListDirectGroupMembersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDirectGroupMembersLimit int
+
+	cmd.Flags().IntVar(&listDirectGroupMembersReq.PageSize, "page-size", listDirectGroupMembersReq.PageSize, `The maximum number of members to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDirectGroupMembersLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDirectGroupMembersReq.PageToken, "page-token", listDirectGroupMembersReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-direct-group-members PARENT"
+	cmd.Short = `*Beta* List direct group members.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List direct group members.
+
+  Lists provisioned direct members of a group with their membership source
+  (internal or from identity provider).
+
+  Arguments:
+    PARENT: The parent resource name of the group whose direct members to list.
+      Format: accounts/{account_id}/groups/{group_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listDirectGroupMembersReq.Parent = args[0]
+
+		response := a.IamV2.ListDirectGroupMembers(ctx, listDirectGroupMembersReq)
+		if listDirectGroupMembersLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDirectGroupMembersLimit)
+		}
+		if listDirectGroupMembersLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDirectGroupMembersLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listDirectGroupMembersOverrides {
+		fn(cmd, &listDirectGroupMembersReq)
+	}
+
+	return cmd
+}
+
+// start list-groups command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listGroupsOverrides []func(
+	*cobra.Command,
+	*iamv2.ListGroupsRequest,
+)
+
+func newListGroups() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listGroupsReq iamv2.ListGroupsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listGroupsLimit int
+
+	cmd.Flags().StringVar(&listGroupsReq.Filter, "filter", listGroupsReq.Filter, `Optional.`)
+	cmd.Flags().IntVar(&listGroupsReq.PageSize, "page-size", listGroupsReq.PageSize, `The maximum number of groups to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listGroupsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listGroupsReq.PageToken, "page-token", listGroupsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-groups PARENT"
+	cmd.Short = `*Beta* List groups in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List groups in the account.
+
+  Lists the groups in the Databricks account, returning one page per call.
+  Supports filtering by group name or external ID.
+
+  Arguments:
+    PARENT: The parent resource name of the account whose groups to list. Format:
+      accounts/{account_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listGroupsReq.Parent = args[0]
+
+		response := a.IamV2.ListGroups(ctx, listGroupsReq)
+		if listGroupsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listGroupsLimit)
+		}
+		if listGroupsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listGroupsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listGroupsOverrides {
+		fn(cmd, &listGroupsReq)
+	}
+
+	return cmd
+}
+
+// start list-identity-visibility-filters command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listIdentityVisibilityFiltersOverrides []func(
+	*cobra.Command,
+	*iamv2.ListIdentityVisibilityFiltersRequest,
+)
+
+func newListIdentityVisibilityFilters() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listIdentityVisibilityFiltersReq iamv2.ListIdentityVisibilityFiltersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listIdentityVisibilityFiltersLimit int
+
+	cmd.Flags().IntVar(&listIdentityVisibilityFiltersReq.PageSize, "page-size", listIdentityVisibilityFiltersReq.PageSize, `The maximum number of filters to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listIdentityVisibilityFiltersLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listIdentityVisibilityFiltersReq.PageToken, "page-token", listIdentityVisibilityFiltersReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-identity-visibility-filters PARENT"
+	cmd.Short = `List the identity-visibility filters in the account.`
+	cmd.Long = `List the identity-visibility filters in the account.
+
+  Lists group visibility filters in the account, returning one page per call.
+  Requires account admin privileges. Returns filter rules, not the groups
+  matched by those rules. To retrieve the next page, pass the response's
+  next_page_token as page_token in the next request. If next_page_token is
+  omitted, there are no more pages.
+
+  Arguments:
+    PARENT: Required. The parent account. Format: accounts/{account_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listIdentityVisibilityFiltersReq.Parent = args[0]
+
+		response := a.IamV2.ListIdentityVisibilityFilters(ctx, listIdentityVisibilityFiltersReq)
+		if listIdentityVisibilityFiltersLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listIdentityVisibilityFiltersLimit)
+		}
+		if listIdentityVisibilityFiltersLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listIdentityVisibilityFiltersLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listIdentityVisibilityFiltersOverrides {
+		fn(cmd, &listIdentityVisibilityFiltersReq)
+	}
+
+	return cmd
+}
+
+// start list-service-principals command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listServicePrincipalsOverrides []func(
+	*cobra.Command,
+	*iamv2.ListServicePrincipalsRequest,
+)
+
+func newListServicePrincipals() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listServicePrincipalsReq iamv2.ListServicePrincipalsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listServicePrincipalsLimit int
+
+	cmd.Flags().StringVar(&listServicePrincipalsReq.Filter, "filter", listServicePrincipalsReq.Filter, `Optional.`)
+	cmd.Flags().IntVar(&listServicePrincipalsReq.PageSize, "page-size", listServicePrincipalsReq.PageSize, `The maximum number of service principals to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listServicePrincipalsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listServicePrincipalsReq.PageToken, "page-token", listServicePrincipalsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-service-principals PARENT"
+	cmd.Short = `*Beta* List service principals in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List service principals in the account.
+
+  Lists the service principals in the Databricks account, returning one page per
+  call. Supports filtering by application ID or external ID.
+
+  Arguments:
+    PARENT: The parent resource name of the account whose service principals to list.
+      Format: accounts/{account_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listServicePrincipalsReq.Parent = args[0]
+
+		response := a.IamV2.ListServicePrincipals(ctx, listServicePrincipalsReq)
+		if listServicePrincipalsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listServicePrincipalsLimit)
+		}
+		if listServicePrincipalsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listServicePrincipalsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listServicePrincipalsOverrides {
+		fn(cmd, &listServicePrincipalsReq)
+	}
+
+	return cmd
+}
+
+// start list-transitive-parent-groups command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listTransitiveParentGroupsOverrides []func(
+	*cobra.Command,
+	*iamv2.ListTransitiveParentGroupsRequest,
+)
+
+func newListTransitiveParentGroups() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listTransitiveParentGroupsReq iamv2.ListTransitiveParentGroupsRequest
+
+	cmd.Flags().IntVar(&listTransitiveParentGroupsReq.PageSize, "page-size", listTransitiveParentGroupsReq.PageSize, `The maximum number of parent groups to return.`)
+	cmd.Flags().StringVar(&listTransitiveParentGroupsReq.PageToken, "page-token", listTransitiveParentGroupsReq.PageToken, `A page token, received from a previous ListTransitiveParentGroups call.`)
+
+	cmd.Use = "list-transitive-parent-groups PARENT"
+	cmd.Short = `*Beta* List all transitive parent groups of a principal.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List all transitive parent groups of a principal.
+
+  Lists all transitive parent groups of a principal.
+
+  Arguments:
+    PARENT: The parent resource name of the principal whose transitive parent groups
+      to list. Format: accounts/{account_id}/principals/{principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listTransitiveParentGroupsReq.Parent = args[0]
+
+		response, err := a.IamV2.ListTransitiveParentGroups(ctx, listTransitiveParentGroupsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listTransitiveParentGroupsOverrides {
+		fn(cmd, &listTransitiveParentGroupsReq)
+	}
+
+	return cmd
+}
+
+// start list-users command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listUsersOverrides []func(
+	*cobra.Command,
+	*iamv2.ListUsersRequest,
+)
+
+func newListUsers() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listUsersReq iamv2.ListUsersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listUsersLimit int
+
+	cmd.Flags().StringVar(&listUsersReq.Filter, "filter", listUsersReq.Filter, `Optional.`)
+	cmd.Flags().IntVar(&listUsersReq.PageSize, "page-size", listUsersReq.PageSize, `The maximum number of users to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listUsersLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listUsersReq.PageToken, "page-token", listUsersReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-users PARENT"
+	cmd.Short = `*Beta* List users in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List users in the account.
+
+  Lists the users in the Databricks account, returning one page per call.
+  Supports filtering by username or external ID.
+
+  Arguments:
+    PARENT: The parent resource name of the account whose users to list. Format:
+      accounts/{account_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listUsersReq.Parent = args[0]
+
+		response := a.IamV2.ListUsers(ctx, listUsersReq)
+		if listUsersLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listUsersLimit)
+		}
+		if listUsersLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listUsersLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listUsersOverrides {
+		fn(cmd, &listUsersReq)
+	}
+
+	return cmd
+}
+
 // start list-workspace-assignment-details command
 
 // Slice with functions to override default command behavior.
@@ -399,18 +2441,28 @@ func newListWorkspaceAssignmentDetails() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listWorkspaceAssignmentDetailsReq iamv2.ListWorkspaceAssignmentDetailsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listWorkspaceAssignmentDetailsLimit int
 
 	cmd.Flags().IntVar(&listWorkspaceAssignmentDetailsReq.PageSize, "page-size", listWorkspaceAssignmentDetailsReq.PageSize, `The maximum number of workspace assignment details to return.`)
-	cmd.Flags().StringVar(&listWorkspaceAssignmentDetailsReq.PageToken, "page-token", listWorkspaceAssignmentDetailsReq.PageToken, `A page token, received from a previous ListWorkspaceAssignmentDetails call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listWorkspaceAssignmentDetailsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listWorkspaceAssignmentDetailsReq.PageToken, "page-token", listWorkspaceAssignmentDetailsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-assignment-details WORKSPACE_ID"
 	cmd.Short = `List workspace assignment details for a workspace.`
 	cmd.Long = `List workspace assignment details for a workspace.
 
-  Lists workspace assignment details for a workspace. For scalability, the
-  response omits the per-principal entitlement fields (entitlements and
-  effective_entitlements); call GetWorkspaceAssignmentDetail to read
-  entitlements for a single principal.
+  Lists workspace assignment details for a workspace. The response omits the
+  per-principal entitlement fields (entitlements and
+  effective_entitlements). To read the entitlements for a single principal,
+  get that principal's assignment detail.
 
   Arguments:
     WORKSPACE_ID: Required. The workspace ID for which the workspace assignment details are
@@ -438,12 +2490,15 @@ func newListWorkspaceAssignmentDetails() *cobra.Command {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		response, err := a.IamV2.ListWorkspaceAssignmentDetails(ctx, listWorkspaceAssignmentDetailsReq)
-		if err != nil {
-			return err
+		response := a.IamV2.ListWorkspaceAssignmentDetails(ctx, listWorkspaceAssignmentDetailsReq)
+		if listWorkspaceAssignmentDetailsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceAssignmentDetailsLimit)
+		}
+		if listWorkspaceAssignmentDetailsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listWorkspaceAssignmentDetailsLimit)
 		}
 
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -453,6 +2508,87 @@ func newListWorkspaceAssignmentDetails() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listWorkspaceAssignmentDetailsOverrides {
 		fn(cmd, &listWorkspaceAssignmentDetailsReq)
+	}
+
+	return cmd
+}
+
+// start list-workspace-assignments command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listWorkspaceAssignmentsOverrides []func(
+	*cobra.Command,
+	*iamv2.ListWorkspaceAssignmentsRequest,
+)
+
+func newListWorkspaceAssignments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listWorkspaceAssignmentsReq iamv2.ListWorkspaceAssignmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listWorkspaceAssignmentsLimit int
+
+	cmd.Flags().IntVar(&listWorkspaceAssignmentsReq.PageSize, "page-size", listWorkspaceAssignmentsReq.PageSize, `The maximum number of workspace assignments to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listWorkspaceAssignmentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listWorkspaceAssignmentsReq.PageToken, "page-token", listWorkspaceAssignmentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-workspace-assignments PARENT"
+	cmd.Short = `*Beta* List workspace assignments for a workspace.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List workspace assignments for a workspace.
+
+  Lists workspace assignments for a workspace. The response omits the
+  per-principal entitlement fields (entitlements and
+  effective_entitlements). To read the entitlements for a single principal,
+  get that principal's assignment.
+
+  Arguments:
+    PARENT: The parent resource name of the workspace whose assignments to list.
+      Format: accounts/{account_id}/workspaces/{workspace_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listWorkspaceAssignmentsReq.Parent = args[0]
+
+		response := a.IamV2.ListWorkspaceAssignments(ctx, listWorkspaceAssignmentsReq)
+		if listWorkspaceAssignmentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceAssignmentsLimit)
+		}
+		if listWorkspaceAssignmentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listWorkspaceAssignmentsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listWorkspaceAssignmentsOverrides {
+		fn(cmd, &listWorkspaceAssignmentsReq)
 	}
 
 	return cmd
@@ -569,9 +2705,10 @@ func newResolveServicePrincipal() *cobra.Command {
 
 Resolve an external service principal in the Databricks account.
 
-  Resolves an SP with the given external ID from the customer's IdP. If the SP
-  does not exist, it will be created. If the customer is not onboarded onto
-  Automatic Identity Management (AIM), this will return an error.
+  Resolves a service principal with the given external ID from the customer's
+  IdP. If the service principal does not exist, it will be created. If the
+  customer is not onboarded onto Automatic Identity Management (AIM), this will
+  return an error.
 
   Arguments:
     EXTERNAL_ID: Required. The external ID of the service principal in the customer's IdP.`
@@ -720,6 +2857,441 @@ Resolve an external user in the Databricks account.
 	return cmd
 }
 
+// start update-group command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateGroupOverrides []func(
+	*cobra.Command,
+	*iamv2.UpdateGroupRequest,
+)
+
+func newUpdateGroup() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateGroupReq iamv2.UpdateGroupRequest
+	updateGroupReq.Group = iamv2.Group{}
+	var updateGroupJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateGroupReq.Group.ExternalId, "external-id", updateGroupReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateGroupReq.Group.GroupName, "group-name", updateGroupReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&updateGroupReq.Group.Name, "name", updateGroupReq.Group.Name, `The resource name of the group.`)
+
+	cmd.Use = "update-group NAME UPDATE_MASK"
+	cmd.Short = `*Beta* Update a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a group in the account.
+
+  Updates an existing group in the Databricks account. Only the fields named in
+  the update mask are modified. Returns the updated Group resource.
+
+  When AIM is enabled and the group is an external identity (its external_id is
+  set), only external_id can be updated; its other fields are sourced from your
+  identity provider. With AIM and group visibility filters, a new nonempty
+  external_id must identify a visible group. Clearing external_id is allowed.
+
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
+
+  Arguments:
+    NAME: The resource name of the group. The format depends on the API that
+      returned it: - Account-scoped: accounts/{account_id}/groups/{group_id} -
+      Workspace-scoped: groups/{group_id}
+    UPDATE_MASK: Required. The list of fields to update.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateGroupJson.Unmarshal(&updateGroupReq.Group)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateGroupReq.Name = args[0]
+		updateGroupReq.UpdateMask = args[1]
+
+		response, err := a.IamV2.UpdateGroup(ctx, updateGroupReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateGroupOverrides {
+		fn(cmd, &updateGroupReq)
+	}
+
+	return cmd
+}
+
+// start update-service-principal command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateServicePrincipalOverrides []func(
+	*cobra.Command,
+	*iamv2.UpdateServicePrincipalRequest,
+)
+
+func newUpdateServicePrincipal() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateServicePrincipalReq iamv2.UpdateServicePrincipalRequest
+	updateServicePrincipalReq.ServicePrincipal = iamv2.ServicePrincipal{}
+	var updateServicePrincipalJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateServicePrincipalJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateServicePrincipalReq.ServicePrincipal.ExternalId, "external-id", updateServicePrincipalReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateServicePrincipalReq.ServicePrincipal.Name, "name", updateServicePrincipalReq.ServicePrincipal.Name, `The resource name of the service principal.`)
+
+	cmd.Use = "update-service-principal NAME UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
+	cmd.Short = `*Beta* Update a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a service principal in the account.
+
+  Updates an existing service principal in the Databricks account. Only the
+  fields named in the update mask are modified. Returns the updated
+  ServicePrincipal resource.
+
+  To change is_agent on a locally managed service principal, set it to true or
+  false. Naming is_agent in the update mask without a value leaves it unchanged.
+
+  When AIM is enabled and the service principal is an external identity (its
+  external_id is set), only external_id can be updated; its other fields are
+  sourced from your identity provider.
+
+  Arguments:
+    NAME: The resource name of the service principal. The format depends on the API
+      that returned it: - Account-scoped:
+      accounts/{account_id}/service-principals/{service_principal_id} -
+      Workspace-scoped: service-principals/{service_principal_id}
+    UPDATE_MASK: Required. The list of fields to update.
+    DISPLAY_NAME: Display name of the service principal.
+    ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
+      Supported values: [ACTIVE, INACTIVE]`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name', 'account_sp_status' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateServicePrincipalJson.Unmarshal(&updateServicePrincipalReq.ServicePrincipal)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateServicePrincipalReq.Name = args[0]
+		updateServicePrincipalReq.UpdateMask = args[1]
+		if !cmd.Flags().Changed("json") {
+			updateServicePrincipalReq.ServicePrincipal.DisplayName = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &updateServicePrincipalReq.ServicePrincipal.AccountSpStatus)
+			if err != nil {
+				return fmt.Errorf("invalid ACCOUNT_SP_STATUS: %s", args[3])
+			}
+
+		}
+
+		response, err := a.IamV2.UpdateServicePrincipal(ctx, updateServicePrincipalReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateServicePrincipalOverrides {
+		fn(cmd, &updateServicePrincipalReq)
+	}
+
+	return cmd
+}
+
+// start update-user command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateUserOverrides []func(
+	*cobra.Command,
+	*iamv2.UpdateUserRequest,
+)
+
+func newUpdateUser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateUserReq iamv2.UpdateUserRequest
+	updateUserReq.User = iamv2.User{}
+	var updateUserJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateUserJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateUserReq.User.ExternalId, "external-id", updateUserReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateUserReq.User.Name, "name", updateUserReq.User.Name, `The resource name of the user.`)
+
+	cmd.Use = "update-user NAME UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
+	cmd.Short = `*Beta* Update a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a user in the account.
+
+  Updates an existing user in the Databricks account and returns the updated
+  user. Only the fields named in the update mask are modified. The updatable
+  fields are fullName.givenName, fullName.familyName, status, and externalId.
+
+  When AIM is enabled and the user is an external identity (its external_id is
+  set), only external_id can be updated; its other fields are sourced from your
+  identity provider.
+
+  Arguments:
+    NAME: The resource name of the user. The format depends on the API that returned
+      it: - Account-scoped: accounts/{account_id}/users/{user_id} -
+      Workspace-scoped: users/{user_id}
+    UPDATE_MASK: Required. The list of fields to update.
+    USERNAME: Username/email of the user.
+    FULL_NAME:
+    ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.
+      Supported values: [ACTIVE, INACTIVE]`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(5)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateUserJson.Unmarshal(&updateUserReq.User)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateUserReq.Name = args[0]
+		updateUserReq.UpdateMask = args[1]
+		if !cmd.Flags().Changed("json") {
+			updateUserReq.User.Username = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &updateUserReq.User.FullName)
+			if err != nil {
+				return fmt.Errorf("invalid FULL_NAME: %s", args[3])
+			}
+
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[4], &updateUserReq.User.AccountUserStatus)
+			if err != nil {
+				return fmt.Errorf("invalid ACCOUNT_USER_STATUS: %s", args[4])
+			}
+
+		}
+
+		response, err := a.IamV2.UpdateUser(ctx, updateUserReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateUserOverrides {
+		fn(cmd, &updateUserReq)
+	}
+
+	return cmd
+}
+
+// start update-workspace-assignment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateWorkspaceAssignmentOverrides []func(
+	*cobra.Command,
+	*iamv2.UpdateWorkspaceAssignmentRequest,
+)
+
+func newUpdateWorkspaceAssignment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateWorkspaceAssignmentReq iamv2.UpdateWorkspaceAssignmentRequest
+	updateWorkspaceAssignmentReq.WorkspaceAssignment = iamv2.WorkspaceAssignment{}
+	var updateWorkspaceAssignmentJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateWorkspaceAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: effective_entitlements
+	// TODO: array: entitlements
+	cmd.Flags().StringVar(&updateWorkspaceAssignmentReq.WorkspaceAssignment.Name, "name", updateWorkspaceAssignmentReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
+
+	cmd.Use = "update-workspace-assignment NAME UPDATE_MASK PRINCIPAL_ID"
+	cmd.Short = `*Beta* Update a workspace assignment.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a workspace assignment.
+
+  Updates the entitlements of a directly assigned principal in a workspace.
+  Changes are applied one at a time rather than atomically. If the request fails
+  partway through, only some of the requested changes take effect. Get the
+  assignment afterwards to confirm the final state.
+
+  Arguments:
+    NAME: The resource name of the workspace assignment. The format depends on the
+      API that returned it: - Account-scoped:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}
+      - Workspace-scoped: workspace-assignments/{principal_id}
+    UPDATE_MASK: Required. The list of fields to update.
+    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks. Set when
+      the assignment is created and cannot be changed afterwards; to assign a
+      different principal, create a new assignment.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'principal_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateWorkspaceAssignmentJson.Unmarshal(&updateWorkspaceAssignmentReq.WorkspaceAssignment)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateWorkspaceAssignmentReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateWorkspaceAssignmentReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &updateWorkspaceAssignmentReq.WorkspaceAssignment.PrincipalId)
+			if err != nil {
+				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[2])
+			}
+
+		}
+
+		response, err := a.IamV2.UpdateWorkspaceAssignment(ctx, updateWorkspaceAssignmentReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateWorkspaceAssignmentOverrides {
+		fn(cmd, &updateWorkspaceAssignmentReq)
+	}
+
+	return cmd
+}
+
 // start update-workspace-assignment-detail command
 
 // Slice with functions to override default command behavior.
@@ -738,6 +3310,7 @@ func newUpdateWorkspaceAssignmentDetail() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment-detail WORKSPACE_ID PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"
@@ -745,10 +3318,9 @@ func newUpdateWorkspaceAssignmentDetail() *cobra.Command {
 	cmd.Long = `Update a workspace assignment detail.
 
   Updates the entitlements of a directly assigned principal in a workspace.
-  Entitlement changes are applied individually and non-atomically — if a
-  failure occurs partway through, only a subset of the requested changes may
-  have been applied. Use GetWorkspaceAssignmentDetail to confirm the final
-  state.
+  Changes are applied one at a time rather than atomically. If the request fails
+  partway through, only some of the requested changes take effect. Get the
+  assignment detail afterwards to confirm the final state.
 
   Arguments:
     WORKSPACE_ID: Required. The workspace ID for which the workspace assignment detail is

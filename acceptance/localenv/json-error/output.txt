@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "command": "environments setup-local",
+  "ok": false,
+  "mode": "default",
+  "dryRun": false,
+  "greenfield": false,
+  "phases": [
+    {
+      "phase": "preflight",
+      "status": "ok"
+    },
+    {
+      "phase": "resolve",
+      "status": "error"
+    },
+    {
+      "phase": "fetch",
+      "status": "pending"
+    },
+    {
+      "phase": "merge",
+      "status": "pending"
+    },
+    {
+      "phase": "provision",
+      "status": "pending"
+    },
+    {
+      "phase": "validate",
+      "status": "pending"
+    }
+  ],
+  "warnings": [],
+  "error": {
+    "code": "E_NO_TARGET",
+    "failurePhase": "resolve",
+    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-task",
+    "diskMutated": false
+  },
+  "durationMs": [DURATION_MS]
+}

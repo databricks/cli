@@ -2,13 +2,20 @@ package direct
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -74,8 +81,8 @@ resources:
 }
 
 func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
-	// Rules mirror the schemas backend_defaults in resources.yml, but the test is
-	// deliberately self-contained so that edits to resources.yml don't break it.
+	// Rules mirror the schemas backend_defaults in schemas.yml, but the test is
+	// deliberately self-contained so that edits to schemas.yml don't break it.
 	// The real wiring is covered by acceptance/bundle/resources/schemas/drift.
 	managedDefaults, err := structpath.ParsePattern("properties['unity.catalog.managed.*.defaults.*']")
 	require.NoError(t, err)
@@ -168,6 +175,293 @@ func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
 	}
 }
 
+// A field present in StateType but absent from RemoteType (input-only, e.g. external
+// locations' skip_validation) reads back nil, so a coincidental new == remote must NOT
+// trip RemoteAlreadySet — that would skip a real local change. A field present in RemoteType
+// (jobs' max_concurrent_runs) is not affected.
+func TestIsFieldMissingInRemote(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		resource string
+		path     string
+		expected bool
+	}{
+		{"external_locations", "skip_validation", true},
+		{"jobs", "max_concurrent_runs", false},
+		{"jobs", "name", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.resource+"."+tt.path, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, isFieldMissingInRemote(adapter, path))
+		})
+	}
+}
+
+// TestRemoteAlreadySetGuards drives addPerFieldActions directly to pin the two guards that
+// keep the RemoteAlreadySet shortcut from swallowing a real local change when the remote
+// value is fabricated (read back as a fixed nil/zero rather than the true remote value):
+//   - a field declared ignore_remote_changes (present in RemoteType, e.g. pipelines' run_as)
+//   - a field absent from RemoteType (missing_in_remote, e.g. external_locations' skip_validation)
+//
+// In both cases a genuine local change (old != new) that coincidentally makes new == remote
+// must still classify as Update, not Skip/remote_already_set.
+func TestRemoteAlreadySetGuards(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	runAs := &pipelines.RunAs{UserName: "someone@example.test"}
+
+	tests := []struct {
+		name           string
+		resource       string
+		field          string
+		ch             *deployplan.ChangeDesc
+		expectedAction deployplan.ActionType
+		expectedReason string
+	}{
+		{
+			// ignore_remote_changes guard: run_as read back nil, config changed A -> B.
+			name:           "ignore_remote_changes real local change",
+			resource:       "pipelines",
+			field:          "run_as",
+			ch:             &deployplan.ChangeDesc{Old: runAs, New: nil, Remote: nil},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// missing_in_remote guard: skip_validation absent from RemoteType (remote nil),
+			// config unset the field it previously had.
+			name:           "missing_in_remote real local change",
+			resource:       "external_locations",
+			field:          "skip_validation",
+			ch:             &deployplan.ChangeDesc{Old: true, New: nil, Remote: nil},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Control: a real remote value that matches config is correctly skipped.
+			name:           "genuine remote_already_set is skipped",
+			resource:       "jobs",
+			field:          "max_concurrent_runs",
+			ch:             &deployplan.ChangeDesc{Old: 1, New: 2, Remote: 2},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonRemoteAlreadySet,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			changes := deployplan.Changes{tt.field: tt.ch}
+			err := addPerFieldActions(t.Context(), adapter, changes, nil, nil)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedAction, tt.ch.Action)
+			if tt.expectedReason != "" {
+				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
+			} else {
+				assert.NotEqual(t, deployplan.ReasonRemoteAlreadySet, tt.ch.Reason, "a real local change must not be skipped as remote_already_set")
+			}
+		})
+	}
+}
+
+// TestRecreateBackendDefault pins the implicit backend-default behavior for
+// recreate_on_changes fields (recreateOrBackendDefault): an immutable field the
+// config never set (old and new nil) but the backend populated (remote set) is left
+// in place instead of recreating, without any explicit backend_defaults entry. A
+// genuine local change to the same field still recreates. This is what generalizes
+// the trace_location fix to every optional immutable field.
+func TestRecreateBackendDefault(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		resource       string
+		field          string
+		ch             *deployplan.ChangeDesc
+		expectedAction deployplan.ActionType
+		expectedReason string
+	}{
+		{
+			// artifact_location is recreate_on_changes with no backend_defaults entry.
+			name:           "config-absent immutable field the backend set is left in place",
+			resource:       "experiments",
+			field:          "artifact_location",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: "dbfs:/databricks/mlflow-tracking/123"},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonImmutableBackendValue,
+		},
+		{
+			// A real change to the immutable field still recreates.
+			name:           "changed immutable field recreates",
+			resource:       "experiments",
+			field:          "artifact_location",
+			ch:             &deployplan.ChangeDesc{Old: "s3://a", New: "s3://b", Remote: "s3://a"},
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			// volumes.storage_location: same shape, different resource.
+			name:           "managed volume storage_location left in place",
+			resource:       "volumes",
+			field:          "storage_location",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: "s3://bucket/vol"},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonImmutableBackendValue,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			changes := deployplan.Changes{tt.field: tt.ch}
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+			assert.Equal(t, tt.expectedAction, tt.ch.Action)
+			if tt.expectedReason != "" {
+				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
+			}
+		})
+	}
+}
+
+// TestScalarZeroChange pins the handling of a zero integer in addPerFieldActions:
+// an explicit config zero is a real, force-sent value and must update, while a
+// zero the backend echoes for a field nobody set stays a no-op. gcp_attributes.local_ssd_count
+// is the motivating field (GCP does not reliably echo it, so it never converged before).
+func TestScalarZeroChange(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		field          string
+		ch             *deployplan.ChangeDesc
+		expectedAction deployplan.ActionType
+		expectedReason string
+	}{
+		{
+			// The fix: config sets the field to 0 for the first time (remote lacks it).
+			name:           "explicit config zero is an update",
+			field:          "gcp_attributes.local_ssd_count",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: 0, Remote: nil},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Config never set it, the backend just echoed a zero: not a change.
+			name:           "backend-echoed zero is a no-op",
+			field:          "gcp_attributes.local_ssd_count",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: 0},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+		{
+			// Control: nothing set anywhere.
+			name:           "all empty is a no-op",
+			field:          "gcp_attributes.local_ssd_count",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: nil},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+		{
+			// gcp_attributes is ignore_remote_changes: managed, so the remote value is not
+			// authoritative and the remote_already_set shortcut is disabled. An explicit
+			// config zero (New) the prior state lacked (Old) is a real local change, so it
+			// updates even though the remote already reports 0 — before the fix it was
+			// wrongly skipped as empty.
+			name:           "explicit zero on a managed field updates even when remote reports zero",
+			field:          "gcp_attributes.local_ssd_count",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: 0, Remote: 0},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Mirror of the fix: config removes a field it previously set to 0. That is a
+			// genuine local change (Old 0, New nil differ), symmetric with setting it, so it
+			// updates rather than being dismissed as empty.
+			name:           "clearing an integer zero is an update",
+			field:          "gcp_attributes.local_ssd_count",
+			ch:             &deployplan.ChangeDesc{Old: 0, New: nil, Remote: 0},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Same treatment for a bool: an explicit false the prior state lacked is a real
+			// change on a managed field (use_preemptible_executors), not an empty no-op.
+			name:           "explicit bool false is an update",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: false, Remote: false},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// But a false the backend echoes for a bool the config never set stays a no-op.
+			name:           "backend-echoed bool false is a no-op",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: false},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+		{
+			// Clearing a bool the config previously set to false is symmetric with setting it.
+			name:           "clearing a bool false is an update",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: false, New: nil, Remote: false},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// And for a float: an explicit 0.0 the prior state lacked is a real change.
+			name:           "explicit float zero is an update",
+			field:          "azure_attributes.spot_bid_max_price",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: 0.0, Remote: 0.0},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Clearing a float the config previously set to 0.0 is symmetric with setting it.
+			name:           "clearing a float zero is an update",
+			field:          "azure_attributes.spot_bid_max_price",
+			ch:             &deployplan.ChangeDesc{Old: 0.0, New: nil, Remote: 0.0},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Unlike an explicit 0/false, an explicit "" in New is left as a no-op: strings are
+			// not in isZeroScalar. (In practice DropEmptyStrings strips "" upstream, so New is
+			// never "" from real config; this pins the classifier and fails if reflect.String
+			// is ever added to isZeroScalar.)
+			name:           "explicit empty string is a no-op",
+			field:          "gcp_attributes.google_service_account",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: "", Remote: ""},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+		{
+			// A backend-echoed "" (config and state nil) is empty on every side and stays a
+			// no-op. isZeroScalar is never called on Remote, so this is generic empty handling.
+			name:           "backend-echoed empty string is a no-op",
+			field:          "gcp_attributes.google_service_account",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: ""},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters["clusters"]
+			require.True(t, ok)
+			changes := deployplan.Changes{tt.field: tt.ch}
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+			assert.Equal(t, tt.expectedAction, tt.ch.Action)
+			if tt.expectedReason != "" {
+				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
+			}
+		})
+	}
+}
+
 // Map drift handling synthesizes child paths to match against rules. structdiff
 // always emits map keys in bracket notation, so synthetic child paths must too;
 // otherwise rules wouldn't match for identifier-like keys.
@@ -186,4 +480,318 @@ func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
 	})
 	assert.True(t, ok)
 	assert.Equal(t, deployplan.ReasonBackendDefault, reason)
+}
+
+const jobRunKey = "resources.job_runs.my_run"
+
+// The plan skips only a run that reached the required SUCCESS, so a reference
+// served from the remote state cache reads a finished run.
+func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
+	b := bundleWithSkippedJobRun(t, &dresources.JobRunRemote{
+		RunId:       123,
+		ResultState: jobs.RunResultStateSuccess,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		},
+	})
+
+	value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
+
+	require.NoError(t, err)
+	assert.Equal(t, jobs.RunResultStateSuccess, value)
+}
+
+// jobRunResultStateAction classifies the result_state drift of a run in the given
+// state. Old == New because a deploy records the outcome it asked for, and only
+// the remote says whether the run reached it.
+func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.ChangeDesc {
+	t.Helper()
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	remote := &dresources.JobRunRemote{RunId: 123, ResultState: state.ResultState, State: state}
+	changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
+		Old:    jobs.RunResultStateSuccess,
+		New:    jobs.RunResultStateSuccess,
+		Remote: state.ResultState,
+	}}
+
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil, remote))
+	return changes["result_state"]
+}
+
+// References are served from the remote state cache only for a run the plan
+// skips, so a run that stopped without succeeding has to be re-triggered.
+func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
+	for name, state := range map[string]*jobs.RunState{
+		"FAILED": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateFailed,
+		},
+		"CANCELED": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateCanceled,
+		},
+		"TIMEDOUT": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateTimedout,
+		},
+		// A skipped run never ran, so it reports no result_state at all — the same
+		// as a run still going. Only the lifecycle state tells the two apart.
+		"SKIPPED": {LifeCycleState: jobs.RunLifeCycleStateSkipped},
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, deployplan.Recreate, jobRunResultStateAction(t, state).Action)
+		})
+	}
+}
+
+// A run that has not stopped yet may still succeed, so the plan leaves it
+// alone rather than recreating it. Skip does not resume an abandoned wait.
+func TestJobRunInProgressIsSkip(t *testing.T) {
+	for _, lifeCycleState := range []jobs.RunLifeCycleState{
+		jobs.RunLifeCycleStatePending,
+		jobs.RunLifeCycleStateRunning,
+		jobs.RunLifeCycleStateTerminating,
+	} {
+		t.Run(string(lifeCycleState), func(t *testing.T) {
+			change := jobRunResultStateAction(t, &jobs.RunState{LifeCycleState: lifeCycleState})
+
+			assert.Equal(t, deployplan.Skip, change.Action)
+			assert.Equal(t, "run in progress", change.Reason)
+		})
+	}
+}
+
+// The run reached the required outcome, so the plan can skip it.
+func TestJobRunSucceededOutcomeIsNotDrift(t *testing.T) {
+	change := jobRunResultStateAction(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateSuccess,
+	})
+
+	assert.Equal(t, deployplan.Skip, change.Action)
+}
+
+// bundleWithSkippedJobRun sets up a deploy whose plan skips the run, so
+// references to it resolve from the remote state cache. The state cache holds
+// PrepareState's output, as a real plan does.
+func bundleWithSkippedJobRun(t *testing.T, remote *dresources.JobRunRemote) *DeploymentBundle {
+	t.Helper()
+
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	plan := deployplan.NewPlanDirect()
+	plan.Plan[jobRunKey] = &deployplan.PlanEntry{
+		Action:   deployplan.Skip,
+		NewState: &structvar.StructVarJSON{},
+	}
+
+	b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+	state := (&dresources.ResourceJobRun{}).PrepareState(&resources.JobRun{})
+	b.StateCache.Store(jobRunKey, structvar.NewStructVar(state, nil))
+	b.RemoteStateCache.Store(jobRunKey, remote)
+	return b
+}
+
+func TestShouldSkipRemoteAddition(t *testing.T) {
+	// Rules mirror clusters/jobs ignore_remote_additions in clusters.yml and jobs.yml, but the
+	// test is deliberately self-contained so edits to those files don't break it. The real wiring
+	// is covered by acceptance/bundle/resources/cluster_policies/*.
+	jobCluster, err := structpath.ParsePattern("job_clusters[*].new_cluster")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		IgnoreRemoteAdditions: []dresources.RemoteAdditionRule{
+			{Field: jobCluster, WhenSet: structpath.MustParsePath("policy_id")},
+		},
+	}
+
+	withPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
+		JobClusterKey: "small",
+		NewCluster:    &compute.ClusterSpec{PolicyId: "p1"},
+	}}}
+	withoutPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
+		JobClusterKey: "small",
+		NewCluster:    &compute.ClusterSpec{},
+	}}}
+	// when_set resolves against the concrete object the rule matched, so two clusters in one
+	// job are gated independently.
+	mixed := &jobs.JobSettings{JobClusters: []jobs.JobCluster{
+		{JobClusterKey: "gated", NewCluster: &compute.ClusterSpec{PolicyId: "p1"}},
+		{JobClusterKey: "plain", NewCluster: &compute.ClusterSpec{}},
+	}}
+
+	const tagPath = "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']"
+
+	tests := []struct {
+		name     string
+		path     string
+		state    *jobs.JobSettings
+		change   deployplan.ChangeDesc
+		expected bool
+	}{
+		{
+			name:     "policy attached, backend added a tag",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: true,
+		},
+		{
+			name:     "policy attached, whole map added by backend",
+			path:     "job_clusters[job_cluster_key='small'].new_cluster.custom_tags",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: map[string]string{"CostCenter": "dev-1234"}},
+			expected: true,
+		},
+		{
+			name:     "no policy attached: an addition is still drift",
+			path:     tagPath,
+			state:    withoutPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "config disagrees with remote: still an update",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{New: "mine", Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "user removed the field from config: still an update",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Old: "mine", Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "remote has nothing: not an addition",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{},
+			expected: false,
+		},
+		{
+			name:     "outside the gated object: not covered",
+			path:     "tags['CostCenter']",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "sibling cluster with a policy does not gate one without",
+			path:     "job_clusters[job_cluster_key='plain'].new_cluster.custom_tags['CostCenter']",
+			state:    mixed,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "the cluster with the policy is gated on its own policy_id",
+			path:     "job_clusters[job_cluster_key='gated'].new_cluster.custom_tags['CostCenter']",
+			state:    mixed,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: true,
+		},
+		{
+			// The remote grew a whole cluster the config does not declare: there is no
+			// policy_id to gate on, so this is real drift rather than a policy addition.
+			name:     "gated object absent from config: still drift",
+			path:     "job_clusters[job_cluster_key='other'].new_cluster.custom_tags['CostCenter']",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+
+			change := tt.change
+			reason, ok := shouldSkipRemoteAddition(cfg, path, &change, tt.state)
+			assert.Equal(t, tt.expected, ok)
+			if tt.expected {
+				assert.Equal(t, deployplan.ReasonRemoteAddition, reason)
+			}
+		})
+	}
+}
+
+// Types for TestPrepareChangesWholeBlockOverlap: two levels of nesting under an
+// optional pointer.
+type threeWayInner struct {
+	B string `json:"b,omitempty"`
+	C string `json:"c,omitempty"`
+}
+
+type threeWayMid struct {
+	A *threeWayInner `json:"a,omitempty"`
+}
+
+type threeWayOuter struct {
+	Field *threeWayMid `json:"field,omitempty"`
+}
+
+// TestPrepareChangesWholeBlockOverlap documents the "whole block" bug at the
+// three-way merge: local (saved-state vs config) and remote (remote vs config)
+// diffs cut the tree at different levels when the remote has a nil intermediate,
+// so prepareChanges keys them under different paths and emits a coarse parent
+// entry alongside the fine child entry instead of merging into leaves.
+//
+// old:    field.a = {b: "old"}
+// new:    field.a = {b: "old", c: "newc"}   (c added locally)
+// remote: field.a = nil
+//
+// The local diff descends to the leaf (field.a.c); the remote diff stops at the
+// nil (field.a), so the two never merge. This test asserts the current (buggy)
+// key set; leaf-level decomposition must instead yield {field.a.b, field.a.c}.
+func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
+	old := threeWayOuter{Field: &threeWayMid{A: &threeWayInner{B: "old"}}}
+	newState := threeWayOuter{Field: &threeWayMid{A: &threeWayInner{B: "old", C: "newc"}}}
+	remote := threeWayOuter{Field: &threeWayMid{A: nil}}
+
+	localDiff, err := structdiff.GetStructDiff(old, newState, nil)
+	require.NoError(t, err)
+	remoteDiff, err := structdiff.GetStructDiff(remote, newState, nil)
+	require.NoError(t, err)
+
+	changes, err := prepareChanges(t.Context(), nil, localDiff, remoteDiff, old, remote)
+	require.NoError(t, err)
+
+	keys := make([]string, 0, len(changes))
+	for k := range changes {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
+	// Unexpected: a coarse "field.a" entry overlaps the fine "field.a.c" entry.
+	// Probably should be: []string{"field.a.b", "field.a.c"}.
+	assert.Equal(t, []string{"field.a", "field.a.c"}, keys)
+
+	// The coarse parent entry carries the whole sub-block rather than a leaf value.
+	assert.Equal(t, threeWayInner{B: "old", C: "newc"}, changes["field.a"].New)
+}
+
+// TestLadderBackendDefaultBeforeRemoteAddition guards the ladder order in addPerFieldActions.
+// The clusters resource has BOTH a root-level ignore_remote_additions rule (when_set: policy_id)
+// and backend_defaults (enable_elastic_disk). On a policy-gated cluster a config-absent backend
+// default matches both; it must keep reason backend_default, not remote_addition, so that
+// config-remote-sync excludes it (it captures remote_addition but filters known defaults).
+// Reordering the two classifiers reintroduces #6631.
+func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
+	require.NoError(t, err)
+
+	newState := &dresources.ClusterState{PolicyId: "p1"}
+	changes := deployplan.Changes{
+		// config-absent (Old==New==nil), present in remote: matches both rules.
+		"enable_elastic_disk": &deployplan.ChangeDesc{Remote: true},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
+	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
+	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }

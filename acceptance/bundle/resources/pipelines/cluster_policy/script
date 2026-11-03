@@ -1,0 +1,11 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "A pipeline cluster with policy_id converges: the Pipelines API does not expand the policy\n"
+trace $CLI bundle plan

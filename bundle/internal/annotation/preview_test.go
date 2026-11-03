@@ -37,3 +37,24 @@ func TestPreviewTagCoversAllStages(t *testing.T) {
 		assert.NotEmpty(t, annotation.PreviewTag(stage), "stage %q has no preview tag", stage)
 	}
 }
+
+func TestOverrideLaunchStage(t *testing.T) {
+	const overridden = "github.com/databricks/cli/bundle/config/resources.PostgresProject"
+	tests := []struct {
+		name     string
+		typePath string
+		stage    clijson.LaunchStage
+		want     clijson.LaunchStage
+	}{
+		{"GA field is raised to the override", overridden, "", clijson.LaunchStagePublicBeta},
+		{"less-restrictive public-preview field is raised", overridden, clijson.LaunchStagePublicPreview, clijson.LaunchStagePublicBeta},
+		{"Beta field is unchanged", overridden, clijson.LaunchStagePublicBeta, clijson.LaunchStagePublicBeta},
+		{"more-restrictive private-preview field is kept", overridden, clijson.LaunchStagePrivatePreview, clijson.LaunchStagePrivatePreview},
+		{"field of a type with no override is unchanged", "github.com/databricks/cli/bundle/config/resources.Job", "", ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, annotation.OverrideLaunchStage(tc.typePath, tc.stage))
+		})
+	}
+}

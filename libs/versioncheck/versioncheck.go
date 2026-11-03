@@ -79,7 +79,7 @@ type Result struct {
 // compare against, so they short-circuit without a network call.
 func Check(ctx context.Context) *Result {
 	info := build.GetInfo()
-	if isDevelopmentBuild(info) {
+	if info.IsDevelopment() {
 		return &Result{
 			CurrentVersion:   info.Version,
 			DevelopmentBuild: true,
@@ -110,13 +110,6 @@ func Check(ctx context.Context) *Result {
 	}
 }
 
-// isDevelopmentBuild reports whether the binary was not built from a tagged
-// release. Snapshot builds (goreleaser --snapshot) and local `go build`
-// binaries (version 0.0.0-dev+<sha>) fall into this category.
-func isDevelopmentBuild(info build.Info) bool {
-	return info.IsSnapshot || strings.HasPrefix(info.Version, "0.0.0")
-}
-
 // isNewer reports whether latest is a higher semver than current. Both are
 // bare versions without a leading "v".
 func isNewer(current, latest string) bool {
@@ -134,13 +127,17 @@ type latestRelease struct {
 	URL     string `json:"url"`
 }
 
-func fetchLatestRelease(ctx context.Context) (latestRelease, error) {
-	base := env.Get(ctx, gitHubAPIURLEnv)
-	if base == "" {
-		base = defaultGitHubAPIURL
+// GitHubAPIURL returns the GitHub API base URL. DATABRICKS_CLI_GITHUB_API_URL
+// overrides it.
+func GitHubAPIURL(ctx context.Context) string {
+	if base := env.Get(ctx, gitHubAPIURLEnv); base != "" {
+		return strings.TrimRight(base, "/")
 	}
+	return defaultGitHubAPIURL
+}
 
-	url := base + latestReleasePath
+func fetchLatestRelease(ctx context.Context) (latestRelease, error) {
+	url := GitHubAPIURL(ctx) + latestReleasePath
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return latestRelease{}, err

@@ -151,6 +151,8 @@ like catalogs, schemas, and compute configurations per target.`,
 
 		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filepath.ToSlash(filename))
 
+		warnIfNotIncluded(ctx, b, filename)
+
 		if bind {
 			return deployment.BindResource(cmd, pipelineKey, pipelineId, true, false, true)
 		}

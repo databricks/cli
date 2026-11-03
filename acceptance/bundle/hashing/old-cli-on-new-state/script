@@ -1,0 +1,26 @@
+export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+add_repl warehouse-1234 TEST_DEFAULT_WAREHOUSE_ID
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() { $CLI bundle destroy --auto-approve &> LOG.destroy; }
+trap cleanup EXIT
+
+title "Current CLI deploys: serialized_dashboard is stored as a content hash\n"
+$CLI bundle deploy &> LOG.deploy_new
+contains.py '!panic' '!internal error' < LOG.deploy_new > /dev/null
+print_state.py | gron.py | grep serialized_dashboard
+
+# The old CLI reads the hash as literal content; so hash != config content is a local change -> update
+# never a recreate or crash.
+title "Old CLI on the hashed state plans a drift update, not a recreate or crash"
+$CLI_1_16_1 bundle plan &> LOG.plan_old
+contains.py '!recreate' '!panic' '!internal error' < LOG.plan_old > /dev/null
+
+title "The old CLI redeploys and writes full content back, so the drift is self-correcting\n"
+$CLI_1_16_1 bundle deploy &> LOG.deploy_old
+contains.py '!panic' '!internal error' < LOG.deploy_old > /dev/null
+print_state.py | gron.py | grep serialized_dashboard
+
+title "A second old-CLI plan is a no-op"
+$CLI_1_16_1 bundle plan &> LOG.plan_old2
+contains.py '0 to change' '!panic' < LOG.plan_old2 > /dev/null

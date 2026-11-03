@@ -11,20 +11,17 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConvertPythonParams(t *testing.T) {
 	job := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.Task{
-				{PythonWheelTask: &jobs.PythonWheelTask{
-					PackageName: "my_test_code",
-					EntryPoint:  "run",
-				}},
-			},
+		Tasks: []jobs.Task{
+			{PythonWheelTask: &jobs.PythonWheelTask{
+				PackageName: "my_test_code",
+				EntryPoint:  "run",
+			}},
 		},
 	}
 	b := &bundle.Bundle{
@@ -58,7 +55,7 @@ func TestConvertPythonParams(t *testing.T) {
 
 func TestJobRunnerCancel(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -102,7 +99,7 @@ func TestJobRunnerCancel(t *testing.T) {
 
 func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -141,8 +138,8 @@ func TestJobRunnerRestart(t *testing.T) {
 		},
 	} {
 		job := &resources.Job{
-			BaseResource: resources.BaseResource{ID: "123"},
-			JobSettings:  jobSettings,
+			ID:          "123",
+			JobSettings: jobSettings,
 		}
 		b := &bundle.Bundle{
 			Config: config.Root{
@@ -207,7 +204,7 @@ func TestJobRunnerRestart(t *testing.T) {
 
 func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -242,11 +239,9 @@ func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
-		JobSettings: jobs.JobSettings{
-			Continuous: &jobs.Continuous{
-				PauseStatus: jobs.PauseStatusUnpaused,
-			},
+		ID: "123",
+		Continuous: &jobs.Continuous{
+			PauseStatus: jobs.PauseStatusUnpaused,
 		},
 	}
 	b := &bundle.Bundle{
@@ -291,51 +286,4 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 
 	_, err := runner.Restart(ctx, &Options{})
 	require.NoError(t, err)
-}
-
-func TestRunPageURL(t *testing.T) {
-	ctx := t.Context()
-	tests := []struct {
-		name     string
-		raw      string
-		expected string
-	}{
-		{
-			"legacy fragment form preserves workspace selector",
-			"https://myworkspace.databricks.test/?o=900800700600#job/123/run/456",
-			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
-		},
-		{
-			"no workspace selector",
-			"https://myworkspace.databricks.test/#job/123/run/456",
-			"https://myworkspace.databricks.test/jobs/123/runs/456",
-		},
-		{
-			"http host with port",
-			"http://127.0.0.1:8080/?o=900800700600#job/1/run/2",
-			"http://127.0.0.1:8080/jobs/1/runs/2?o=900800700600",
-		},
-		// Unexpected formats are returned unchanged because the conversion is cosmetic.
-		{
-			"already modern path is left as-is",
-			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
-			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
-		},
-		{
-			"incomplete fragment is left as-is",
-			"https://myworkspace.databricks.test/?o=900800700600#job/123",
-			"https://myworkspace.databricks.test/?o=900800700600#job/123",
-		},
-		{
-			"empty job id is left as-is",
-			"https://myworkspace.databricks.test/?o=900800700600#job//run/456",
-			"https://myworkspace.databricks.test/?o=900800700600#job//run/456",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, runPageURL(ctx, tt.raw))
-		})
-	}
 }

@@ -1,0 +1,11 @@
+bundle:
+  name: multiple-defaults
+
+# Two targets both marked default is an invalid bundle. setup-local consults the
+# bundle only as an optional source of cluster_id, so this error must not surface;
+# the command should still reach its own E_NO_TARGET.
+targets:
+  dev:
+    default: true
+  dev2:
+    default: true

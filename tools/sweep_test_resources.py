@@ -9,8 +9,8 @@ Authentication is taken from the environment (DATABRICKS_HOST, DATABRICKS_TOKEN
 or any other auth supported by the databricks CLI).
 
 Usage:
-    tools/sweep_test_resources.py ci15799017600x           # dry run: list only
-    tools/sweep_test_resources.py ci15799017600x --delete  # delete matches
+    uv run tools/sweep_test_resources.py ci15799017600x           # dry run: list only
+    uv run tools/sweep_test_resources.py ci15799017600x --delete  # delete matches
 """
 
 import argparse

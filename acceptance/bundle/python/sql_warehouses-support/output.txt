@@ -1,0 +1,38 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_sql_warehouse"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "sql_warehouses": {
+      "my_sql_warehouse_1": {
+        "auto_stop_mins": 10,
+        "cluster_size": "2X-Small",
+        "enable_photon": true,
+        "max_num_clusters": 1,
+        "min_num_clusters": 1,
+        "name": "my_sql_warehouse_1 (updated)",
+        "spot_instance_policy": "COST_OPTIMIZED",
+        "warehouse_type": "CLASSIC"
+      },
+      "my_sql_warehouse_2": {
+        "auto_stop_mins": 10,
+        "cluster_size": "2X-Small",
+        "enable_photon": true,
+        "max_num_clusters": 1,
+        "min_num_clusters": 1,
+        "name": "my_sql_warehouse_2 (updated)",
+        "spot_instance_policy": "COST_OPTIMIZED",
+        "warehouse_type": "CLASSIC"
+      }
+    }
+  }
+}

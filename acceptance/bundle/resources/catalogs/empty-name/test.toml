@@ -1,0 +1,7 @@
+# The golden asserts UC's message verbatim, so run on cloud to catch it drifting.
+Cloud = true
+RecordRequests = false
+Ignore = [".databricks"]
+
+# Terraform rejects catalog resources before any API call, so there is nothing to
+# assert on that engine.

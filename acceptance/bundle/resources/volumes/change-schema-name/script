@@ -14,4 +14,4 @@ trace print_requests.py //unity
 
 trace musterr $CLI volumes read main.myschema.myvolume
 trace $CLI volumes read main.myschema.mynewvolume
-rm out.requests.txt
+rm "$OUT_REQUESTS"

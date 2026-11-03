@@ -1,0 +1,54 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "plan": {
+    "resources.sql_warehouses.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "auto_stop_mins": 120,
+          "cluster_size": "Small",
+          "enable_photon": true,
+          "max_num_clusters": 1,
+          "name": "foo",
+          "spot_instance_policy": "COST_OPTIMIZED"
+        }
+      }
+    },
+    "resources.sql_warehouses.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.sql_warehouses.foo",
+          "label": "${resources.sql_warehouses.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "__embed__": [
+            {
+              "level": "CAN_VIEW",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/sql/warehouses/${resources.sql_warehouses.foo.id}"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+read_id.py test_job > /dev/null
+rm -f "$OUT_REQUESTS"
+
+title "Terraform state migrates to file-backed direct state with shadow history"
+trace DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+trace jq '{features, job_id: .state["resources.jobs.test_job"].__id__}' .databricks/bundle/default/resources.json
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state/terraform.tfstate.backup" -o json | jq '{object_type}'

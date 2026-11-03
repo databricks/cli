@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+job_id=$(read_id.py my_job)
+
+title "An out-of-band change to a config-owned tag is drift, even with a policy attached\n"
+edit_resource.py jobs "$job_id" <<'EOF'
+for jc in r["job_clusters"]:
+    jc["new_cluster"]["custom_tags"]["Mine"] = "changed-out-of-band"
+EOF
+trace $CLI bundle plan | contains.py "1 to change"
+
+title "Removing a config-owned tag is a change the user asked for, not a backend addition\n"
+trace update_file.py databricks.yml "Mine: mine" "Other: other"
+trace $CLI bundle plan -o json | jq -S '.plan["resources.jobs.my_job"].changes
+  | with_entries(select(.key | test("custom_tags")))'

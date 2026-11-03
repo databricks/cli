@@ -65,7 +65,10 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 				// KindInvalid means serialized_space is absent (neither it nor
 				// file_path is set); leave it for backend validation to reject.
 				return v, nil
-			case dyn.KindMap, dyn.KindSequence:
+			case dyn.KindMap:
+				// A top-level sequence would be valid JSON but is meaningless for a
+				// genie space, so KindSequence is not accepted here and falls through
+				// to the default rejection below.
 				jsonBytes, err := json.Marshal(ss.AsAny())
 				if err != nil {
 					return dyn.InvalidValue, fmt.Errorf("failed to marshal inline serialized_space: %w", err)
@@ -74,7 +77,7 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 			default:
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("serialized_space must be a string, map, or sequence, got %s", ss.Kind()),
+					Summary:   fmt.Sprintf("serialized_space must be a string or map, got %s", ss.Kind()),
 					Locations: ss.Locations(),
 				})
 				return v, nil

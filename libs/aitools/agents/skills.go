@@ -16,8 +16,8 @@ const (
 	// CanonicalSkillsDir is the shared location for skills when multiple agents are detected.
 	CanonicalSkillsDir = ".databricks/aitools/skills"
 
-	// legacySkillsDir is the old canonical location, checked for backward compatibility.
-	legacySkillsDir = ".databricks/agent-skills"
+	// LegacySkillsDir is the old canonical location, checked for backward compatibility.
+	LegacySkillsDir = ".databricks/agent-skills"
 )
 
 // HasDatabricksSkillsInstalled checks if Databricks skills are installed in the canonical location.
@@ -33,18 +33,25 @@ func HasDatabricksSkillsInstalled(ctx context.Context) bool {
 	if err != nil {
 		return false
 	}
-	return hasDatabricksSkillsIn(filepath.Join(homeDir, CanonicalSkillsDir)) ||
-		hasDatabricksSkillsIn(filepath.Join(homeDir, legacySkillsDir))
+	return HasDatabricksSkillsIn(filepath.Join(homeDir, CanonicalSkillsDir)) ||
+		HasDatabricksSkillsIn(filepath.Join(homeDir, LegacySkillsDir))
 }
 
-// hasDatabricksSkillsIn checks if dir contains a subdirectory starting with "databricks".
-func hasDatabricksSkillsIn(dir string) bool {
+// HasDatabricksSkillsIn checks if dir contains a subdirectory starting with "databricks".
+// The CLI installs skills into an agent's skills dir as symlinks to the canonical
+// store, and os.ReadDir reports symlinks via Lstat (so IsDir is false for them), so
+// entries are resolved with os.Stat to follow the link to its target.
+func HasDatabricksSkillsIn(dir string) bool {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.HasPrefix(e.Name(), databricksSkillPrefix) {
+		if !strings.HasPrefix(e.Name(), databricksSkillPrefix) {
+			continue
+		}
+		info, err := os.Stat(filepath.Join(dir, e.Name()))
+		if err == nil && info.IsDir() {
 			return true
 		}
 	}

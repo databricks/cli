@@ -6,15 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
 
 // keyringServiceName is the service name used for every entry the CLI writes
 // to the OS-native secure store. The account field carries the per-entry
-// cache key the SDK passes through TokenCache.Store / Lookup.
+// cache key the U2M manager passes through Store.Put / Lookup.
 const keyringServiceName = "databricks-cli"
 
 // keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
@@ -47,7 +47,8 @@ type keyringBackend interface {
 // checksum, store time, ...) without breaking older CLI versions that read
 // the same entry.
 type keyringEntry struct {
-	Token *oauth2.Token `json:"token"`
+	Token        *oauth2.Token `json:"token"`
+	PendingLogin *PendingLogin `json:"pending_login,omitempty"`
 }
 
 // zalandoBackend delegates to the process-wide zalando/go-keyring provider.
@@ -104,7 +105,7 @@ func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
 		timeout:        timeout,
 		keyringSvcName: keyringServiceName,
 	}
-	account := keyringProbeAccountPrefix + uuid.NewString()
+	account := keyringProbeAccountPrefix + uuid.New().String()
 	tok := &oauth2.Token{AccessToken: "probe"}
 	if err := c.Put(account, Entry{Token: tok}); err != nil {
 		return fmt.Errorf("write: %w", err)
@@ -133,7 +134,7 @@ func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
 		timeout:        timeout,
 		keyringSvcName: keyringServiceName,
 	}
-	account := keyringProbeAccountPrefix + uuid.NewString()
+	account := keyringProbeAccountPrefix + uuid.New().String()
 	err := c.withTimeout("get", func() error {
 		_, gerr := c.backend.Get(c.keyringSvcName, account)
 		return gerr

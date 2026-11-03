@@ -15,39 +15,35 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
-// EnvConstraintRepo names the environment variable that supplies the GitHub repo
-// ("owner/name") hosting the environment constraint artifacts.
-const EnvConstraintRepo = "DATABRICKS_LOCALENV_CONSTRAINT_REPO"
+// EnvConstraintSourceURLTestOverride names the environment variable that
+// overrides the constraint source with a full base URL. It exists so tests can
+// point the fetch at a local server (see the acceptance suite) and for power-user
+// debugging; normal runs use defaultConstraintBaseURL. The TEST_OVERRIDE naming
+// signals it is not a supported user-facing knob.
+const EnvConstraintSourceURLTestOverride = "DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE"
 
-// defaultConstraintRepo is the GitHub repo that hosts the constraint artifacts.
-// It is intentionally empty for now: the artifacts must move to a
-// Databricks-owned repo (databricks/environments) before this ships, but that
-// repo can't publish them yet (its GitHub Actions are disabled). Until then the
-// repo is supplied via the EnvConstraintRepo environment variable rather than
-// hardcoding a personal repo, so no untrusted default controls what the CLI
-// installs. Once databricks/environments is ready this becomes that constant.
-const defaultConstraintRepo = ""
+// defaultConstraintBaseURL is the base URL of the published constraint artifacts.
+//
+// The databricks/environments repo nests its language ecosystems under a
+// top-level directory, so the Python artifacts live at python/<env key>/
+// pyproject.toml (e.g. python/serverless/serverless-v5, python/dbr/<spark>),
+// not at the repo root. The base URL is anchored at that python/ subtree so an
+// env key of "serverless/serverless-v5" resolves to the real path.
+const defaultConstraintBaseURL = "https://raw.githubusercontent.com/databricks/environments/main/python"
 
-// RepoConstraintBaseURL resolves the base URL for constraint artifacts from the
-// hosting GitHub repo: EnvConstraintRepo overrides the (currently empty) built-in
-// default, and the repo is turned into a raw.githubusercontent.com main-branch
-// URL. It returns "" when no repo is configured; the caller must not fall back to
-// any other source, and FetchConstraints reports the missing configuration as a
-// fetch-phase error so it surfaces through the normal phase/JSON reporting rather
-// than aborting the command before the phase table is rendered.
-func RepoConstraintBaseURL(ctx context.Context) string {
-	repo := defaultConstraintRepo
-	if v, ok := env.Lookup(ctx, EnvConstraintRepo); ok && strings.TrimSpace(v) != "" {
-		repo = strings.TrimSpace(v)
+// ConstraintBaseURL returns the base URL for constraint artifacts: the
+// EnvConstraintSourceURLTestOverride value when set (a full base URL), otherwise
+// the built-in defaultConstraintBaseURL.
+func ConstraintBaseURL(ctx context.Context) string {
+	if v, ok := env.Lookup(ctx, EnvConstraintSourceURLTestOverride); ok && strings.TrimSpace(v) != "" {
+		return strings.TrimSpace(v)
 	}
-	if repo == "" {
-		return ""
-	}
-	return "https://raw.githubusercontent.com/" + repo + "/main"
+	return defaultConstraintBaseURL
 }
 
 // errEnvKeyNotFound is returned by fetchURL when the constraint artifact does
@@ -79,6 +75,11 @@ type Constraints struct {
 	DatabricksConnect string
 	// ConstraintDeps is the list of entries from [tool.uv].constraint-dependencies.
 	ConstraintDeps []string
+	// EnvironmentVersion is the serverless environment version written into
+	// [tool.databricks.environment].environment_version (e.g. "5"). It is not
+	// parsed from the artifact but set by the pipeline from the resolved compute
+	// target; it is empty for cluster targets, where the section is not managed.
+	EnvironmentVersion string
 }
 
 // cacheFileName maps an env key to a single, collision-free cache filename.
@@ -94,56 +95,24 @@ func cacheFileName(envKey string) string {
 	return fmt.Sprintf("%s-%s.toml", slug, hex.EncodeToString(sum[:8]))
 }
 
-// writeCacheAtomic writes data to path via a temp file and rename, creating the
-// parent directory first. The rename is atomic on the same filesystem, so a
-// concurrent reader never observes a truncated or partial cache file (os.WriteFile
-// truncates in place, which a fallback reader could catch mid-write).
-func writeCacheAtomic(path string, data []byte) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(dir, ".constraints-*.tmp")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	return nil
-}
-
 // FetchConstraints fetches the pyproject.toml for envKey from baseURL and caches it in
 // cacheDir. On a transport or non-404 HTTP failure it falls back to the cached copy if one
 // exists (E_FETCH otherwise). A 404 means the env key is not published (E_ENV_UNSUPPORTED)
 // and does not fall back to cache — a resolvable target with no environment is a distinct,
 // non-transient condition.
 //
-// baseURL points at the repo hosting the constraint artifacts (see
-// RepoConstraintBaseURL); it is empty when no source is configured, which is
-// reported below as a fetch-phase error.
-func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*Constraints, error) {
+// baseURL points at the base of the constraint artifacts (see ConstraintBaseURL).
+//
+// writeCache controls whether a successful live fetch populates the on-disk
+// cache. Callers pass false for a dry run (--dry-run), which must not mutate
+// disk; an existing cache is still read for offline fallback, since reading is
+// not a mutation.
+func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string, writeCache bool) (*Constraints, error) {
 	if baseURL == "" {
-		// No constraint host is configured. This is reported at the fetch phase (as
-		// E_FETCH) rather than aborting earlier, so the failure flows through the
-		// same phase/JSON reporting as any other fetch error.
-		return nil, NewError(ErrFetch, nil,
-			"no constraint source configured: set %s to the GitHub repo (owner/name) that hosts the environment constraints", EnvConstraintRepo)
+		// ConstraintBaseURL always returns a non-empty default, so an empty baseURL
+		// here means the resolver was bypassed. Report it at the fetch phase so it
+		// still flows through the same phase/JSON reporting as any other fetch error.
+		return nil, NewError(ErrFetch, nil, "no constraint source configured")
 	}
 	url := baseURL + "/" + envKey + "/pyproject.toml"
 	cachePath := filepath.Join(cacheDir, cacheFileName(envKey))
@@ -158,9 +127,12 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*C
 			return nil, fmt.Errorf("parse constraints for %s: %w", envKey, err)
 		}
 		// Write the cache copy (creating cacheDir if needed, atomically); non-fatal
-		// so a read-only cacheDir doesn't break the command.
-		if err := writeCacheAtomic(cachePath, data); err != nil {
-			log.Debugf(ctx, "failed to write constraint cache %s: %v", filepath.ToSlash(cachePath), err)
+		// so a read-only cacheDir doesn't break the command. Skipped under a dry
+		// run so --dry-run performs no disk writes at all.
+		if writeCache {
+			if err := atomicfile.Write(cachePath, data, 0o600, atomicfile.MkDir(0o755)); err != nil {
+				log.Debugf(ctx, "failed to write constraint cache %s: %v", filepath.ToSlash(cachePath), err)
+			}
 		}
 		return &Constraints{
 			EnvKey:            envKey,
@@ -176,7 +148,7 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*C
 	// fallback: the target resolved to an environment that isn't published.
 	if errors.Is(fetchErr, errEnvKeyNotFound) {
 		return nil, NewError(ErrEnvUnsupported, fetchErr,
-			"no published environment for %q. If this is a new runtime, try the latest LTS target (e.g. --serverless v4 or a supported --cluster DBR)", envKey)
+			"no published environment for %q. If this is a new runtime, try the latest LTS target (e.g. --serverless-version 5 or a supported --cluster-id DBR)", envKey)
 	}
 
 	// Network or HTTP failure: attempt to serve from cache.
@@ -263,6 +235,14 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 	if strings.TrimSpace(requiresPython) == "" {
 		return "", "", nil, errors.New("constraint artifact has no [project].requires-python")
 	}
+	// Reject a requires-python that is present but yields no installable floor
+	// (e.g. ">=3", "<3.13", "*") here, before the body is cached. This is the
+	// same check the pipeline applies later; running it in the pre-cache guard
+	// ensures an unusable 2xx body cannot overwrite a valid cached copy and
+	// break offline fallback, which is the guard's stated purpose.
+	if _, err = PythonMinorFromRequires(requiresPython); err != nil {
+		return "", "", nil, fmt.Errorf("constraint artifact has an unusable [project].requires-python: %w", err)
+	}
 
 	for _, entry := range p.DependencyGroups.Dev {
 		if isDatabricksConnectDep(entry) {
@@ -271,27 +251,40 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 		}
 	}
 
-	deps = p.Tool.UV.ConstraintDependencies
-	return requiresPython, dbconnect, deps, nil
+	// A missing [tool.uv].constraint-dependencies yields a nil slice, which the
+	// merge treats identically to an empty one (an empty managed block). Whether
+	// the constraint region is managed at all is decided by the --no-constraints
+	// flag, threaded explicitly, not by the shape of this value.
+	return requiresPython, dbconnect, p.Tool.UV.ConstraintDependencies, nil
 }
 
 // depNameSepRe matches the first PEP 508 delimiter that ends a requirement's
 // package name: a version specifier, extra, marker, url, or list separator.
 var depNameSepRe = regexp.MustCompile(`[<>=!~;,@\[( \t]`)
 
-// isDatabricksConnectDep reports whether a dependency-group entry is the
-// databricks-connect requirement. It extracts the leading package name (up to
-// the first PEP 508 delimiter) and compares it under PEP 503 normalization, so
-// case, and runs of "-", "_", or "." are all treated as equivalent:
-// "Databricks-Connect", "databricks_connect", and "databricks.connect" all match,
-// while a distinct package like "databricks-connectors" does not.
-func isDatabricksConnectDep(entry string) bool {
+// isDepNamed reports whether a dependency-group entry names the package normalizedName
+// (which the caller passes already PEP 503-normalized). It extracts the leading package
+// name (up to the first PEP 508 delimiter) and compares it under PEP 503 normalization,
+// so case and runs of "-", "_", or "." are all treated as equivalent: for
+// "databricks-connect", "Databricks-Connect", "databricks_connect", and
+// "databricks.connect" all match, while a distinct package like "databricks-connectors"
+// does not.
+func isDepNamed(entry, normalizedName string) bool {
 	name := strings.TrimSpace(entry)
 	if i := depNameSepRe.FindStringIndex(name); i != nil {
 		name = name[:i[0]]
 	}
-	return normalizePackageName(name) == "databricks-connect"
+	return normalizePackageName(name) == normalizedName
 }
+
+// isDatabricksConnectDep reports whether a dependency-group entry is the
+// databricks-connect requirement.
+func isDatabricksConnectDep(entry string) bool { return isDepNamed(entry, "databricks-connect") }
+
+// isPysparkDep reports whether a dependency-group entry is the standalone pyspark
+// requirement. It matches "pyspark" exactly and not a distinct package such as
+// "pyspark-stubs".
+func isPysparkDep(entry string) bool { return isDepNamed(entry, "pyspark") }
 
 // pep503SepRe matches runs of "-", "_", or "." for PEP 503 name normalization.
 var pep503SepRe = regexp.MustCompile(`[-_.]+`)

@@ -1,0 +1,42 @@
+
+=== engine overridden in target
+>>> [CLI] bundle validate -t bad_engine
+Error: invalid value "invalid_value" for bundle.engine (expected "direct")
+  in databricks.yml:12:15
+
+Name: test-bundle
+Target: bad_engine
+
+Found 1 error
+
+Exit code: 1
+
+=== trigger_pause_status overridden in development target
+>>> [CLI] bundle validate -t dev_trigger
+Error: target with 'mode: development' cannot set trigger pause status to UNPAUSED by default
+  in databricks.yml:17:29
+
+Name: test-bundle
+Target: dev_trigger
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev_trigger
+
+Found 1 error
+
+Exit code: 1
+
+=== name_prefix overridden in development target
+>>> [CLI] bundle validate -t dev_prefix
+Error: prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'
+  in databricks.yml:21:20
+
+Name: test-bundle
+Target: dev_prefix
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev_prefix
+
+Found 1 error
+
+Exit code: 1

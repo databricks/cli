@@ -1,8 +1,7 @@
 === First deploy (crashes on job_03) ===
 
->>> errcode [CLI] bundle deploy
+>>> errcode [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
-Deploying resources...
 [PROCESS_KILLED]
 
 Exit code: [KILLED]
@@ -12,7 +11,7 @@ Exit code: [KILLED]
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
-  "state_version": 2
+  "state_version": 3
 }
 {
   "k": "resources.jobs.job_01",
@@ -98,10 +97,10 @@ Resources:
   Jobs:
     job_01:
       Name: job-01
-      URL:  [DATABRICKS_URL]/jobs/[JOB_01_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[JOB_01_ID]?w=[WORKSPACE_ID]
     job_02:
       Name: job-02
-      URL:  [DATABRICKS_URL]/jobs/[JOB_02_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[JOB_02_ID]?w=[WORKSPACE_ID]
     job_03:
       Name: job-03
       URL:  (not deployed)

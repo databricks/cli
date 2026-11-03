@@ -1,0 +1,6 @@
+Cloud = false # tests don't interact with APIs
+
+# instance_pools are only supported in the current version of the wheel
+EnvMatrix.PYDAB_VERSION = ["current"]
+
+# instance_pools are only supported on the direct deployment engine

@@ -6,16 +6,16 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-basic/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Bound and updated jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> print_state.py
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "serial": 1,
@@ -62,5 +62,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-basic/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

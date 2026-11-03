@@ -1,0 +1,11 @@
+
+=== install --output json categorizes an experimental skill requested without --experimental
+>>> [CLI] aitools install --skills-only --scope=global --agents=claude-code --skills=test-exp --output json
+{
+  "scope": "global",
+  "agents": [],
+  "error": "skill \"test-exp\" is experimental; use --experimental to install",
+  "error_category": "EXPERIMENTAL_SKILL"
+}
+
+Exit code: 1

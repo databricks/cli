@@ -1,0 +1,14 @@
+bundle:
+  name: reference-typo-multiple
+
+variables:
+  host:
+    default: https://example.test
+  hosts:
+    default: https://example.test
+
+resources:
+  jobs:
+    one:
+      # "hst" is within edit distance 2 of both "host" and "hosts"
+      name: ${var.hst}

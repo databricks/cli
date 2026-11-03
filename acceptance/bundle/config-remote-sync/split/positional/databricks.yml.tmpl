@@ -1,0 +1,30 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Pipeline clusters are NOT registered as a keyed slice, so they diff by
+# POSITION rather than by key: change paths arrive as clusters[N], and a
+# structural change can arrive as a replacement of the whole list. The list is
+# still split across the top-level block and the targets.dev override, so a
+# merged index has to be mapped to an index inside one physical block.
+resources:
+  pipelines:
+    split_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      catalog: main
+      schema: default
+      clusters:
+        - label: default
+          num_workers: 2
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+
+targets:
+  dev:
+    mode: development
+    resources:
+      pipelines:
+        split_pipeline:
+          clusters:
+            - label: maintenance
+              num_workers: 1

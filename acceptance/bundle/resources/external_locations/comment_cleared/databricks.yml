@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  external_locations:
+    location1:
+      name: myloc
+      url: s3://test-bucket/path
+      credential_name: test_storage_credential
+      comment: declared in the bundle

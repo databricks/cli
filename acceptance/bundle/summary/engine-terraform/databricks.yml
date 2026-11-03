@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+  engine: terraform
+
+resources:
+  jobs:
+    my_job:
+      name: my job

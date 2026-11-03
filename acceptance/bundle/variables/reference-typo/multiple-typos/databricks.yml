@@ -1,0 +1,21 @@
+bundle:
+  name: reference-typo-multiple-typos
+
+variables:
+  cluster:
+    type: complex
+    default:
+      spark_version: "13.2.x"
+      node_type_id: Standard_DS3_v2
+
+resources:
+  jobs:
+    # Two typos in references to a complex (nested) variable. References are
+    # resolved in sorted order of their config path, and resolution stops at the
+    # first unresolved one, so only job "a" is reported even though "b" is wrong too.
+    a:
+      # Deeply nested typo: ${var.cluster.spark_versio} should be spark_version.
+      name: ${var.cluster.spark_versio}
+    b:
+      # Typo at the variable name: ${var.clustr.node_type_id} should be cluster.
+      name: ${var.clustr.node_type_id}

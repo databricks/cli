@@ -1,0 +1,13 @@
+title "Deploy a pipeline with cascade_on_destroy: true (state records true)"
+trace $CLI pipelines deploy
+trace print_requests.py //api/2.0/pipelines
+
+title "Edit cascade_on_destroy true -> false in YAML WITHOUT deploying (config diverges from state)"
+update_file.py databricks.yml "cascade_on_destroy: true" "cascade_on_destroy: false"
+
+# The approval banner and the DELETE request must both reflect the persisted state (cascade=true),
+# not the edited-but-undeployed YAML. Otherwise the prompt would promise dataset retention while
+# the execution cascades and deletes them.
+title "Destroy: banner and DELETE both reflect STATE (cascade=true), not the edited YAML"
+trace $CLI pipelines destroy --auto-approve
+trace print_requests.py //api/2.0/pipelines

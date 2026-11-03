@@ -6,9 +6,6 @@ Ignore = [
     "home",
 ]
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
-
 # Initial release: alpha + beta.
 [[Server]]
 Pattern = "GET /test-ref/manifest.json"

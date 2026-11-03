@@ -11,13 +11,13 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+	"uuid"
 
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-
-	"github.com/google/uuid"
 )
 
 type ErrFail struct {
@@ -52,6 +52,14 @@ var metastoreDisabledErrorCodes = []string{
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
 
+// deploymentHistoryEnvVar makes the built-in templates set
+// experimental.deployment_history in the databricks.yml they generate. It is scoped to
+// `bundle init` because it persists the setting in the generated project rather than applying
+// it to the bundle being run.
+//
+// Temporary: remove it and its callers in the templates once this is the default.
+const deploymentHistoryEnvVar = "DATABRICKS_BUNDLE_INIT_DEPLOYMENT_HISTORY"
+
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := cmdctx.WorkspaceClient(ctx)
 	return template.FuncMap{
@@ -70,7 +78,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"random_int": func(n int) int {
 			return rand.IntN(n)
 		},
-		// Alias for https://pkg.go.dev/github.com/google/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
+		// Alias for https://pkg.go.dev/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 9562.
 		"uuid": func() string {
 			return uuid.New().String()
 		},
@@ -173,6 +181,10 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
 			return result, nil
+		},
+		"deployment_history": func() bool {
+			v, _ := env.GetBool(ctx, deploymentHistoryEnvVar)
+			return v
 		},
 		"lower": func(s string) string {
 			return strings.ToLower(s)

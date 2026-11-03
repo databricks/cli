@@ -11,11 +11,18 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
+
+// bindBlockPath returns the config path of a bind block, used to point
+// diagnostics at the offending entry.
+func bindBlockPath(targetName, resourceType, resourceName string) *structpath.PathNode {
+	return structpath.NewPath(nil, "targets", targetName, "bind", resourceType, resourceName)
+}
 
 // validateBindConfig logs diagnostics for invalid bind entries. Returns false if any
 // errors were logged.
@@ -29,12 +36,12 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 		if _, ok := b.Plan.Plan[key]; ok {
 			return
 		}
-		bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+		bindPath := bindBlockPath(targetName, resourceType, resourceName)
 		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key),
-			Locations: configRoot.GetLocations(bindPath.String()),
-			Paths:     []dyn.Path{bindPath},
+			Locations: configRoot.GetLocationsOf(bindPath),
+			Paths:     []*structpath.PathNode{bindPath},
 		})
 		hasError = true
 	})
@@ -48,12 +55,12 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 		if !hasEntry || dbentry.ID == "" || dbentry.ID == bindID {
 			return
 		}
-		bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+		bindPath := bindBlockPath(targetName, resourceType, resourceName)
 		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("%s: resource already bound to ID %q, cannot bind as %q; remove the bind block or unbind the existing resource", key, dbentry.ID, bindID),
-			Locations: configRoot.GetLocations(bindPath.String()),
-			Paths:     []dyn.Path{bindPath},
+			Locations: configRoot.GetLocationsOf(bindPath),
+			Paths:     []*structpath.PathNode{bindPath},
 		})
 		hasError = true
 	})
@@ -73,12 +80,12 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 		}
 		bindKey := "resources." + resourceType + "." + resourceName
 		others := slices.DeleteFunc(slices.Clone(keys), func(k string) bool { return k == bindKey })
-		bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+		bindPath := bindBlockPath(targetName, resourceType, resourceName)
 		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("bind block for %q has the same ID %q as bind block(s) for %s; each workspace resource can only be bound once", bindKey, bindID, strings.Join(others, ", ")),
-			Locations: configRoot.GetLocations(bindPath.String()),
-			Paths:     []dyn.Path{bindPath},
+			Locations: configRoot.GetLocationsOf(bindPath),
+			Paths:     []*structpath.PathNode{bindPath},
 		})
 		hasError = true
 	})
@@ -99,12 +106,12 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 			if stateKey == bindKey || stateEntry.ID != bindID {
 				continue
 			}
-			bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+			bindPath := bindBlockPath(targetName, resourceType, resourceName)
 			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("bind block for %q has the same ID %q as existing resource %q; remove the bind block or the conflicting resource", bindKey, bindID, stateKey),
-				Locations: configRoot.GetLocations(bindPath.String()),
-				Paths:     []dyn.Path{bindPath},
+				Locations: configRoot.GetLocationsOf(bindPath),
+				Paths:     []*structpath.PathNode{bindPath},
 			})
 			hasError = true
 		}
@@ -123,7 +130,7 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 	bindID := entry.BindID
 	errorPrefix := "cannot bind " + resourceKey
 
-	remoteState, err := retryOnTransient(ctx, func() (any, error) {
+	remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return adapter.DoRead(ctx, bindID)
 	})
 	if err != nil {
@@ -150,7 +157,20 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 		return
 	}
 
-	remoteDiff, err := structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+	// Compact both sides on the same fields, so a hashed_fields field is a hash on
+	// both sides of the diff. sv.Value keeps the full contents for the deploy.
+	remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state: %w", errorPrefix, err))
+		return
+	}
+	localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
+		return
+	}
+
+	remoteDiff, err := structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 		return
@@ -163,7 +183,7 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 		return
 	}
 
-	err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+	err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 		return

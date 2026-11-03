@@ -1,7 +1,7 @@
 sethome "./home"
 
 # Track the home path for stable output across platforms.
-add_repl.py "$HOME" HOME
+add_repl "$HOME" HOME
 
 # Prevent Homebrew detection from affecting status output.
 export HOMEBREW_PREFIX=/nonexistent

@@ -1,0 +1,29 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  spark_conf:
+    type: complex
+    default:
+      spark.speculation: "true"
+
+targets:
+  default:
+    mode: development
+
+resources:
+  jobs:
+    my_job:
+      max_concurrent_runs: 1
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            spark_conf: ${var.spark_conf}
+      tasks:
+        - task_key: main
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook

@@ -1,0 +1,10 @@
+Cloud = true
+
+RecordRequests = false
+Ignore = [".databricks", "dummy.whl", "databricks.yml"]
+
+Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+# The terraform engine was removed: in JSON mode its rejection is reported in
+# the payload (status failed) with exit 0.
+Env.DATABRICKS_BUNDLE_ENGINE = "terraform"

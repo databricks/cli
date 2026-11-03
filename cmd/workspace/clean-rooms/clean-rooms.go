@@ -74,6 +74,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
+	cmd.Flags().BoolVar(&createReq.CleanRoom.EnableSharedOutput, "enable-shared-output", createReq.CleanRoom.EnableSharedOutput, `Whether allow task to write to shared output schema.`)
 	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
 	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is the Databricks username of the owner of the local clean room securable for permission management.`)

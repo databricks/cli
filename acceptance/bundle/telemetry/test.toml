@@ -1,15 +1,13 @@
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-# These tests assert the telemetry payload emitted on deploy; the output is
-# OS-normalized (see the (linux|darwin|windows) -> [OS] replacement below), so it
-# behaves identically on every OS. On pull requests they run on Linux only to keep
-# the windows/macOS CI jobs fast; they still run on every OS on push to main.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false
+# Telemetry reports numbers about the state that recording legitimately changes: the byte size of
+# the serialized state, which the deployment stamp grows, and the state serial, which comes from the
+# deployment's recorded version rather than the file. Those numbers are the assertion here, so there
+# is nothing to normalize.
+EnvMatrix.DMS = [""]
 
-[Env]
-DATABRICKS_CACHE_ENABLED = 'false'
+Env.DATABRICKS_CACHE_ENABLED = 'false'
 
 [[Repls]]
 Old = '"execution_time_ms": \d{1,5},'

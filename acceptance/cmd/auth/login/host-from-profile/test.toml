@@ -1,3 +1,4 @@
 Ignore = [
     "home"
 ]
+RecordRequests = true

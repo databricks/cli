@@ -21,7 +21,7 @@
   ]
 }
 {
-  "run_id": [NUMID]
+  "run_id": [RUN_ID]
 }
 
 >>> print_requests.py //jobs/runs/submit

@@ -100,7 +100,7 @@ type readDirEntry struct {
 
 // Create a new readDirEntry.
 func newReadDirEntry(name string) *readDirEntry {
-	return &readDirEntry{cacheEntry: cacheEntry{done: make(chan struct{}), name: name}}
+	return &readDirEntry{done: make(chan struct{}), name: name}
 }
 
 // Execute the operation and signal completion.
@@ -140,7 +140,7 @@ type statEntry struct {
 
 // Create a new stat entry.
 func newStatEntry(name string) *statEntry {
-	return &statEntry{cacheEntry: cacheEntry{done: make(chan struct{}), name: name}}
+	return &statEntry{done: make(chan struct{}), name: name}
 }
 
 // Execute the operation and signal completion.

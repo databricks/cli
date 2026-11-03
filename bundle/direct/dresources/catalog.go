@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -49,6 +50,14 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 	return response.Name, response, nil
 }
 
+// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
+//
+// CustomMaxRetentionHours is force-sent here even though schemaForceSend deliberately omits it:
+// that omission was for parity with the removed Terraform engine, which does not apply to catalogs
+// anyway. Verified against a real workspace: {"custom_max_retention_hours": 0} clears it (an empty PATCH is otherwise
+// rejected with "Nothing to update").
+var catalogForceSend = []string{"Comment", "CustomMaxRetentionHours"}
+
 // DoUpdate updates the catalog in place and returns remote state.
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (*catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
@@ -62,7 +71,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
+		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner"),
 	}
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
@@ -74,7 +83,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 }
 
 // DoUpdateWithID updates the catalog and returns the new ID if the name changes.
-func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog) (string, *catalog.CatalogInfo, error) {
+func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (string, *catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
@@ -86,7 +95,7 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
+		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner"),
 	}
 
 	if config.Name != id {

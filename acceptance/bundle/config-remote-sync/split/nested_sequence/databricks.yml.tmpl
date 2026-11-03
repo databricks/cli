@@ -1,0 +1,32 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# libraries is a sequence nested inside tasks, which is itself a sequence. "second" is
+# not the first task, so its position differs between the merged list and the physical
+# block once the target block contributes a task that sorts ahead of it. Adding a
+# library therefore has to translate the enclosing task's index before it can find the
+# receiving sequence.
+resources:
+  jobs:
+    nested_job:
+      tasks:
+        - task_key: first
+          libraries:
+            - pypi:
+                package: requests
+        - task_key: second
+          libraries:
+            - pypi:
+                package: urllib3
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        nested_job:
+          tasks:
+            - task_key: aaa_sorts_first
+              libraries:
+                - pypi:
+                    package: certifi

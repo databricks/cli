@@ -1,0 +1,9 @@
+Cloud = false
+RecordRequests = true
+
+# Terraform never sends local_ssd_count at all (databricks/terraform-provider-databricks#4089),
+# so the update-detection covered here is direct-engine only.
+
+Ignore = [
+    "databricks.yml",
+]

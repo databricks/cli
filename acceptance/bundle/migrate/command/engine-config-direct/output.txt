@@ -1,0 +1,5 @@
+
+>>> musterr [CLI] bundle deployment migrate
+Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
+
+New bundles use the direct engine automatically, no migration is needed.

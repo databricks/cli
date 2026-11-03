@@ -1,0 +1,170 @@
+
+=== Service principal, genie space without name: fails before writing files
+>>> errcode [CLI] apps init --template ./template --skip-install --name app-sp --features genie --set genie.genie-space.id=g123 --auth-mode sp
+Error: missing value for genie.genie-space.name (needed by the genie_space binding); use --set genie.genie-space.name=value
+
+Exit code: 1
+app-sp was not created
+
+=== Service principal with --set name: the binding variables have values
+>>> [CLI] apps init --template ./template --skip-install --name app-sp-name --features analytics,genie --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g123 --set genie.genie-space.name=space
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-sp-name
+  Files: 3
+
+bundle:
+  name: app-sp-name
+
+variables:
+  sql_warehouse_id:
+    description: SQL Warehouse ID
+  genie_space_id:
+    description: Genie Space ID
+  genie_space_name:
+    description: Genie Space
+
+resources:
+  apps:
+    app:
+      name: "app-sp-name"
+      description: "A Databricks App powered by AppKit"
+      source_code_path: ./
+
+      # Start the app automatically on deploy.
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - dashboards.genie
+
+      # The resources which this app has access to.
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+        - name: genie-space
+          genie_space:
+            name: ${var.genie_space_name}
+            space_id: ${var.genie_space_id}
+            permission: CAN_RUN
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: [DATABRICKS_URL]
+
+    variables:
+      sql_warehouse_id: wh1
+      genie_space_id: g123
+      genie_space_name: space
+
+>>> [CLI] bundle validate
+Name: app-sp-name
+Target: default
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/app-sp-name/default
+
+Validation OK!
+
+=== On behalf of the user, genie space without name: no binding, nothing to check
+>>> [CLI] apps init --template ./template --skip-install --name app-obo --features analytics,genie --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g123 --auth-mode obo
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-obo
+  Files: 3
+
+bundle:
+  name: app-obo
+
+resources:
+  apps:
+    app:
+      name: "app-obo"
+      description: "A Databricks App powered by AppKit"
+      source_code_path: ./
+
+      # Start the app automatically on deploy.
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+        - genie
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: [DATABRICKS_URL]
+
+>>> [CLI] bundle validate
+Name: app-obo
+Target: default
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/app-obo/default
+
+Validation OK!
+
+=== Mixed: warehouse on the service principal, genie space on behalf of the user
+>>> [CLI] apps init --template ./template --skip-install --name app-mixed --features analytics,genie --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g123 --set genie.genie-space.authMode=obo
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-mixed
+  Files: 3
+
+bundle:
+  name: app-mixed
+
+variables:
+  sql_warehouse_id:
+    description: SQL Warehouse ID
+
+resources:
+  apps:
+    app:
+      name: "app-mixed"
+      description: "A Databricks App powered by AppKit"
+      source_code_path: ./
+
+      # Start the app automatically on deploy.
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - genie
+
+      # The resources which this app has access to.
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: [DATABRICKS_URL]
+
+    variables:
+      sql_warehouse_id: wh1
+
+>>> [CLI] bundle validate
+Name: app-mixed
+Target: default
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/app-mixed/default
+
+Validation OK!

@@ -1,6 +1,0 @@
-Local = true
-Cloud = true
-RecordRequests = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform"]

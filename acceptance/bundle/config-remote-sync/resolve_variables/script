@@ -5,7 +5,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() {
   trace $CLI bundle destroy --auto-approve
   # destroy records requests too; drop the recorded file so it is not compared.
-  rm -f out.requests.txt
+  rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -136,4 +136,4 @@ echo
 # every other counter is engine-agnostic. This run exercises refs_retargeted
 # (the env param re-targeted to a different variable) and refs_from_siblings
 # (added params/tasks restored from sibling references).
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | del(.engine)'
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | del(.engine)'

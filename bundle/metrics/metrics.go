@@ -8,16 +8,60 @@ const (
 	PresetsNamePrefixIsSet              = "presets_name_prefix_is_set"
 	AppLifecycleStarted                 = "app_lifecycle_started"
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
+	DeploymentHistoryEnabled            = "deployment_history_enabled"
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
-	// Outcome of the dry-run migration to the direct engine attempted after a
-	// successful terraform deploy. DirectDryMigrateSuccess is false when the state
-	// could not be converted; DirectDryMigrateWarnings is true when the conversion
-	// emitted warnings (e.g. resources the direct engine can't represent).
-	// Only recorded on terraform deploys.
-	DirectDryMigrateSuccess  = "direct_drymigrate_success"
-	DirectDryMigrateWarnings = "direct_drymigrate_warnings"
+	// Whether the deploy registered an immutable snapshot. Derived from the snapshot
+	// resource, not from experimental.immutable_folder: the flag may change, and the
+	// resource is what the deploy actually uploads.
+	ImmutableSnapshotUsed = "immutable_snapshot_used"
+
+	// Key under which the snapshot upload duration is reported in
+	// bundle_mutator_execution_time_ms, next to files.(upload) so the two can be
+	// compared. Covers creating the snapshot resource (the upload plus recording it in
+	// state), not building the zip, which is snapshot.(snapshotUpload). Absent when no
+	// snapshot was uploaded. It lacks the parentheses of a mutator name because it is
+	// not a mutator.
+	SnapshotUploadDuration = "snapshot.upload"
+
+	// Outcome of an automatic migration of terraform state to the direct engine.
+	//   - migrate_error:        state conversion itself errored.
+	//   - migrate_commit_error: the state was converted, but committing it
+	//                           (renaming files / pushing to workspace) failed.
+	//   - migrate_warnings:     the conversion emitted warnings (e.g. resources the direct engine can't represent).
+	DirectMigrateError       = "direct_migrate_error"
+	DirectMigrateCommitError = "direct_migrate_commit_error"
+	DirectMigrateWarnings    = "direct_migrate_warnings"
+	// True when the post-convert plan check failed; the migration was not committed.
+	DirectMigratePlanError = "direct_migrate_plan_error"
+	// True when the migrated state's first plan would recreate (destroy + create) an
+	// existing resource. The migration still commits; the recreate is a genuine pending
+	// change gated by the deploy's --auto-approve, and this only records how often it happens.
+	DirectMigrateRecreatePlanned = "direct_migrate_recreate_planned"
+
+	// Recorded when an automatic post-deploy migration to the direct engine
+	// actually ran (state was rewritten). Exactly one of the three keys is true;
+	// all are absent when auto-migration did not run. If both config and env
+	// set direct, bundle.engine wins per ValidateEngineSetting, so via_config
+	// covers the "durable opt-in" population and via_env covers the
+	// "env-var only" population.
+	//   - via_config:  bundle.engine = "direct" was set in the bundle config.
+	//   - via_env:     only DATABRICKS_BUNDLE_ENGINE=direct was set.
+	//   - via_default: neither was set, so the migration came from the default.
+	//                  This is the population that did not ask for anything.
+	DirectAutoMigrateViaConfig  = "direct_migrated_via_config"
+	DirectAutoMigrateViaEnv     = "direct_migrated_via_env"
+	DirectAutoMigrateViaDefault = "direct_migrated_via_default"
+
+	// Whether the (deprecated) terraform engine was explicitly opted into, and via
+	// which source. Independent: both can be present when config and env both
+	// request terraform. Emitted only when true; absence means "not opted in via
+	// this source", so the population still on terraform can be sliced by source.
+	//   - engine_terraform_config: bundle.engine = "terraform" in the bundle config.
+	//   - engine_terraform_env:    DATABRICKS_BUNDLE_ENGINE=terraform in the environment.
+	EngineTerraformConfig = "engine_terraform_config"
+	EngineTerraformEnv    = "engine_terraform_env"
 
 	// Whether workspace.state_path is under /Workspace/Shared.
 	StatePathIsShared = "state_path_is_shared"
@@ -71,4 +115,13 @@ const (
 	DMSUndeclaredOtherUser        = "dms_undeclared_other_user"
 	DMSUndeclaredServicePrincipal = "dms_undeclared_service_principal"
 	DMSUndeclaredGroup            = "dms_undeclared_group"
+
+	// Task-type usage is recorded generically at deploy as one "has_<task_type>" key
+	// per task type present in the bundle (e.g. has_notebook_task, has_ai_runtime_task);
+	// see collectTaskTypes in bundle/phases. The two keys below are extra
+	// ai_runtime_task-specific dimensions, emitted only when the bundle declares an
+	// ai_runtime_task, so a false value means "has an ai_runtime_task, but it is not
+	// scheduled / not multi-task". GPU type and count are intentionally not recorded here.
+	AiRuntimeTaskScheduled = "ai_runtime_task_scheduled"
+	AiRuntimeTaskMultitask = "ai_runtime_task_multitask"
 )

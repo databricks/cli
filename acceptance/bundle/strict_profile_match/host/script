@@ -1,0 +1,9 @@
+for target in classic classic_with_workspace_id custom_host custom_host_workspace_id_field; do
+  title "Target $target matches one profile"
+  trace errcode $CLI bundle run -t $target show_auth
+done
+
+for target in classic_other_workspace custom_host_without_workspace_id custom_host_other_workspace unknown_host; do
+  title "Target $target is rejected"
+  trace errcode $CLI bundle validate -t $target
+done

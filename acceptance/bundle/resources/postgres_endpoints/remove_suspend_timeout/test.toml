@@ -1,0 +1,8 @@
+# The mask is now correct: suspend_timeout_duration is masked under its oneof group name
+# spec.suspension. The removal still cannot be applied, and that is a property of the API
+# rather than of the mask: a masked field has to be populated in the request body, so
+# dropping it from the bundle leaves nothing to send. Probed against a real workspace on
+# 2026-08-31 -- an absent value and an explicit null are both answered with "is in
+# update_mask but not provided in request". The only way to stop an endpoint suspending is
+# to set the other member of the oneof, no_suspension: true.
+Badness = "Removing suspend_timeout_duration cannot be applied: the API requires a masked field to be populated, so the removal fails on every deploy. Setting no_suspension: true instead is the supported way to express it"

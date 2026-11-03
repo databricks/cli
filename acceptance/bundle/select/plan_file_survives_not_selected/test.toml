@@ -1,0 +1,2 @@
+# --select is only supported by the direct engine.
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json"]

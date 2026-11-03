@@ -1,0 +1,11 @@
+# Unity Catalog catalog and schema names may contain dashes. Verify that bundle
+# init accepts them and writes them into databricks.yml. The generated SQL
+# escapes these names with IDENTIFIER() (see default-sql/output/.../src/*.sql).
+trace $CLI bundle init default-sql --config-file ./input.json --output-dir output
+trace diff.py $TESTDIR/../default-sql/output/my_default_sql/databricks.yml output/my_default_sql/databricks.yml
+rm -fr output
+
+# Names that violate the Unity Catalog naming rules are rejected at init time.
+musterr $CLI bundle init default-sql --config-file ./input-invalid-catalog.json --output-dir output
+musterr $CLI bundle init default-sql --config-file ./input-invalid-schema.json --output-dir output
+rm -fr output

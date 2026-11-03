@@ -1,0 +1,34 @@
+# The genie_space binding references "name" and "id", but this manifest only declares "id".
+init() {
+  name=$1; shift
+  trace $CLI apps init --template ./template --skip-install --name $name \
+    --features analytics,genie --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g123 "$@"
+}
+
+title "Service principal, genie space without name: fails before writing files"
+trace errcode $CLI apps init --template ./template --skip-install --name app-sp --features genie --set genie.genie-space.id=g123 --auth-mode sp
+[ -d app-sp ] && echo "app-sp was created" || echo "app-sp was not created"
+
+title "Service principal with --set name: the binding variables have values"
+init app-sp-name --set genie.genie-space.name=space
+cat app-sp-name/databricks.yml
+cd app-sp-name
+trace $CLI bundle validate
+cd ..
+rm -rf app-sp-name
+
+title "On behalf of the user, genie space without name: no binding, nothing to check"
+init app-obo --auth-mode obo
+cat app-obo/databricks.yml
+cd app-obo
+trace $CLI bundle validate
+cd ..
+rm -rf app-obo
+
+title "Mixed: warehouse on the service principal, genie space on behalf of the user"
+init app-mixed --set genie.genie-space.authMode=obo
+cat app-mixed/databricks.yml
+cd app-mixed
+trace $CLI bundle validate
+cd ..
+rm -rf app-mixed

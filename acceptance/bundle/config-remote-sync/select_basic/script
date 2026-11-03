@@ -38,11 +38,20 @@ title "Unfiltered sync still detects the job_two drift (no lost updates)"
 echo
 $CLI bundle config-remote-sync
 
-title "An unknown resource id is rejected"
+title "A stale selector is skipped, not fatal: job_two still syncs alongside it"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --select-ids "jobs:no-such-id-123,jobs:$job_two_id" --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "An unknown resource id alone is rejected (no match at all must not silently succeed)"
+echo
 errcode trace $CLI bundle config-remote-sync --select-ids jobs:no-such-id-123
 
-title "A selector without a type is rejected"
-errcode trace $CLI bundle config-remote-sync --select-ids no-such-id-123
-
-title "An id that exists under a different type is rejected (no cross-type collision)"
+title "An id that exists under a different type matches nothing and is rejected too"
+echo
 errcode trace $CLI bundle config-remote-sync --select-ids "pipelines:$job_one_id"
+
+title "A selector without a type is still rejected"
+errcode trace $CLI bundle config-remote-sync --select-ids no-such-id-123

@@ -1,0 +1,3 @@
+# An inline mapping as the value of '<<' in target variables.
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t dev -o json | jq .variables.x

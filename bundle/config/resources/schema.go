@@ -16,6 +16,7 @@ import (
 
 type Schema struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.CreateSchema
 	// List of grants to apply on this schema.
 	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
@@ -51,10 +52,6 @@ func (s *Schema) InitializeURL(baseURL url.URL) {
 		return
 	}
 	s.URL = workspaceurls.ResourceURL(baseURL, "schemas", s.ID)
-}
-
-func (s *Schema) GetURL() string {
-	return s.URL
 }
 
 func (s *Schema) GetName() string {

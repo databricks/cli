@@ -1,0 +1,11 @@
+bundle:
+  name: test_cluster_policy_oob
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    test_cluster_policy:
+      name: my_cluster_policy_oob-$UNIQUE_NAME
+      definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'

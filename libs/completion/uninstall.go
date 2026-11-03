@@ -7,6 +7,8 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/databricks/cli/libs/atomicfile"
 )
 
 var multiBlankLine = regexp.MustCompile(`\n{3,}`)
@@ -89,5 +91,5 @@ func uninstallRC(filePath string) (string, bool, error) {
 	// Collapse double blank lines left by removal.
 	result = multiBlankLine.ReplaceAllString(result, "\n\n")
 
-	return filePath, true, os.WriteFile(filePath, []byte(result), info.Mode())
+	return filePath, true, atomicfile.Write(filePath, []byte(result), info.Mode())
 }

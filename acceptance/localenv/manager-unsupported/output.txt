@@ -1,0 +1,5 @@
+✗ Setup failed during preflight checks.
+
+  detected a conda project; automated setup for conda is not yet available (P1). Use a uv project (add a pyproject.toml with a [tool.uv] table, or run `uv init`) to provision automatically
+
+Re-run with --debug for details, or --output json for a structured report.

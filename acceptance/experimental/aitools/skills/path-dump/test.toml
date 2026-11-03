@@ -7,9 +7,6 @@ Ignore = [
     "dumped",
 ]
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
-
 [[Server]]
 Pattern = "GET /test-ref/manifest.json"
 Response.Body = '''

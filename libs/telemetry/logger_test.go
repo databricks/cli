@@ -152,3 +152,27 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 	assert.EqualError(t, err, "failed to upload telemetry logs after three attempts")
 	assert.Equal(t, 3, count)
 }
+
+func TestLogWithoutLoggerDropsEvent(t *testing.T) {
+	// A context without a telemetry logger must not panic; the event is dropped.
+	assert.NotPanics(t, func() {
+		Log(t.Context(), protos.DatabricksCliLog{
+			CliTestEvent: &protos.CliTestEvent{
+				Name: protos.DummyCliEnumValue1,
+			},
+		})
+	})
+}
+
+func TestStateLineageHash(t *testing.T) {
+	ctx := WithNewLogger(t.Context())
+	assert.Empty(t, StateLineageHash(ctx))
+
+	SetStateLineageHash(ctx, "G0ZNUjK18Pa")
+	assert.Equal(t, "G0ZNUjK18Pa", StateLineageHash(ctx))
+}
+
+func TestStateLineageHashWithoutLogger(t *testing.T) {
+	SetStateLineageHash(t.Context(), "G0ZNUjK18Pa")
+	assert.Empty(t, StateLineageHash(t.Context()))
+}

@@ -1,0 +1,23 @@
+scope="test-scope"
+trace $CLI secrets create-scope $scope
+
+title "--string-value is sent verbatim and read back as-is\n"
+trace $CLI secrets put-secret $scope string-key --string-value "test-value
+with-newlines
+"
+trace $CLI secrets get-secret $scope string-key
+
+# Non-printable bytes, to show the CLI base64-encodes the raw bytes. They are
+# kept ASCII on purpose: Git Bash re-encodes non-UTF-8 argv bytes (\xfe becomes
+# \xc3\xbe), which would make the payload differ on Windows. A null byte is not
+# usable either, since bash drops it from "$(...)".
+title "--bytes-value is base64-encoded by the CLI before it is sent\n"
+bytes=$(printf '\x01\x02\x03')
+trace $CLI secrets put-secret $scope bytes-key --bytes-value "$bytes"
+trace $CLI secrets get-secret $scope bytes-key
+
+title "the two value flags are mutually exclusive\n"
+trace musterr $CLI secrets put-secret $scope k --string-value a --bytes-value b
+
+title "what the CLI actually put on the wire\n"
+trace print_requests.py //api/2.0/secrets/put

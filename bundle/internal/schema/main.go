@@ -104,6 +104,10 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 		delete(s.Properties, "deployment")
 		delete(s.Properties, "edit_mode")
 
+	case reflect.TypeFor[resources.JobRun]():
+		// CLI-managed; not user-configurable.
+		delete(s.Properties, "idempotency_token")
+
 	case reflect.TypeFor[jobs.GitSource]():
 		// These fields are readonly and are not meant to be set by the user.
 		delete(s.Properties, "job_source")

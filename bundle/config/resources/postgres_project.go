@@ -34,15 +34,24 @@ func (c *PostgresProjectConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresProjectConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresProjectConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresProject struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresProjectConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`
+}
+
+func (p *PostgresProject) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, p)
+}
+
+func (p PostgresProject) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(p)
 }
 
 func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -67,9 +76,9 @@ func (p *PostgresProject) GetName() string {
 	return p.DisplayName
 }
 
-func (p *PostgresProject) GetURL() string {
+func (p *PostgresProject) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (p *PostgresProject) InitializeURL(_ url.URL) {

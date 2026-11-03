@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -37,6 +38,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/gorilla/websocket"
 )
@@ -46,12 +48,28 @@ var sshServerBootstrapScript string
 
 var errServerMetadata = errors.New("server metadata error")
 
+// portFwdServerlessSetting is the workspace setting an administrator turns off to disable port
+// forwarding to serverless compute, which the tunnel needs.
+const portFwdServerlessSetting = "port_fwd_serverless_enabled"
+
+var errPortForwardingDisabled = errors.New("port forwarding to serverless compute is disabled for this workspace " +
+	"(setting " + portFwdServerlessSetting + "), and the SSH tunnel needs it. " +
+	"Ask a workspace or account admin to enable it, or connect to a dedicated cluster with --cluster")
+
+// errDriverProxyForbidden is a 403 from the driver proxy. Unlike the other non-200 responses, which a
+// server that is still starting produces too, retrying cannot change it: the workspace forbids the
+// connection, e.g. because an administrator disabled port forwarding to serverless compute.
+var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
+
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
 	minEnvironmentVersion    = 4
+
+	serverMetadataTimeout      = 5 * time.Minute
+	serverMetadataPollInterval = 2 * time.Second
 )
 
 // acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
@@ -86,6 +104,8 @@ type ClientOptions struct {
 	ServerMetadata string
 	// How often the CLI should reconnect to the server with new auth.
 	HandoverTimeout time.Duration
+	// How often the CLI pings the tunnel websocket to keep an idle session alive.
+	KeepaliveInterval time.Duration
 	// Max amount of time the server process is allowed to live
 	ServerTimeout time.Duration
 	// Max amount of time to wait for the SSH server task to reach RUNNING state
@@ -95,18 +115,24 @@ type ClientOptions struct {
 	ReleasesDir string
 	// Directory for local SSH keys. Defaults to ~/.databricks/ssh-tunnel-keys
 	SSHKeysDir string
+	// Directory for the known hosts files the CLI maintains for tunnel connections.
+	// Defaults to ~/.databricks/ssh-tunnel-known-hosts. The file within it is always named
+	// after the session, so this relocates a directory the CLI owns and rewrites; it never
+	// names a file to overwrite.
+	KnownHostsDir string
 	// Client public key name located in the ssh-tunnel secrets scope.
 	ClientPublicKeyName string
 	// Client private key name located in the ssh-tunnel secrets scope.
 	ClientPrivateKeyName string
+	// Server public key name located in the ssh-tunnel secrets scope. The server publishes
+	// its host key there; the client pins it so ssh can verify the server.
+	ServerPublicKeyName string
 	// If true, the CLI will attempt to start the cluster if it is not running.
 	AutoStartCluster bool
 	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand while spawning ssh client.
 	Profile string
 	// Additional arguments to pass to the SSH client in the non proxy mode.
 	AdditionalArgs []string
-	// Optional path to the user known hosts file.
-	UserKnownHostsFile string
 	// Liteswap header value for traffic routing (dev/test only).
 	Liteswap string
 	// If true, skip checking and updating IDE settings.
@@ -119,6 +145,10 @@ type ClientOptions struct {
 	BaseEnvironment string
 	// If true, skip confirmation prompts for IDE extension install and IDE settings updates.
 	AutoApprove bool
+	// Id of the usage policy to use for the serverless SSH server job. Serverless only.
+	UsagePolicyID string
+	// Whether detached processes prevent idle shutdown of the SSH server. Bounded by --server-timeout.
+	KeepDetachedProcesses bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -127,6 +157,9 @@ func (o *ClientOptions) Validate() error {
 	}
 	if o.Accelerator != "" && o.ConnectionName == "" {
 		return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
+	}
+	if o.UsagePolicyID != "" && o.ClusterID != "" {
+		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
 	}
 	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
 		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
@@ -147,6 +180,22 @@ func (o *ClientOptions) Validate() error {
 	}
 	if o.BaseEnvironment != "" && o.ClusterID != "" {
 		return errors.New("--base-environment can only be used with serverless compute")
+	}
+	// A server started with fewer than one client slot rejects every connection with an
+	// opaque websocket handshake failure, so catch it here instead.
+	if o.MaxClients < 1 {
+		return fmt.Errorf("--max-clients must be at least 1, got %d", o.MaxClients)
+	}
+	// The submitted job carries this as timeout_seconds, a whole number of seconds, and 0 means
+	// "no timeout" in the Jobs API. So every value below one second - not just zero - truncates
+	// to an unbounded run instead of the short-lived server that was asked for.
+	if o.ServerTimeout < time.Second {
+		return fmt.Errorf("--server-timeout must be at least 1s, got %s", o.ServerTimeout)
+	}
+	// The server only starts counting down the shutdown delay once the last client leaves, so a
+	// delay longer than the server's lifetime can never elapse.
+	if o.ShutdownDelay > o.ServerTimeout {
+		return fmt.Errorf("--shutdown-delay (%s) cannot be longer than --server-timeout (%s)", o.ShutdownDelay, o.ServerTimeout)
 	}
 	return nil
 }
@@ -214,9 +263,27 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 		if o.Accelerator != "" {
 			proxyCommand += " --accelerator=" + o.Accelerator
 		}
+		if o.UsagePolicyID != "" {
+			proxyCommand += " --usage-policy-id=" + o.UsagePolicyID
+		}
 	} else {
 		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
 			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
+	}
+	if o.KeepDetachedProcesses {
+		proxyCommand += " --keep-detached-processes"
+	}
+
+	// Both of these are fixed when the server job is submitted, and for a host configured by
+	// `ssh setup` the submitting invocation is always the ProxyCommand, so they have to be
+	// carried here or the user's choice is lost. Zero means "not set": the receiving command
+	// then applies its own flag default.
+	if o.MaxClients > 0 {
+		proxyCommand += " --max-clients=" + strconv.Itoa(o.MaxClients)
+	}
+
+	if o.ServerTimeout > 0 {
+		proxyCommand += " --server-timeout=" + o.ServerTimeout.String()
 	}
 
 	if o.ServerMetadata != "" {
@@ -250,7 +317,7 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	return proxyCommand, nil
 }
 
-func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
+func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) (retErr error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -262,6 +329,23 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cancel()
 	}()
 
+	// Report the outcome of every path below, so a failure is attributable to the step that
+	// caused it. Registered before the first early return -- in particular before the IDE
+	// preconditions, which fail fast on a permanent per-machine condition and are the failures
+	// most worth measuring. Each failing step sets outcome.errorCategory; the returned error is
+	// picked up here via the named return.
+	outcome := connectOutcome{isReconnect: opts.ServerMetadata != ""}
+	defer func() {
+		outcome.err = retErr
+		// A cancelled context is the only trace a Ctrl-C leaves: exec.CommandContext kills the
+		// child and reports *exec.ExitError, which does not wrap context.Canceled, so a step
+		// that shells out cannot recognise the interruption itself. This defer is registered
+		// after `defer cancel()` and so runs before it (LIFO), which means ctx is cancelled
+		// here only by the signal handler or the caller, never by Run's own cleanup.
+		outcome.ctxErr = ctx.Err()
+		logSshTunnelEvent(ctx, opts, outcome)
+	}()
+
 	sessionID := opts.SessionIdentifier()
 	if sessionID == "" {
 		return errors.New("either --cluster or --name must be provided")
@@ -271,11 +355,22 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 	}
 
+	// Skipped when reconnecting with --metadata (the ProxyCommand child): the server is already
+	// running, so there is no compute left to spare, and every IDE reconnect would repeat the read.
+	if opts.IsServerlessMode() && opts.ServerMetadata == "" {
+		if err := checkPortForwardingToServerless(ctx, client); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryPortForwardingDisabled
+			return err
+		}
+	}
+
 	if opts.IDE != "" && !opts.ProxyMode {
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryIDECommandNotOnPath
 			return err
 		}
 		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
+			outcome.errorCategory = sshExtensionErrorCategory(err)
 			return err
 		}
 	}
@@ -291,24 +386,20 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
 			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
 			if opts.AutoApprove {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryIDESettingsUpdateDeclined
 				return fmt.Errorf("aborted: IDE settings need to be updated manually: %w", err)
 			}
 			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
 			if promptErr != nil {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryIDESettingsUpdateDeclined
 				return fmt.Errorf("failed to prompt user: %w", promptErr)
 			}
 			if !shouldProceed {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryIDESettingsUpdateDeclined
 				return errors.New("aborted: IDE settings need to be updated manually, user declined to proceed")
 			}
 		}
 	}
-
-	isReconnect := opts.ServerMetadata != ""
-	var serverStartTimeMs int64
-	isSuccess := false
-	defer func() {
-		logSshTunnelEvent(ctx, opts, isSuccess, isReconnect, serverStartTimeMs)
-	}()
 
 	// A direct `connect --cluster` bypasses `ssh setup`, which is where the access mode is
 	// normally validated, so validate it here too. Proxy mode is skipped because its
@@ -316,6 +407,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// Clusters.Get on every (re)connection. Serverless has no cluster to inspect.
 	if !opts.ProxyMode && !opts.IsServerlessMode() {
 		if err := ValidateClusterAccess(ctx, client, opts.ClusterID); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryClusterAccessDenied
 			return err
 		}
 	}
@@ -325,27 +417,32 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, "Checking cluster state...")
 		err := checkClusterState(ctx, client, opts.ClusterID, opts.AutoStartCluster)
 		if err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryClusterStartFailed
 			return err
 		}
 	}
 
 	secretScopeName, err := keys.CreateKeysSecretScope(ctx, client, sessionID)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategorySecretScopeFailed
 		return fmt.Errorf("failed to create secret scope: %w", err)
 	}
 
 	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return fmt.Errorf("failed to get or generate SSH key pair from secrets: %w", err)
 	}
 
 	keyPath, err := keys.GetLocalSSHKeyPath(ctx, sessionID, opts.SSHKeysDir)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
 	err = keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return fmt.Errorf("failed to save SSH key pair locally: %w", err)
 	}
 	log.Infof(ctx, "Using SSH key: %s", keyPath)
@@ -364,15 +461,24 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		err := UploadTunnelReleases(ctx, client, version, opts.ReleasesDir)
 		sp.Close()
 		if err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryBinaryUploadFailed
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
 		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryServerStartTimeout
+			if errors.Is(err, errDriverProxyForbidden) {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryDriverProxyForbidden
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
-		serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
+		outcome.serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
 	} else {
+		// The failures below are left to fall through to UNKNOWN on purpose: --metadata is a
+		// hidden flag whose value we generated ourselves in ToProxyCommand, so a parse failure
+		// here is a CLI bug rather than a per-environment blocker. Attributing them to
+		// SERVER_START_TIMEOUT would pollute the bucket that tracks unreachable servers.
 		// Metadata format: "<user_name>,<port>,<cluster_id>"
 		metadata := strings.Split(opts.ServerMetadata, ",")
 		if len(metadata) < 2 {
@@ -404,23 +510,66 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		log.Infof(ctx, "Cluster ID (from serverless job): %s", clusterID)
 	}
 
+	// Pin the running server's host key for this session name. In proxy mode this happens
+	// before the tunnel carries a single byte, so it is in place well before the ssh client
+	// that spawned us verifies the key during the key exchange.
+	knownHostsPath, err := pinServerHostKey(ctx, client, sessionID, secretScopeName, opts)
+	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
+		return err
+	}
+
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, "Connected!")
 	}
 
-	isSuccess = true
+	// The tunnel is up from here on. A later non-zero exit belongs to the SSH client or the
+	// user's own remote command, so it is not counted as a connection failure.
+	outcome.isSuccess = true
 
 	if opts.ProxyMode {
-		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
+		proxyErr := runSSHProxy(ctx, client, serverPort, clusterID, opts)
+		// isSuccess stays true - the tunnel was established - so the category is what says
+		// whether the session ran to completion or was cut short, and why. Without it a
+		// mid-session drop is indistinguishable from a clean exit in telemetry.
+		outcome.errorCategory = proxySessionEndCategory(proxyErr)
+		return proxyErr
 	} else if opts.IDE != "" {
-		return runIDE(ctx, client, userName, keyPath, serverPort, clusterID, opts)
+		return runIDE(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
 	} else {
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
-		return spawnSSHClient(ctx, client, userName, keyPath, serverPort, clusterID, opts)
+		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
 	}
 }
 
-func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
+// pinServerHostKey records the running server's host key as the entry ssh accepts for this
+// session, and returns the path of the known_hosts file it wrote.
+//
+// The server publishes its host key to the session's secret scope when it starts and reuses
+// it for every sshd it launches, which makes the scope the authority on the key. Reading it
+// here replaces whatever was recorded for this session name before, so a key left by an
+// earlier instance - or by the same name in another workspace, since a name is unique only
+// within one - can no longer fail an otherwise valid connection.
+func pinServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, sessionID, secretScopeName string, opts ClientOptions) (string, error) {
+	knownHostsPath, err := sshconfig.GetKnownHostsPath(ctx, sessionID, opts.KnownHostsDir)
+	if err != nil {
+		return "", err
+	}
+
+	publicKey, err := keys.GetSecret(ctx, client, secretScopeName, opts.ServerPublicKeyName)
+	if err != nil {
+		return "", fmt.Errorf("failed to read the SSH server host key: %w", err)
+	}
+
+	if err := sshconfig.PinHostKey(knownHostsPath, sessionID, publicKey); err != nil {
+		return "", err
+	}
+
+	log.Infof(ctx, "Pinned the SSH server host key for %s in %s", sessionID, knownHostsPath)
+	return knownHostsPath, nil
+}
+
+func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
 	connectionName := opts.SessionIdentifier()
 	if connectionName == "" {
 		return errors.New("connection name is required for IDE integration")
@@ -438,15 +587,15 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 		return fmt.Errorf("failed to get SSH config path: %w", err)
 	}
 
-	err = ensureSSHConfigEntry(ctx, configPath, connectionName, userName, keyPath, serverPort, clusterID, opts)
+	err = ensureSSHConfigEntry(ctx, configPath, connectionName, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
 	}
 
-	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, userName, currentUser.UserName)
+	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, currentUser.UserName)
 }
 
-func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
 	// Ensure the Include directive exists in the main SSH config
 	err := sshconfig.EnsureIncludeDirective(ctx, configPath)
 	if err != nil {
@@ -462,7 +611,10 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, proxyCommand)
+	// The host key is pinned under the session ID (see pinServerHostKey), so emit it as
+	// HostKeyAlias to keep the key lookup matching the pinned entry (DECO-27882). Here the
+	// host alias already is the session ID, but passing it explicitly keeps the two in step.
+	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, knownHostsPath, opts.SessionIdentifier(), proxyCommand)
 
 	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, true)
 	if err != nil {
@@ -473,14 +625,27 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 	return nil
 }
 
+// serverMetadata describes a running SSH server, combining the persisted workspace
+// metadata with the user name validated live via Driver Proxy.
+type serverMetadata struct {
+	Port     int
+	UserName string
+	// ClusterID required for Driver Proxy connections. For serverless it comes from the persisted metadata.
+	ClusterID string
+	// UsagePolicyID the server was started with, used to decide whether a running server can be reused.
+	UsagePolicyID string
+	// KeepDetachedProcesses the server's run was submitted with, used the same way as UsagePolicyID.
+	KeepDetachedProcesses bool
+}
+
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 // For dedicated clusters, clusterID should be the same as sessionID.
 // For serverless, clusterID is read from the workspace metadata.
-func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, sessionID, clusterID, version, liteswap string) (int, string, string, error) {
+func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, sessionID, clusterID, version, liteswap string) (serverMetadata, error) {
 	wsMetadata, err := sshWorkspace.GetWorkspaceMetadata(ctx, client, version, sessionID)
 	if err != nil {
-		return 0, "", "", errors.Join(errServerMetadata, err)
+		return serverMetadata{}, errors.Join(errServerMetadata, err)
 	}
 	log.Debugf(ctx, "Workspace metadata: %+v", wsMetadata)
 
@@ -491,33 +656,86 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 
 	if effectiveClusterID == "" {
-		return 0, "", "", errors.Join(errServerMetadata, errors.New("cluster ID not available in metadata"))
+		return serverMetadata{}, errors.Join(errServerMetadata, errors.New("cluster ID not available in metadata"))
 	}
 
 	req, err := newDriverProxyRequest(ctx, client, effectiveClusterID, wsMetadata.Port, "metadata", liteswap)
 	if err != nil {
-		return 0, "", "", err
+		return serverMetadata{}, err
 	}
 	log.Debugf(ctx, "Metadata URL: %s", req.URL)
 	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return 0, "", "", err
+		return serverMetadata{}, err
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, "", "", err
+		return serverMetadata{}, err
 	}
 	log.Debugf(ctx, "Metadata response: %s", string(bodyBytes))
 	log.Debugf(ctx, "Metadata response status code: %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, "", "", errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
+		return serverMetadata{}, metadataResponseError(resp.StatusCode, bodyBytes)
 	}
 
-	return wsMetadata.Port, string(bodyBytes), effectiveClusterID, nil
+	return serverMetadata{
+		Port:                  wsMetadata.Port,
+		UserName:              string(bodyBytes),
+		ClusterID:             effectiveClusterID,
+		UsagePolicyID:         wsMetadata.UsagePolicyID,
+		KeepDetachedProcesses: wsMetadata.KeepDetachedProcesses,
+	}, nil
+}
+
+// metadataResponseError classifies a non-200 response from the server's /metadata endpoint. A 403
+// is final and carries the driver proxy's own explanation; anything else is errServerMetadata,
+// which callers treat as a server that is not running yet.
+func metadataResponseError(statusCode int, body []byte) error {
+	if statusCode != http.StatusForbidden {
+		return errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", statusCode))
+	}
+	// The driver proxy writes its error as a JSON string ("CODE: message") rather than the usual
+	// {"error_code", "message"} object.
+	var message string
+	if json.Unmarshal(body, &message) != nil {
+		message = string(body)
+	}
+	message = strings.TrimSpace(message)
+	if message == "" {
+		message = fmt.Sprintf("status code %d", statusCode)
+	}
+	return fmt.Errorf("%w: %s", errDriverProxyForbidden, message)
+}
+
+// checkPortForwardingToServerless refuses a serverless connection before any compute is started when
+// the workspace setting that the driver proxy enforces for the tunnel is off. The proxy's gate
+// (PortForwardingToServerlessGate in data-plane-router) also depends on an enforcement flag and a port
+// allow-list that the CLI cannot see, and the setting is not readable through the public API in every
+// environment. A read that fails therefore lets the connection go ahead, and the proxy's own 403
+// (errDriverProxyForbidden) remains the backstop. The read goes through a client with retries turned
+// off, so a throttled or unavailable settings service cannot hold up the connection for the SDK's
+// retry budget.
+func checkPortForwardingToServerless(ctx context.Context, client *databricks.WorkspaceClient) error {
+	apiClient, err := newProbeAPIClient(client.Config)
+	if err != nil {
+		log.Debugf(ctx, "Could not build a client to read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	setting, err := settingsv2.NewWorkspaceSettingsV2(apiClient).GetPublicWorkspaceSetting(ctx, settingsv2.GetPublicWorkspaceSettingRequest{
+		Name: portFwdServerlessSetting,
+	})
+	if err != nil {
+		log.Debugf(ctx, "Could not read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	if setting.EffectiveBooleanVal != nil && !setting.EffectiveBooleanVal.Value {
+		return errPortForwardingDisabled
+	}
+	return nil
 }
 
 // newDriverProxyRequest builds an authenticated GET request to one of the SSH server's
@@ -569,6 +787,74 @@ func fetchServerErrorLogs(ctx context.Context, client *databricks.WorkspaceClien
 	return strings.TrimSpace(string(body))
 }
 
+// Assemble the SubmitRun request that bootstraps the SSH server.
+// Extracted from submitSSHTunnelJob so this logic can be unit tested.
+func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvironment string, opts ClientOptions) jobs.SubmitRun {
+	sessionID := opts.SessionIdentifier()
+
+	baseParams := map[string]string{
+		"version":                 version,
+		"secretScopeName":         secretScopeName,
+		"authorizedKeySecretName": opts.ClientPublicKeyName,
+		"shutdownDelay":           opts.ShutdownDelay.String(),
+		"maxClients":              strconv.Itoa(opts.MaxClients),
+		"sessionId":               sessionID,
+		"serverless":              strconv.FormatBool(opts.IsServerlessMode()),
+		// Recorded in the server's metadata.json so reconnects can tell which usage policy
+		// the running server was started under.
+		"usagePolicyId": opts.UsagePolicyID,
+		// The bootstrap only needs to know whether to hold the run open. How long it ends up
+		// holding it is decided by the work itself, bounded by the run's own timeout.
+		"keepDetachedProcesses": strconv.FormatBool(opts.KeepDetachedProcesses),
+	}
+
+	task := jobs.SubmitTask{
+		TaskKey: sshServerTaskKey,
+		NotebookTask: &jobs.NotebookTask{
+			NotebookPath:   jobNotebookPath,
+			BaseParameters: baseParams,
+		},
+		TimeoutSeconds: int(opts.ServerTimeout.Seconds()),
+	}
+
+	if opts.IsServerlessMode() {
+		task.EnvironmentKey = serverlessEnvironmentKey
+		if opts.Accelerator != "" {
+			task.Compute = &jobs.Compute{
+				HardwareAccelerator: compute.HardwareAcceleratorType(opts.Accelerator),
+			}
+		}
+	} else {
+		task.ExistingClusterId = opts.ClusterID
+	}
+
+	submitRequest := jobs.SubmitRun{
+		RunName:        "ssh-server-bootstrap-" + sessionID,
+		TimeoutSeconds: int(opts.ServerTimeout.Seconds()),
+		Tasks:          []jobs.SubmitTask{task},
+		BudgetPolicyId: opts.UsagePolicyID,
+	}
+
+	if opts.IsServerlessMode() {
+		// base_environment and environment_version are mutually exclusive: a custom
+		// base environment carries its own version, so we don't also set one.
+		var spec compute.Environment
+		if baseEnvironment != "" {
+			spec.BaseEnvironment = baseEnvironment
+		} else {
+			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
+		}
+		submitRequest.Environments = []jobs.JobEnvironment{
+			{
+				EnvironmentKey: serverlessEnvironmentKey,
+				Spec:           &spec,
+			},
+		}
+	}
+
+	return submitRequest
+}
+
 // submitSSHTunnelJob submits the bootstrap job and waits for the SSH server task to start.
 // It returns the job run ID (when known) so callers can fetch and surface the run's error
 // details if the server never comes up.
@@ -584,7 +870,6 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return 0, fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}
 
-	sshTunnelJobName := "ssh-server-bootstrap-" + sessionID
 	jobNotebookPath := filepath.ToSlash(filepath.Join(contentDir, "ssh-server-bootstrap"))
 	notebookContent := "# Databricks notebook source\n" + sshServerBootstrapScript
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(notebookContent))
@@ -600,65 +885,20 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return 0, fmt.Errorf("failed to create ssh-tunnel notebook: %w", err)
 	}
 
-	baseParams := map[string]string{
-		"version":                 version,
-		"secretScopeName":         secretScopeName,
-		"authorizedKeySecretName": opts.ClientPublicKeyName,
-		"shutdownDelay":           opts.ShutdownDelay.String(),
-		"maxClients":              strconv.Itoa(opts.MaxClients),
-		"sessionId":               sessionID,
-		"serverless":              strconv.FormatBool(opts.IsServerlessMode()),
-	}
-
 	log.Infof(ctx, "Submitting a job to start the ssh server...")
-
-	task := jobs.SubmitTask{
-		TaskKey: sshServerTaskKey,
-		NotebookTask: &jobs.NotebookTask{
-			NotebookPath:   jobNotebookPath,
-			BaseParameters: baseParams,
-		},
-		TimeoutSeconds: int(opts.ServerTimeout.Seconds()),
+	if opts.IsServerlessMode() && opts.Accelerator != "" {
+		log.Infof(ctx, "Using accelerator: %s", opts.Accelerator)
 	}
 
-	if opts.IsServerlessMode() {
-		task.EnvironmentKey = serverlessEnvironmentKey
-		if opts.Accelerator != "" {
-			log.Infof(ctx, "Using accelerator: %s", opts.Accelerator)
-			task.Compute = &jobs.Compute{
-				HardwareAccelerator: compute.HardwareAcceleratorType(opts.Accelerator),
-			}
-		}
-	} else {
-		task.ExistingClusterId = opts.ClusterID
-	}
-
-	submitRequest := jobs.SubmitRun{
-		RunName:        sshTunnelJobName,
-		TimeoutSeconds: int(opts.ServerTimeout.Seconds()),
-		Tasks:          []jobs.SubmitTask{task},
-	}
-
-	if opts.IsServerlessMode() {
-		// base_environment and environment_version are mutually exclusive: a custom
-		// base environment carries its own version, so we don't also set one.
-		var spec compute.Environment
-		if opts.BaseEnvironment != "" {
-			baseEnvironment, err := resolveBaseEnvironment(ctx, client, opts.BaseEnvironment)
-			if err != nil {
-				return 0, err
-			}
-			spec.BaseEnvironment = baseEnvironment
-		} else {
-			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
-		}
-		submitRequest.Environments = []jobs.JobEnvironment{
-			{
-				EnvironmentKey: serverlessEnvironmentKey,
-				Spec:           &spec,
-			},
+	var baseEnvironment string
+	if opts.IsServerlessMode() && opts.BaseEnvironment != "" {
+		baseEnvironment, err = resolveBaseEnvironment(ctx, client, opts.BaseEnvironment)
+		if err != nil {
+			return 0, err
 		}
 	}
+
+	submitRequest := buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvironment, opts)
 
 	waiter, err := client.Jobs.Submit(ctx, submitRequest)
 	if err != nil {
@@ -745,17 +985,20 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 // allocation (-t) for the interactive case is added before the host: ssh stops
 // parsing options at the destination, so a -t placed after the host would be
 // treated as part of the remote command rather than as ssh's force-PTY flag.
-func buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
+//
+// Host key checking is strict rather than accept-new because the caller has already
+// pinned the server's key in knownHostsPath (see pinServerHostKey), so there is nothing
+// left to accept on trust.
+func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
 	sshArgs := []string{
 		"-l", userName,
 		"-i", privateKeyPath,
 		"-o", "IdentitiesOnly=yes",
-		"-o", "StrictHostKeyChecking=accept-new",
+		"-o", "StrictHostKeyChecking=yes",
+		"-o", "UserKnownHostsFile=" + knownHostsPath,
 		"-o", "ConnectTimeout=360",
+		"-o", "ServerAliveInterval=" + strconv.Itoa(sshconfig.ServerAliveIntervalSeconds),
 		"-o", "ProxyCommand=" + proxyCommand,
-	}
-	if opts.UserKnownHostsFile != "" {
-		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
 	}
 	if len(opts.AdditionalArgs) == 0 {
 		sshArgs = append(sshArgs, "-t")
@@ -765,7 +1008,7 @@ func buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome strin
 	return sshArgs
 }
 
-func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
 	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
@@ -782,14 +1025,14 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 	// OS home. Only needed for an interactive session; skip the lookup otherwise.
 	var wsHome string
 	if len(opts.AdditionalArgs) == 0 {
-		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			log.Warnf(ctx, "Failed to resolve current user for workspace home directory: %v", err)
+		if homeDir, err := sshWorkspace.GetWorkspaceHomeDir(ctx, client); err != nil {
+			log.Warnf(ctx, "Failed to resolve workspace home directory: %v", err)
 		} else {
-			wsHome = "/Workspace/Users/" + currentUser.UserName
+			wsHome = homeDir
 		}
 	}
 
-	sshArgs := buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome, opts)
+	sshArgs := buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, opts)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
@@ -808,7 +1051,7 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 	// own logs — fetch them from the /logs endpoint and show them instead of leaving the user
 	// with ssh's opaque "Connection closed" message.
 	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 255 {
-		if hint := hostKeyChangedHint(stderrTail.String(), hostName, opts.UserKnownHostsFile); hint != "" {
+		if hint := hostKeyChangedHint(stderrTail.String(), hostName, knownHostsPath); hint != "" {
 			cmdio.LogString(ctx, cmdio.Yellow(ctx, hint))
 		} else if logs := fetchServerErrorLogs(ctx, client, clusterID, serverPort, opts.Liteswap); logs != "" {
 			cmdio.LogString(ctx, cmdio.Yellow(ctx, "The SSH connection closed unexpectedly. Recent SSH server errors:"))
@@ -823,13 +1066,54 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 }
 
 func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, clusterID string, opts ClientOptions) error {
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		return createWebsocketConnection(ctx, client, connID, clusterID, serverPort, opts.Liteswap)
+	resumable := serverSupportsResume(ctx, client, clusterID, serverPort, opts.Liteswap)
+	if !resumable {
+		log.Infof(ctx, "The SSH server does not support session resume, a dropped connection will end the session")
+	}
+	createConn := func(ctx context.Context, req proxy.DialRequest) (*websocket.Conn, error) {
+		req.ResumeCapable = resumable
+		return createWebsocketConnection(ctx, client, req, clusterID, serverPort, opts.Liteswap)
 	}
 	requestHandoverTick := func() <-chan time.Time {
 		return time.After(opts.HandoverTimeout)
 	}
-	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, createConn)
+	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, opts.KeepaliveInterval, resumable, createConn)
+}
+
+// capabilitiesProbeTimeout caps the pre-connect capabilities probe. The endpoint returns a small,
+// fixed response, so a slow probe should not delay a connection that can still run without resume.
+// A var so tests can shorten it.
+var capabilitiesProbeTimeout = 10 * time.Second
+
+// serverSupportsResume reports whether the running SSH server speaks the resume protocol.
+func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) bool {
+	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "capabilities", liteswap)
+	if err != nil {
+		log.Debugf(ctx, "Failed to build the server capabilities request: %v", err)
+		return false
+	}
+	// Bounded on its own: this probe runs before the tunnel is dialled, and resume is an
+	// optimisation, so a driver proxy that accepts the request and never answers must cost a
+	// bounded wait rather than the whole connect path.
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport, Timeout: capabilitiesProbeTimeout}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Debugf(ctx, "Failed to query the server capabilities: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Debugf(ctx, "The server does not serve /capabilities (status %d)", resp.StatusCode)
+		return false
+	}
+	var capabilities struct {
+		ResumeVersion int `json:"resume_version"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&capabilities); err != nil {
+		log.Debugf(ctx, "Failed to decode the server capabilities: %v", err)
+		return false
+	}
+	return capabilities.ResumeVersion == proxy.ResumeProtocolVersion
 }
 
 // accessModeUILabel maps a cluster's access mode to the name shown in the Databricks UI.
@@ -1030,6 +1314,15 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// cancelSSHServerRun cancels the bootstrap run this connection submitted once no client can reach
+// its server. Best effort: the server also shuts itself down after its no-client delay, so a
+// failure here must not hide the error that made the connection give up.
+func cancelSSHServerRun(ctx context.Context, client *databricks.WorkspaceClient, runID int64) {
+	if _, err := client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID}); err != nil {
+		log.Debugf(ctx, "Failed to cancel the ssh server job run %d: %v", runID, err)
+	}
+}
+
 // runFailureIfTerminated reports whether the bootstrap run has reached a terminal state (so the
 // SSH server will never come up), returning a formatted failure description when it has.
 func runFailureIfTerminated(ctx context.Context, client *databricks.WorkspaceClient, runID int64) (string, bool) {
@@ -1083,10 +1376,11 @@ func (w *tailWriter) String() string {
 	return string(w.buf)
 }
 
-// hostKeyChangedHint returns advice for clearing a stale known_hosts entry when ssh's stderr
-// shows a host-key-verification failure, or "" if the failure was something else. A cluster that
-// has been recreated keeps the same connection name but gets a new host key, so the old entry no
-// longer matches and ssh aborts the connection.
+// hostKeyChangedHint returns advice when ssh's stderr shows a host-key-verification failure,
+// or "" if the failure was something else. The CLI pins the key the workspace published for
+// this session into knownHostsFile immediately before connecting, so the entry ssh rejected
+// is not a leftover from an earlier session: the server that answered is presenting a
+// different key than the one the workspace recorded for it.
 func hostKeyChangedHint(stderr, hostName, knownHostsFile string) string {
 	// "Host key verification failed." is OpenSSH's fixed message for this case; matching it is the
 	// only signal ssh gives (the "don't branch on err.Error()" rule is about Go errors, not the
@@ -1094,13 +1388,22 @@ func hostKeyChangedHint(stderr, hostName, knownHostsFile string) string {
 	if !strings.Contains(stderr, "Host key verification failed") {
 		return ""
 	}
-	cmd := "ssh-keygen -R " + hostName
-	if knownHostsFile != "" {
-		// ssh-keygen -R defaults to ~/.ssh/known_hosts, so name the custom file explicitly.
-		cmd += " -f " + knownHostsFile
-	}
-	return "The host key for " + hostName + " has changed. " +
-		"Remove the stale entry and reconnect:\n  " + cmd
+	return "The SSH server answering for " + hostName + " presented a host key that does not match the one " +
+		"the workspace published for it.\nThe CLI refreshed that key in " + knownHostsFile +
+		" just before connecting, so this is not a stale local entry: the tunnel reached a server " +
+		"the workspace does not know about"
+}
+
+func usagePolicyMatches(storedPolicy, requestedPolicy string) bool {
+	return requestedPolicy == "" || storedPolicy == requestedPolicy
+}
+
+// keepDetachedMatches reports whether a running server holds its run open for detached
+// processes when this connection asked it to. The mode is fixed when the run is submitted, so
+// asking for it needs a server that has it; a connection that does not ask takes whatever is
+// already running.
+func keepDetachedMatches(stored, requested bool) bool {
+	return !requested || stored
 }
 
 func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
@@ -1108,24 +1411,50 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	// For dedicated clusters, use clusterID; for serverless, it will be read from metadata
 	clusterID := opts.ClusterID
 
-	serverPort, userName, effectiveClusterID, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
-	if errors.Is(err, errServerMetadata) {
+	meta, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	// This includes errDriverProxyForbidden: a new server would be refused the same way.
+	if err != nil && !errors.Is(err, errServerMetadata) {
+		return "", 0, "", err
+	}
+
+	// Start a new server when none is running, or when the running one was started under a
+	// different usage policy or without keeping detached processes. Both are fixed at
+	// submission, so we can't retarget the existing server; the new server overwrites
+	// metadata.json, and its bootstrap terminates the running server on the cluster before
+	// starting (see cleanup() in ssh-server-bootstrap.py), which ends the previous run.
+	needNewServer := err != nil ||
+		!usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) ||
+		!keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses)
+	if needNewServer {
 		cmdio.LogString(ctx, "Starting SSH server...")
 
-		runID, err := submitSSHTunnelJob(ctx, client, version, secretScopeName, opts)
-		if err != nil {
-			return "", 0, "", fmt.Errorf("failed to submit and start ssh server job: %w", err)
+		runID, submitErr := submitSSHTunnelJob(ctx, client, version, secretScopeName, opts)
+		if submitErr != nil {
+			return "", 0, "", fmt.Errorf("failed to submit and start ssh server job: %w", submitErr)
 		}
 
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		defer sp.Close()
 		sp.Update("Waiting for the SSH server to start...")
-		maxRetries := 30
+		maxRetries := int(serverMetadataTimeout / serverMetadataPollInterval)
 		for retries := range maxRetries {
 			if ctx.Err() != nil {
 				return "", 0, "", ctx.Err()
 			}
-			serverPort, userName, effectiveClusterID, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+			meta, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+			if errors.Is(err, errDriverProxyForbidden) {
+				cancelSSHServerRun(ctx, client, runID)
+				return "", 0, "", err
+			}
+			// Accept only once metadata reflects the requested usage policy, so we don't latch
+			// onto a server a previous connection started under a different policy before our new
+			// server has overwritten metadata.json.
+			if err == nil && !usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) {
+				err = fmt.Errorf("found a running SSH server with usage policy %q, waiting for the one with %q", meta.UsagePolicyID, opts.UsagePolicyID)
+			}
+			if err == nil && !keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses) {
+				err = errors.New("found a running SSH server that does not keep detached processes, waiting for the one that does")
+			}
 			if err == nil {
 				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
 				break
@@ -1137,19 +1466,110 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 				return "", 0, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
 			}
 			if retries < maxRetries-1 {
-				time.Sleep(2 * time.Second)
+				time.Sleep(serverMetadataPollInterval)
 			} else {
 				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
 			}
 		}
-	} else if err != nil {
-		return "", 0, "", err
 	}
 
-	return userName, serverPort, effectiveClusterID, nil
+	return meta.UserName, meta.Port, meta.ClusterID, nil
 }
 
-func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) {
+// connectOutcome is the observed result of a connection attempt, collected by Run for telemetry.
+type connectOutcome struct {
+	// isSuccess reports whether the tunnel was established. It stays true when the SSH client
+	// itself later exits non-zero, since by then the tunnel was up.
+	isSuccess         bool
+	isReconnect       bool
+	serverStartTimeMs int64
+	// errorCategory is set at the failure site. Empty means the failure was not attributed.
+	errorCategory protos.SshTunnelErrorCategory
+	err           error
+	// ctxErr is the connect context's error when the outcome is logged. Tracked apart from err
+	// because a step that shells out reports a killed child as *exec.ExitError, which carries no
+	// trace of the cancellation. Only a cancellation counts as the user giving up: a deadline
+	// would be a timeout, so category() matches the cause rather than testing for non-nil.
+	ctxErr error
+}
+
+// sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
+// caused it. The four are kept apart because they imply different fixes, and because only the
+// first two can occur under --auto-approve, which the IDE button always passes -- so a shift
+// between them and the consent outcomes distinguishes button traffic from direct CLI use.
+func sshExtensionErrorCategory(err error) protos.SshTunnelErrorCategory {
+	switch {
+	case errors.Is(err, vscode.ErrSSHExtensionListFailed):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionListFailed
+	case errors.Is(err, vscode.ErrSSHExtensionInstallFailed):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed
+	case errors.Is(err, vscode.ErrSSHExtensionInstallDeclined):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallDeclined
+	case errors.Is(err, vscode.ErrSSHExtensionInstallUnavailable):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallUnavailable
+	}
+	// CheckIDESSHExtension wraps a sentinel on every failure path, so this is only reachable if
+	// a new one is added without a category. UNKNOWN keeps it countable; see category() below.
+	return protos.SshTunnelErrorCategoryUnknown
+}
+
+// category returns the error category to report. Once the tunnel is up nothing that follows is a
+// connection failure, so an established session reports only how it ended, and only the proxy can
+// say that. For a connection attempt, an interruption means the user gave up, whichever call
+// happened to observe it first, so it wins over the category recorded at the failure site; an
+// unattributed attempt is reported as UNKNOWN so that it stays countable.
+func (o connectOutcome) category() protos.SshTunnelErrorCategory {
+	if o.err == nil {
+		return protos.SshTunnelErrorCategoryUnspecified
+	}
+	if o.isSuccess {
+		// proxySessionEndCategory is the only thing that sets a category this late, so an empty
+		// one means the session simply ended: an interruption, an ordinary exit, or a non-zero
+		// exit from the ssh client or the user's own remote command. None is a tunnel failure.
+		if o.errorCategory != "" {
+			return o.errorCategory
+		}
+		return protos.SshTunnelErrorCategoryUnspecified
+	}
+	if errors.Is(o.ctxErr, context.Canceled) || errors.Is(o.err, context.Canceled) {
+		return protos.SshTunnelErrorCategoryUserAborted
+	}
+	if o.errorCategory == "" {
+		return protos.SshTunnelErrorCategoryUnknown
+	}
+	return o.errorCategory
+}
+
+// proxySessionEndCategory attributes how a proxy-mode session ended. A dropped websocket is
+// checked first on purpose: a drop that lands during a handover surfaces from either the
+// receiving loop or the handover goroutine, whichever the errgroup records first, and it
+// should be counted as a drop in both cases. HANDOVER_FAILED is then only the handover's own
+// failures. An unrecognised error is left unattributed - normalizeProxyError already maps a
+// clean finish and a user interrupt to nil.
+func proxySessionEndCategory(err error) protos.SshTunnelErrorCategory {
+	switch {
+	case err == nil:
+		return ""
+	case errors.Is(err, proxy.ErrWebsocketDropped):
+		return protos.SshTunnelErrorCategoryWebsocketDropped
+	case errors.Is(err, proxy.ErrHandoverFailed):
+		return protos.SshTunnelErrorCategoryHandoverFailed
+	case errors.Is(err, proxy.ErrConnectFailed):
+		return protos.SshTunnelErrorCategoryWebsocketConnectFailed
+	default:
+		return ""
+	}
+}
+
+func logSshTunnelEvent(ctx context.Context, opts ClientOptions, outcome connectOutcome) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelEvent: buildSshTunnelEvent(opts, outcome),
+	})
+}
+
+// buildSshTunnelEvent maps the connection options and outcome onto the telemetry
+// event. It is separated from logSshTunnelEvent so the field mapping can be unit tested.
+func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.SshTunnelEvent {
 	computeType := protos.SshTunnelComputeTypeDedicated
 	if opts.IsServerlessMode() {
 		computeType = protos.SshTunnelComputeTypeServerless
@@ -1165,16 +1585,20 @@ func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isRec
 		clientMode = protos.SshTunnelClientModeSSH
 	}
 
-	telemetry.Log(ctx, protos.DatabricksCliLog{
-		SshTunnelEvent: &protos.SshTunnelEvent{
-			ComputeType:       computeType,
-			AcceleratorType:   opts.Accelerator,
-			IdeType:           opts.IDE,
-			ClientMode:        clientMode,
-			IsReconnect:       isReconnect,
-			AutoStartCluster:  opts.AutoStartCluster,
-			ServerStartTimeMs: serverStartTimeMs,
-			IsSuccess:         isSuccess,
-		},
-	})
+	return &protos.SshTunnelEvent{
+		ComputeType:        computeType,
+		AcceleratorType:    opts.Accelerator,
+		IdeType:            opts.IDE,
+		ClientMode:         clientMode,
+		IsReconnect:        outcome.isReconnect,
+		AutoStartCluster:   opts.AutoStartCluster,
+		ServerStartTimeMs:  outcome.serverStartTimeMs,
+		IsSuccess:          outcome.isSuccess,
+		HasBaseEnvironment: opts.BaseEnvironment != "",
+		HasUsagePolicy:     opts.UsagePolicyID != "",
+		// The connect side can only report that the knob was asked for. Whether any detached
+		// process was there to keep is reported by the server, at teardown.
+		KeepDetachedRequested: opts.KeepDetachedProcesses,
+		ErrorCategory:         outcome.category(),
+	}
 }

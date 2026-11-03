@@ -1,0 +1,13 @@
+bundle:
+  name: drift-mse-recreated-same-name-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  model_serving_endpoints:
+    my_endpoint:
+      name: mse-endpoint-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          user_name: deco-test-user@databricks.com

@@ -3,6 +3,7 @@ bundle:
 
 resources:
   schemas:
-    foo:
-      catalog_name: bar
-      name: foo
+    my_schema:
+      name: myschema
+      catalog_name: main
+      storage_root: s3://mybucket/init

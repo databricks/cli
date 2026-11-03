@@ -168,6 +168,8 @@ After generation, you can deploy this alert to other targets using:
 		cmdio.LogString(ctx, "Alert configuration successfully saved to "+filepath.ToSlash(configPath))
 		cmdio.LogString(ctx, "Serialized alert definition to "+filepath.ToSlash(alertPath))
 
+		warnIfNotIncluded(ctx, b, configPath)
+
 		return nil
 	}
 

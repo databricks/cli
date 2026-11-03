@@ -14,6 +14,7 @@ var grantResourceTypes = []string{
 	"catalogs",
 	"schemas",
 	"external_locations",
+	"secrets",
 	"volumes",
 	"registered_models",
 	"vector_search_indexes",

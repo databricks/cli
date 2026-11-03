@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  secret_scopes:
+    bad_levels:
+      name: test-scope-bad-levels
+      permissions:
+        # YAML int is coerced to string; must still fail enum validation.
+        - level: 12
+          group_name: users
+        - level: fuzz_badlevel
+          service_principal_name: 12345678-1234-1234-1234-123456789abc
+    valid:
+      name: test-scope-valid
+      permissions:
+        - level: READ
+          group_name: users

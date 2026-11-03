@@ -1200,6 +1200,7 @@ func newRepairRun() *cobra.Command {
 	cmd.Flags().Var(&repairRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: dbt_commands
+	cmd.Flags().StringVar(&repairRunReq.DurationTarget, "duration-target", repairRunReq.DurationTarget, `The window the run aims to finish within, in hours, for a Cost-optimized serverless run.`)
 	// TODO: array: jar_params
 	// TODO: map via StringToStringVar: job_parameters
 	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
@@ -1410,6 +1411,7 @@ func newRunNow() *cobra.Command {
 	cmd.Flags().Var(&runNowJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: dbt_commands
+	cmd.Flags().StringVar(&runNowReq.DurationTarget, "duration-target", runNowReq.DurationTarget, `The window the run aims to finish within, in hours, for a Cost-optimized serverless run.`)
 	cmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
 	// TODO: array: jar_params
 	// TODO: map via StringToStringVar: job_parameters
@@ -1641,12 +1643,15 @@ func newSubmit() *cobra.Command {
 
 	// TODO: array: access_control_list
 	cmd.Flags().StringVar(&submitReq.BudgetPolicyId, "budget-policy-id", submitReq.BudgetPolicyId, `The user specified id of the budget policy to use for this one-time run.`)
+	cmd.Flags().StringVar(&submitReq.DurationTarget, "duration-target", submitReq.DurationTarget, `The window the run aims to finish within, in hours, for a Cost-optimized serverless run.`)
 	// TODO: complex arg: email_notifications
+	// TODO: array: environment_variables
 	// TODO: array: environments
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health
 	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	// TODO: complex arg: notification_settings
+	cmd.Flags().Var(&submitReq.PerformanceTarget, "performance-target", `The performance mode on a serverless one-time run. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
 	// TODO: complex arg: queue
 	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)

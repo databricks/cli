@@ -1,0 +1,63 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.pipelines.my": {
+      "action": "recreate",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "file": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+              }
+            }
+          ],
+          "name": "test-pipeline-[UNIQUE_NAME]",
+          "storage": "dbfs:/pipelines/newcustom"
+        }
+      },
+      "remote_state": {
+        "channel": "CURRENT",
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[MY_ID]",
+        "last_modified": [UNIX_TIME_MILLIS],
+        "libraries": [
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+            }
+          }
+        ],
+        "name": "test-pipeline-[UNIQUE_NAME]",
+        "pipeline_id": "[MY_ID]",
+        "run_as_user_name": "[USERNAME]",
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/custom"
+      },
+      "changes": {
+        "storage": {
+          "action": "recreate",
+          "reason": "immutable",
+          "old": "dbfs:/pipelines/custom",
+          "new": "dbfs:/pipelines/newcustom",
+          "remote": "dbfs:/pipelines/custom"
+        }
+      }
+    }
+  }
+}

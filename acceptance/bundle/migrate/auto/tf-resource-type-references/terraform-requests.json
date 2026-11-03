@@ -1,0 +1,61 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/state"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/artifacts/.internal"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/files"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "name": "source-pipeline"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "dst-job",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "pipeline_task": {
+            "pipeline_id": "7a00a8c6-b18f-59a8-7a00-a8c6b18f59a9"
+          },
+          "task_key": "main"
+        }
+      ]
+    }
+  }
+]

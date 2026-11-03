@@ -1,3 +1,0 @@
-# Invalid concurrency values should fail.
-trace musterr $CLI fs cp src dst --concurrency -1
-trace musterr $CLI fs cp src dst --concurrency 0

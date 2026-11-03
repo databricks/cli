@@ -1,0 +1,5 @@
+[[Repls]]
+# environments setup-local emits a real wall-time durationMs; normalize it so the
+# JSON goldens are deterministic.
+Old = '"durationMs": \d+'
+New = '"durationMs": [DURATION_MS]'

@@ -1,0 +1,40 @@
+# The command creates this download directory; don't treat it as test output.
+Ignore = ["dl-logs"]
+
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# A completed 2-node run (GPU_1xA10 x 2 = 2 nodes).
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "tasks": [
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "ai_runtime_task": {
+        "experiment": "dl-exp",
+        "deployments": [
+          {"command_path": "/x/command.sh", "compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 2}}
+        ]
+      }
+    }
+  ]
+}
+'''
+
+# No MLflow run id resolvable, so the download reports no logs rather than
+# attempting a (host-dynamic) pre-signed artifact fetch. The full download path
+# is covered by unit tests.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '{}'

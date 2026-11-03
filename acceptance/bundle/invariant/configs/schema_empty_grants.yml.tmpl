@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    foo:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+      # Empty grants: Terraform records no grants resource for an empty list, so
+      # migrate leaves no state entry and plan must not show a spurious create.
+      grants: []

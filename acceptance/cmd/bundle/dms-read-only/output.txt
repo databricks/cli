@@ -32,7 +32,7 @@
 >>> [CLI] bundle-deployments list-versions deployments/abc
 [
   {
-    "cli_version": "[CLI_VERSION]",
+    "cli_version": "0.0.0-test",
     "name": "deployments/abc/versions/v1",
     "status": "VERSION_STATUS_COMPLETED",
     "version_type": ""
@@ -41,7 +41,7 @@
 
 >>> [CLI] bundle-deployments get-version deployments/abc/versions/v1
 {
-  "cli_version": "[CLI_VERSION]",
+  "cli_version": "0.0.0-test",
   "git_info": {
     "branch": "main",
     "commit": "[COMMIT_SHA]",

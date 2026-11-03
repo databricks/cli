@@ -16,6 +16,7 @@ import (
 
 type Volume struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.CreateVolumeRequestContent
 
 	// VolumePath is /Volumes/{catalog}/{schema}/{name}. Populated during initialize; not user-configurable.
@@ -64,10 +65,6 @@ func (v *Volume) InitializeURL(baseURL url.URL) {
 		return
 	}
 	v.URL = workspaceurls.ResourceURL(baseURL, "volumes", v.ID)
-}
-
-func (v *Volume) GetURL() string {
-	return v.URL
 }
 
 func (v *Volume) GetName() string {

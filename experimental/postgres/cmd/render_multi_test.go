@@ -27,7 +27,7 @@ func TestRenderTextMulti_TwoResults(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	require.NoError(t, renderTextMulti(&buf, []*unitResult{r1, r2}))
+	require.NoError(t, renderTextMulti(t.Context(), &buf, []*unitResult{r1, r2}))
 	out := buf.String()
 	assert.Contains(t, out, "INSERT 0 1\n")
 	assert.Contains(t, out, "id")
@@ -53,7 +53,7 @@ func TestRenderJSONMulti_TwoResults(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, renderJSONMulti(&stdout, &stderr, []*unitResult{r1, r2}, nil, ""))
+	require.NoError(t, renderJSONMulti(t.Context(), &stdout, &stderr, []*unitResult{r1, r2}, nil, ""))
 
 	out := stdout.String()
 	// Canonical key order: source, sql, kind, elapsed_ms, payload.
@@ -81,7 +81,7 @@ func TestRenderJSONMulti_WithErrorAtEnd(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, renderJSONMulti(&stdout, &stderr, []*unitResult{r1}, errored, "ERROR: syntax error (SQLSTATE 42601)"))
+	require.NoError(t, renderJSONMulti(t.Context(), &stdout, &stderr, []*unitResult{r1}, errored, "ERROR: syntax error (SQLSTATE 42601)"))
 
 	out := stdout.String()
 	assert.Contains(t, out, `"kind":"rows"`)
@@ -96,7 +96,7 @@ func TestRenderJSONMulti_FirstUnitFails(t *testing.T) {
 		Elapsed: 7 * time.Millisecond,
 	}
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, renderJSONMulti(&stdout, &stderr, nil, errored, "ERROR: bad"))
+	require.NoError(t, renderJSONMulti(t.Context(), &stdout, &stderr, nil, errored, "ERROR: bad"))
 
 	out := stdout.String()
 	// No leading separator before the single error envelope.

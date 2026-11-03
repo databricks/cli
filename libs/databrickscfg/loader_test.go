@@ -375,3 +375,111 @@ func TestLoaderNoWorkspaceIDMatchFallsThrough(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "multiple profiles matched: spog-ws1, spog-ws2")
 }
+
+// strictProfiles has the profiles a caller writes for one workspace: the
+// classic host, the classic host with the workspace ID, and a custom host shared
+// by several workspaces. The account profile on the custom host is skipped.
+const strictProfiles = `
+[workspace_classic]
+host = https://classic.test
+
+[workspace_classic_id]
+host = https://classic.test
+workspace_id = 111
+
+[workspace_custom_host]
+host = https://custom.test
+workspace_id = 111
+
+[account_custom_host]
+host = https://custom.test
+account_id = abc
+`
+
+func writeTestConfigFile(t *testing.T, contents string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0o600))
+	return path
+}
+
+func TestStrictProfileLoader(t *testing.T) {
+	profiles := writeTestConfigFile(t, strictProfiles)
+	ambiguous := writeTestConfigFile(t, "[DEFAULT]\nhost = https://classic.test\n\n[workspace_classic]\nhost = https://classic.test\n")
+	missing := filepath.Join(t.TempDir(), "missing")
+
+	for _, tc := range []struct {
+		name        string
+		configFile  string
+		host        string
+		workspaceID string
+		profile     string
+		wantProfile string
+		wantErr     string
+	}{
+		// Without a host or workspace ID there is nothing to match.
+		{name: "empty config", configFile: profiles},
+		{name: "empty config without config file", configFile: missing},
+		{name: "empty config keeps the profile", configFile: profiles, profile: "workspace_custom_host", wantProfile: "workspace_custom_host"},
+
+		// A host must match exactly one workspace profile by host and workspace ID.
+		{name: "classic host", configFile: profiles, host: "https://classic.test", wantProfile: "workspace_classic"},
+		{name: "classic host with trailing slash", configFile: profiles, host: "https://classic.test/", wantProfile: "workspace_classic"},
+		{name: "classic host with workspace ID", configFile: profiles, host: "https://classic.test", workspaceID: "111", wantProfile: "workspace_classic_id"},
+		{name: "custom host with workspace ID", configFile: profiles, host: "https://custom.test", workspaceID: "111", wantProfile: "workspace_custom_host"},
+		{name: "classic host with another workspace ID", configFile: profiles, host: "https://classic.test", workspaceID: "222", wantErr: "no profile for host https://classic.test has workspace_id 222"},
+		{name: "custom host without workspace ID", configFile: profiles, host: "https://custom.test", wantErr: "host https://custom.test requires a workspace ID"},
+		{name: "custom host with another workspace ID", configFile: profiles, host: "https://custom.test", workspaceID: "222", wantErr: "no profile for host https://custom.test has workspace_id 222"},
+		{name: "unknown host", configFile: profiles, host: "https://unknown.test", wantErr: "no workspace profile matches host https://unknown.test"},
+		{name: "host of DEFAULT and a named profile", configFile: ambiguous, host: "https://classic.test", wantErr: "multiple profiles match host https://classic.test: DEFAULT, workspace_classic"},
+		{name: "host without config file", configFile: missing, host: "https://classic.test", wantErr: "config file " + missing + " not found"},
+
+		// A profile set together with a host must be the matched one.
+		{name: "profile that matches the host", configFile: profiles, host: "https://classic.test", profile: "workspace_classic", wantProfile: "workspace_classic"},
+		{name: "profile that doesn't match the host", configFile: profiles, host: "https://classic.test", profile: "workspace_classic_id", wantErr: "profile workspace_classic_id does not match profile workspace_classic selected for host https://classic.test"},
+
+		// A workspace ID without a host needs a profile with that workspace ID.
+		{name: "workspace ID with a matching profile", configFile: profiles, workspaceID: "111", profile: "workspace_custom_host", wantProfile: "workspace_custom_host"},
+		{name: "workspace ID without a profile", configFile: profiles, workspaceID: "111", wantErr: "workspace_id 111 needs a host"},
+		{name: "workspace ID with a profile without it", configFile: profiles, workspaceID: "111", profile: "workspace_classic", wantErr: "profile workspace_classic does not have workspace_id 111"},
+		{name: "workspace ID with an account profile", configFile: profiles, workspaceID: "111", profile: "account_custom_host", wantErr: "account_custom_host is not a workspace profile with a host"},
+		{name: "workspace ID with an unknown profile", configFile: profiles, workspaceID: "111", profile: "unknown", wantErr: "unknown is not a workspace profile with a host"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := config.Config{
+				Loaders:     []config.Loader{strictProfileLoader{}},
+				ConfigFile:  tc.configFile,
+				Host:        tc.host,
+				WorkspaceID: tc.workspaceID,
+				Profile:     tc.profile,
+			}
+
+			err := cfg.EnsureResolved()
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantProfile, cfg.Profile)
+		})
+	}
+}
+
+func TestStrictProfileLoadersIgnoreEnvHost(t *testing.T) {
+	// The env token reaches only the host of the selected profile, even when the
+	// env also sets a host.
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	cfg := config.Config{
+		Loaders:     StrictProfileLoaders,
+		ConfigFile:  writeTestConfigFile(t, strictProfiles),
+		WorkspaceID: "111",
+		Profile:     "workspace_custom_host",
+	}
+
+	err := cfg.EnsureResolved()
+	require.NoError(t, err)
+	assert.Equal(t, "https://custom.test", cfg.Host)
+	assert.Equal(t, "env-token", cfg.Token)
+}

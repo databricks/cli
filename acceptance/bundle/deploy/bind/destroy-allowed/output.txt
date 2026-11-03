@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-destroy-allowed/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Bound and updated jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -11,5 +11,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-destroy-allowed/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

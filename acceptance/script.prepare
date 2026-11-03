@@ -109,8 +109,23 @@ retry() {
     env -u MSYS_NO_PATHCONV retry.py "$@"
 }
 
+add_repl() {
+    # Same MSYS_NO_PATHCONV workaround as envsubst above: otherwise Python cannot
+    # find add_repl.py on Windows.
+    env -u MSYS_NO_PATHCONV add_repl.py "$@"
+}
+
+nostamp() {
+    # Same MSYS_NO_PATHCONV workaround as envsubst above: otherwise Python cannot
+    # find nostamp.py on Windows.
+    env -u MSYS_NO_PATHCONV nostamp.py "$@"
+}
+
+# The engine_terraform_* and deployment_history_enabled keys reflect matrix settings, so they
+# legitimately diverge across variants. Drop them here so this shared helper stays
+# matrix-agnostic; engine selection is asserted in bundle/telemetry/deploy.
 print_telemetry_bool_values() {
-    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | grep -Ev '^(engine_terraform_|deployment_history_enabled )' | sort
 }
 
 sethome() {

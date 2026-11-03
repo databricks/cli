@@ -1,0 +1,23 @@
+{
+  "action": "recreate",
+  "changes": {
+    "no_expiry": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": true,
+      "new": true
+    },
+    "source_branch": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production"
+    },
+    "source_branch_time": {
+      "action": "recreate",
+      "reason": "spec:immutable",
+      "old": "[FORK_TIME_BEFORE]",
+      "new": "[FORK_TIME_AFTER]"
+    }
+  }
+}

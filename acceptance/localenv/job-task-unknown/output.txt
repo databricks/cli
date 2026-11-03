@@ -1,0 +1,5 @@
+✗ Setup failed while resolving your compute target.
+
+  resolving job task 12345.nope: job 12345 has no task "nope" (available: ingest)
+
+Re-run with --debug for details, or --output json for a structured report.

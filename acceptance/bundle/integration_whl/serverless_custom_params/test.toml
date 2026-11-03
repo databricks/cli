@@ -1,5 +1,2 @@
 Cloud = true
-Local = true
-
 # serverless is only enabled if UC is enabled
-RequiresUnityCatalog = true

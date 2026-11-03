@@ -14,12 +14,12 @@ import (
 
 type expand struct{}
 
-func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
+func matchError(p dyn.Path, l []diag.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity:  diag.Error,
 		Summary:   message,
 		Locations: l,
-		Paths:     []dyn.Path{p},
+		Paths:     dyn.ToStructPaths(p),
 	}
 }
 
@@ -116,6 +116,9 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 			continue
 		}
 
+		// Strip extras before globbing so "[...]" isn't read as a glob class, then re-append.
+		path, extras := patchwheel.SplitWheelExtras(path)
+
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
 			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
@@ -123,7 +126,7 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 		}
 
 		for _, match := range matches {
-			output = append(output, dyn.NewValue(match, dep.Locations()))
+			output = append(output, dyn.NewValue(match+extras, dep.Locations()))
 		}
 	}
 
@@ -155,6 +158,28 @@ var forEachTaskLibrariesPattern = dyn.NewPattern(
 	dyn.Key("libraries"),
 )
 
+var aiRuntimeCodeSourcePattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("ai_runtime_task"),
+	dyn.Key("code_source_path"),
+)
+
+var forEachAiRuntimeCodeSourcePattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("for_each_task"),
+	dyn.Key("task"),
+	dyn.Key("ai_runtime_task"),
+	dyn.Key("code_source_path"),
+)
+
 var envDepsPattern = dyn.NewPattern(
 	dyn.Key("resources"),
 	dyn.Key("jobs"),
@@ -171,6 +196,13 @@ var pipelineEnvDepsPattern = dyn.NewPattern(
 	dyn.AnyKey(),
 	dyn.Key("environment"),
 	dyn.Key("dependencies"),
+)
+
+var clusterLibrariesPattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("clusters"),
+	dyn.AnyKey(),
+	dyn.Key("libraries"),
 )
 
 func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -190,6 +222,10 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		{
 			pattern: pipelineEnvDepsPattern,
 			fn:      expandEnvironmentDeps,
+		},
+		{
+			pattern: clusterLibrariesPattern,
+			fn:      expandLibraries,
 		},
 	}
 

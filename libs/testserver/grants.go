@@ -10,6 +10,15 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+// notImpliedByAllPrivileges are the privileges UC does not include in
+// ALL_PRIVILEGES, so granting or revoking ALL_PRIVILEGES never affects them.
+var notImpliedByAllPrivileges = map[catalog.Privilege]bool{
+	catalog.PrivilegeManage:              true,
+	catalog.PrivilegeReadMetadata:        true,
+	catalog.PrivilegeExternalUseSchema:   true,
+	catalog.PrivilegeExternalUseLocation: true,
+}
+
 func grantsKey(securableType, fullName string) string {
 	return strings.ToUpper(securableType) + ":" + fullName
 }
@@ -71,7 +80,16 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 		// Remove privileges
 		for _, privilege := range change.Remove {
 			if privilege == catalog.PrivilegeAllPrivileges {
-				principalPrivs[change.Principal] = make(map[catalog.Privilege]bool)
+				// Removing ALL_PRIVILEGES clears every privilege it implies, but NOT
+				// the ones UC does not include in ALL_PRIVILEGES (MANAGE,
+				// READ_METADATA, EXTERNAL_USE_SCHEMA, EXTERNAL_USE_LOCATION). Those
+				// are granted independently and survive. See
+				// https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges
+				for p := range principalPrivs[change.Principal] {
+					if !notImpliedByAllPrivileges[p] {
+						delete(principalPrivs[change.Principal], p)
+					}
+				}
 			} else {
 				delete(principalPrivs[change.Principal], privilege)
 			}

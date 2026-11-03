@@ -1,0 +1,34 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: config.served_entities[*].burst_scaling_enabled
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.openai_config.openai_api_key_plaintext
+    reason: spec:input_only
+  - field: config.served_entities[*].external_model.palm_config.palm_api_key_plaintext
+    reason: spec:input_only
+  - field: config.served_models[*].burst_scaling_enabled
+    reason: spec:input_only
+
+  - field: telemetry_config.inference_table_config.name
+    reason: spec:output_only

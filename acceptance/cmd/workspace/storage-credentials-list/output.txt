@@ -1,0 +1,4 @@
+
+>>> [CLI] storage-credentials list
+ID    Name                  Credentials
+1234  some-test-credential  

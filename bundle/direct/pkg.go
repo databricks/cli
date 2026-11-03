@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -35,6 +36,11 @@ type DeploymentUnit struct {
 
 	// DependsOn lists resources this resource depends on (persisted in state).
 	DependsOn []deployplan.DependsOnEntry
+
+	// MaxWait caps how long to wait for this resource to reach its target state. Must be set
+	// to maxWaitUnset to fall back to the resource's own timeout: the zero value is a valid
+	// cap meaning "do not wait at all". See resourceMaxWait and unitMaxWait.
+	MaxWait time.Duration
 }
 
 // DeploymentBundle holds everything needed to deploy a bundle
@@ -44,6 +50,11 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// DeployDurations maps a resource key to the time.Duration its create, update or
+	// recreate took. Only successfully deployed resources are recorded; Apply runs
+	// nodes in parallel, hence the sync.Map.
+	DeployDurations sync.Map
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

@@ -3,9 +3,7 @@ touch "project-folder/app.yaml" "project-folder/app.py" "project-folder/query.sq
 touch "ignored-folder/script.py" "ignored-folder/folder1/script.py"
 cat > .gitignore << EOF
 ignored-folder/
-script
 output.txt
-repls.json
 EOF
 
 cleanup() {

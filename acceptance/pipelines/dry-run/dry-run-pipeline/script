@@ -1,5 +1,5 @@
 trace $CLI pipelines deploy
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 title "Dry running pipeline, should have validate_only set to true"
 trace $CLI pipelines dry-run
 print_requests.py //pipelines

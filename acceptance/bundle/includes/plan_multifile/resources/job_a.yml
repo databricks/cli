@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    job_a:
+      name: job_a
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: ./nb.py

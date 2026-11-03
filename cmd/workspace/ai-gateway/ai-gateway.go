@@ -1,0 +1,2021 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package ai_gateway
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/spf13/cobra"
+)
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ai-gateway",
+		Short: `Govern AI workloads in Unity Catalog.`,
+		Long: `Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
+  securables that bring centralized access control, lineage, and auditing to
+  AI-serving entities: model services (governed access to foundation models and
+  external LLMs), model provider services (governed resources for external model
+  providers), and MCP services (governed Model Context Protocol servers).`,
+		GroupID: "catalog",
+		RunE:    root.ReportUnknownSubcommand,
+	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	// Add methods
+	cmd.AddCommand(newCreateMcpService())
+	cmd.AddCommand(newCreateMcpServiceUserMappedCredential())
+	cmd.AddCommand(newCreateModelProviderService())
+	cmd.AddCommand(newCreateModelService())
+	cmd.AddCommand(newCreateSkill())
+	cmd.AddCommand(newDeleteMcpService())
+	cmd.AddCommand(newDeleteMcpServiceUserMappedCredential())
+	cmd.AddCommand(newDeleteModelProviderService())
+	cmd.AddCommand(newDeleteModelService())
+	cmd.AddCommand(newDeleteSkill())
+	cmd.AddCommand(newFinalizeSkill())
+	cmd.AddCommand(newGetMcpService())
+	cmd.AddCommand(newGetMcpServiceUserMappedCredential())
+	cmd.AddCommand(newGetModelProviderService())
+	cmd.AddCommand(newGetModelService())
+	cmd.AddCommand(newGetSkill())
+	cmd.AddCommand(newListMcpServices())
+	cmd.AddCommand(newListModelProviderServices())
+	cmd.AddCommand(newListModelServices())
+	cmd.AddCommand(newListSkills())
+	cmd.AddCommand(newUpdateMcpService())
+	cmd.AddCommand(newUpdateModelProviderService())
+	cmd.AddCommand(newUpdateModelService())
+	cmd.AddCommand(newUpdateSkill())
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create-mcp-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createMcpServiceOverrides []func(
+	*cobra.Command,
+	*catalog.CreateMcpServiceRequest,
+)
+
+func newCreateMcpService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createMcpServiceReq catalog.CreateMcpServiceRequest
+	createMcpServiceReq.McpService = catalog.McpService{}
+	var createMcpServiceJson flags.JsonFlag
+
+	cmd.Flags().Var(&createMcpServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createMcpServiceReq.McpService.Comment, "comment", createMcpServiceReq.McpService.Comment, `User-provided description.`)
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&createMcpServiceReq.McpService.Name, "name", createMcpServiceReq.McpService.Name, `Resource name of the MCP service.`)
+
+	cmd.Use = "create-mcp-service PARENT MCP_SERVICE_ID"
+	cmd.Short = `Create an MCP service.`
+	cmd.Long = `Create an MCP service.
+
+  Creates an MCP service in a Unity Catalog schema. An MCP (Model Context
+  Protocol) service is a governed securable that registers an MCP server and
+  exposes its tools for discovery, access control, and invocation. Specify its
+  name in mcp_service_id.
+
+  You must be the owner of the parent schema or have the CREATE_SERVICE and
+  USE_SCHEMA privileges on the parent schema and USE_CATALOG on the parent
+  catalog. You also need USE_CONNECTION on the connection the MCP service
+  references.
+
+  Arguments:
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    MCP_SERVICE_ID: Name for the MCP service, e.g. "my_mcp_service".`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createMcpServiceJson.Unmarshal(&createMcpServiceReq.McpService)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createMcpServiceReq.Parent = args[0]
+		createMcpServiceReq.McpServiceId = args[1]
+
+		response, err := w.AiGateway.CreateMcpService(ctx, createMcpServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createMcpServiceOverrides {
+		fn(cmd, &createMcpServiceReq)
+	}
+
+	return cmd
+}
+
+// start create-mcp-service-user-mapped-credential command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createMcpServiceUserMappedCredentialOverrides []func(
+	*cobra.Command,
+	*catalog.CreateMcpServiceUserMappedCredentialRequest,
+)
+
+func newCreateMcpServiceUserMappedCredential() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createMcpServiceUserMappedCredentialReq catalog.CreateMcpServiceUserMappedCredentialRequest
+	createMcpServiceUserMappedCredentialReq.Login = catalog.McpServiceUserMappedCredentialLogin{}
+	var createMcpServiceUserMappedCredentialJson flags.JsonFlag
+
+	cmd.Flags().Var(&createMcpServiceUserMappedCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: map via StringToStringVar: options
+
+	cmd.Use = "create-mcp-service-user-mapped-credential NAME"
+	cmd.Short = `*Beta* Create an MCP service user credential.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create an MCP service user credential.
+
+  Logs the caller in to an MCP service: creates their per-user OAuth credential,
+  or re-authenticates it if one already exists. The request body carries the
+  OAuth exchange fields.
+
+  You must be the owner of the MCP service or have EXECUTE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createMcpServiceUserMappedCredentialJson.Unmarshal(&createMcpServiceUserMappedCredentialReq.Login)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createMcpServiceUserMappedCredentialReq.Name = args[0]
+
+		response, err := w.AiGateway.CreateMcpServiceUserMappedCredential(ctx, createMcpServiceUserMappedCredentialReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createMcpServiceUserMappedCredentialOverrides {
+		fn(cmd, &createMcpServiceUserMappedCredentialReq)
+	}
+
+	return cmd
+}
+
+// start create-model-provider-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createModelProviderServiceOverrides []func(
+	*cobra.Command,
+	*catalog.CreateModelProviderServiceRequest,
+)
+
+func newCreateModelProviderService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createModelProviderServiceReq catalog.CreateModelProviderServiceRequest
+	createModelProviderServiceReq.ModelProviderService = catalog.ModelProviderService{}
+	var createModelProviderServiceJson flags.JsonFlag
+
+	cmd.Flags().Var(&createModelProviderServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createModelProviderServiceReq.ModelProviderService.Comment, "comment", createModelProviderServiceReq.ModelProviderService.Comment, `User-provided description.`)
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&createModelProviderServiceReq.ModelProviderService.Name, "name", createModelProviderServiceReq.ModelProviderService.Name, `Resource name of the provider service.`)
+
+	cmd.Use = "create-model-provider-service PARENT MODEL_PROVIDER_SERVICE_ID"
+	cmd.Short = `Create a model provider service.`
+	cmd.Long = `Create a model provider service.
+
+  Creates a model provider service in a Unity Catalog schema. A model provider
+  service stores authentication and request configuration for an external model
+  provider, such as OpenAI, Azure OpenAI, or Amazon Bedrock. Model services
+  reference it to invoke the provider. Specify its name in
+  model_provider_service_id.
+
+  You must be the owner of the parent schema or have the CREATE_SERVICE and
+  USE_SCHEMA privileges on the parent schema and USE_CATALOG on the parent
+  catalog. Inline credentials additionally require CREATE_CONNECTION on the
+  parent schema. When using a Unity Catalog service credential, you must have
+  ACCESS on that credential.
+
+  Arguments:
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    MODEL_PROVIDER_SERVICE_ID: Name for the model provider service, e.g. "openai_prod".`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createModelProviderServiceJson.Unmarshal(&createModelProviderServiceReq.ModelProviderService)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createModelProviderServiceReq.Parent = args[0]
+		createModelProviderServiceReq.ModelProviderServiceId = args[1]
+
+		response, err := w.AiGateway.CreateModelProviderService(ctx, createModelProviderServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createModelProviderServiceOverrides {
+		fn(cmd, &createModelProviderServiceReq)
+	}
+
+	return cmd
+}
+
+// start create-model-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createModelServiceOverrides []func(
+	*cobra.Command,
+	*catalog.CreateModelServiceRequest,
+)
+
+func newCreateModelService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createModelServiceReq catalog.CreateModelServiceRequest
+	createModelServiceReq.ModelService = catalog.ModelService{}
+	var createModelServiceJson flags.JsonFlag
+
+	cmd.Flags().Var(&createModelServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Comment, "comment", createModelServiceReq.ModelService.Comment, `User-provided description.`)
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Name, "name", createModelServiceReq.ModelService.Name, `Resource name of the model service.`)
+	// TODO: array: supported_api_types
+
+	cmd.Use = "create-model-service PARENT MODEL_SERVICE_ID"
+	cmd.Short = `Create a model service.`
+	cmd.Long = `Create a model service.
+
+  Creates a model service in a Unity Catalog schema. A model service is a
+  governed AI Gateway endpoint that routes inference requests to one or more
+  model destinations. Specify its name in model_service_id.
+
+  You must be the owner of the parent schema or have the CREATE_SERVICE and
+  USE_SCHEMA privileges on the parent schema and USE_CATALOG on the parent
+  catalog. For every destination, you also need USE_CATALOG and USE_SCHEMA
+  on its parent and EXECUTE on the referenced Unity Catalog model or model
+  provider service. A provisioned-throughput destination additionally requires
+  CAN_MANAGE on its Model Serving endpoint. Configuring an inference table
+  additionally requires CREATE_TABLE.
+
+  Arguments:
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    MODEL_SERVICE_ID: Name for the model service, e.g. "my_model_service".`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createModelServiceJson.Unmarshal(&createModelServiceReq.ModelService)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createModelServiceReq.Parent = args[0]
+		createModelServiceReq.ModelServiceId = args[1]
+
+		response, err := w.AiGateway.CreateModelService(ctx, createModelServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createModelServiceOverrides {
+		fn(cmd, &createModelServiceReq)
+	}
+
+	return cmd
+}
+
+// start create-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSkillOverrides []func(
+	*cobra.Command,
+	*catalog.CreateSkillRequest,
+)
+
+func newCreateSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSkillReq catalog.CreateSkillRequest
+	createSkillReq.Skill = catalog.Skill{}
+	var createSkillJson flags.JsonFlag
+
+	cmd.Flags().Var(&createSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSkillReq.Skill.Comment, "comment", createSkillReq.Skill.Comment, `User-provided comment for the skill.`)
+	cmd.Flags().StringVar(&createSkillReq.Skill.Name, "name", createSkillReq.Skill.Name, `Resource name of the skill.`)
+
+	cmd.Use = "create-skill PARENT SKILL_ID"
+	cmd.Short = `*Beta* Create a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a skill.
+
+  Creates a skill in a Unity Catalog schema and provisions its managed bundle
+  storage. Specify its name in skill_id. The request contains an optional
+  comment but no bundle bytes.
+
+  To publish a skill:
+
+  1. Call CreateSkill to create the skill in Unity Catalog. 2. Upload every
+  bundle file, including SKILL.md at the bundle root, with the Files API: PUT
+  /api/2.0/fs/files/Skills/{catalog}/{schema}/{skill}/{file_path}. The
+  CreateSkill caller owns the skill and can upload. Other callers need
+  READ_VOLUME and WRITE_VOLUME on the skill. 3. Call FinalizeSkill to
+  validate SKILL.md and set the skill's bundle_name and description from
+  its frontmatter name and description.
+
+  You must be the owner of the parent schema or have CREATE_VOLUME and
+  USE_SCHEMA on it, plus USE_CATALOG on the parent catalog.
+
+  Arguments:
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    SKILL_ID: Name for the skill, e.g. "basic-math". The server normalizes this
+      identifier to lowercase. It is independent of the bundle name read from
+      SKILL.md.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSkillJson.Unmarshal(&createSkillReq.Skill)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createSkillReq.Parent = args[0]
+		createSkillReq.SkillId = args[1]
+
+		response, err := w.AiGateway.CreateSkill(ctx, createSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSkillOverrides {
+		fn(cmd, &createSkillReq)
+	}
+
+	return cmd
+}
+
+// start delete-mcp-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteMcpServiceOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteMcpServiceRequest,
+)
+
+func newDeleteMcpService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteMcpServiceReq catalog.DeleteMcpServiceRequest
+
+	cmd.Flags().StringVar(&deleteMcpServiceReq.Etag, "etag", deleteMcpServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+
+	cmd.Use = "delete-mcp-service NAME"
+	cmd.Short = `Delete an MCP service.`
+	cmd.Long = `Delete an MCP service.
+
+  Deletes the MCP service identified by its resource name. Optionally supply an
+  etag to make the delete conditional on the MCP service not having changed
+  since it was read.
+
+  You must be the owner of the MCP service or have MANAGE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}. Each {...} component is
+      capped at 255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteMcpServiceReq.Name = args[0]
+
+		err = w.AiGateway.DeleteMcpService(ctx, deleteMcpServiceReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteMcpServiceOverrides {
+		fn(cmd, &deleteMcpServiceReq)
+	}
+
+	return cmd
+}
+
+// start delete-mcp-service-user-mapped-credential command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteMcpServiceUserMappedCredentialOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteMcpServiceUserMappedCredentialRequest,
+)
+
+func newDeleteMcpServiceUserMappedCredential() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteMcpServiceUserMappedCredentialReq catalog.DeleteMcpServiceUserMappedCredentialRequest
+
+	cmd.Use = "delete-mcp-service-user-mapped-credential NAME"
+	cmd.Short = `*Beta* Delete an MCP service user credential.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete an MCP service user credential.
+
+  Revokes (deletes) the caller's per-user OAuth credential for an MCP service
+  (logout).
+
+  You must be the owner of the MCP service or have EXECUTE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteMcpServiceUserMappedCredentialReq.Name = args[0]
+
+		response, err := w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, deleteMcpServiceUserMappedCredentialReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteMcpServiceUserMappedCredentialOverrides {
+		fn(cmd, &deleteMcpServiceUserMappedCredentialReq)
+	}
+
+	return cmd
+}
+
+// start delete-model-provider-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteModelProviderServiceOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteModelProviderServiceRequest,
+)
+
+func newDeleteModelProviderService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteModelProviderServiceReq catalog.DeleteModelProviderServiceRequest
+
+	cmd.Flags().StringVar(&deleteModelProviderServiceReq.Etag, "etag", deleteModelProviderServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+
+	cmd.Use = "delete-model-provider-service NAME"
+	cmd.Short = `Delete a model provider service.`
+	cmd.Long = `Delete a model provider service.
+
+  Deletes the model provider service identified by its resource name. Optionally
+  supply an etag to make the delete conditional on the model provider service
+  not having changed since it was read.
+
+  You must be the owner of the model provider service or have MANAGE on it,
+  plus USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema.
+
+  Arguments:
+    NAME: Resource name of the model provider service. Format:
+      model-provider-services/{catalog}.{schema}.{model_provider_service}.
+      Each {...} component is capped at 255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteModelProviderServiceReq.Name = args[0]
+
+		err = w.AiGateway.DeleteModelProviderService(ctx, deleteModelProviderServiceReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteModelProviderServiceOverrides {
+		fn(cmd, &deleteModelProviderServiceReq)
+	}
+
+	return cmd
+}
+
+// start delete-model-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteModelServiceOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteModelServiceRequest,
+)
+
+func newDeleteModelService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteModelServiceReq catalog.DeleteModelServiceRequest
+
+	cmd.Flags().StringVar(&deleteModelServiceReq.Etag, "etag", deleteModelServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+
+	cmd.Use = "delete-model-service NAME"
+	cmd.Short = `Delete a model service.`
+	cmd.Long = `Delete a model service.
+
+  Deletes the model service identified by its resource name. Optionally supply
+  an etag to make the delete conditional on the model service not having
+  changed since it was read.
+
+  You must be the owner of the model service or have MANAGE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the model service. Format:
+      model-services/{catalog}.{schema}.{model_service}. Each {...}
+      component is capped at 255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteModelServiceReq.Name = args[0]
+
+		err = w.AiGateway.DeleteModelService(ctx, deleteModelServiceReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteModelServiceOverrides {
+		fn(cmd, &deleteModelServiceReq)
+	}
+
+	return cmd
+}
+
+// start delete-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteSkillOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteSkillRequest,
+)
+
+func newDeleteSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteSkillReq catalog.DeleteSkillRequest
+
+	cmd.Flags().StringVar(&deleteSkillReq.Etag, "etag", deleteSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
+
+	cmd.Use = "delete-skill NAME"
+	cmd.Short = `*Beta* Delete a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a skill.
+
+  Deletes the skill identified by its resource name and makes its managed bundle
+  path unavailable. Managed bundle data is deleted asynchronously. Optionally
+  supply an etag to make the delete conditional on the skill not having
+  changed since it was read.
+
+  You must be the owner of the skill or have MANAGE on it, plus USE_CATALOG
+  on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Full resource name of the skill. Format:
+      skills/{catalog}.{schema}.{skill}. Each {...} component is capped at
+      255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteSkillReq.Name = args[0]
+
+		err = w.AiGateway.DeleteSkill(ctx, deleteSkillReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteSkillOverrides {
+		fn(cmd, &deleteSkillReq)
+	}
+
+	return cmd
+}
+
+// start finalize-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var finalizeSkillOverrides []func(
+	*cobra.Command,
+	*catalog.FinalizeSkillRequest,
+)
+
+func newFinalizeSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var finalizeSkillReq catalog.FinalizeSkillRequest
+
+	cmd.Use = "finalize-skill NAME"
+	cmd.Short = `*Beta* Finalize a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Finalize a skill.
+
+  Finalizes a skill after its bundle files are uploaded or changed through the
+  Files API. Call it again after every bundle change. This method reads SKILL.md
+  through the Files API using the caller's authorization. Its YAML frontmatter
+  must contain an agentskills.io-compliant name and a nonblank description
+  within the configured UTF-8 byte limit. On success, it replaces bundle_name
+  and description; refreshes finalize_time, update_time, and updated_by;
+  and returns the updated skill. comment is preserved. Re-finalization uses
+  the latest SKILL.md and is last-write-wins without an etag precondition.
+  Validation failures do not change metadata.
+
+  You must be the owner of the skill or have READ_VOLUME on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Full resource name of the skill. Format:
+      skills/{catalog}.{schema}.{skill}. Each {...} component is capped at
+      255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		finalizeSkillReq.Name = args[0]
+
+		response, err := w.AiGateway.FinalizeSkill(ctx, finalizeSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range finalizeSkillOverrides {
+		fn(cmd, &finalizeSkillReq)
+	}
+
+	return cmd
+}
+
+// start get-mcp-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMcpServiceOverrides []func(
+	*cobra.Command,
+	*catalog.GetMcpServiceRequest,
+)
+
+func newGetMcpService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMcpServiceReq catalog.GetMcpServiceRequest
+
+	cmd.Use = "get-mcp-service NAME"
+	cmd.Short = `Get an MCP service.`
+	cmd.Long = `Get an MCP service.
+
+  Returns the MCP service identified by its resource name.
+
+  You must be the owner of the MCP service or have EXECUTE, READ_METADATA,
+  or MANAGE on it, plus USE_CATALOG on the parent catalog and USE_SCHEMA
+  on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}. Each {...} component is
+      capped at 255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getMcpServiceReq.Name = args[0]
+
+		response, err := w.AiGateway.GetMcpService(ctx, getMcpServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMcpServiceOverrides {
+		fn(cmd, &getMcpServiceReq)
+	}
+
+	return cmd
+}
+
+// start get-mcp-service-user-mapped-credential command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMcpServiceUserMappedCredentialOverrides []func(
+	*cobra.Command,
+	*catalog.GetMcpServiceUserMappedCredentialRequest,
+)
+
+func newGetMcpServiceUserMappedCredential() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMcpServiceUserMappedCredentialReq catalog.GetMcpServiceUserMappedCredentialRequest
+
+	cmd.Use = "get-mcp-service-user-mapped-credential NAME"
+	cmd.Short = `*Beta* Get MCP service user credential status.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get MCP service user credential status.
+
+  Returns the caller's per-user OAuth login state for an MCP service. Read
+  provisioning_info.state: ACTIVE means the caller is logged in and the
+  credential is usable; any other state (for example a failed or
+  still-provisioning login) means the login has not completed and the caller
+  should log in again. If the caller has no credential yet, the RPC returns
+  NOT_FOUND.
+
+  You must be the owner of the MCP service or have EXECUTE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getMcpServiceUserMappedCredentialReq.Name = args[0]
+
+		response, err := w.AiGateway.GetMcpServiceUserMappedCredential(ctx, getMcpServiceUserMappedCredentialReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMcpServiceUserMappedCredentialOverrides {
+		fn(cmd, &getMcpServiceUserMappedCredentialReq)
+	}
+
+	return cmd
+}
+
+// start get-model-provider-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getModelProviderServiceOverrides []func(
+	*cobra.Command,
+	*catalog.GetModelProviderServiceRequest,
+)
+
+func newGetModelProviderService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getModelProviderServiceReq catalog.GetModelProviderServiceRequest
+
+	cmd.Use = "get-model-provider-service NAME"
+	cmd.Short = `Get a model provider service.`
+	cmd.Long = `Get a model provider service.
+
+  Returns the model provider service identified by its resource name.
+
+  You must be the owner of the model provider service or have EXECUTE,
+  READ_METADATA, or MANAGE on it, plus USE_CATALOG on the parent catalog
+  and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the model provider service. Format:
+      model-provider-services/{catalog}.{schema}.{model_provider_service}.
+      Each {...} component is capped at 255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getModelProviderServiceReq.Name = args[0]
+
+		response, err := w.AiGateway.GetModelProviderService(ctx, getModelProviderServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getModelProviderServiceOverrides {
+		fn(cmd, &getModelProviderServiceReq)
+	}
+
+	return cmd
+}
+
+// start get-model-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getModelServiceOverrides []func(
+	*cobra.Command,
+	*catalog.GetModelServiceRequest,
+)
+
+func newGetModelService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getModelServiceReq catalog.GetModelServiceRequest
+
+	cmd.Use = "get-model-service NAME"
+	cmd.Short = `Get a model service.`
+	cmd.Long = `Get a model service.
+
+  Returns the model service identified by its resource name.
+
+  You must be the owner of the model service or have EXECUTE, READ_METADATA,
+  or MANAGE on it, plus USE_CATALOG on the parent catalog and USE_SCHEMA
+  on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the model service. Format:
+      model-services/{catalog}.{schema}.{model_service}. Each {...}
+      component is capped at 255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getModelServiceReq.Name = args[0]
+
+		response, err := w.AiGateway.GetModelService(ctx, getModelServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getModelServiceOverrides {
+		fn(cmd, &getModelServiceReq)
+	}
+
+	return cmd
+}
+
+// start get-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSkillOverrides []func(
+	*cobra.Command,
+	*catalog.GetSkillRequest,
+)
+
+func newGetSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSkillReq catalog.GetSkillRequest
+
+	cmd.Use = "get-skill NAME"
+	cmd.Short = `*Beta* Get a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a skill.
+
+  Returns the skill identified by its resource name.
+
+  You must be the owner of the skill or have READ_VOLUME, READ_METADATA, or
+  MANAGE on it, plus USE_CATALOG on the parent catalog and USE_SCHEMA on
+  the parent schema.
+
+  Arguments:
+    NAME: Full resource name of the skill. Format:
+      skills/{catalog}.{schema}.{skill}. Each {...} component is capped at
+      255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSkillReq.Name = args[0]
+
+		response, err := w.AiGateway.GetSkill(ctx, getSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSkillOverrides {
+		fn(cmd, &getSkillReq)
+	}
+
+	return cmd
+}
+
+// start list-mcp-services command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listMcpServicesOverrides []func(
+	*cobra.Command,
+	*catalog.ListMcpServicesRequest,
+)
+
+func newListMcpServices() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listMcpServicesReq catalog.ListMcpServicesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listMcpServicesLimit int
+
+	cmd.Flags().IntVar(&listMcpServicesReq.PageSize, "page-size", listMcpServicesReq.PageSize, `Maximum number of MCP services to return.`)
+	cmd.Flags().StringVar(&listMcpServicesReq.Parent, "parent", listMcpServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	cmd.Flags().Var(&listMcpServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listMcpServicesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listMcpServicesReq.PageToken, "page-token", listMcpServicesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-mcp-services"
+	cmd.Short = `List MCP services.`
+	cmd.Long = `List MCP services.
+
+  Lists the MCP services in a Unity Catalog schema. Provide parent as
+  schemas/{catalog}.{schema}. Results are paginated; pass the returned
+  next_page_token to fetch subsequent pages.
+
+  Requires USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema. Only MCP services the caller can access (as owner or through
+  EXECUTE, READ_METADATA, or MANAGE) are returned.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.AiGateway.ListMcpServices(ctx, listMcpServicesReq)
+		if listMcpServicesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMcpServicesLimit)
+		}
+		if listMcpServicesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listMcpServicesLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listMcpServicesOverrides {
+		fn(cmd, &listMcpServicesReq)
+	}
+
+	return cmd
+}
+
+// start list-model-provider-services command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listModelProviderServicesOverrides []func(
+	*cobra.Command,
+	*catalog.ListModelProviderServicesRequest,
+)
+
+func newListModelProviderServices() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listModelProviderServicesReq catalog.ListModelProviderServicesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listModelProviderServicesLimit int
+
+	cmd.Flags().IntVar(&listModelProviderServicesReq.PageSize, "page-size", listModelProviderServicesReq.PageSize, `Maximum number of provider services to return.`)
+	cmd.Flags().StringVar(&listModelProviderServicesReq.Parent, "parent", listModelProviderServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	cmd.Flags().Var(&listModelProviderServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listModelProviderServicesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listModelProviderServicesReq.PageToken, "page-token", listModelProviderServicesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-model-provider-services"
+	cmd.Short = `List model provider services.`
+	cmd.Long = `List model provider services.
+
+  Lists the model provider services in a Unity Catalog schema. Provide parent
+  as schemas/{catalog}.{schema}. Results are paginated; pass the returned
+  next_page_token to fetch subsequent pages.
+
+  Requires USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema. Only model provider services the caller can access (as owner or
+  through EXECUTE, READ_METADATA, or MANAGE) are returned.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.AiGateway.ListModelProviderServices(ctx, listModelProviderServicesReq)
+		if listModelProviderServicesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listModelProviderServicesLimit)
+		}
+		if listModelProviderServicesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listModelProviderServicesLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listModelProviderServicesOverrides {
+		fn(cmd, &listModelProviderServicesReq)
+	}
+
+	return cmd
+}
+
+// start list-model-services command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listModelServicesOverrides []func(
+	*cobra.Command,
+	*catalog.ListModelServicesRequest,
+)
+
+func newListModelServices() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listModelServicesReq catalog.ListModelServicesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listModelServicesLimit int
+
+	cmd.Flags().IntVar(&listModelServicesReq.PageSize, "page-size", listModelServicesReq.PageSize, `Maximum number of model services to return.`)
+	cmd.Flags().StringVar(&listModelServicesReq.Parent, "parent", listModelServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	cmd.Flags().Var(&listModelServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listModelServicesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listModelServicesReq.PageToken, "page-token", listModelServicesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-model-services"
+	cmd.Short = `List model services.`
+	cmd.Long = `List model services.
+
+  Lists the model services in a Unity Catalog schema. Provide parent as
+  schemas/{catalog}.{schema}. Results are paginated; pass the returned
+  next_page_token to fetch subsequent pages.
+
+  Requires USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema. Only model services the caller can access (as owner or through
+  EXECUTE, READ_METADATA, or MANAGE) are returned by default.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.AiGateway.ListModelServices(ctx, listModelServicesReq)
+		if listModelServicesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listModelServicesLimit)
+		}
+		if listModelServicesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listModelServicesLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listModelServicesOverrides {
+		fn(cmd, &listModelServicesReq)
+	}
+
+	return cmd
+}
+
+// start list-skills command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSkillsOverrides []func(
+	*cobra.Command,
+	*catalog.ListSkillsRequest,
+)
+
+func newListSkills() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSkillsReq catalog.ListSkillsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSkillsLimit int
+
+	cmd.Flags().IntVar(&listSkillsReq.PageSize, "page-size", listSkillsReq.PageSize, `Maximum number of skills to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSkillsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listSkillsReq.PageToken, "page-token", listSkillsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-skills PARENT"
+	cmd.Short = `*Beta* List skills.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List skills.
+
+  Lists skills in a Unity Catalog schema. Provide parent as
+  schemas/{catalog}.{schema}. Results are paginated; pass the returned
+  next_page_token to fetch subsequent pages.
+
+  Requires USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema. Only skills the caller can access as owner or through READ_VOLUME,
+  READ_METADATA, or MANAGE are returned.
+
+  Arguments:
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+
+      Required: skill listing is schema-scoped, so parent must be set; an
+      unset or empty parent is rejected with INVALID_PARAMETER_VALUE.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listSkillsReq.Parent = args[0]
+
+		response := w.AiGateway.ListSkills(ctx, listSkillsReq)
+		if listSkillsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSkillsLimit)
+		}
+		if listSkillsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSkillsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSkillsOverrides {
+		fn(cmd, &listSkillsReq)
+	}
+
+	return cmd
+}
+
+// start update-mcp-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateMcpServiceOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateMcpServiceRequest,
+)
+
+func newUpdateMcpService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateMcpServiceReq catalog.UpdateMcpServiceRequest
+	updateMcpServiceReq.McpService = catalog.McpService{}
+	var updateMcpServiceJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateMcpServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateMcpServiceReq.Etag, "etag", updateMcpServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Comment, "comment", updateMcpServiceReq.McpService.Comment, `User-provided description.`)
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Name, "name", updateMcpServiceReq.McpService.Name, `Resource name of the MCP service.`)
+
+	cmd.Use = "update-mcp-service NAME UPDATE_MASK"
+	cmd.Short = `Update an MCP service.`
+	cmd.Long = `Update an MCP service.
+
+  Updates an MCP service. Only the fields named in update_mask are changed;
+  the resource name is immutable. Optionally supply an etag to make the update
+  conditional on the MCP service not having changed since it was read.
+
+  You must be the owner of the MCP service or have MANAGE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+  When changing config.source_connection.name, the MCP service owner must also
+  have USE_CONNECTION on the new connection.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}. Each {...} component is
+      capped at 255 characters individually. Server-derived on Create from
+      parent + mcp_service_id; required and immutable on Update/Get/Delete.
+    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
+      replacement must include every required field; any optional field you omit
+      is cleared. To preserve sibling fields, use one or more granular paths:
+      comment, config.source_connection.name,
+      config.include_tool_selectors, or config.rate_limits.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateMcpServiceJson.Unmarshal(&updateMcpServiceReq.McpService)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateMcpServiceReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateMcpServiceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		response, err := w.AiGateway.UpdateMcpService(ctx, updateMcpServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateMcpServiceOverrides {
+		fn(cmd, &updateMcpServiceReq)
+	}
+
+	return cmd
+}
+
+// start update-model-provider-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateModelProviderServiceOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateModelProviderServiceRequest,
+)
+
+func newUpdateModelProviderService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateModelProviderServiceReq catalog.UpdateModelProviderServiceRequest
+	updateModelProviderServiceReq.ModelProviderService = catalog.ModelProviderService{}
+	var updateModelProviderServiceJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateModelProviderServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateModelProviderServiceReq.Etag, "etag", updateModelProviderServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Comment, "comment", updateModelProviderServiceReq.ModelProviderService.Comment, `User-provided description.`)
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Name, "name", updateModelProviderServiceReq.ModelProviderService.Name, `Resource name of the provider service.`)
+
+	cmd.Use = "update-model-provider-service NAME UPDATE_MASK"
+	cmd.Short = `Update a model provider service.`
+	cmd.Long = `Update a model provider service.
+
+  Updates a model provider service. Only the fields named in update_mask are
+  changed; the resource name and provider type are immutable. Optionally supply
+  an etag to make the update conditional on the model provider service not
+  having changed since it was read.
+
+  You must be the owner of the model provider service or have MANAGE on it,
+  plus USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema.
+
+  Updating config.provider cannot change the provider type. Authentication
+  mode changes require feature availability and support for both modes on the
+  selected provider.
+
+  Arguments:
+    NAME: Resource name of the provider service. Format:
+      model-provider-services/{catalog}.{schema}.{model_provider_service}.
+      Each {...} component is capped at 255 characters individually.
+      Server-derived on Create from parent + model_provider_service_id;
+      required and immutable on Update/Get/Delete.
+    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
+      replacement must include every required field; any optional field you omit
+      is cleared. To preserve sibling fields, use one or more granular paths:
+      comment; config.provider to replace the active provider-specific value
+      (for example, config.openai; the mask path remains config.provider);
+      config.allow_all_targets, config.targets, config.forward_headers,
+      config.forward_query_parameters, config.forward_unmanaged_paths,
+      config.rate_limits, config.pricing.default_discount_basis_points, or
+      config.inference_table. For a pricing update, an explicitly empty
+      pricing object clears the discount but retains the object; omitting
+      pricing clears it. config.pricing is not a supported mask path. The
+      provider type is immutable. A config or config.provider replacement
+      that carries no authentication material preserves the existing
+      authentication binding; input-only plaintext does not need to be read back
+      and re-sent.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateModelProviderServiceJson.Unmarshal(&updateModelProviderServiceReq.ModelProviderService)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateModelProviderServiceReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateModelProviderServiceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		response, err := w.AiGateway.UpdateModelProviderService(ctx, updateModelProviderServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateModelProviderServiceOverrides {
+		fn(cmd, &updateModelProviderServiceReq)
+	}
+
+	return cmd
+}
+
+// start update-model-service command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateModelServiceOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateModelServiceRequest,
+)
+
+func newUpdateModelService() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateModelServiceReq catalog.UpdateModelServiceRequest
+	updateModelServiceReq.ModelService = catalog.ModelService{}
+	var updateModelServiceJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateModelServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateModelServiceReq.Etag, "etag", updateModelServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Comment, "comment", updateModelServiceReq.ModelService.Comment, `User-provided description.`)
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Name, "name", updateModelServiceReq.ModelService.Name, `Resource name of the model service.`)
+	// TODO: array: supported_api_types
+
+	cmd.Use = "update-model-service NAME UPDATE_MASK"
+	cmd.Short = `Update a model service.`
+	cmd.Long = `Update a model service.
+
+  Updates a model service. Only the fields named in update_mask are changed;
+  the resource name is immutable. Optionally supply an etag to make the update
+  conditional on the model service not having changed since it was read.
+
+  You must be the owner of the model service or have MANAGE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+  When changing destinations, both you and the model service owner need
+  USE_CATALOG and USE_SCHEMA on each destination's parent and EXECUTE on
+  the referenced Unity Catalog model or model provider service. A
+  provisioned-throughput destination additionally requires CAN_MANAGE for you
+  and CAN_QUERY for the model service owner. Adding an inference table
+  additionally requires CREATE_TABLE.
+
+  Arguments:
+    NAME: Resource name of the model service. Format:
+      model-services/{catalog}.{schema}.{model_service}. Each {...}
+      component is capped at 255 characters individually. Server-derived on
+      Create from parent + model_service_id; required and immutable on
+      Update/Get/Delete.
+    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
+      replacement must include every required field; any optional field you omit
+      is cleared. To preserve sibling fields, use one or more granular paths:
+      comment, config.routing.destinations,
+      config.routing.fallback.destinations, config.rate_limits, or
+      config.inference_table. Intermediate paths such as config.routing and
+      config.routing.fallback are not supported.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateModelServiceJson.Unmarshal(&updateModelServiceReq.ModelService)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateModelServiceReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateModelServiceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		response, err := w.AiGateway.UpdateModelService(ctx, updateModelServiceReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateModelServiceOverrides {
+		fn(cmd, &updateModelServiceReq)
+	}
+
+	return cmd
+}
+
+// start update-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSkillOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateSkillRequest,
+)
+
+func newUpdateSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSkillReq catalog.UpdateSkillRequest
+	updateSkillReq.Skill = catalog.Skill{}
+	var updateSkillJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateSkillReq.Etag, "etag", updateSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	cmd.Flags().StringVar(&updateSkillReq.Skill.Comment, "comment", updateSkillReq.Skill.Comment, `User-provided comment for the skill.`)
+	cmd.Flags().StringVar(&updateSkillReq.Skill.Name, "name", updateSkillReq.Skill.Name, `Resource name of the skill.`)
+
+	cmd.Use = "update-skill NAME UPDATE_MASK"
+	cmd.Short = `*Beta* Update a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a skill.
+
+  Updates a skill. Only fields named in update_mask are changed; currently
+  only comment is supported. The resource name is immutable. Optionally supply
+  an etag to make the update conditional on the skill not having changed since
+  it was read. Bundle files, grants, tags, and ownership are unchanged.
+
+  To update the bundle, add, overwrite (overwrite=true), or delete files under
+  /Skills/{catalog}/{schema}/{skill}/ with the Files API, then call
+  FinalizeSkill. Changing bundle files requires being the owner of the skill or
+  having READ_VOLUME and WRITE_VOLUME on it; MANAGE does not grant access
+  to bundle files.
+
+  To call UpdateSkill, you must be the owner of the skill or have MANAGE on
+  it, plus USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema.
+
+  Arguments:
+    NAME: Resource name of the skill. Format: skills/{catalog}.{schema}.{skill}.
+      Each {...} component is capped at 255 characters individually.
+      Server-derived on Create from parent + skill_id; required and
+      immutable on Update/Get/Delete.
+    UPDATE_MASK: Fields to update; validated against skill. REQUIRED, matching the
+      sibling Update RPCs. comment is the only mutable field.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSkillJson.Unmarshal(&updateSkillReq.Skill)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSkillReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateSkillReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		response, err := w.AiGateway.UpdateSkill(ctx, updateSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSkillOverrides {
+		fn(cmd, &updateSkillReq)
+	}
+
+	return cmd
+}
+
+// end service AiGateway

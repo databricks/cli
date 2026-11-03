@@ -5,7 +5,7 @@ trap cleanup EXIT
 
 trace $CLI bundle deploy
 SID=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.foo.id')
-echo "$SID:GENIE_SPACE_ID" >> ACC_REPLS
+add_repl "$SID" GENIE_SPACE_ID
 
 title "Permissions are set on the live space"
 trace $CLI api get /api/2.0/permissions/genie/$SID | jq '{object_type, access_control_list}'

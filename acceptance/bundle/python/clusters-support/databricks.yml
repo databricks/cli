@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_cluster"
+
+resources:
+  clusters:
+    my_cluster_1:
+      cluster_name: "my_cluster_1"
+      spark_version: "13.3.x-scala2.12"
+      num_workers: 1

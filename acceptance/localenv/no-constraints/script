@@ -1,0 +1,15 @@
+# --no-constraints leaves the remote Python version and dependency pins
+# unmanaged: the plan writes neither requires-python nor the [tool.uv] constraint
+# block, and the user's existing requires-python is left untouched. The
+# databricks-connect dependency (orthogonal to --no-constraints) is still managed.
+# The JSON plan shows the diff.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --no-constraints --dry-run --output json

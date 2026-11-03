@@ -1,0 +1,23 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+variables:
+  secret_value:
+    description: The value of the secret
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_secret"
+
+resources:
+  secrets:
+    my_secret_1:
+      catalog_name: main
+      schema_name: default
+      name: my_secret_1
+      value: ${var.secret_value}
+      expire_time: "2030-01-01T00:00:00Z"

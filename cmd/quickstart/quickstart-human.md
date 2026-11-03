@@ -39,7 +39,7 @@ Got more than one workspace? Name each at login (`databricks auth login --profil
 
 ## Step 3 — Build something
 
-The standard way to build on Databricks is **Databricks Asset Bundles (DABs)** — your jobs, pipelines, dashboards, and apps defined as code in one project, shipped with one command:
+The standard way to build on Databricks is **Declarative Automation Bundles (DABs)** — your jobs, pipelines, dashboards, and apps defined as code in one project, shipped with one command:
 
 ```bash
 databricks bundle init                 # start from a template

@@ -1,0 +1,26 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_secret_scope"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "secret_scopes": {
+      "my_scope_1": {
+        "backend_type": "DATABRICKS",
+        "name": "my_scope_1 (updated)"
+      },
+      "my_scope_2": {
+        "backend_type": "DATABRICKS",
+        "name": "my_scope_2 (updated)"
+      }
+    }
+  }
+}

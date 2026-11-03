@@ -1,0 +1,8 @@
+RecordRequests = false
+Ignore = [".databricks"]
+
+# Mask content hashes; Distinct keeps them distinguishable.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[FILE_HASH]'
+Distinct = true

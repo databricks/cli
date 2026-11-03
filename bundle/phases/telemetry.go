@@ -3,17 +3,25 @@ package phases
 import (
 	"cmp"
 	"context"
+	"maps"
 	"math"
+	"reflect"
 	"slices"
+	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
@@ -107,9 +115,156 @@ func uploadFileSizeHistogram(files []sizer) []int64 {
 	return hist
 }
 
+// addTaskTypeKeys records a "has_<task_type>" key in out for each task-type field
+// set on the task. A Jobs task carries its type as one of several optional pointer
+// fields (notebook_task, spark_python_task, ai_runtime_task, ...); we reflect over
+// the fields whose JSON name ends in "_task" so every task type is captured,
+// including ones added later, without changing this code.
+func addTaskTypeKeys(task jobs.Task, out map[string]bool) {
+	v := reflect.ValueOf(task)
+	t := v.Type()
+	for i := range t.NumField() {
+		field := v.Field(i)
+		if field.Kind() != reflect.Pointer || field.IsNil() {
+			continue
+		}
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if strings.HasSuffix(name, "_task") {
+			out["has_"+name] = true
+		}
+	}
+}
+
+// collectTaskTypes returns the sorted "has_<task_type>" telemetry keys for every
+// task type used across the bundle's jobs. A for_each_task is unwrapped so the
+// wrapped task's type is recorded too. Sorted for deterministic telemetry output.
+func collectTaskTypes(jobs map[string]*resources.Job) []string {
+	seen := map[string]bool{}
+	for _, job := range jobs {
+		if job == nil {
+			continue
+		}
+		for _, task := range job.Tasks {
+			addTaskTypeKeys(task, seen)
+			if task.ForEachTask != nil {
+				addTaskTypeKeys(task.ForEachTask.Task, seen)
+			}
+		}
+	}
+	keys := make([]string, 0, len(seen))
+	for k := range seen {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	return keys
+}
+
+// aiRuntimeTaskMetrics computes the ai_runtime_task-specific deploy dimensions.
+// present is true when any job declares an ai_runtime_task (including one nested in
+// a for_each_task); scheduled and multitask describe those jobs and are meaningful
+// only when present is true. Task-type presence itself (has_ai_runtime_task and the
+// other has_*_task keys) is recorded generically by collectTaskTypes.
+//
+// code_source_path is deliberately not inspected: it is rewritten to its uploaded
+// remote path before this runs, so it would always read as remote. GPU type and
+// count are likewise not recorded here.
+func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, multitask bool) {
+	for _, job := range jobs {
+		if job == nil {
+			continue
+		}
+		jobHasAiRuntimeTask := false
+		for _, task := range job.Tasks {
+			rt := task.AiRuntimeTask
+			if rt == nil && task.ForEachTask != nil {
+				rt = task.ForEachTask.Task.AiRuntimeTask
+			}
+			if rt != nil {
+				jobHasAiRuntimeTask = true
+				break
+			}
+		}
+		if !jobHasAiRuntimeTask {
+			continue
+		}
+		present = true
+		if job.Schedule != nil || job.Trigger != nil || job.Continuous != nil {
+			scheduled = true
+		}
+		if len(job.Tasks) > 1 {
+			multitask = true
+		}
+	}
+	return present, scheduled, multitask
+}
+
+// pydabsMetrics reports usage of Python support. Loaders and mutators are read from
+// 'experimental/python' only: the Python mutator copies 'python' there.
+func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
+	experimentalConfig := b.Config.Experimental
+	if experimentalConfig == nil {
+		experimentalConfig = &config.Experimental{}
+	}
+
+	out := &protos.BundleDeployPydabs{
+		ResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
+		ResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
+		ConfigSection:         b.Metrics.PythonConfigSection,
+	}
+
+	byType := make(map[string]*protos.PydabsResourceTypeCount)
+	for t, n := range b.Metrics.PythonAddedResources {
+		byType[t] = &protos.PydabsResourceTypeCount{ResourceType: t, AddedCount: n}
+		out.AddedResourcesCount += n
+	}
+	for t, n := range b.Metrics.PythonUpdatedResources {
+		if byType[t] == nil {
+			byType[t] = &protos.PydabsResourceTypeCount{ResourceType: t}
+		}
+		byType[t].UpdatedCount = n
+		out.UpdatedResourcesCount += n
+	}
+
+	for _, t := range slices.Sorted(maps.Keys(byType)) {
+		out.Resources = append(out.Resources, *byType[t])
+	}
+	return out
+}
+
+// bundleGitInfo builds the git metadata for the deploy event, or nil when the
+// bundle root is not inside a git repository. OriginURL already has credentials
+// stripped by the load_git_details mutator.
+func bundleGitInfo(b *bundle.Bundle) *protos.BundleGitInfo {
+	git := b.Config.Bundle.Git
+	if git.Branch == "" && git.Commit == "" && git.OriginURL == "" {
+		return nil
+	}
+	return &protos.BundleGitInfo{
+		OriginURL: git.OriginURL,
+		Branch:    git.Branch,
+		Commit:    git.Commit,
+	}
+}
+
+// fromWorkspaceFolder reports whether the bundle was deployed from a workspace
+// folder: the CLI running on a Databricks cluster with the bundle source under
+// /Workspace/, as opposed to a local checkout. Same signal as the source-linked
+// deployment preset uses to detect a Databricks workspace.
+func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
+	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
+	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.RecordsHistory())
+	b.Metrics.SetBoolValue(metrics.ImmutableSnapshotUsed, len(b.Config.Resources.Snapshots) > 0)
+	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   metrics.SnapshotUploadDuration,
+			Value: d.(time.Duration).Milliseconds(),
+		})
+	}
 
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -201,6 +356,28 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		}
 	}
 
+	// Record which task types the bundle uses (has_<task_type> per type present),
+	// plus the ai_runtime_task-specific scheduling / multi-task dimensions.
+	for _, key := range collectTaskTypes(b.Config.Resources.Jobs) {
+		b.Metrics.SetBoolValue(key, true)
+	}
+	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
+		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskScheduled, airScheduled)
+		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
+	}
+
+	// Record whether the removed terraform engine was still requested (the command
+	// then fails with the removal error), separately per source. Only emitted when
+	// true; absence means "not requested via this source". An invalid env value has
+	// already failed the command upstream via ValidateEngineSetting, so treating the
+	// FromEnv error as "not terraform" here cannot mask a real terraform request.
+	if b.Config.Bundle.Engine == engine.EngineTerraform {
+		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+	}
+	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
+		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
+	}
+
 	// If the bundle UUID is not set, we use a default 0 value.
 	bundleUuid := "00000000-0000-0000-0000-000000000000"
 	if b.Config.Bundle.Uuid != "" {
@@ -238,9 +415,12 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		mode = protos.BundleModeProduction
 	}
 
-	experimentalConfig := b.Config.Experimental
-	if experimentalConfig == nil {
-		experimentalConfig = &config.Experimental{}
+	pydabs := pydabsMetrics(b)
+
+	// Omit the pydabs section for bundles that don't use Python support.
+	var pydabsSection *protos.BundleDeployPydabs
+	if pydabs.ResourceLoadersCount > 0 || pydabs.ResourceMutatorsCount > 0 {
+		pydabsSection = pydabs
 	}
 
 	uploadFileSizers := make([]sizer, len(b.Files))
@@ -254,7 +434,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			DeploymentId: b.Metrics.DeploymentId.String(),
 			ErrorMessage: errMsg,
 
-			ResourceCount:                     resourcesCount,
+			ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
 			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
 			ResourceModelCount:                int64(len(b.Config.Resources.Models)),
@@ -275,6 +455,11 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 			ResourcesMetadata: collectResourcesMetadata(ctx, b),
 
+			Pydabs: pydabsSection,
+
+			Git:                 bundleGitInfo(b),
+			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
+
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
 				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
@@ -284,10 +469,6 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
-				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
-				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
-				PythonResourceMutatorsCount:  int64(len(experimentalConfig.Python.Mutators)),
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,

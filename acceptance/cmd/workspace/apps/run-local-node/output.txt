@@ -1,12 +1,28 @@
+
+=== Prepare environment runs the build script, and the entry point overrides app.yml
+
+>>> grep -x Build script ran ../LOG.prepare
+Build script ran
+
+>>> grep -x Running command: node -e console.log('Hello, world') ../LOG.prepare
 Running command: node -e console.log('Hello, world')
+
+>>> grep -x Hello, world ../LOG.prepare
 Hello, world
 
-=== Starting the app in background...
-=== Waiting
-=== Checking app is running...
->>> curl -s -o - http://127.0.0.1:$(port)
-{"message":"Hello From App","timestamp":"[TIMESTAMP]","status":"running"}
+=== Proxy forwards to the app
 
-=== Sending shutdown request...
->>> curl -s -o /dev/null http://127.0.0.1:$(port)/shutdown
-Process terminated
+>>> retry --until Hello From App curl -sS http://127.0.0.1:[PROXY_PORT]
+{"message":"Hello From App"}
+
+=== Debug mode reports the debugger port, and node listens on it
+
+>>> retry grep -x To debug your app, attach a debugger to port [DEBUG_PORT] LOG.run
+To debug your app, attach a debugger to port [DEBUG_PORT]
+
+>>> grep Debugger listening on ws://127.0.0.1:[DEBUG_PORT]/ LOG.run
+Debugger listening on ws://127.0.0.1:[DEBUG_PORT]/[UUID]
+
+=== Shutting the app down
+
+>>> curl -sS -o /dev/null http://127.0.0.1:[PROXY_PORT]/shutdown

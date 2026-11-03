@@ -1,6 +1,6 @@
 ## Status
 
-Status: Generally Available (GA). The direct engine is the default for new deployments.
+Status: Generally Available (GA). The direct engine is the only deployment engine since Databricks CLI v1.20.0; existing Terraform deployments are migrated to it automatically.
 Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3Aengine%2Fdirect
 
 ## Reporting bugs
@@ -12,9 +12,9 @@ Please ensure you are on the latest version of CLI when reporting an issue.
 ## Background
 
 Declarative Automation Bundles were originally implemented on top of databricks-terraform-provider.
-Since version 0.279.0 DABs support two different deployment engines: "terraform" and "direct".
-The latter does not make use of Terraform.
-It is intended to be a drop-in replacement and will become the only engine we support in 2026\.
+Version 0.279.0 added a second deployment engine, "direct", which does not make use of Terraform.
+It was designed as a drop-in replacement, and since v1.20.0 it is the only engine: the Terraform engine was removed
+(see https://github.com/databricks/cli/issues/6765).
 
 ## Advantages
 
@@ -37,30 +37,30 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 ### Migrating the existing deployment
 
 The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
-In order to migrate an existing Terraform-based deployment, use the `databricks bundle deployment migrate` command. The command reads IDs from the existing deployment.
+When a bundle still has Terraform state (`.databricks/bundle/<target>/terraform/terraform.tfstate` or its copy in the workspace), the CLI converts it to direct state in memory before running the command. Commands that only read state (e.g. `bundle plan`, `bundle summary`) work on the converted state without writing it. `bundle deploy` and `bundle destroy` commit the migration: the direct state is written locally and to the workspace, and the Terraform state is retired: the workspace copy is backed up and the local `terraform.tfstate` is renamed to `terraform.tfstate.backup`. `bundle destroy` removes all local state for the target, including that backup.
+
+If the automatic migration fails, the command fails with an error; please report it to dabs-feedback@databricks.com. To keep deploying with Terraform in the meantime, use Databricks CLI v1.19.x, the last version that ships the Terraform engine.
+
+#### Manual migration via "bundle deployment migrate" command
+
+Migrating via this command is still possible, but no longer necessary. The command writes local state only and does not push it to the workspace.
 
 The full sequence of operations:
 
-1. Perform full deployment with Terraform: `databricks bundle deploy -t my_target`
-2. Migrate state file locally: `databricks bundle deployment migrate -t my_target`
-3. Verify that migration was successful: bundle plan should work and should not show any changes to be planned: `databricks bundle plan -t my_target`
-4. If not satisfied with the result, remove new state file and restore terraform state file from the backup:
+1. Migrate state file locally: `databricks bundle deployment migrate -t my_target`
+2. Verify that migration was successful: bundle plan should work and should not show any changes to be planned: `databricks bundle plan -t my_target`
+3. If not satisfied with the result, remove new state file and restore terraform state file from the backup:
 ```
-mv .databricks/bundle/my_target/terraform/tfstate.json.backup .databricks/bundle/my_target/terraform/tfstate.json
+mv .databricks/bundle/my_target/terraform/terraform.tfstate.backup .databricks/bundle/my_target/terraform/terraform.tfstate
 rm .databricks/bundle/my_target/resources.json
 ```
-5. If satisfied with the result, do a deployment to synchronize the state file to the workspace: `databricks bundle deploy -t my_target`
+4. If satisfied with the result, do a deployment to synchronize the state file to the workspace: `databricks bundle deploy -t my_target`
 
 ### Using on new bundles
 
-New bundles use the direct engine by default, so no configuration is needed. The migrate command does not apply here; it is only for bundles previously deployed with Terraform.
+New bundles use the direct engine, so no configuration is needed. The migrate command does not apply here; it is only for bundles previously deployed with Terraform.
 
-To opt out and keep using Terraform, you have two options:
-
-- Set bundle.engine OR targets.\*.engine to "terraform" in your databricks.yml
-- Set DATABRICKS_BUNDLE_ENGINE=terraform env var before the deployment.
-
-If both are provided, the config takes precedence over the env var.
+Setting `bundle.engine` (or `targets.*.engine`) or `DATABRICKS_BUNDLE_ENGINE` to "terraform" is an error. To keep using Terraform, use Databricks CLI v1.19.x.
 
 ## Differences from terraform
 
@@ -80,11 +80,11 @@ The consequences of this are:
 
 ### $resources references lookup
 
-Note, the most common use of $resources is resolving ID ($resources.jobs.foo.id) which should behave identically between terraform and direct engine. The differences can happen in other fields.
+Note, the most common use of $resources is resolving ID ($resources.jobs.foo.id) which behaves identically between terraform and direct engine. The differences can happen in other fields.
 
 The resolution of $resources references in direct engine (e.g. $resources.pipelines.foo.name) is performed in two steps:
 
 1. References pointing to fields that are present in the config ("local") are resolved during the plan phase to the value provided in the local config.
 2. References that are not present in the config, are resolved from remote state, that is state fetched via appropriate GET request for a given resource.
 
-The schema that is used for $resource resolution is available in [acceptance/bundle/refschema/out.fields.txt](https://github.com/databricks/cli/blob/main/acceptance/bundle/refschema/out.fields.txt). The fields marked as "ALL" and "STATE" can be used for local resolution. The fields marked as "ALL" or "REMOTE" can be used for remote resolution.
+The schema that is used for $resource resolution is available in [acceptance/bundle/refschema/output](https://github.com/databricks/cli/blob/main/acceptance/bundle/refschema/output). The fields marked as "ALL" and "STATE" can be used for local resolution. The fields marked as "ALL" or "REMOTE" can be used for remote resolution.

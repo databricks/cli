@@ -1,0 +1,351 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 2,
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      }
+    }
+  }
+}
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "autoscale": {
+            "max_workers": 4,
+            "min_workers": 2
+          },
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": false
+        },
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 2,
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "TERMINATED"
+      },
+      "changes": {
+        "autoscale": {
+          "action": "update",
+          "new": {
+            "max_workers": 4,
+            "min_workers": 2
+          }
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": false
+          }
+        },
+        "num_workers": {
+          "action": "update",
+          "old": 2,
+          "remote": 2
+        }
+      }
+    }
+  }
+}
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "autoscale": {
+            "max_workers": 5,
+            "min_workers": 3
+          },
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autoscale": {
+          "max_workers": 4,
+          "min_workers": 2
+        },
+        "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": false
+        },
+        "node_type_id": "[NODE_TYPE_ID]",
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "TERMINATED"
+      },
+      "changes": {
+        "autoscale.max_workers": {
+          "action": "update",
+          "old": 4,
+          "new": 5,
+          "remote": 4
+        },
+        "autoscale.min_workers": {
+          "action": "update",
+          "old": 2,
+          "new": 3,
+          "remote": 2
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": false
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 3,
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "resize",
+      "new_state": {
+        "value": {
+          "autoscale": {
+            "max_workers": 6,
+            "min_workers": 4
+          },
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autoscale": {
+          "max_workers": 5,
+          "min_workers": 3
+        },
+        "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": true
+        },
+        "node_type_id": "[NODE_TYPE_ID]",
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "RUNNING"
+      },
+      "changes": {
+        "autoscale.max_workers": {
+          "action": "resize",
+          "reason": "custom",
+          "old": 5,
+          "new": 6,
+          "remote": 5
+        },
+        "autoscale.min_workers": {
+          "action": "resize",
+          "reason": "custom",
+          "old": 3,
+          "new": 4,
+          "remote": 3
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": true
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 4,
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "resize",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 3,
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autoscale": {
+          "max_workers": 6,
+          "min_workers": 4
+        },
+        "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": true
+        },
+        "node_type_id": "[NODE_TYPE_ID]",
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "RUNNING"
+      },
+      "changes": {
+        "autoscale": {
+          "action": "resize",
+          "reason": "custom",
+          "old": {
+            "max_workers": 6,
+            "min_workers": 4
+          },
+          "remote": {
+            "max_workers": 6,
+            "min_workers": 4
+          }
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": true
+          }
+        },
+        "num_workers": {
+          "action": "resize",
+          "reason": "custom",
+          "new": 3
+        }
+      }
+    }
+  }
+}

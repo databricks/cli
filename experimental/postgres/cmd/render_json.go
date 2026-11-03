@@ -2,6 +2,7 @@ package postgrescmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -145,7 +146,7 @@ func marshalJSON(v any) ([]byte, error) {
 	return bytes.TrimRight(buf.Bytes(), "\n"), nil
 }
 
-func (s *jsonSink) End(commandTag string) error {
+func (s *jsonSink) End(ctx context.Context, commandTag string) error {
 	if s.hasOpenedArray {
 		if s.rowsWritten == 0 {
 			// Empty result: collapse to "[]\n" rather than "[\n\n]\n".

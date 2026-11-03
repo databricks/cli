@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle validate
+Warning: unknown field: mixed_parameters
+  in databricks.yml:35:1
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning

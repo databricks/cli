@@ -327,9 +327,21 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 	}
 	details := cfg.GetAuthDetails(opts...)
 
+	ctx := cmd.Context()
 	for k, v := range details.Configuration {
-		if k == "profile" && cmd.Flag("profile").Changed {
-			v.Source = config.Source{Type: config.SourceType("flag"), Name: "--profile"}
+		if k == "profile" {
+			// Profile-source precedence mirrors cmd/root/bundle.go:getProfile:
+			// an explicit --profile flag wins, then DATABRICKS_CONFIG_PROFILE.
+			// Inside a bundle root the resolved config labels every attribute
+			// "bundle" (bundle/config/workspace.go), which misattributes a
+			// profile that actually came from the environment (#2303). The
+			// value guard relabels only when the env var is the profile that
+			// won, so a profile set in databricks.yml still reads "bundle".
+			if cmd.Flag("profile").Changed {
+				v.Source = config.Source{Type: config.SourceType("flag"), Name: "--profile"}
+			} else if envProfile := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"); envProfile != "" && envProfile == v.Value {
+				v.Source = config.Source{Type: config.SourceEnv, Name: "DATABRICKS_CONFIG_PROFILE"}
+			}
 		}
 
 		if k == "host" && cmd.Flag("host").Changed {

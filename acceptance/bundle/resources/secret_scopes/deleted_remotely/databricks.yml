@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: test-scope
+      backend_type: "DATABRICKS"

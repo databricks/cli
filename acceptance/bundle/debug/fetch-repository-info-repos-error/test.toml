@@ -1,0 +1,4 @@
+# Local only: the failure is injected into the testserver.
+Cloud = false
+
+# This exercises git.FetchRepositoryInfo, which is independent of the deploy engine.

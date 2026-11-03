@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"dario.cat/mergo"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -32,6 +31,8 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 
 	// UC normalizes schema names to lowercase.
 	schema.Name = strings.ToLower(schema.Name)
+	// Strip trailing slash to mimic UC API normalization behavior (see volumes.go).
+	schema.StorageRoot = strings.TrimRight(schema.StorageRoot, "/")
 	schema.FullName = schema.CatalogName + "." + schema.Name
 	schema.ForceSendFields = []string{"BrowseOnly"}
 	schema.CatalogType = "MANAGED_CATALOG"
@@ -80,6 +81,11 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateSchema")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var schemaUpdate catalog.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
@@ -89,13 +95,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
-	err := mergo.Merge(&existing, schemaUpdate, mergo.WithOverride)
-	if err != nil {
-		return Response{
-			Body:       fmt.Sprintf("mergo error: %s", err),
-			StatusCode: http.StatusInternalServerError,
-		}
-	}
+	applyUpdatedFields(&existing, schemaUpdate, fields)
 
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName

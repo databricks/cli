@@ -11,6 +11,12 @@
 # caller-supplied optimistic-concurrency token and that behavior is lost.
 genie_spaces: dashboards.GenieSpace
 
+mcp_services: catalog.McpService
+
+model_provider_services: catalog.ModelProviderService
+
+model_services: catalog.ModelService
+
 postgres_branches: postgres.BranchSpec
 
 postgres_databases: postgres.DatabaseDatabaseSpec

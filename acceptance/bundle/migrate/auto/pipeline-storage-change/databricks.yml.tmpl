@@ -1,0 +1,15 @@
+bundle:
+  name: uc-pipeline-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: pipeline-$UNIQUE_NAME
+      storage: dbfs:/pipelines/$UNIQUE_NAME-init
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true

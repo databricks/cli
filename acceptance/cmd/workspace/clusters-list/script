@@ -1,0 +1,2 @@
+title "clusters list renders the ID/Name/State columns\n"
+trace $CLI clusters list

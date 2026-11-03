@@ -1,0 +1,5 @@
+experiment_name: bad.name
+command: x
+compute:
+  accelerator_type: GPU_8xH100
+  num_accelerators: 3

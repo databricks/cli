@@ -1,6 +1,2 @@
 Cloud = true
-RequiresUnityCatalog = true
 RecordRequests = false
-
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

@@ -1,6 +1,0 @@
-
->>> musterr [CLI] fs cp src dst --concurrency -1
-Error: --concurrency must be at least 1
-
->>> musterr [CLI] fs cp src dst --concurrency 0
-Error: --concurrency must be at least 1

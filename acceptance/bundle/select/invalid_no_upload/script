@@ -1,0 +1,13 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+# A --select selector that matches no resource is rejected before the predeploy script
+# runs and before any files are uploaded or state is pushed.
+musterr trace $CLI bundle deploy --select jobs.nonexistent
+
+# The predeploy script never ran: its marker file was not created.
+find.py predeploy_ran.marker --expect 0
+
+# Nothing was written: no non-GET requests to the workspace (file upload / state push)
+# or to the bundle deployment API (DMS state). --dms includes the latter, which is
+# excluded by default.
+trace print_requests.py --dms //workspace //api/2.0/bundle

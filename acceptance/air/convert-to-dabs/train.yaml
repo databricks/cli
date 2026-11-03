@@ -1,0 +1,16 @@
+experiment_name: torchrun-a10-smoke-test
+command: |
+  cd $CODE_SOURCE_PATH
+  torchrun --nproc_per_node=1 train.py
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 1
+  pool_id: capacity-1
+  priority_class: CRITICAL
+mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
+environment:
+  unity_catalog_image: main.air.training:prod
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ./src

@@ -1,6 +1,8 @@
 package structaccess_test
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -595,11 +597,9 @@ func TestSet_EmbeddedStructForceSendFields(t *testing.T) {
 		obj := Outer{
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
-			Inner: Inner{
-				InnerFieldOmit:   "inner_value",
-				InnerFieldNoOmit: "inner_no_omit",
-				ForceSendFields:  []string{"OuterFieldOmit", "InnerFieldOmit"},
-			},
+			InnerFieldOmit:   "inner_value",
+			InnerFieldNoOmit: "inner_no_omit",
+			ForceSendFields:  []string{"OuterFieldOmit", "InnerFieldOmit"},
 		}
 
 		// Set nil value for outer field - roundtrip nil -> nil
@@ -630,11 +630,9 @@ func TestSet_EmbeddedStructForceSendFields(t *testing.T) {
 		obj := Outer{
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
-			Inner: Inner{
-				InnerFieldOmit:   "inner_value",
-				InnerFieldNoOmit: "inner_no_omit",
-				ForceSendFields:  []string{},
-			},
+			InnerFieldOmit:   "inner_value",
+			InnerFieldNoOmit: "inner_no_omit",
+			ForceSendFields:  []string{},
 		}
 
 		// Set empty string for outer field, but get nil back (omitempty, no ForceSendFields)
@@ -687,10 +685,8 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
 			ForceSendFields:  []string{"OuterFieldOmit", "FirstFieldOmit"},
-			First: First{
-				FirstFieldOmit:   "first_value",
-				FirstFieldNoOmit: "first_no_omit",
-			},
+			FirstFieldOmit:   "first_value",
+			FirstFieldNoOmit: "first_no_omit",
 			Second: Second{
 				SecondFieldOmit:   "second_value",
 				SecondFieldNoOmit: "second_no_omit",
@@ -742,10 +738,8 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
 			ForceSendFields:  []string{},
-			First: First{
-				FirstFieldOmit:   "first_value",
-				FirstFieldNoOmit: "first_no_omit",
-			},
+			FirstFieldOmit:   "first_value",
+			FirstFieldNoOmit: "first_no_omit",
 			Second: Second{
 				SecondFieldOmit:   "second_value",
 				SecondFieldNoOmit: "second_no_omit",
@@ -790,4 +784,121 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
 		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields) // no duplicates
 	})
+}
+
+// A value that cannot be converted must leave the struct untouched, ForceSendFields included.
+func TestSet_FailedConversionLeavesForceSendFields(t *testing.T) {
+	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
+
+	require.Error(t, structaccess.SetByString(job, "max_concurrent_runs", ""))
+	assert.Empty(t, job.ForceSendFields)
+	assert.Equal(t, "n", job.Name)
+}
+
+// ForceSendFields is decided from the value actually stored, not the one the caller passed:
+// setting an omitempty numeric field from the string "0" stores zero, which has to be forced
+// or the field marshals as absent.
+func TestSet_StringZeroIntoOmitemptyNumberIsForced(t *testing.T) {
+	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
+
+	require.NoError(t, structaccess.SetByString(job, "max_concurrent_runs", "0"))
+	assert.Equal(t, 0, job.MaxConcurrentRuns)
+	assert.Contains(t, job.ForceSendFields, "MaxConcurrentRuns")
+
+	blob, err := json.Marshal(job)
+	require.NoError(t, err)
+	assert.Contains(t, string(blob), `"max_concurrent_runs":0`)
+}
+
+// encoding/json resolves a name declared at two embedding depths in favour of the shallower
+// one. Get and Set have to agree with it, so the embedded search goes level by level: a
+// depth-first search would find Deep.Value first, since its embed is declared first.
+type deepValue struct {
+	Value string `json:"value"`
+}
+
+type deepEmbed struct {
+	deepValue
+}
+
+type shallowEmbed struct {
+	Value string `json:"value"`
+}
+
+type deeperEmbed struct {
+	deepEmbed
+}
+
+type embedDepths struct {
+	deepEmbed
+	shallowEmbed
+}
+
+// The same name three levels down in the first member, against two levels down in a later
+// one. json picks the shallower, so the search has to be breadth-first across the whole tree
+// rather than depth-first per member.
+type embedDepthsAcrossMembers struct {
+	deeperEmbed
+	deepEmbed
+}
+
+func TestSet_ShallowerEmbedWinsAcrossMembers(t *testing.T) {
+	target := &embedDepthsAcrossMembers{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deeperEmbed.Value)
+
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
+}
+
+func TestSet_ShallowerEmbedWins(t *testing.T) {
+	target := &embedDepths{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deepEmbed.Value)
+
+	got, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "set", got)
+
+	// The same field json.Marshal picks, which is the contract being matched.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
+}
+
+// dashNamed exercises the json:"-" vs json:"-,omitempty" distinction.
+type dashNamed struct {
+	Skipped string `json:"-"`
+	Named   string `json:"-,omitempty"` //nolint:staticcheck // odd tag is the point
+	Kept    string `json:"kept,omitempty"`
+}
+
+// TestGetSet_DashIsAFieldNameWhenTheTagHasOptions codifies that encoding/json
+// treats json:"-" and json:"-,omitempty" differently, and that structaccess
+// agrees. The test uses json.Marshal as the oracle.
+func TestGetSet_DashIsAFieldNameWhenTheTagHasOptions(t *testing.T) {
+	target := &dashNamed{Skipped: "s", Named: "n", Kept: "k"}
+
+	// encoding/json oracle: exact json:"-" is omitted; json:"-,omitempty"
+	// names the field "-" and serializes it.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"-":"n","kept":"k"}`, string(blob),
+		"encoding/json must emit '-' from Named and omit Skipped")
+
+	// structaccess must agree with the oracle.
+	value, err := structaccess.GetByString(target, "-")
+	require.NoError(t, err)
+	assert.Equal(t, "n", value, "Get must resolve \"-\" to Named")
+
+	require.NoError(t, structaccess.SetByString(target, "-", "set"))
+	assert.Equal(t, "set", target.Named, "Set must write to Named")
+	assert.Equal(t, "s", target.Skipped, "json:\"-\" field must stay out of reach")
 }

@@ -2,6 +2,7 @@
 package tableview
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/databricks/cli/libs/cmdio"
 )
 
 const (
@@ -21,24 +24,22 @@ const (
 	headerLines = 2
 )
 
-var (
-	searchHighlightStyle = lipgloss.NewStyle().Background(lipgloss.Color("228")).Foreground(lipgloss.Color("0"))
-	cursorStyle          = lipgloss.NewStyle().Background(lipgloss.Color("57")).Foreground(lipgloss.Color("229"))
-	footerStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	searchStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("229"))
-)
-
 // Run displays tabular data in an interactive browser.
 // Writes to w (typically stdout). Blocks until user quits.
-func Run(w io.Writer, columns []string, rows [][]string) error {
+func Run(ctx context.Context, w io.Writer, columns []string, rows [][]string) error {
 	all := renderTableLines(columns, rows)
 	header := all[:headerLines]
 	dataLines := all[headerLines:]
 
+	r, _ := cmdio.NewRenderer(ctx, w)
 	m := model{
-		header: header,
-		lines:  dataLines,
-		cursor: 0,
+		header:               header,
+		lines:                dataLines,
+		cursor:               0,
+		searchHighlightStyle: r.NewStyle().Background(lipgloss.Color("228")).Foreground(lipgloss.Color("0")),
+		cursorStyle:          r.NewStyle().Background(lipgloss.Color("57")).Foreground(lipgloss.Color("229")),
+		footerStyle:          r.NewStyle().Foreground(lipgloss.Color("241")),
+		searchStyle:          r.NewStyle().Foreground(lipgloss.Color("229")),
 	}
 
 	p := tea.NewProgram(m, tea.WithOutput(w))
@@ -109,7 +110,7 @@ func findMatches(lines []string, query string) []int {
 }
 
 // highlightSearch applies search match highlighting to a single line.
-func highlightSearch(line, query string) string {
+func (m model) highlightSearch(line, query string) string {
 	if query == "" {
 		return line
 	}
@@ -126,7 +127,7 @@ func highlightSearch(line, query string) string {
 			break
 		}
 		b.WriteString(line[pos : pos+idx])
-		b.WriteString(searchHighlightStyle.Render(line[pos+idx : pos+idx+qLen]))
+		b.WriteString(m.searchHighlightStyle.Render(line[pos+idx : pos+idx+qLen]))
 		pos += idx + qLen
 	}
 	return b.String()
@@ -137,9 +138,9 @@ func highlightSearch(line, query string) string {
 func (m model) renderContent() string {
 	result := make([]string, len(m.lines))
 	for i, line := range m.lines {
-		rendered := highlightSearch(line, m.searchQuery)
+		rendered := m.highlightSearch(line, m.searchQuery)
 		if i == m.cursor {
-			rendered = cursorStyle.Render(rendered)
+			rendered = m.cursorStyle.Render(rendered)
 		}
 		result[i] = rendered
 	}
@@ -159,6 +160,12 @@ type model struct { //nolint:recvcheck // value receivers for tea.Model interfac
 	searchQuery string
 	matchLines  []int // indices into lines
 	matchIdx    int
+
+	// Styles, minted from a writer-scoped renderer in Run.
+	searchHighlightStyle lipgloss.Style
+	cursorStyle          lipgloss.Style
+	footerStyle          lipgloss.Style
+	searchStyle          lipgloss.Style
 }
 
 func (m model) dataRowCount() int {
@@ -324,8 +331,8 @@ func (m model) View() string {
 
 func (m model) renderFooter() string {
 	if m.searching {
-		prompt := searchStyle.Render("/ " + m.searchInput + "█")
-		return footerStyle.Render(fmt.Sprintf("%d rows", m.dataRowCount())) + "\n" + prompt
+		prompt := m.searchStyle.Render("/ " + m.searchInput + "█")
+		return m.footerStyle.Render(fmt.Sprintf("%d rows", m.dataRowCount())) + "\n" + prompt
 	}
 
 	parts := []string{fmt.Sprintf("%d rows", m.dataRowCount())}
@@ -342,5 +349,5 @@ func (m model) renderFooter() string {
 	pct := int(m.viewport.ScrollPercent() * 100)
 	parts = append(parts, fmt.Sprintf("%d%%", pct))
 
-	return footerStyle.Render(strings.Join(parts, " | "))
+	return m.footerStyle.Render(strings.Join(parts, " | "))
 }

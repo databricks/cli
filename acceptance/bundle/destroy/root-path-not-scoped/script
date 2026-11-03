@@ -1,0 +1,14 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+PARENT="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/custom-root-${UNIQUE_NAME}"
+
+trace $CLI bundle deploy
+trace $CLI bundle destroy --auto-approve
+
+# root_path does not end in ${bundle.name}/${bundle.target}, so the directory above it is
+# not this bundle's and is left alone.
+title "Assert the parent directory is kept"
+trace $CLI workspace get-status "${PARENT}" | jq '{object_type}'
+
+title "Clean up"
+trace $CLI workspace delete "${PARENT}" --recursive

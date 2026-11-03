@@ -1,0 +1,7 @@
+# With serverless: no, the dbt-sql job runs on a classic new_cluster instead of a
+# serverless environment. Only the job resource differs from the serverless dbt-sql
+# variant, so we diff just that file against the dbt-sql golden. This locks in the
+# new_cluster spark_version (latest_lts_dbr_version).
+trace $CLI bundle init dbt-sql --config-file ./input.json --output-dir output
+trace diff.py $TESTDIR/../dbt-sql/output/my_dbt_sql/resources/my_dbt_sql.job.yml output/my_dbt_sql/resources/my_dbt_sql.job.yml
+rm -fr output

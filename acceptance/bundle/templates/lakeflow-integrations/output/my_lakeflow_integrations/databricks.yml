@@ -1,4 +1,4 @@
-# This is a Databricks asset bundle definition for my_lakeflow_integrations.
+# This is a Declarative Automation Bundle definition for my_lakeflow_integrations.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_lakeflow_integrations
@@ -17,7 +17,7 @@ artifacts:
     build: >
       uv run python -c "import shutil;
       shutil.rmtree('__generated__', ignore_errors=True);
-      from databricks.lakeflow.integrations.generate import main;
+      from databricks.lakeflow.integrations.generator.generate import main;
       main([
         '--package-module', 'my_lakeflow_integrations',
         '--output-dir', '__generated__',

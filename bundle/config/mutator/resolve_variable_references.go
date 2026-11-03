@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -80,24 +80,6 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 	}
 }
 
-// ResolveVariableReferencesOnlyResourcesExcluding is like ResolveVariableReferencesOnlyResources
-// but leaves the listed variable reference paths unresolved. Use this when a workspace path will
-// be updated by a later mutator (e.g. snapshot.Upload sets workspace.file_path to the snapshot
-// location) and the final value should be substituted at that later point.
-func ResolveVariableReferencesOnlyResourcesExcluding(excluded []string, prefixes ...string) bundle.Mutator {
-	if len(prefixes) == 0 {
-		prefixes = defaultPrefixes
-	}
-	return &resolveVariableReferences{
-		prefixes:         prefixes,
-		lookupFn:         lookup,
-		extraRounds:      maxResolutionRounds - 1,
-		pattern:          dyn.NewPattern(dyn.Key("resources")),
-		includeResources: true,
-		excludePaths:     excluded,
-	}
-}
-
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
 	if len(prefixes) == 0 {
 		prefixes = defaultPrefixes
@@ -130,7 +112,7 @@ func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 }
 
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
-	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+	if b.IsSourceLinkedDeployment() {
 		if path.String() == "workspace.file_path" {
 			return dyn.V(b.SyncRootPath), nil
 		}
@@ -289,10 +271,35 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		return root, nil
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		diags = diags.Extend(resolveErrorDiags(err))
 	}
 
 	return hasUpdates, diags
+}
+
+// resolveErrorDiags renders "did you mean" suggestions as a diagnostic Detail so
+// libs/diag owns the multi-line formatting.
+func resolveErrorDiags(err error) diag.Diagnostics {
+	refErr, ok := errors.AsType[*dynvar.ReferenceError](err)
+	if !ok || len(refErr.Suggestions) == 0 {
+		return diag.FromErr(err)
+	}
+
+	header := "did you mean:"
+	if len(refErr.Suggestions) > 1 {
+		header = "did you mean one of:"
+	}
+	var detail strings.Builder
+	detail.WriteString(header)
+	for _, ref := range refErr.Suggestions {
+		detail.WriteString("\n  ${" + ref + "}")
+	}
+
+	return diag.Diagnostics{{
+		Severity: diag.Error,
+		Summary:  refErr.Error(),
+		Detail:   detail.String(),
+	}}
 }
 
 // selectivelyMutate applies a function to a subset of the configuration

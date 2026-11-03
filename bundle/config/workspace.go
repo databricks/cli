@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -79,11 +80,35 @@ type Workspace struct {
 	// This defaults to "${workspace.root}/state".
 	StatePath string `json:"state_path,omitempty"`
 
-	// SnapshotPath is the workspace path of the immutable snapshot uploaded during
-	// deployment. Set by snapshot.Upload() and used by the subsequent variable-resolution
-	// pass to expand ${workspace.snapshot_path} placeholders in resource configs.
-	// Only populated at runtime for bundles with experimental.immutable_folder = true.
-	SnapshotPath string `json:"snapshot_path,omitempty" bundle:"internal"`
+	// SyncMode determines how bundle files are made available to deployed resources.
+	// Unset means [SyncModeOverwrite], except for development deployments from the
+	// Databricks Workspace, which default to [SyncModeInPlace].
+	SyncMode SyncMode `json:"sync_mode,omitempty"`
+}
+
+type SyncMode string
+
+const (
+	// SyncModeOverwrite uploads bundle files to [Workspace.FilePath], replacing the
+	// files of the previous deployment.
+	SyncModeOverwrite SyncMode = "overwrite"
+
+	// SyncModeInPlace skips the upload: deployed resources reference the source files
+	// in the workspace directly (source-linked deployment). Works only in the Databricks Workspace.
+	SyncModeInPlace SyncMode = "in-place"
+
+	// SyncModeImmutable uploads bundle files and artifacts as a single immutable snapshot
+	// and points [Workspace.FilePath] and [Workspace.ArtifactPath] at it.
+	SyncModeImmutable SyncMode = "immutable"
+)
+
+// Values returns all valid SyncMode values.
+func (SyncMode) Values() []SyncMode {
+	return []SyncMode{
+		SyncModeOverwrite,
+		SyncModeInPlace,
+		SyncModeImmutable,
+	}
 }
 
 type User struct {
@@ -141,12 +166,13 @@ func (w *Workspace) Config(ctx context.Context) *config.Config {
 		AzureClientID:    w.AzureClientID,
 		AzureTenantID:    w.AzureTenantID,
 		AzureEnvironment: w.AzureEnvironment,
-		AzureLoginAppID:  w.AzureLoginAppID,
+		AzureLoginAppID:  w.AzureLoginAppID, //nolint:staticcheck // SA1019: still accepted in bundle config; forwarded until the SDK drops the field
 
 		// Unified host
 		AccountID:   w.AccountID,
 		WorkspaceID: w.WorkspaceID,
 	}
+	liteswap.Apply(ctx, cfg)
 
 	for k := range config.ConfigAttributes {
 		attr := &config.ConfigAttributes[k]
@@ -183,6 +209,11 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 	cfg := w.Config(ctx)
 
 	switch {
+	case env.StrictProfileMatch(ctx) && (w.Host != "" || w.WorkspaceID != ""):
+		// The target's host and workspace ID must match a profile, even when
+		// auth env vars are set. A target with neither has nothing to match, so
+		// it resolves as without strict mode.
+		cfg.Loaders = databrickscfg.StrictProfileLoaders
 	case w.Profile != "":
 		// An explicit profile wins over auth env vars (#5096).
 		// ValidateConfigAndProfileHost below still checks host agreement.

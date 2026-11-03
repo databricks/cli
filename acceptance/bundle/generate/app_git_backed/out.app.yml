@@ -1,0 +1,12 @@
+resources:
+  apps:
+    out:
+      name: my_git_app
+      description: This is a git-backed app
+      git_repository:
+        url: https://github.com/my-org/my-repo
+        provider: gitHub
+        auto_deploy: true
+      git_source:
+        branch: main
+        source_code_path: apps/my-app

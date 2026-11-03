@@ -6,6 +6,20 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 14
+    groups:
+      # The new Databricks Go SDK ships as ~100 per-service submodules under
+      # github.com/databricks/sdk-go. Bumping them individually would open one PR
+      # per submodule; group them into a single PR.
+      databricks-sdk-go:
+        patterns:
+          - github.com/databricks/sdk-go/*
+      # The golang.org/x/* modules are released in lockstep and each bump pulls
+      # the others in transitively (e.g. x/net requires matching x/crypto and
+      # x/term). As separate PRs they all edit adjacent go.mod/go.sum lines and
+      # evict each other from the merge queue with a conflict, so group them.
+      golang-x:
+        patterns:
+          - golang.org/x/*
     ignore:
       # Ignore Databricks Go SDK because its upgrade requires code generation
       - dependency-name: github.com/databricks/databricks-sdk-go
@@ -50,6 +64,13 @@ updates:
       interval: "monthly"
     cooldown:
       default-days: 7
+    groups:
+      # Without grouping, an action used in both directories gets one PR per
+      # directory. Group by dependency name so each action bump is a single PR.
+      github-actions:
+        group-by: dependency-name
+        patterns:
+          - "*"
     # tagging.yml is generated and maintained externally. Ignore
     # actions/create-github-app-token since it is only used in tagging.yml.
     exclude-paths:

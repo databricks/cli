@@ -1,6 +1,5 @@
+Env.MSYS_NO_PATHCONV = "1"
+
 [[Repls]]
 Old = "[0-9a-f]{32}"
 New = "[DASHBOARD_ID]"
-
-[Env]
-MSYS_NO_PATHCONV = "1"

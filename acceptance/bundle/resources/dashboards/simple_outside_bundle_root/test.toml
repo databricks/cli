@@ -1,6 +1,4 @@
-Local = true
 Cloud = true
-RequiresWarehouse = true
 RecordRequests = false
 RunsOnDbr = true
 
@@ -8,7 +6,6 @@ Ignore = [
     "databricks.yml",
     "sample-dashboard.lvdash.json",
 ]
-
 
 [[Repls]]
 # Windows:

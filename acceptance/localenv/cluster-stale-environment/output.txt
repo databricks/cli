@@ -1,0 +1,6 @@
+
+>>> [CLI] environments setup-local --cluster-name my-cluster --dry-run
+warning: [tool.databricks.environment] environment_version "5" is left from a serverless target but the current target is a cluster; it is not updated
+Plan: [TEST_TMP_DIR]/pyproject.toml
+  changed region: tool.uv.constraint-dependencies
+Check complete. No files were modified.

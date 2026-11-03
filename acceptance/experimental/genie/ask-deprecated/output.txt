@@ -1,0 +1,12 @@
+
+=== the deprecated experimental alias still runs but prints a move notice
+>>> [CLI] experimental genie ask What are total sales by franchise?
+Command "ask" is deprecated, use "databricks genie ask" instead; this experimental alias will be removed in a future release
+Alpha leads with 1,250 total sales.
+
+  Total by Franchise
+  ──────────────────
+
+  Alpha ██████████████████████████████████████████████████ 1,250
+   Beta █████████████████████████▌   640
+

@@ -6,9 +6,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-update/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Bound and updated jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 
 >>> [CLI] jobs get [NEW_JOB_ID]
 updated-job-name
@@ -20,9 +20,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-update/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] jobs get [NEW_JOB_ID]
 second-update-name
@@ -33,5 +33,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-update/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

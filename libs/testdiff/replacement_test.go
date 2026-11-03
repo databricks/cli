@@ -29,15 +29,6 @@ func TestReplacement_UUID(t *testing.T) {
 	assert.Equal(t, "[UUID]", repls.Replace("123e4567-e89b-12d3-a456-426614174000"))
 }
 
-func TestReplacement_Number(t *testing.T) {
-	var repls ReplacementsContext
-
-	PrepareReplacementsNumber(t, &repls)
-
-	assert.Equal(t, "12", repls.Replace("12"))
-	assert.Equal(t, "[NUMID]", repls.Replace("123"))
-}
-
 func TestReplacement_Distinct(t *testing.T) {
 	rc := ReplacementsContext{Repls: []Replacement{
 		{Old: regexp.MustCompile(`\d+`), New: "[NUMBER]", Distinct: true},
@@ -54,14 +45,6 @@ func TestReplacement_DistinctSingleMatch(t *testing.T) {
 
 	got := rc.Replace("25")
 	assert.Equal(t, "[NUMBER]", got)
-}
-
-func TestReplacement_TemporaryDirectory(t *testing.T) {
-	var repls ReplacementsContext
-
-	PrepareReplacementsTemporaryDirectory(t, &repls)
-
-	assert.Equal(t, "/tmp/.../tail", repls.Replace("/tmp/foo/bar/qux/tail"))
 }
 
 func TestReplaceAppliesInOrder(t *testing.T) {

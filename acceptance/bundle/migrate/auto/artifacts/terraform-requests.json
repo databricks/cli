@@ -1,0 +1,34 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Test Auto-Migrate Artifacts Job",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "existing_cluster_id": "0717-132531-5opeqon1",
+          "libraries": [
+            {
+              "whl": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+            }
+          ],
+          "python_wheel_task": {
+            "entry_point": "run",
+            "package_name": "my_test_code"
+          },
+          "task_key": "TestTask"
+        }
+      ]
+    }
+  }
+]

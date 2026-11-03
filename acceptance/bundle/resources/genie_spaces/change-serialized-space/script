@@ -1,0 +1,37 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+rm -f "$OUT_REQUESTS"
+
+# Deploy the Genie space with the initial serialized_space content.
+trace $CLI bundle deploy
+
+# Register the randomly-generated space ID as a replacement so the update PATCH path below
+# (/api/2.0/genie/spaces/<id>) is deterministic across runs.
+replace_ids.py
+
+# serialized_space is stored in state as a content hash, not the full JSON. The full
+# content still reaches the API (print_requests.py below) and stays in the plan's new_state.
+print_state.py | gron.py | grep serialized_space > out.state.txt
+
+# No-op re-plan: the stored hash compares equal to the config, so it does not produce a
+# phantom serialized_space update.
+title "Re-plan should be a no-op"
+trace $CLI bundle plan
+
+# Change the serialized_space content - this triggers an update (not a recreate).
+update_file.py space.geniespace.json "Analyze sales orders by date" "Summarize sales revenue by month"
+title "Plan after changing serialized_space should show update"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+# The edit changes the content, so state holds the new hash.
+print_state.py | gron.py | grep serialized_space > out.state_after_update.txt
+
+# The full serialized_space content reached the create (POST) and update (PATCH) APIs.
+# --unique collapses the duplicate create the SDK retries on cloud (eventual consistency).
+trace print_requests.py //api/2.0/genie/spaces --unique

@@ -34,5 +34,9 @@ func Forwarded(ctx context.Context, args []string, src io.Reader, outWriter, err
 		}
 	}
 
-	return runCmd(ctx, cmd)
+	err := runCmd(ctx, cmd)
+	// Sweep the process group (WithProcessGroup + cancelled context only) so a
+	// grandchild that outlived a SIGKILLed leader is not re-orphaned.
+	reapProcessGroup(ctx, cmd)
+	return err
 }

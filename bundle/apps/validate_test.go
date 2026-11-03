@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/require"
@@ -33,22 +32,22 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
-							Name: "app1",
+							Name:           "app1",
+							SourceCodePath: "./app1",
 						},
-						SourceCodePath: "./app1",
 					},
 					"app2": {
 						App: apps.App{
-							Name: "app2",
+							Name:           "app2",
+							SourceCodePath: "./app1",
 						},
-						SourceCodePath: "./app1",
 					},
 				},
 			},
 		},
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
+	bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	diags := bundle.ApplySeq(t.Context(), b, mutator.TranslatePaths(), Validate())
 	require.Len(t, diags, 1)
@@ -188,10 +187,10 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 			tc.resources.Apps = map[string]*resources.App{
 				"my_app": {
 					App: apps.App{
-						Name:      "my_app",
-						Resources: tc.appResources,
+						Name:           "my_app",
+						Resources:      tc.appResources,
+						SourceCodePath: "./app1",
 					},
-					SourceCodePath: "./app1",
 				},
 			}
 
@@ -205,7 +204,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 				},
 			}
 
-			bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
+			bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 			diags := bundle.ApplySeq(t.Context(), b, Validate())
 			warnings := diags.Filter(diag.Warning)
@@ -213,7 +212,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 				require.Len(t, warnings, 1)
 				require.Contains(t, warnings[0].Summary, tc.wantSummary)
 				require.Contains(t, warnings[0].Detail, "service_principal_name: ${resources.apps.my_app.service_principal_client_id}")
-				require.Equal(t, dyn.MustPathFromString("resources.apps.my_app"), warnings[0].Paths[0])
+				require.Equal(t, "resources.apps.my_app", warnings[0].Paths[0].String())
 			} else {
 				require.Empty(t, warnings)
 			}
@@ -237,11 +236,11 @@ func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
-							Name: "app1",
-						},
-						SourceCodePath: "./app1",
-						GitSource: &apps.GitSource{
-							Branch: "main",
+							Name:           "app1",
+							SourceCodePath: "./app1",
+							GitSource: &apps.GitSource{
+								Branch: "main",
+							},
 						},
 					},
 				},
@@ -249,7 +248,7 @@ func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
+	bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	diags := bundle.ApplySeq(t.Context(), b, mutator.TranslatePaths(), Validate())
 	require.Len(t, diags, 1)

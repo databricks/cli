@@ -221,9 +221,7 @@ func TestSchemaValidatePatternEnum(t *testing.T) {
 
 func TestValidateSchemaMinimumCliVersionWithInvalidSemver(t *testing.T) {
 	s := &Schema{
-		Extension: Extension{
-			MinDatabricksCliVersion: "1.0.5",
-		},
+		MinDatabricksCliVersion: "1.0.5",
 	}
 	err := s.validateSchemaMinimumCliVersion("v2.0.1")()
 	assert.ErrorContains(t, err, "invalid minimum CLI version \"1.0.5\" specified. Please specify the version in the format v0.0.0")
@@ -235,9 +233,7 @@ func TestValidateSchemaMinimumCliVersionWithInvalidSemver(t *testing.T) {
 
 func TestValidateSchemaMinimumCliVersion(t *testing.T) {
 	s := &Schema{
-		Extension: Extension{
-			MinDatabricksCliVersion: "v1.0.5",
-		},
+		MinDatabricksCliVersion: "v1.0.5",
 	}
 	err := s.validateSchemaMinimumCliVersion("v2.0.1")()
 	assert.NoError(t, err)

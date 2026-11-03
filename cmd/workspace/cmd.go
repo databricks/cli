@@ -5,6 +5,9 @@ package workspace
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
+	agent_kit "github.com/databricks/cli/cmd/workspace/agent-kit"
+	ai_functions "github.com/databricks/cli/cmd/workspace/ai-functions"
+	ai_gateway "github.com/databricks/cli/cmd/workspace/ai-gateway"
 	ai_search "github.com/databricks/cli/cmd/workspace/ai-search"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
@@ -21,6 +24,7 @@ import (
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
+	compute_migrations "github.com/databricks/cli/cmd/workspace/compute-migrations"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
 	consumer_fulfillments "github.com/databricks/cli/cmd/workspace/consumer-fulfillments"
 	consumer_installations "github.com/databricks/cli/cmd/workspace/consumer-installations"
@@ -36,6 +40,7 @@ import (
 	data_quality "github.com/databricks/cli/cmd/workspace/data-quality"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
+	domains "github.com/databricks/cli/cmd/workspace/domains"
 	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
 	environments "github.com/databricks/cli/cmd/workspace/environments"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
@@ -47,6 +52,7 @@ import (
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
+	genie_agents "github.com/databricks/cli/cmd/workspace/genie-agents"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
@@ -96,6 +102,7 @@ import (
 	repos "github.com/databricks/cli/cmd/workspace/repos"
 	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
 	rfa "github.com/databricks/cli/cmd/workspace/rfa"
+	sandbox "github.com/databricks/cli/cmd/workspace/sandbox"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	secrets_uc "github.com/databricks/cli/cmd/workspace/secrets-uc"
@@ -138,6 +145,9 @@ func All() []*cobra.Command {
 
 	out = append(out, access_control.New())
 	out = append(out, agent_bricks.New())
+	out = append(out, agent_kit.New())
+	out = append(out, ai_functions.New())
+	out = append(out, ai_gateway.New())
 	out = append(out, ai_search.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
@@ -154,6 +164,7 @@ func All() []*cobra.Command {
 	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
+	out = append(out, compute_migrations.New())
 	out = append(out, connections.New())
 	out = append(out, consumer_fulfillments.New())
 	out = append(out, consumer_installations.New())
@@ -169,6 +180,7 @@ func All() []*cobra.Command {
 	out = append(out, data_quality.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
+	out = append(out, domains.New())
 	out = append(out, entity_tag_assignments.New())
 	out = append(out, environments.New())
 	out = append(out, experiments.New())
@@ -180,6 +192,7 @@ func All() []*cobra.Command {
 	out = append(out, forecasting.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
+	out = append(out, genie_agents.New())
 	out = append(out, git_credentials.New())
 	out = append(out, global_init_scripts.New())
 	out = append(out, grants.New())
@@ -229,6 +242,7 @@ func All() []*cobra.Command {
 	out = append(out, repos.New())
 	out = append(out, resource_quotas.New())
 	out = append(out, rfa.New())
+	out = append(out, sandbox.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, secrets_uc.New())

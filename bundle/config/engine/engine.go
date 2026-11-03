@@ -17,8 +17,31 @@ const (
 	EngineNotSet    EngineType = ""
 )
 
-// Default is used for new bundles if user has not set the value
+// Default is used when the user has not set the value, both for new bundles and
+// for existing terraform deployments (whose state is migrated to it before the command runs).
 const Default = EngineDirect
+
+// TerraformRemovedConfigMessage and TerraformRemovedEnvMessage are the error text
+// shown when a bundle pins the removed Terraform deployment engine via
+// bundle.engine or DATABRICKS_BUNDLE_ENGINE respectively. "terraform" is still
+// recognized as a value so we can point at this specific removal rather than
+// reporting it as an unrecognized setting.
+const (
+	TerraformRemovedConfigMessage = TerraformRemovedSummary + "\n\n" + TerraformRemovedConfigDetail
+	TerraformRemovedEnvMessage    = TerraformRemovedSummary + "\n\n" + TerraformRemovedEnvDetail
+)
+
+// TerraformRemovedSummary and TerraformRemovedConfigDetail are the two parts of
+// TerraformRemovedConfigMessage, for callers that report it as a diagnostic.
+const TerraformRemovedSummary = `the Terraform deployment engine has been removed in Databricks CLI v1.20.0`
+
+const (
+	TerraformRemovedConfigDetail = `Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; ` + terraformRemovedHint
+	TerraformRemovedEnvDetail    = `Unset the ` + EnvVar + ` environment variable (or set it to "direct") to deploy with the direct engine; ` + terraformRemovedHint
+)
+
+const terraformRemovedHint = `existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details`
 
 // Parse returns EngineType from string
 func Parse(engine string) (EngineType, bool) {
@@ -39,16 +62,9 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 	value := env.Get(ctx, EnvVar)
 	engine, ok := Parse(value)
 	if !ok {
-		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", EnvVar, value)
+		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'direct')", EnvVar, value)
 	}
 	return engine, nil
-}
-
-// EngineSetting represents a requested engine type along with the source of the request.
-type EngineSetting struct {
-	Type       EngineType // effective resolved engine
-	Source     string     // human-readable source of Type
-	ConfigType EngineType // from bundle config (EngineNotSet if not configured)
 }
 
 func (e EngineType) ThisOrDefault() EngineType {

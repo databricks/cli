@@ -1,0 +1,40 @@
+
+=== the root of a Git folder under /Repos
+
+>>> [CLI] bundle debug fetch-repository-info --path /Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]
+{
+  "worktree_root": "/Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]",
+  "current_branch": "main",
+  "latest_commit": "[COMMIT_SHA]",
+  "origin_url": "https://github.com/databricks/bundle-examples"
+}
+
+=== a subdirectory of it, which resolves to the same root
+
+>>> [CLI] bundle debug fetch-repository-info --path /Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]/subdir
+{
+  "worktree_root": "/Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]",
+  "current_branch": "main",
+  "latest_commit": "[COMMIT_SHA]",
+  "origin_url": "https://github.com/databricks/bundle-examples"
+}
+
+=== the root of a Git folder outside /Repos
+
+>>> [CLI] bundle debug fetch-repository-info --path /Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]
+{
+  "worktree_root": "/Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]",
+  "current_branch": "main",
+  "latest_commit": "[COMMIT_SHA]",
+  "origin_url": "https://github.com/databricks/bundle-examples"
+}
+
+=== a path in no Git folder at all
+
+>>> [CLI] bundle debug fetch-repository-info --path /Workspace/Users/[USERNAME]
+{
+  "worktree_root": "",
+  "current_branch": "",
+  "latest_commit": "",
+  "origin_url": ""
+}

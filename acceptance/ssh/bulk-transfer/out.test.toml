@@ -1,0 +1,4 @@
+Cloud = true
+GOOS.darwin = false
+GOOS.linux = true
+GOOS.windows = false

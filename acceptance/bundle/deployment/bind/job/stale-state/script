@@ -1,8 +1,4 @@
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-  state_file=".databricks/bundle/default/resources.json"
-else
-  state_file=".databricks/bundle/default/terraform/terraform.tfstate"
-fi
+state_file=".databricks/bundle/default/resources.json"
 
 title "Step 1: Deploy with job_1 only"
 trace $CLI bundle deploy
@@ -22,6 +18,6 @@ cp stale_state.json "$state_file"
 
 title "Step 6: Create external job and try to bind (should fail: remote state already has job_2)\n"
 job_id=$($CLI jobs create --json '{"name": "External Job"}' | jq -r '.job_id')
-add_repl.py "$job_id" EXTERNAL_JOB_ID
+add_repl "$job_id" EXTERNAL_JOB_ID
 echo "External job ID: $job_id"
-trace errcode $CLI bundle deployment bind job_2 $job_id --auto-approve &> out.bind.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI bundle deployment bind job_2 $job_id --auto-approve &> out.bind.txt

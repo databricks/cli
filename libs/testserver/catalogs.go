@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -24,10 +25,28 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
+	// UC rejects an empty name; the fake would otherwise store a catalog under a key
+	// nothing can look up. Message is UC's canned error, which names more than we check.
+	if createRequest.Name == "" {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    `Invalid input: RPC CreateCatalog Field managedcatalog.CatalogInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward slashes, or control characters.`,
+			},
+		}
+	}
+
+	// Echo back every field create accepts: a dropped one makes the next plan see a
+	// phantom change.
 	catalogInfo := catalog.CatalogInfo{
-		Name:         createRequest.Name,
-		Comment:      createRequest.Comment,
-		StorageRoot:  createRequest.StorageRoot,
+		Name:                      createRequest.Name,
+		Comment:                   createRequest.Comment,
+		ConnectionName:            createRequest.ConnectionName,
+		CustomMaxRetentionHours:   createRequest.CustomMaxRetentionHours,
+		ManagedEncryptionSettings: createRequest.ManagedEncryptionSettings,
+		// Strip trailing slash to mimic UC API normalization behavior (see volumes.go).
+		StorageRoot:  strings.TrimRight(createRequest.StorageRoot, "/"),
 		ProviderName: createRequest.ProviderName,
 		ShareName:    createRequest.ShareName,
 		Options:      createRequest.Options,
@@ -71,6 +90,11 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateCatalog")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var updateRequest catalog.UpdateCatalog
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
@@ -79,13 +103,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
-	// Update only the fields that can be updated
-	if updateRequest.Comment != "" {
-		existing.Comment = updateRequest.Comment
-	}
-	if updateRequest.Owner != "" {
-		existing.Owner = updateRequest.Owner
-	}
+	applyUpdatedFields(&existing, updateRequest, fields)
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 		existing.FullName = updateRequest.NewName

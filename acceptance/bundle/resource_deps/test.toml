@@ -4,10 +4,3 @@ Ignore = [
     ".databricks",
     ".gitignore",
 ]
-
-# These tests exercise platform-independent bundle logic (resource dependency
-# ordering and reference resolution) and behave identically on every OS, so on pull
-# requests they run on Linux only to keep the windows/macOS CI jobs fast. They still
-# run on every OS on push to main.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false

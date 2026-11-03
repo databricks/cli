@@ -1,0 +1,6 @@
+Action: PUT: hello.py
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py
+Uploaded hello.py
+Initial Sync Complete
+/api/2.0/workspace-files/import-file/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py
+/api/2.0/workspace-files/import-file/Users/[USERNAME]/sync-504-[UNIQUE_NAME]/hello.py

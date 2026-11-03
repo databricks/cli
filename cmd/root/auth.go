@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -55,12 +56,12 @@ func initProfileFlag(cmd *cobra.Command) {
 // isPATOnSPOGWithoutWorkspaceID reports whether the resolved config is a PAT
 // profile pointing at a SPOG host with no workspace_id set. The SDK strips the
 // routing identifier from the request, which lands on the account-plane where
-// PATs aren't accepted. The legacy "none" sentinel (auth.WorkspaceIDNone) is
+// PATs aren't accepted. The legacy "none" sentinel (profile.WorkspaceIDNone) is
 // treated as empty here, matching the convention used elsewhere in the repo
 // (e.g. libs/databrickscfg/profile/profiler.go).
 func isPATOnSPOGWithoutWorkspaceID(cfg *config.Config) bool {
 	return cfg.AuthType == auth.AuthTypePat &&
-		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) &&
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone) &&
 		auth.HasUnifiedHostSignal(cfg.DiscoveryURL)
 }
 
@@ -169,12 +170,12 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	if err != nil {
 		return nil, err
 	}
+	// The picked profile resolves into its own config, not the caller's cfg.
+	// Return the client (even on failure) so the caller renders errors against
+	// that config rather than the original, otherwise-empty one.
 	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
-		if err != nil {
-			return nil, err
-		}
 	}
 	return a, err
 }
@@ -207,6 +208,7 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 	ctx := cmd.Context()
+	liteswap.Apply(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
@@ -241,6 +243,11 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
+		// A profile picked interactively resolves into the client's own config,
+		// not cfg; render against it so the error names the right profile.
+		if a != nil {
+			cfg = a.Config
+		}
 		return renderError(ctx, cfg, err)
 	}
 
@@ -253,7 +260,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err == nil && cfg.Profile != "" && cfg.AccountID != "" &&
-		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) {
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone) {
 		// Account-only profile (created with --skip-workspace): account_id is
 		// set but workspace_id is absent (new shape) or the legacy "none"
 		// sentinel. Without a workspace_id the SDK would either send "none" as
@@ -315,12 +322,12 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	if err != nil {
 		return nil, err
 	}
+	// The picked profile resolves into its own config, not the caller's cfg.
+	// Return the client (even on failure) so the caller renders errors against
+	// that config rather than the original, otherwise-empty one.
 	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
-		if err != nil {
-			return nil, err
-		}
 	}
 	return w, err
 }
@@ -330,6 +337,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cmd.SetContext(ctx)
 
 	cfg := &config.Config{}
+	liteswap.Apply(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	profile, hasProfileFlag := profileFlagValue(cmd)
@@ -371,6 +379,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
+		// A profile picked interactively resolves into the client's own config,
+		// not cfg; render against it so the error names the right profile.
+		if w != nil {
+			cfg = w.Config
+		}
 		return renderError(ctx, cfg, err)
 	}
 

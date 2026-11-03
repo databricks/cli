@@ -1,3 +1,0 @@
-# No bundle engine needed for this command.
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []

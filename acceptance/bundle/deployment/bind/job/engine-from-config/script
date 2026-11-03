@@ -3,6 +3,8 @@
 # bundle.engine is set to "direct" in databricks.yml.
 # Both deploy and bind should use the direct engine.
 
+unset DATABRICKS_BUNDLE_ENGINE
+
 trace $CLI bundle deploy
 
 echo "=== State files after deploy ==="
@@ -13,6 +15,7 @@ trace $CLI bundle deployment unbind job_1
 
 # Create a new job to bind to
 job_id=$(trace $CLI jobs create --json '{"name": "My Job"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
 
 # Bind uses direct engine (reads bundle.engine from config).
 trace $CLI bundle deployment bind job_1 $job_id --auto-approve

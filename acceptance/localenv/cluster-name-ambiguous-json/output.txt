@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "command": "environments setup-local",
+  "ok": false,
+  "mode": "default",
+  "dryRun": true,
+  "greenfield": false,
+  "phases": [
+    {
+      "phase": "preflight",
+      "status": "ok"
+    },
+    {
+      "phase": "resolve",
+      "status": "error"
+    },
+    {
+      "phase": "fetch",
+      "status": "pending"
+    },
+    {
+      "phase": "merge",
+      "status": "pending"
+    },
+    {
+      "phase": "provision",
+      "status": "pending"
+    },
+    {
+      "phase": "validate",
+      "status": "pending"
+    }
+  ],
+  "warnings": [],
+  "error": {
+    "code": "E_RESOLVE",
+    "failurePhase": "resolve",
+    "message": "resolving cluster name \"dup\": there are 2 active clusters named \"dup\"; use --cluster-id to disambiguate",
+    "diskMutated": false
+  },
+  "durationMs": [DURATION_MS]
+}

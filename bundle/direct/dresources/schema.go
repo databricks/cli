@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
@@ -46,6 +47,23 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 	return response.FullName, response, nil
 }
 
+// UC drops a field the payload omits, so a value the config stops declaring never
+// reaches the backend and every later plan reports the same pending change. Worse, when
+// nothing else is in the payload UC rejects it outright with "Nothing to update" (400),
+// which made a schema undeployable once someone set a description on it outside the
+// bundle. Sending these explicitly is the only way to express "the bundle owns this".
+//
+// Only fields verified against a real workspace belong here: {"comment": ""} and
+// {"custom_max_retention_hours": 0} both clear. Do not add a field without probing it -- UC rejects
+// an empty value on some (owner: "" is "Could not find principal with name .", new_name: "" is "not
+// a valid name"), and ForceSendFields is inert for maps, so listing properties would be a no-op.
+//
+// custom_max_retention_hours is force-sent so the direct engine can clear it. The terraform
+// databricks_schema resource cannot set this field at all, so a schema config that uses it deploys
+// differently under terraform (which drops it) than under direct; such configs are kept out of the
+// migrate invariant (schema.yml is excluded there, and schema_tf_compat.yml covers migrate instead).
+var schemaForceSend = []string{"Comment", "CustomMaxRetentionHours"}
+
 // DoUpdate updates the schema in place and returns remote state.
 func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
@@ -56,7 +74,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
+		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](append(slices.Clone(schemaForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "NewName", "Owner"),
 	}
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)

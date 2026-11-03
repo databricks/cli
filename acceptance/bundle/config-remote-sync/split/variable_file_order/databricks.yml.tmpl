@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# A single block with no target override at all: the tasks are in file order zzz, aaa,
+# but loading sorts keyed sequences by key, so aaa is index 0 in the merged view and
+# index 1 in the file. Restoring a ${var.X} reference reads the field from a second load
+# of the configuration, and that load has to be in the same index space -- otherwise the
+# lookup reads zzz and rewrites aaa with whatever it found, destroying the reference.
+
+variables:
+  zzz_dir:
+    default: zzzhome
+  aaa_dir:
+    default: aaahome
+
+resources:
+  jobs:
+    file_order_job:
+      tasks:
+        - task_key: zzz
+          notebook_task:
+            notebook_path: /Users/${var.zzz_dir}/zzz
+        - task_key: aaa
+          notebook_task:
+            notebook_path: /Users/${var.aaa_dir}/aaa

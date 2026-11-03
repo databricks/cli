@@ -1,0 +1,20 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Replay a prior terraform deployment (job_a and job_b)
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
+
+# Remove every resource from config without deploying the deletion
+cat > databricks.yml <<'YAML'
+bundle:
+  name: migrate-removed-test
+YAML
+
+# Both IDs are preserved in direct state for deletion on next deploy
+trace $CLI bundle deployment migrate
+
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 to delete"
+
+rm "$OUT_REQUESTS"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
+trace print_requests.py --sort //jobs/delete

@@ -485,7 +485,8 @@ func newPatch() *cobra.Command {
 Update user details.
 
   Partially updates a user resource by applying the supplied operations on
-  specific user attributes.
+  specific user attributes. The userName and emails attributes cannot be
+  updated through this API; any supplied changes to them are ignored (no-op).
 
   Arguments:
     ID: Unique ID in the Databricks workspace.`
@@ -647,7 +648,9 @@ func newUpdate() *cobra.Command {
 
 Replace a user.
 
-  Replaces a user's information with the data supplied in request.
+  Replaces a user's information with the data supplied in request. The
+  userName and emails attributes cannot be updated through this API; any
+  supplied changes to them are ignored (no-op).
 
   Arguments:
     ID: Databricks user ID.`

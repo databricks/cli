@@ -1,10 +1,23 @@
-# This allows recording per-deployment output files, e.g. $CLI bundle deploy > out.$DATABRICKS_BUNDLE_ENGINE.txt
-EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
+# Runs the whole bundle suite with deployment history recording on, so the deployment metadata
+# service (DMS) is exercised by every test rather than only the handful under bundle/dms. CI gives
+# the DMS=true variant its own cell ("directdms"), so the plain cell still runs each test once; a
+# local run covers both.
+EnvMatrix.DMS = ["", "true"]
+
+# The DMS run asserts the same golden files as the plain run.
+EnvRepl.DMS = false
+
+Ignore = ["databricks.yml"]
 
 # The lowest Python version we support. Alternative to "uv run --python 3.10"
 Env.UV_PYTHON = "3.10"
 
-Ignore = ["databricks.yml"]
+# The link a recorded deploy prints, dropped so a test asserts the same output whether or
+# not recording is on. The URL itself is covered by workspaceurls.TestDeploymentURL, and
+# the calls behind it by the bundle/dms tests.
+[[Repls]]
+Old = '(?m)^Current Deployment Version: .*\n'
+New = ''
 
 # User-agent:
 [[Repls]]
@@ -22,3 +35,13 @@ New = 'os/[OS]'
 [[Repls]]
 Old = ' cicd/github'
 New = ''
+
+# Mask the serialized_dashboard content hash before the generic numeric/id rules can
+# nibble digit-runs out of the hex (Order below their default). Distinct numbers the
+# hashes, so old==new stays one token and a differing remote gets another
+# (e.g. [HASH][0] vs [HASH][1]).
+[[Repls]]
+Old = "sha256:[0-9a-f]{64}"
+New = "sha256:[HASH]"
+Order = -1
+Distinct = true

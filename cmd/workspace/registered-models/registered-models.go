@@ -94,7 +94,6 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().BoolVar(&createReq.BrowseOnly, "browse-only", createReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
 	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
@@ -595,7 +594,6 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().BoolVar(&updateReq.BrowseOnly, "browse-only", updateReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
 	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)

@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -18,10 +18,10 @@ title "Plan after unbind: the bundle wants to (re-)create the database"
 trace $CLI bundle plan
 
 title "Re-deploy: replace_existing adopts the already-existing database instead of erroring"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 title "Confirm the database is under management again"
-trace $CLI postgres get-database "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/databases/my-database" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-database "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/databases/my-database" | database_fields
 
-trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.json

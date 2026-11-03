@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+  terraform:
+    exec_path: /usr/local/bin/terraform
+
+targets:
+  default:
+    default: true
+  override:
+    bundle:
+      terraform:
+        exec_path: /opt/terraform

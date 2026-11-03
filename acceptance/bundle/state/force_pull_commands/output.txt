@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Use a fake browser that just prints the URL it would have opened
 === bundle summary without --force-pull: no remote state read
@@ -15,19 +15,43 @@ Deployment complete!
 >>> [CLI] bundle summary --force-pull
 {
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  }
 }
 
 === bundle open without --force-pull: no remote state read
 
 >>> [CLI] bundle open foo
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 === bundle open --force-pull: remote state read
 
 >>> [CLI] bundle open foo --force-pull
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 {
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  }
 }

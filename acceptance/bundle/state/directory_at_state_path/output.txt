@@ -1,0 +1,4 @@
+
+>>> musterr [CLI] bundle plan
+Error: reading resources.json: not a file: the workspace has a directory at this path
+

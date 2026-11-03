@@ -6,6 +6,8 @@ apps: apps.App
 
 catalogs: catalog.CreateCatalog
 
+cluster_policies: compute.CreatePolicy
+
 clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
@@ -18,11 +20,21 @@ experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
 
+features: ml.Feature
+
 genie_spaces: dashboards.GenieUpdateSpaceRequest
+
+instance_pools: compute.CreateInstancePool
 
 job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings
+
+mcp_services: catalog.CreateMcpServiceRequest
+
+model_provider_services: catalog.CreateModelProviderServiceRequest
+
+model_services: catalog.CreateModelServiceRequest
 
 model_serving_endpoints: serving.CreateServingEndpoint
 
@@ -42,6 +54,8 @@ postgres_projects: postgres.ProjectStatus
 
 postgres_roles: postgres.RoleRoleStatus
 
+postgres_snapshot_schedules: postgres.UpdateBranchRequest
+
 postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
 
 quality_monitors: catalog.CreateMonitor
@@ -51,6 +65,8 @@ registered_models: catalog.RegisteredModelInfo
 schemas: catalog.CreateSchema
 
 secret_scopes: workspace.CreateScope
+
+secrets: catalog.Secret
 
 sql_warehouses: sql.EditWarehouseRequest
 

@@ -39,6 +39,11 @@ func hasGlobCharacters(path string) (string, bool) {
 func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var out []bundle.Mutator
 
+	// Preserve the raw include patterns before they are replaced below with the
+	// expanded list of loaded files, so IsFileIncluded can re-match against them.
+	patterns := b.Config.Include
+	b.SetIncludePatterns(patterns)
+
 	// Map with files we've already seen to avoid loading them twice.
 	seen := map[string]bool{}
 
@@ -126,13 +131,21 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		}
 	}
 
-	// Swap out the original includes list with the expanded globs.
-	b.Config.Include = files
-
 	// Track number of bundle YAML (or JSON) files in the configuration. The +1 is there
 	// to account for the root databricks.yaml file.
 	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
 
-	bundle.ApplySeqContext(ctx, b, out...)
+	// ProcessInclude merges into the configuration via [config.Root.Merge], so it does
+	// not need its own mutator scope. Giving each included file one would re-convert the
+	// whole accumulated configuration per file, making load quadratic in the number of
+	// included files (~20 minutes for 6000 files).
+	bundle.ApplySeqInScopeContext(ctx, b, out...)
+
+	// Swap out the original include patterns with the expanded globs. This is done after
+	// the includes are merged: [config.Root.Merge] reloads the typed configuration from
+	// the dynamic tree, which still holds the patterns, followed by the include sections
+	// of included files (merging concatenates sequences). Those are kept as they are.
+	// Include is omitempty, so an empty list is absent from the configuration.
+	b.Config.Include = append(files, b.Config.Include[len(patterns):]...)
 	return nil
 }

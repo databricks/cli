@@ -1,0 +1,92 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < overrides/10-first.yml.tmpl > overrides/10-first.yml
+envsubst < overrides/20-second.yml.tmpl > overrides/20-second.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+job_id="$(read_id.py multifile_job)"
+
+
+# from_second_file is defined in overrides/20-second.yml. The edit must be written
+# to that file only -- not to the top-level databricks.yml and not to the sibling
+# override file, and without creating a duplicate subtree anywhere.
+title "Edit a task defined in the second included file"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "from_second_file":
+        task["timeout_seconds"] = 777
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+cp overrides/10-first.yml overrides/10-first.yml.backup
+cp overrides/20-second.yml overrides/20-second.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "databricks.yml is untouched"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+
+title "overrides/10-first.yml is untouched"
+echo
+trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
+
+title "overrides/20-second.yml gains timeout_seconds: 777"
+echo
+trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
+
+rm databricks.yml.backup overrides/10-first.yml.backup overrides/20-second.yml.backup
+
+
+# "in_both_files" has max_retries in the first override file and timeout_seconds in
+# the second, so the two fields of one merged task live in two different files
+# within the same target scope. Each edit has to go to the file that defines that
+# field; writing both to one file would change a value the other file still owns.
+title "Edit one field per file on the task declared in both override files"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "in_both_files":
+        task["max_retries"] = 9
+        task["timeout_seconds"] = 900
+EOF
+
+title "Sync"
+echo
+cp overrides/10-first.yml overrides/10-first.yml.backup
+cp overrides/20-second.yml overrides/20-second.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "max_retries updates the first file, timeout_seconds the second"
+echo
+trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
+trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
+rm overrides/10-first.yml.backup overrides/20-second.yml.backup
+
+
+# max_retries is set in both override files, so only one of them holds the value that
+# was deployed. The edit has to land there; the other copy is shadowed.
+title "Edit a field that both override files define"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    if task["task_key"] == "same_field_both_files":
+        task["max_retries"] = 9
+PYEDIT
+
+title "Sync"
+echo
+cp overrides/10-first.yml overrides/10-first.yml.backup
+cp overrides/20-second.yml overrides/20-second.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "The winning file is updated; the shadowed copy is left alone"
+echo
+trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
+trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
+rm overrides/10-first.yml.backup overrides/20-second.yml.backup

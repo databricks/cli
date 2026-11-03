@@ -86,7 +86,8 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, errors.New("no skills or plugins installed. Run 'databricks aitools install' to install")
 	}
 
-	latestTag, explicit, err := GetSkillsRef(ctx)
+	installedRef, allowFallback := installedSkillsRelease(state)
+	latestTag, explicit, err := getSkillsRef(ctx, allowFallback)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +100,15 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
-	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, !explicit)
+	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, allowFallback && !explicit)
 	if err != nil {
 		if opts.Check {
 			log.Warnf(ctx, "Could not fetch manifest: %v", err)
 			return &UpdateResult{}, nil
 		}
+		return nil, err
+	}
+	if err := checkSkillsDowngrade(installedRef, latestTag, explicit); err != nil {
 		return nil, err
 	}
 
@@ -114,7 +118,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	result := &UpdateResult{}
 
 	cliVersion := build.GetInfo().Version
-	isDev := strings.HasPrefix(cliVersion, build.DefaultSemver)
+	isDev := build.GetInfo().IsDevelopment()
 
 	// Sort skill names for deterministic output.
 	names := slices.Sorted(maps.Keys(skillSet))
@@ -187,15 +191,20 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		ref:     latestTag,
 	}
 
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
+
 	fileRecords := map[string]FileRecord{}
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
+		sp.Update("Installing " + change.Name + "...")
 		records, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
 		if err != nil {
 			return nil, err
 		}
 		maps.Copy(fileRecords, records)
 	}
+	sp.Close()
 
 	// Update state.
 	state.Release = latestTag

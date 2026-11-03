@@ -2,9 +2,12 @@
 === initial deploy triggers the first run
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.my_job
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
+Created job_runs.my_run
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary
 Name: job-runs-redeploy
@@ -16,11 +19,11 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[WORKSPACE_ID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 >>> read_id.py my_job
 [MY_JOB_ID]
@@ -30,6 +33,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[UUID]",
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "dev"
@@ -54,7 +58,8 @@ Resources:
       "job_id": [MY_JOB_ID],
       "job_parameters": {
         "env": "prod"
-      }
+      },
+      "result_state": "SUCCESS"
     }
   },
   "remote_state": {
@@ -62,12 +67,14 @@ Resources:
     "job_parameters": {
       "env": "dev"
     },
-    "run_id": [NUMID],
+    "result_state": "SUCCESS",
+    "run_id": [MY_RUN_ID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[NUMID]",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]",
     "run_type": "JOB_RUN",
     "state": {
-      "life_cycle_state": "RUNNING"
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS"
     }
   },
   "changes": {
@@ -77,15 +84,23 @@ Resources:
       "old": "dev",
       "new": "prod",
       "remote": "dev"
+    },
+    "result_state": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "new": "SUCCESS",
+      "remote": "SUCCESS"
     }
   }
 }
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[WORKSPACE_ID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
+Recreated job_runs.my_run
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> [CLI] bundle summary
 Name: job-runs-redeploy
@@ -97,27 +112,21 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[WORKSPACE_ID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
-=== the config change deleted the previous run and triggered a second, different run
+=== the config change triggered a second, different run and left the previous one alone
 >>> print_requests.py --keep //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [NUMID]
-  }
-}
 
 >>> print_requests.py //jobs/run-now
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[UUID]",
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "prod"
@@ -127,10 +136,8 @@ Resources:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

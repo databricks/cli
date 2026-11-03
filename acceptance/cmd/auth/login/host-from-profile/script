@@ -1,10 +1,7 @@
 sethome "./home"
 
-# Create an existing profile with a host
-cat > "./home/.databrickscfg" <<EOF
-[existing-profile]
-host = $DATABRICKS_HOST
-EOF
+# An existing profile with a host.
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
 title "Initial profile\n"
 cat "./home/.databrickscfg"
@@ -16,6 +13,15 @@ export BROWSER="browser.py"
 # Login with just the profile name - should use the host from the profile
 title "Login with existing profile (no host argument)"
 trace $CLI auth login --profile existing-profile
+
+title "OAuth client ID\n"
+trace print_requests.py //oidc/v1/authorize --get | gron.py | grep client_id
+
+title "Login with a client ID override\n"
+trace $CLI auth login --profile existing-profile --client-id flag-client-id
+
+title "Overridden OAuth client ID\n"
+trace print_requests.py //oidc/v1/authorize --get | gron.py | grep client_id
 
 title "Profile after login\n"
 cat "./home/.databrickscfg"

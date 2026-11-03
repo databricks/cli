@@ -10,6 +10,9 @@ type BundleDeployEvent struct {
 	// Error message encountered during the bundle deploy command, if any.
 	ErrorMessage string `json:"error_message,omitempty"`
 
+	// Deprecated: superseded by ResourcesMetadata.Resources[*].Count, which covers
+	// every resource type rather than this hand-maintained subset. Both are
+	// populated during the transition; do not add fields here for new types.
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
@@ -35,7 +38,36 @@ type BundleDeployEvent struct {
 	// Per-resource-type metadata (counts and state-size statistics).
 	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
 
+	// Usage of Python support (PyDABs). Set only when the bundle declares
+	// Python resource loaders or mutators.
+	Pydabs *BundleDeployPydabs `json:"pydabs,omitempty"`
+
+	// Git metadata of the source the bundle was deployed from. Nil when the
+	// bundle root is not inside a git repository.
+	Git *BundleGitInfo `json:"git,omitempty"`
+
+	// True when the bundle was deployed from a workspace folder: the CLI ran on a
+	// Databricks cluster with the bundle source under /Workspace/, rather than
+	// from a local checkout. A deployment attribute, not git metadata, so it sits
+	// beside Git rather than inside it.
+	FromWorkspaceFolder bool `json:"from_workspace_folder,omitempty"`
+
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
+}
+
+// BundleGitInfo mirrors the universe proto. Git provenance the CLI resolves during
+// deploy: from `.git` locally, or from the workspace API when deploying from a
+// Databricks Git folder. Values set under `bundle.git` in the configuration take
+// precedence. Mirrors the git_info sent to the Deployment Metadata Service.
+type BundleGitInfo struct {
+	// URL of the "origin" remote, with any userinfo (credentials) stripped.
+	OriginURL string `json:"origin_url,omitempty"`
+
+	// Branch deployed from.
+	Branch string `json:"branch,omitempty"`
+
+	// Full SHA of the HEAD commit deployed.
+	Commit string `json:"commit,omitempty"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There
@@ -44,9 +76,6 @@ type BundleDeployEvent struct {
 type BundleDeployExperimental struct {
 	// Number of configuration files in the bundle.
 	ConfigurationFileCount int64 `json:"configuration_file_count"`
-
-	// Size in bytes of the Terraform state file
-	TerraformStateSizeBytes int64 `json:"terraform_state_size_bytes,omitempty"`
 
 	// Number of variables in the bundle
 	VariableCount        int64 `json:"variable_count"`
@@ -75,18 +104,6 @@ type BundleDeployExperimental struct {
 	// Execution time per mutator for a selected subset of mutators.
 	BundleMutatorExecutionTimeMs []IntMapEntry `json:"bundle_mutator_execution_time_ms,omitempty"`
 
-	// Number of resources added by PythonMutator
-	PythonAddedResourcesCount int64 `json:"python_added_resources_count,omitempty"`
-
-	// Number of resources updated by PythonMutator
-	PythonUpdatedResourcesCount int64 `json:"python_updated_resources_count,omitempty"`
-
-	// Number of resource loaders declared at 'python/resources' in databricks.yml
-	PythonResourceLoadersCount int64 `json:"python_resource_loaders_count,omitempty"`
-
-	// Number of resource mutators declared at 'python/mutators' in databricks.yml
-	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
-
 	// Number of files in the synced source tree considered for upload: the full
 	// set, not the incremental delta actually transferred (an incremental deploy
 	// reports the full count even when nothing changed). The set is whatever the
@@ -112,21 +129,22 @@ type BundleDeployExperimental struct {
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
 }
 
-// BundleResourcesMetadata mirrors the universe proto. Per-resource-type
-// state-size metadata for one bundle deployment.
+// BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts
+// and state-size metadata for one bundle deployment.
 //
-// Only direct deploys are measured: the direct engine persists each resource's
-// state as a JSON blob in resources.json, so sizes are read off directly as
-// len(state) — no serialization happens at telemetry time. Terraform stores
-// state in a different shape and is not collected (the field is absent there).
+// Counts cover all resources. Sizes are only reported for the direct engine: the direct engine stores each
+// resource's state as a JSON blob in resources.json, so a size is len(state) and
+// nothing is serialized at telemetry time. Entries from the removed Terraform engine (older CLI versions) carry counts only.
 type BundleResourcesMetadata struct {
-	// Always "direct"; terraform deploys do not populate this message.
+	// Engine that ran the deploy: "direct" or "terraform".
 	StateEngine string `json:"state_engine,omitempty"`
 
-	// Size in bytes of the direct engine's resources.json state file on disk.
+	// Size in bytes of the direct engine's resources.json on disk.
 	StateFileSizeBytes int64 `json:"state_file_size_bytes,omitempty"`
 
-	// One entry per resource type present in the deployment state.
+	// One entry per resource type declared in the configuration, plus types that
+	// exist only in state: sub-resources such as "jobs.permissions", and types
+	// being removed from the bundle.
 	Resources []ResourceMetadata `json:"resources,omitempty"`
 }
 
@@ -136,14 +154,53 @@ type ResourceMetadata struct {
 	// Resource type name: "jobs", "pipelines", "schemas", ...
 	ResourceType string `json:"resource_type,omitempty"`
 
-	// Number of resources of this type tracked in the deployment state.
+	// Number of resources of this type declared in the bundle configuration, or the
+	// number of state entries for a type that exists only in state. Replaces the
+	// deprecated BundleDeployEvent.Resource*Count fields.
 	Count int64 `json:"count,omitempty"`
 
 	// State-size statistics across resources of this type, each measured as
-	// len(state) of the JSON blob stored in resources.json.
+	// len(state) of the JSON blob stored in resources.json. Zero when the type has
+	// no state: a terraform deploy, or a resource declared but not yet deployed.
 	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
 	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
 	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
+}
+
+// BundleDeployPydabs mirrors the universe proto. Usage of Python support
+// (PyDABs) in one bundle deployment.
+type BundleDeployPydabs struct {
+	// Number of resource loaders declared at 'python/resources' (or 'experimental/python/resources').
+	ResourceLoadersCount int64 `json:"resource_loaders_count"`
+
+	// Number of resource mutators declared at 'python/mutators' (or 'experimental/python/mutators').
+	ResourceMutatorsCount int64 `json:"resource_mutators_count"`
+
+	// Number of resources defined in Python.
+	AddedResourcesCount int64 `json:"added_resources_count"`
+
+	// Number of resources modified by Python mutators, including resources
+	// defined in Python, so this can overlap with AddedResourcesCount.
+	UpdatedResourcesCount int64 `json:"updated_resources_count"`
+
+	// One entry per resource type added or updated by Python, ordered by type name.
+	Resources []PydabsResourceTypeCount `json:"resources,omitempty"`
+
+	// Configuration section the user declared Python support in: 'python',
+	// 'experimental/python', or both.
+	ConfigSection PydabsConfigSection `json:"config_section,omitempty"`
+}
+
+// PydabsResourceTypeCount holds PyDABs counts for a single resource type.
+type PydabsResourceTypeCount struct {
+	// Resource type name, same values as ResourceMetadata.ResourceType.
+	ResourceType string `json:"resource_type,omitempty"`
+
+	// Number of resources of this type defined in Python.
+	AddedCount int64 `json:"added_count"`
+
+	// Number of resources of this type modified by Python mutators.
+	UpdatedCount int64 `json:"updated_count"`
 }
 
 type BoolMapEntry struct {

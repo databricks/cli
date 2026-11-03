@@ -3,10 +3,10 @@ package target
 import (
 	"context"
 	"fmt"
+	"uuid"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/google/uuid"
 )
 
 // GetProvisioned fetches a single provisioned instance by name.
@@ -28,7 +28,7 @@ func GetProvisioned(ctx context.Context, w *databricks.WorkspaceClient, name str
 func ProvisionedCredential(ctx context.Context, w *databricks.WorkspaceClient, instanceName string) (string, error) {
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
 		InstanceNames: []string{instanceName},
-		RequestId:     uuid.NewString(),
+		RequestId:     uuid.New().String(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to get database credentials: %w", err)

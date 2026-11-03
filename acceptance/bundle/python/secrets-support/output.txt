@@ -1,0 +1,32 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --var secret_value=my-secret-value --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_secret"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "secrets": {
+      "my_secret_1": {
+        "catalog_name": "main",
+        "expire_time": "[TIMESTAMP]",
+        "name": "my_secret_1 (updated)",
+        "schema_name": "default",
+        "value": "[redacted]"
+      },
+      "my_secret_2": {
+        "catalog_name": "main",
+        "expire_time": "[TIMESTAMP]",
+        "name": "my_secret_2 (updated)",
+        "schema_name": "default",
+        "value": "[redacted]"
+      }
+    }
+  }
+}

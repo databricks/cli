@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
 // Auth type names returned by credential providers.
@@ -51,20 +51,33 @@ func AuthTypeDisplayName(authType string) string {
 	return authType
 }
 
+type rewrittenAuthError struct {
+	message string
+	cause   error
+}
+
+func (e *rewrittenAuthError) Error() string {
+	return e.message
+}
+
+func (e *rewrittenAuthError) Unwrap() error {
+	return e.cause
+}
+
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns whether the error was rewritten and the rewritten error.
 func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
 	if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
-		oauthArgument, err := AuthArguments{
+		oauthArgument, argErr := AuthArguments{
 			Host:      host,
 			AccountID: accountId,
 		}.ToOAuthArgument()
-		if err != nil {
-			return false, err
+		if argErr != nil {
+			return false, argErr
 		}
 		msg := `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
   $ ` + BuildLoginCommand(ctx, profile, oauthArgument)
-		return true, errors.New(msg)
+		return true, &rewrittenAuthError{message: msg, cause: err}
 	}
 	return false, err
 }

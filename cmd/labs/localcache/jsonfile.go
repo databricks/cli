@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -73,19 +74,7 @@ func (r *LocalCache[T]) writeCache(ctx context.Context, data T) (T, error) {
 		return r.zero, fmt.Errorf("json marshal: %w", err)
 	}
 	cacheFile := r.FileName()
-	err = os.WriteFile(cacheFile, raw, userRW)
-	if errors.Is(err, fs.ErrNotExist) {
-		cacheDir := filepath.Dir(cacheFile)
-		err := os.MkdirAll(cacheDir, ownerRWXworldRX)
-		if err != nil {
-			return r.zero, fmt.Errorf("create %s: %w", cacheDir, err)
-		}
-		err = os.WriteFile(cacheFile, raw, userRW)
-		if err != nil {
-			return r.zero, fmt.Errorf("retry save cache: %w", err)
-		}
-		return data, nil
-	} else if err != nil {
+	if err := atomicfile.Write(cacheFile, raw, userRW, atomicfile.MkDir(ownerRWXworldRX)); err != nil {
 		return r.zero, fmt.Errorf("save cache: %w", err)
 	}
 	return data, nil

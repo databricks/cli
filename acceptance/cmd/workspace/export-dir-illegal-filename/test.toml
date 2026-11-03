@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # This reproduces databricks/cli#5171. The behaviour is OS-specific (see _script),
@@ -10,5 +9,4 @@ Cloud = false
 # comparison; only the captured command output is.
 Ignore = ["export/"]
 
-[Env]
-MSYS_NO_PATHCONV = "1"
+Env.MSYS_NO_PATHCONV = "1"

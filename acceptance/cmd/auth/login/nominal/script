@@ -4,6 +4,12 @@ sethome "./home"
 # and follows the redirect back to localhost.
 export BROWSER="browser.py"
 
+# Without an explicit profile, non-interactive login stores the token under
+# the host key without creating a profile.
+trace $CLI auth login --host $DATABRICKS_HOST
+trace $CLI auth token --host $DATABRICKS_HOST | gron.py | grep access_token
+
+# With an explicit profile, login saves both the profile and its token.
 trace $CLI auth login --host $DATABRICKS_HOST --profile test
 trace $CLI auth profiles
 

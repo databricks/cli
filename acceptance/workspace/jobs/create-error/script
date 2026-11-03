@@ -1,1 +1,3 @@
 trace $CLI jobs create --json '{"name":"abc"}'
+
+trace print_requests.py //jobs

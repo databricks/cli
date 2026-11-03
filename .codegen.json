@@ -8,6 +8,14 @@
         "python/uv.lock": "name = \"databricks-bundles\"\nversion = \"$VERSION\"",
         "libs/template/templates/default/library/versions.tmpl": "{{define \"latest_databricks_bundles_version\" -}}$VERSION{{- end}}"
     },
+    "nextchanges_sections": {
+        "notable-changes": "Notable Changes",
+        "cli": "CLI",
+        "air": "AI Runtime",
+        "bundles": "Bundles",
+        "dependency-updates": "Dependency Updates",
+        "api-changes": "API Changes"
+    },
     "toolchain": {
         "required": [
             "go"

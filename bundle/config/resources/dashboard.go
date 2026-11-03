@@ -78,6 +78,7 @@ func (c DashboardConfig) MarshalJSON() ([]byte, error) {
 
 type Dashboard struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	DashboardConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`
@@ -87,6 +88,14 @@ type Dashboard struct {
 	// as metadata which is needed for `databricks bundle generate dashboard --resource <dashboard_key>` to work.
 	// This is not part of DashboardConfig because we don't need to store this in the resource state.
 	FilePath string `json:"file_path,omitempty"`
+}
+
+func (r *Dashboard) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r Dashboard) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
 }
 
 func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
@@ -119,8 +128,4 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
-}
-
-func (r *Dashboard) GetURL() string {
-	return r.URL
 }

@@ -1,0 +1,14 @@
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        multifile_job:
+          tasks:
+            - task_key: from_first_file
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/first
+            - task_key: in_both_files
+              max_retries: 1
+            - task_key: same_field_both_files
+              max_retries: 1

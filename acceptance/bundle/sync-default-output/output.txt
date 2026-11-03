@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle sync
+Action: PUT: .gitignore, databricks.yml, project-folder/app.py, project-folder/query.sql
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded databricks.yml
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/query.sql

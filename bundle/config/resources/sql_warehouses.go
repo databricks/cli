@@ -13,6 +13,7 @@ import (
 
 type SqlWarehouse struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	sql.CreateWarehouseRequest
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
@@ -64,8 +65,4 @@ func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 
 func (sw *SqlWarehouse) GetName() string {
 	return sw.Name
-}
-
-func (sw *SqlWarehouse) GetURL() string {
-	return sw.URL
 }

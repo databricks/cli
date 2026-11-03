@@ -1,3 +1,0 @@
-File [TEST_TMP_DIR]/out.requests.txt not found
-
-Exit code: 1

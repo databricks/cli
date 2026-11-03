@@ -26,7 +26,7 @@ func TestTextSink_RowsProducing(t *testing.T) {
 	require.NoError(t, s.Begin(fields("id", "name")))
 	require.NoError(t, s.Row([]any{int64(1), "alice"}))
 	require.NoError(t, s.Row([]any{int64(2), "bob"}))
-	require.NoError(t, s.End("SELECT 2"))
+	require.NoError(t, s.End(t.Context(), "SELECT 2"))
 
 	assert.Equal(t,
 		"id   name\n"+
@@ -43,7 +43,7 @@ func TestTextSink_SingleRow(t *testing.T) {
 	s := newTextSink(&buf)
 	require.NoError(t, s.Begin(fields("id")))
 	require.NoError(t, s.Row([]any{int64(42)}))
-	require.NoError(t, s.End("SELECT 1"))
+	require.NoError(t, s.End(t.Context(), "SELECT 1"))
 	assert.Contains(t, buf.String(), "(1 row)\n")
 }
 
@@ -51,7 +51,7 @@ func TestTextSink_Empty(t *testing.T) {
 	var buf bytes.Buffer
 	s := newTextSink(&buf)
 	require.NoError(t, s.Begin(fields("id", "name")))
-	require.NoError(t, s.End("SELECT 0"))
+	require.NoError(t, s.End(t.Context(), "SELECT 0"))
 	assert.Contains(t, buf.String(), "(0 rows)\n")
 }
 
@@ -59,7 +59,7 @@ func TestTextSink_CommandOnly(t *testing.T) {
 	var buf bytes.Buffer
 	s := newTextSink(&buf)
 	require.NoError(t, s.Begin(nil))
-	require.NoError(t, s.End("INSERT 0 5"))
+	require.NoError(t, s.End(t.Context(), "INSERT 0 5"))
 	assert.Equal(t, "INSERT 0 5\n", buf.String())
 }
 
@@ -68,7 +68,7 @@ func TestTextSink_NULLRendersAsNULL(t *testing.T) {
 	s := newTextSink(&buf)
 	require.NoError(t, s.Begin(fields("id")))
 	require.NoError(t, s.Row([]any{nil}))
-	require.NoError(t, s.End("SELECT 1"))
+	require.NoError(t, s.End(t.Context(), "SELECT 1"))
 	assert.Contains(t, buf.String(), "NULL")
 }
 
@@ -89,7 +89,7 @@ func TestTextSink_EscapesTabAndNewlineInCells(t *testing.T) {
 	s := newTextSink(&buf)
 	require.NoError(t, s.Begin(fields("note")))
 	require.NoError(t, s.Row([]any{"a\tb\nc\rd"}))
-	require.NoError(t, s.End("SELECT 1"))
+	require.NoError(t, s.End(t.Context(), "SELECT 1"))
 	// The escape replaces tabs/newlines/CR with their backslash-letter forms
 	// so the tabwriter doesn't treat them as column or row boundaries.
 	assert.Contains(t, buf.String(), `a\tb\nc\rd`)

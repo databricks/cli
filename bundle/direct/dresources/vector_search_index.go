@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -21,10 +22,16 @@ import (
 // embedding pipeline shutdown can stretch closer to ten minutes.
 const deleteIndexTimeout = 15 * time.Minute
 
+// pendingDeletionTimeout caps how long a create is retried while the backend
+// still holds the index name from a preceding delete (see createIndex). Kept
+// deliberately short so we fail fast rather than hang for the full
+// deleteIndexTimeout: if nightlies still hit the race, raise it then.
+const pendingDeletionTimeout = time.Minute
+
 // createIndexTimeout caps the wait for an index to become ready after creation.
 // Delta sync indexes do an initial sync from the source table, which can stretch
 // out for large tables. Matches the terraform provider's defaultIndexProvisionTimeout.
-// https://github.com/databricks/terraform-provider-databricks/blob/c61a32300445f84efb2bb6827dee35e6e523f4ff/vectorsearch/resource_vector_search_index.go#L19
+// https://github.com/databricks/terraform-provider-databricks/blob/c79d82d9582ab6670468bbff303199906d47905f/vectorsearch/resource_vector_search_index.go#L19
 const createIndexTimeout = 75 * time.Minute
 
 // VectorSearchIndexState tracks the UUID of the endpoint the index is attached
@@ -76,16 +83,14 @@ func (*ResourceVectorSearchIndex) PrepareState(input *resources.VectorSearchInde
 
 func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *VectorSearchIndexState {
 	state := &VectorSearchIndexState{
-		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			DeltaSyncIndexSpec:    nil, // need to remap below
-			DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
-			IndexSubtype:          remote.IndexSubtype,
-			Name:                  remote.Name,
-			EndpointName:          remote.EndpointName,
-			IndexType:             remote.IndexType,
-			PrimaryKey:            remote.PrimaryKey,
-		},
-		EndpointUuid: remote.EndpointUuid,
+		DeltaSyncIndexSpec:    nil, // need to remap below
+		DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
+		IndexSubtype:          remote.IndexSubtype,
+		Name:                  remote.Name,
+		EndpointName:          remote.EndpointName,
+		IndexType:             remote.IndexType,
+		PrimaryKey:            remote.PrimaryKey,
+		EndpointUuid:          remote.EndpointUuid,
 	}
 	if remote.DeltaSyncIndexSpec != nil {
 		state.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{
@@ -122,7 +127,7 @@ func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*Vec
 }
 
 func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *VectorSearchIndexState) (string, *VectorSearchIndexRemote, error) {
-	index, err := r.client.VectorSearchIndexes.CreateIndex(ctx, config.CreateVectorIndexRequest)
+	index, err := r.createIndex(ctx, config.CreateVectorIndexRequest)
 	if err != nil {
 		return "", nil, err
 	}
@@ -138,8 +143,44 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 	return config.Name, &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: endpointUuid}, nil
 }
 
+// createIndex calls CreateIndex, retrying while the backend still reports the
+// name as pending deletion.
+//
+// Deleting an index completes in two backend phases: the index first disappears
+// from GET, and only later is the name released for reuse. WaitAfterDelete polls
+// GET, so it can return as soon as phase one is done and a follow-up CREATE for
+// the same name is still rejected with 400 INVALID_PARAMETER_VALUE "currently
+// pending deletion". Polling GET cannot close that race because the two phases
+// are observed on different endpoints, so the CREATE itself has to be retried.
+// The API exposes no DELETING state to poll for instead; remove this once it
+// does, or once CREATE queues behind the pending delete rather than failing.
+func (r *ResourceVectorSearchIndex) createIndex(ctx context.Context, req vectorsearch.CreateVectorIndexRequest) (*vectorsearch.VectorIndex, error) {
+	return retries.Poll(ctx, pendingDeletionTimeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
+		index, err := r.client.VectorSearchIndexes.CreateIndex(ctx, req)
+		if err == nil {
+			return index, nil
+		}
+		if isIndexPendingDeletion(err) {
+			return nil, retries.Continues("index name is still pending deletion, waiting to recreate it")
+		}
+		return nil, retries.Halt(err)
+	})
+}
+
+// isIndexPendingDeletion reports whether err is the backend's rejection of an
+// operation on an index whose deletion has not fully completed. There is no
+// distinct error code for it — the backend returns a generic
+// INVALID_PARAMETER_VALUE — so the message has to be matched.
+func isIndexPendingDeletion(err error) bool {
+	if !errors.Is(err, apierr.ErrInvalidParameterValue) {
+		return false
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && strings.Contains(apiErr.Message, "pending deletion")
+}
+
 // No DoUpdate: vector search indexes have no update API. All SDK fields are
-// declared in resources.yml under recreate_on_changes or ignore_remote_changes.
+// declared in vector_search_indexes.yml under recreate_on_changes or ignore_remote_changes.
 // If a future SDK bump adds a new field that isn't classified, the framework
 // rejects the resulting Update plan at bundle_plan.go (see also the reflection
 // test in vector_search_index_test.go which catches it earlier at unit-test time).
@@ -173,21 +214,21 @@ func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id stri
 	return &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: config.EndpointUuid}, nil
 }
 
-// WaitAfterDelete polls GetIndex until it returns 404. The DELETE call is
-// asynchronous: a follow-up CREATE for the same name (e.g. during recreate) is
-// rejected with "index is currently pending deletion" until the backend finishes
-// tearing down the embedding pipeline. The framework calls this after dropping
-// state so a wait-time failure leaves the bundle consistent.
+// WaitAfterDelete polls GetIndex until the index is gone. The DELETE call is
+// asynchronous, so without this a `bundle destroy` would report success while
+// the index is still being torn down. The framework calls this after dropping
+// state (so a wait-time failure leaves the bundle consistent) and maps the
+// terminal NotFound to success (see Adapter.WaitAfterDelete).
+//
+// This does NOT on its own make a recreate safe: the name is released after the
+// index disappears from GET, so createIndex retries the CREATE for the rest.
 func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id string) error {
 	_, err := retries.Poll[struct{}](ctx, deleteIndexTimeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
-		if getErr == nil {
-			return nil, retries.Continues("index still exists, waiting for deletion to complete")
+		if getErr != nil {
+			return nil, retries.Halt(getErr)
 		}
-		if errors.Is(getErr, apierr.ErrResourceDoesNotExist) || errors.Is(getErr, apierr.ErrNotFound) {
-			return &struct{}{}, nil
-		}
-		return nil, retries.Halt(getErr)
+		return nil, retries.Continues("index still exists, waiting for deletion to complete")
 	})
 	return err
 }

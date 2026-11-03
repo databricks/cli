@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    foo:
+      name: foo
+      source_code_path: ./app
+      # This reference must be resolved against state before the app is deployed on run.
+      resources:
+        - name: bar
+          job:
+            id: ${resources.jobs.bar.id}
+            permission: CAN_MANAGE_RUN
+  jobs:
+    bar:
+      name: bar
+    unrelated_job:
+      name: unrelated_job
+      tasks:
+        - task_key: run_baz
+          run_job_task:
+            job_id: ${resources.jobs.baz.id}
+    baz:
+      name: baz

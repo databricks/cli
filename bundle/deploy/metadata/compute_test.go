@@ -9,7 +9,8 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -39,13 +40,13 @@ func TestComputeMetadataMutator(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
-						BaseResource: resources.BaseResource{ID: "1111"},
+						ID: "1111",
 						JobSettings: jobs.JobSettings{
 							Name: "My Job One",
 						},
 					},
 					"my-job-2": {
-						BaseResource: resources.BaseResource{ID: "2222"},
+						ID: "2222",
 						JobSettings: jobs.JobSettings{
 							Name: "My Job Two",
 						},
@@ -53,13 +54,13 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline-1": {
-						BaseResource: resources.BaseResource{ID: "3333"},
+						ID: "3333",
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline One",
 						},
 					},
 					"my-pipeline-2": {
-						BaseResource: resources.BaseResource{ID: "4444"},
+						ID: "4444",
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline Two",
 						},
@@ -67,12 +68,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"my-dashboard-1": {
-						BaseResource:    resources.BaseResource{ID: "5555"},
+						ID:              "5555",
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "i/h/g",
 					},
 					"my-dashboard-2": {
-						BaseResource:    resources.BaseResource{ID: "6666"},
+						ID:              "6666",
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "l/k/j",
 					},
@@ -81,12 +82,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.jobs.my-job-1", []dyn.Location{{File: "a/b/c"}})
-	bundletest.SetLocation(b, "resources.jobs.my-job-2", []dyn.Location{{File: "d/e/f"}})
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-1", []dyn.Location{{File: "x/y/z"}})
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-2", []dyn.Location{{File: "u/v/w"}})
-	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-1", []dyn.Location{{File: "g/h/i"}})
-	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-2", []dyn.Location{{File: "j/k/l"}})
+	bundletest.SetLocation(b, "resources.jobs.my-job-1", []diag.Location{{File: "a/b/c"}})
+	bundletest.SetLocation(b, "resources.jobs.my-job-2", []diag.Location{{File: "d/e/f"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-1", []diag.Location{{File: "x/y/z"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-2", []diag.Location{{File: "u/v/w"}})
+	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-1", []diag.Location{{File: "g/h/i"}})
+	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-2", []diag.Location{{File: "j/k/l"}})
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,
@@ -142,7 +143,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, expectedMetadata, b.Metadata)
@@ -156,24 +157,24 @@ func TestComputeMetadataMutatorStateOnlyResources(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"state-only-job": {
-						BaseResource: resources.BaseResource{ID: "1111"},
+						ID: "1111",
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"state-only-pipeline": {
-						BaseResource: resources.BaseResource{ID: "2222"},
+						ID: "2222",
 					},
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"state-only-dashboard": {
-						BaseResource: resources.BaseResource{ID: "3333"},
+						ID: "3333",
 					},
 				},
 			},
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Empty(t, b.Metadata.Config.Resources.Jobs)
@@ -196,7 +197,7 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
@@ -216,8 +217,56 @@ func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
 		WorktreeRoot: path,
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, gitFolderPath, b.Metadata.Extra.GitFolderPath)
+}
+
+func TestComputeMetadataMutatorSnapshotContentPath(t *testing.T) {
+	const remoteRoot = "/Workspace/Users/test@databricks.com/.snapshots"
+
+	tests := []struct {
+		name     string
+		state    resourcestate.ExportedResourcesMap
+		expected string
+	}{
+		{
+			name:     "deployed",
+			state:    resourcestate.ExportedResourcesMap{resources.SnapshotKey: {ID: "bundle-id/content-hash"}},
+			expected: remoteRoot + "/bundle-id/content-hash/snapshot",
+		},
+		{
+			name:     "not selected",
+			state:    resourcestate.ExportedResourcesMap{resources.SnapshotKey: {ID: "bundle-id/previous-hash"}},
+			expected: remoteRoot + "/bundle-id/previous-hash/snapshot",
+		},
+		{
+			name:     "never deployed",
+			state:    resourcestate.ExportedResourcesMap{},
+			expected: "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: config.Resources{
+						Snapshots: map[string]*resources.Snapshot{
+							resources.SnapshotResourceKey: {
+								RemoteRoot: remoteRoot,
+								BundleID:   "bundle-id",
+								ZipPath:    "/tmp/content-hash.zip",
+							},
+						},
+					},
+				},
+			}
+
+			diags := bundle.Apply(t.Context(), b, Compute(tc.state))
+			require.NoError(t, diags.Error())
+
+			assert.Equal(t, tc.expected, b.Metadata.Config.Workspace.SnapshotContentPath)
+		})
+	}
 }

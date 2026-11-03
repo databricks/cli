@@ -40,12 +40,8 @@ const MaterializedConfigFile = "out.test.toml"
 func GenerateMaterializedConfig(config *TestConfig) string {
 	var buf strings.Builder
 
-	writeBool(&buf, "Local", config.Local)
 	writeBool(&buf, "Cloud", config.Cloud)
 	writeBool(&buf, "CloudSlow", config.CloudSlow)
-	writeBool(&buf, "RequiresUnityCatalog", config.RequiresUnityCatalog)
-	writeBool(&buf, "RequiresCluster", config.RequiresCluster)
-	writeBool(&buf, "RequiresWarehouse", config.RequiresWarehouse)
 	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
 	if config.Phase != 0 {
 		fmt.Fprintf(&buf, "Phase = %d\n", config.Phase)
@@ -53,9 +49,6 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 
 	for _, k := range slices.Sorted(maps.Keys(config.GOOS)) {
 		fmt.Fprintf(&buf, "GOOS.%s = %v\n", k, config.GOOS[k])
-	}
-	for _, k := range slices.Sorted(maps.Keys(config.GOOSOnPR)) {
-		fmt.Fprintf(&buf, "GOOSOnPR.%s = %v\n", k, config.GOOSOnPR[k])
 	}
 	for _, k := range slices.Sorted(maps.Keys(config.CloudEnvs)) {
 		fmt.Fprintf(&buf, "CloudEnvs.%s = %v\n", k, config.CloudEnvs[k])

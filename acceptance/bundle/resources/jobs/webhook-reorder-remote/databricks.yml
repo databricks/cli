@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: webhook reorder
+      webhook_notifications:
+        on_success:
+          - id: alpha
+          - id: beta
+          - id: gamma
+      tasks:
+        - task_key: main
+          run_job_task:
+            job_id: 123
+          webhook_notifications:
+            on_start:
+              - id: delta
+              - id: epsilon

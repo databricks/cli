@@ -1,31 +1,39 @@
 package testserver
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path"
-	"path/filepath"
+	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+	"uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/google/uuid"
 
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -39,7 +47,9 @@ const (
 	// itself a service principal.
 	GuestServicePrincipalTokenPrefix = "dbapi2"
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
-	// consistency: the first GET after a create returns 404 (not yet visible).
+	// consistency / propagation delays: the first GET after a create returns 404
+	// (not yet visible), and a deleted synced table stays in DELETING instead of
+	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
 	EventualConsistencyTokenPrefix = "dbapi3"
 	UserID                         = "1000012345"
 	TestDefaultClusterId           = "0123-456789-cluster0"
@@ -90,7 +100,16 @@ var (
 	idMutex      sync.Mutex
 	lastNowNano  int64
 	lastNowMilli int64
+	workspaceID  atomic.Int64
 )
+
+// nextTreenodeID returns 16-digit ids, like real workspace object ids. Scripts register them as
+// literal replacements, which apply before the harness's patterns; a short id would also match
+// inside other numbers in the output (timestamps, UUIDs, ports) and cut them up. A 16-digit id
+// starting with 4 practically never occurs inside those, and never looks like a timestamp.
+func nextTreenodeID() int64 {
+	return 4_000_000_000_000_000 + workspaceID.Add(1)
+}
 
 // IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
 func nextID() int64 {
@@ -128,12 +147,19 @@ func nowMilli() int64 {
 	return lastNowMilli
 }
 
+// nextTimestamp returns a strictly-increasing RFC3339 timestamp with nanosecond
+// precision. The sub-second component keeps distinct events ordered even within the
+// same wall-clock second, which the dashboard publish lifecycle relies on to compare
+// a draft's update_time against a published revision's revision_create_time.
+func nextTimestamp() string {
+	return time.Unix(0, nowNano()).UTC().Format(time.RFC3339Nano)
+}
+
 func nextUUID() string {
 	var b [16]byte
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
 	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
-	u := uuid.Must(uuid.FromBytes(b[:]))
-	return u.String()
+	return uuid.UUID(b).String()
 }
 
 func nextDashboardID() string {
@@ -156,19 +182,44 @@ type fakeDashboard struct {
 	InputSerializedDashboard string `json:"-"`
 }
 
+// snapshotRecord holds the create-request fields and the out-of-band modification flag for one
+// immutable snapshot. Its JSON tags match what the accept test's info endpoint returns so the
+// test script can call the endpoint and assert the fields with jq.
+type snapshotRecord struct {
+	Dirty     bool             `json:"dirty"`
+	RelPath   string           `json:"relative_path"`
+	ACL       []map[string]any `json:"access_control_list"`
+	CanManage []map[string]any `json:"can_manage_principals"`
+}
+
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
 	mu                 sync.Mutex
 	url                string
 	isServicePrincipal bool
 
+	// eventualConsistency simulates propagation delays (see EventualConsistencyTokenPrefix).
+	// For synced tables it makes deletion slow: a deleted table stays in DELETING and keeps
+	// being returned by GET, so the direct engine's post-delete poll (WaitAfterDelete) has a
+	// real teardown to wait out. Off by default, so the default path and terraform (which
+	// recreates without polling) keep immediate deletion.
+	eventualConsistency bool
+
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
+	// dbfs is the DBFS namespace, created on first use (see dbfs.go).
+	dbfs *fakeDbfs
+
+	// snapshots records immutable-snapshot content paths. Breaking the glass on a
+	// recorded path flips it dirty for good, as in the real API.
+	snapshots map[string]*snapshotRecord
+
 	Jobs                  map[int64]jobs.Job
 	JobRuns               map[int64]jobs.Run
 	JobRunOutputs         map[int64]jobs.RunOutput
+	JobRunIdempotency     map[string]int64
 	Pipelines             map[string]pipelines.GetPipelineResponse
 	PipelineUpdates       map[string]bool
 	Monitors              map[string]catalog.MonitorInfo
@@ -185,16 +236,33 @@ type FakeWorkspace struct {
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
+	ClusterLibraries      map[string][]compute.Library // cluster id -> installed libraries
+	InstancePools         map[string]compute.GetInstancePool
+	ClusterPolicies       map[string]compute.Policy
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
+	ModelServices         map[string]catalog.ModelService
+	McpServices           map[string]catalog.McpService
+	ModelProviderServices map[string]catalog.ModelProviderService
+
+	Features              map[string]ml.Feature
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
 
+	// VectorSearchIndexesPendingDeletion counts how many further CREATEs an
+	// already-deleted index name must reject with "pending deletion". See
+	// VectorSearchIndexDelete.
+	VectorSearchIndexesPendingDeletion map[string]int
+
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
+	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
+
+	// WorkspaceSettings holds settings written through the settings v2 public API, keyed by name.
+	WorkspaceSettings map[string]settingsv2.Setting
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
@@ -207,14 +275,15 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects     map[string]postgres.Project
-	PostgresBranches     map[string]postgres.Branch
-	PostgresCatalogs     map[string]postgres.Catalog
-	PostgresDatabases    map[string]postgres.Database
-	PostgresEndpoints    map[string]postgres.Endpoint
-	PostgresRoles        map[string]postgres.Role
-	PostgresSyncedTables map[string]postgres.SyncedTable
-	PostgresOperations   map[string]postgres.Operation
+	PostgresProjects          map[string]postgres.Project
+	PostgresBranches          map[string]postgres.Branch
+	PostgresCatalogs          map[string]postgres.Catalog
+	PostgresDatabases         map[string]postgres.Database
+	PostgresEndpoints         map[string]postgres.Endpoint
+	PostgresRoles             map[string]postgres.Role
+	PostgresSyncedTables      map[string]postgres.SyncedTable
+	PostgresSnapshotSchedules map[string]postgres.SnapshotSchedule
+	PostgresOperations        map[string]postgres.Operation
 
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
@@ -226,6 +295,22 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// DmsDeployments holds Deployment Metadata Service (DMS) records, keyed by
+	// deployment ID. Each record carries its versions and latest resource state.
+	DmsDeployments map[string]*DmsDeployment
+
+	// DmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment made for
+	// it. An ID appears here before DmsDeployments has a record, which its first version
+	// creates, so the node is what makes the ID valid in between.
+	DmsDeploymentNodes map[string]string
+
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -234,6 +319,85 @@ func (s *FakeWorkspace) LockUnlock() func() {
 	}
 	s.mu.Lock()
 	return func() { s.mu.Unlock() }
+}
+
+// parseUpdateFields decodes an update payload into its raw fields, so a handler can tell
+// a field explicitly set to a zero value from one the caller omitted.
+func parseUpdateFields(body []byte) (map[string]json.RawMessage, *Response) {
+	var fields map[string]json.RawMessage
+
+	if err := json.Unmarshal(body, &fields); err != nil {
+		return nil, &Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+	return fields, nil
+}
+
+// parseUCUpdate is parseUpdateFields for the UC APIs that reject a payload carrying no
+// field to act on, answering "<operation> Nothing to update." (400) rather than treating it
+// as a no-op. A key set to null does not count.
+//
+// Verified against a real workspace for schemas, volumes and catalogs: {} and
+// {"comment": null} are rejected, while {"comment": ""} and
+// {"custom_max_retention_hours": 0} are accepted. Registered models accept {} instead, so
+// they use parseUpdateFields.
+func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *Response) {
+	fields, errResponse := parseUpdateFields(body)
+	if errResponse != nil {
+		return nil, errResponse
+	}
+
+	for _, value := range fields {
+		if string(value) != "null" {
+			return fields, nil
+		}
+	}
+
+	return nil, &Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    operation + " Nothing to update.",
+		},
+	}
+}
+
+// applyUpdatedFields copies every field the update payload names from update onto
+// existing, matched by JSON name, and marks it force-send so a zero value survives the
+// response encoding (the stored *Info types are all omitempty).
+//
+// Fields the payload omits are left untouched: a partial-update API changes only what the
+// caller names, and modelling that is the whole point of these fakes. Fields the payload
+// names but the stored type lacks (new_name, force) are skipped for the caller to handle.
+// existing must be a pointer; update is passed by value.
+func applyUpdatedFields(existing, update any, fields map[string]json.RawMessage) {
+	dst := reflect.ValueOf(existing).Elem()
+	src := reflect.ValueOf(update)
+
+	for i := range src.Type().NumField() {
+		name := structtag.JSONTag(src.Type().Field(i).Tag.Get("json")).Name()
+		if name == "" || name == "-" {
+			continue
+		}
+		if _, ok := fields[name]; !ok {
+			continue
+		}
+		dstField := dst.FieldByName(src.Type().Field(i).Name)
+		if !dstField.IsValid() || !dstField.CanSet() || dstField.Type() != src.Field(i).Type() {
+			continue
+		}
+		dstField.Set(src.Field(i))
+		forceSend := dst.FieldByName("ForceSendFields")
+		if forceSend.IsValid() && forceSend.CanSet() {
+			goName := src.Type().Field(i).Name
+			// Repeated updates would otherwise keep appending the same name.
+			if !slices.Contains(forceSend.Interface().([]string), goName) {
+				forceSend.Set(reflect.Append(forceSend, reflect.ValueOf(goName)))
+			}
+		}
+	}
 }
 
 // Generic functions to handle map operations
@@ -245,6 +409,23 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", value, key)},
+		}
+	}
+	return Response{
+		Body: value,
+	}
+}
+
+// MapGetUC is MapGet for Unity Catalog securables. The CLI surfaces the API's
+// message verbatim, and UC words it as "Volume 'main.s.v' does not exist."
+func MapGetUC[T any](w *FakeWorkspace, collection map[string]T, key, securable string) Response {
+	defer w.LockUnlock()()
+
+	value, ok := collection[key]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("%s '%s' does not exist.", securable, key)},
 		}
 	}
 	return Response{
@@ -285,29 +466,31 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 }
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
+	eventualConsistency := strings.HasPrefix(token, EventualConsistencyTokenPrefix)
 	return &FakeWorkspace{
-		url:                url,
-		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		url:                 url,
+		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		eventualConsistency: eventualConsistency,
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace",
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Users": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users",
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Users/" + TestUser.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users/" + TestUser.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Users/" + TestUserSP.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users/" + TestUserSP.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			// The user home also exists under the /Workspace alias on real
 			// workspaces, so model it here too. Imports require the parent
@@ -315,38 +498,44 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			"/Workspace/Users": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users",
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Workspace/Users/" + TestUser.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users/" + TestUser.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Workspace/Users/" + TestUserSP.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users/" + TestUserSP.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
+		snapshots:    make(map[string]*snapshotRecord),
 
-		Jobs:                map[int64]jobs.Job{},
-		JobRuns:             map[int64]jobs.Run{},
-		JobRunOutputs:       map[int64]jobs.RunOutput{},
-		Grants:              map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:           map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:     map[string]bool{},
-		Monitors:            map[string]catalog.MonitorInfo{},
-		Apps:                map[string]apps.App{},
-		Catalogs:            map[string]catalog.CatalogInfo{},
-		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
-		Schemas:             map[string]catalog.SchemaInfo{},
-		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
-		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
-		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
-		GenieSpaces:         map[string]dashboards.GenieSpace{},
+		Jobs:                  map[int64]jobs.Job{},
+		JobRuns:               map[int64]jobs.Run{},
+		JobRunOutputs:         map[int64]jobs.RunOutput{},
+		JobRunIdempotency:     map[string]int64{},
+		Grants:                map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:             map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:       map[string]bool{},
+		Monitors:              map[string]catalog.MonitorInfo{},
+		Apps:                  map[string]apps.App{},
+		Catalogs:              map[string]catalog.CatalogInfo{},
+		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},
+		Schemas:               map[string]catalog.SchemaInfo{},
+		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
+		ModelServices:         map[string]catalog.ModelService{},
+		McpServices:           map[string]catalog.McpService{},
+		ModelProviderServices: map[string]catalog.ModelProviderService{},
+		Features:              map[string]ml.Feature{},
+		Volumes:               map[string]catalog.VolumeInfo{},
+		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
+		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
+		GenieSpaces:           map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,
@@ -361,6 +550,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SecretScopes:              map[string]workspace.SecretScope{},
 		Secrets:                   map[string]map[string]string{},
 		Acls:                      map[string][]workspace.AclItem{},
+		WorkspaceSettings:         map[string]settingsv2.Setting{},
 		Permissions:               map[string]iam.ObjectPermissions{},
 		Groups:                    map[string]iam.Group{},
 		DatabaseInstances:         map[string]database.DatabaseInstance{},
@@ -373,20 +563,38 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
+		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
+		DmsDeployments:            map[string]*DmsDeployment{},
+		DmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},
 		ModelRegistryModelIDs:     map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
+			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
+			// requires (ValidateClusterAccess rejects anything else), matching the cloud
+			// TEST_DEFAULT_CLUSTER_ID this stands in for.
 			TestDefaultClusterId: {
-				ClusterId:   TestDefaultClusterId,
-				ClusterName: "DEFAULT Test Cluster",
+				ClusterId:        TestDefaultClusterId,
+				ClusterName:      "DEFAULT Test Cluster",
+				State:            compute.StateRunning,
+				DataSecurityMode: compute.DataSecurityModeSingleUser,
+				SingleUserName:   TestUser.UserName,
 			},
 		},
+		InstancePools:    map[string]compute.GetInstancePool{},
+		ClusterLibraries: map[string][]compute.Library{},
+		ClusterPolicies: map[string]compute.Policy{
+			// Seeded so the stateful list keeps backing the variable-lookup tests
+			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
+			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
+			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
+		},
+		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
 }
 
@@ -398,19 +606,103 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
+// gitInfoBlock is the git_info block get-status adds for return_git_info=true.
+// workspace.ObjectInfo does not model it (the field is undocumented), so it is
+// merged into the response separately, see withGitInfo.
+//
+// A Git folder that has Git CLI access does not store the git metadata on the
+// workspace object, so Branch, HeadCommitID and URL are empty for one; only a
+// standard Git folder reports them.
+type gitInfoBlock struct {
+	Branch       string `json:"branch,omitempty"`
+	HeadCommitID string `json:"head_commit_id,omitempty"`
+	ID           int64  `json:"id"`
+	Path         string `json:"path"`
+	URL          string `json:"url,omitempty"`
+}
+
+// withGitInfo returns info as an object with a git_info block added.
+//
+// It cannot be a struct embedding workspace.ObjectInfo: ObjectInfo declares
+// MarshalJSON, which gets promoted to the embedding struct, so the outer
+// git_info field would be dropped from the output without any error. The
+// intermediate map holds json.RawMessage rather than any, so that large ids do
+// not lose precision by passing through float64.
+func withGitInfo(info workspace.ObjectInfo, gi gitInfoBlock) (any, error) {
+	infoJSON, err := json.Marshal(info)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]json.RawMessage{}
+	if err := json.Unmarshal(infoJSON, &out); err != nil {
+		return nil, err
+	}
+	giJSON, err := json.Marshal(gi)
+	if err != nil {
+		return nil, err
+	}
+	out["git_info"] = giJSON
+	return out, nil
+}
+
+// gitFolderFor returns the Git folder containing objectPath, which is the
+// longest registered Git folder path that is a prefix of it. get-status reports
+// the containing folder's metadata for paths inside a Git folder, not just for
+// its root.
+func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, bool) {
+	longest := ""
+	for repoPath := range s.repoIdByPath {
+		if objectPath != repoPath && !strings.HasPrefix(objectPath, repoPath+"/") {
+			continue
+		}
+		if len(repoPath) > len(longest) {
+			longest = repoPath
+		}
+	}
+	if longest == "" {
+		return workspace.RepoInfo{}, false
+	}
+	return s.Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
+}
+
+// isGitCliFolder reports whether a Git folder at this path has Git CLI access.
+// Those are materialized as plain DIRECTORY nodes outside /Repos, while a
+// standard Git folder under /Repos keeps the REPO object type. The /Workspace
+// mount prefix is optional on a request, so it is not part of the distinction.
+func isGitCliFolder(repoPath string) bool {
+	return !strings.HasPrefix(strings.TrimPrefix(repoPath, "/Workspace"), "/Repos/")
+}
+
+func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo bool) Response {
+	if !strings.HasPrefix(requestPath, "/") {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": fmt.Sprintf("Path (%s) doesn't start with '/'", requestPath)},
+		}
+	}
+
 	defer s.LockUnlock()()
 
 	// The real API collapses duplicate slashes, so look up the cleaned path.
 	cleaned := path.Clean(requestPath)
 
 	var info workspace.ObjectInfo
-	if dirInfo, ok := s.directories[cleaned]; ok {
+	// A Git folder root is reported as the repo, before any directory entry for
+	// the same path: mkdirs of a path inside a Git folder seeds its ancestors,
+	// which would otherwise shadow the root and report the wrong object id.
+	if repoId, ok := s.repoIdByPath[cleaned]; ok {
+		// Control-plane repos (under /Repos) report the REPO object type, while
+		// Git-CLI-enabled folders elsewhere are materialized as plain DIRECTORY
+		// nodes. Both resolve to a valid repo ID via the repos API.
+		objectType := workspace.ObjectTypeRepo
+		if isGitCliFolder(cleaned) {
+			objectType = workspace.ObjectTypeDirectory
+		}
+		info = workspace.ObjectInfo{ObjectType: objectType, Path: cleaned, ObjectId: repoId}
+	} else if dirInfo, ok := s.directories[cleaned]; ok {
 		info = dirInfo
 	} else if entry, ok := s.files[cleaned]; ok {
 		info = entry.Info
-	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
-		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
@@ -427,21 +719,58 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 		info.Path = strings.TrimPrefix(info.Path, "/Workspace")
 	}
 
+	if returnGitInfo {
+		if repo, ok := s.gitFolderFor(cleaned); ok {
+			// The real API reports the Git folder root without the /Workspace mount
+			// prefix, whichever spelling the folder was created with.
+			gi := gitInfoBlock{ID: repo.Id, Path: strings.TrimPrefix(repo.Path, "/Workspace")}
+			if isGitCliFolder(repo.Path) {
+				info.DirectoryInfo = &workspace.DirectoryInfo{IsGitFolder: true}
+			} else {
+				gi.Branch = repo.Branch
+				gi.HeadCommitID = repo.HeadCommitId
+				gi.URL = repo.Url
+			}
+			body, err := withGitInfo(info, gi)
+			if err != nil {
+				return Response{
+					StatusCode: 500,
+					Body:       fmt.Sprintf("internal error: %s", err),
+				}
+			}
+			return Response{Body: body}
+		}
+	}
+
 	return Response{Body: info}
 }
 
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	defer s.LockUnlock()()
 
+	// The real API collapses duplicate slashes, so look up the cleaned path.
+	cleaned := path.Clean(listPath)
+
+	// The real API 404s on a missing path rather than reporting an empty directory.
+	// Repos are listable but tracked outside s.directories, so admit them too.
+	_, isDir := s.directories[cleaned]
+	_, isRepo := s.repoIdByPath[cleaned]
+	if !isDir && !isRepo {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", listPath)},
+		}
+	}
+
 	var objects []workspace.ObjectInfo
 
 	for filePath, entry := range s.files {
-		if path.Dir(filePath) == listPath {
+		if path.Dir(filePath) == cleaned {
 			objects = append(objects, entry.Info)
 		}
 	}
 	for dirPath, dirInfo := range s.directories {
-		if dirPath != listPath && path.Dir(dirPath) == listPath {
+		if dirPath != cleaned && path.Dir(dirPath) == cleaned {
 			objects = append(objects, dirInfo)
 		}
 	}
@@ -455,6 +784,113 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	}
 }
 
+// FsListDirectory implements GET /api/2.0/fs/directories/{path}. A path that is
+// not a directory, including one pointing at a file, is a 404, as it is for HEAD.
+func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
+	if !strings.HasPrefix(dirPath, "/") {
+		dirPath = "/" + dirPath
+	}
+
+	defer s.LockUnlock()()
+
+	if _, isDir := s.directories[dirPath]; !isDir {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "directory does not exist"},
+		}
+	}
+
+	var contents []files.DirectoryEntry
+
+	for filePath, entry := range s.files {
+		if path.Dir(filePath) == dirPath {
+			contents = append(contents, files.DirectoryEntry{
+				Name:     path.Base(filePath),
+				Path:     filePath,
+				FileSize: int64(len(entry.Data)),
+			})
+		}
+	}
+	for childPath := range s.directories {
+		if childPath != dirPath && path.Dir(childPath) == dirPath {
+			contents = append(contents, files.DirectoryEntry{
+				Name:        path.Base(childPath),
+				Path:        childPath,
+				IsDirectory: true,
+			})
+		}
+	}
+
+	slices.SortFunc(contents, func(a, b files.DirectoryEntry) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return Response{
+		Body: files.ListDirectoryResponse{Contents: contents},
+	}
+}
+
+// FsDeleteFile implements DELETE /api/2.0/fs/files/{path}.
+func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = "/" + filePath
+	}
+
+	defer s.LockUnlock()()
+
+	if _, exists := s.files[filePath]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "file does not exist"},
+		}
+	}
+
+	delete(s.files, filePath)
+	return Response{}
+}
+
+// RecordSnapshot stores a create-request record for the snapshot at contentPath.
+func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canManage []map[string]any) {
+	defer s.LockUnlock()()
+	s.snapshots[contentPath] = &snapshotRecord{
+		Dirty:     false,
+		RelPath:   relPath,
+		ACL:       acl,
+		CanManage: canManage,
+	}
+}
+
+// SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of band,
+// and whether a snapshot is recorded there at all.
+func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	if !ok {
+		return false, false
+	}
+	return rec.Dirty, true
+}
+
+// SnapshotInfo returns the stored create-request record for the snapshot at contentPath.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	return rec, ok
+}
+
+// BreakGlassSnapshot marks the snapshot at contentPath dirty. The real API flips the flag when
+// the glass is broken, not when a file changes: until then the content is read-only to callers.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) BreakGlassSnapshot(contentPath string) (ok bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	if ok {
+		rec.Dirty = true
+	}
+	return ok
+}
+
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
 	// The real mkdirs API creates all intermediate directories ("mkdir -p"),
@@ -464,7 +900,7 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 			s.directories[dir] = workspace.ObjectInfo{
 				ObjectType: "DIRECTORY",
 				Path:       dir,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			}
 		}
 	}
@@ -472,12 +908,42 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
+	if _, isDir := s.directories[path]; isDir {
+		return exportDirectory(path)
+	}
 	return s.files[path].Data
 }
 
-func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
+// exportDirectory mimics the real API, which exports a directory as a ZIP archive even with
+// direct_download=true. Only the directory's own entry is included: callers just need to see
+// that they got an archive rather than a file.
+func exportDirectory(dirPath string) []byte {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	if _, err := zw.Create(path.Base(dirPath) + "/"); err != nil {
+		panic(err)
+	}
+	if err := zw.Close(); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
+}
+
+// WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
+// non-recursive delete of a directory that still has children fails instead of removing
+// it, which is what lets a caller delete a directory only if it is empty.
+func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 	defer s.LockUnlock()()
 	if !recursive {
+		if _, isDir := s.directories[path]; isDir && s.hasChildren(path) {
+			return Response{
+				StatusCode: 400,
+				Body: map[string]string{
+					"error_code": "DIRECTORY_NOT_EMPTY",
+					"message":    "Folder (" + path + ") is not empty",
+				},
+			}
+		}
 		delete(s.files, path)
 		delete(s.directories, path)
 	} else {
@@ -492,61 +958,381 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 			}
 		}
 	}
+	return Response{}
 }
 
+// hasChildren reports whether any file or directory lives under dirPath. Callers must
+// hold the lock.
+func (s *FakeWorkspace) hasChildren(dirPath string) bool {
+	prefix := dirPath + "/"
+	for key := range s.files {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	for key := range s.directories {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// notebookSourceMarker is the text that makes the workspace import a source
+// file as a notebook.
+const notebookSourceMarker = "Databricks notebook source"
+
+// notebookDetectionLength is how many leading bytes the workspace reads to
+// classify a source file (NOTEBOOK_IDENTIFIER_BUFFER_LENGTH in universe).
+const notebookDetectionLength = 200
+
+// Source notebook languages by extension. The workspace matches the extension
+// case-insensitively, so ".R", the conventional spelling for R sources, counts too.
+var sourceNotebookLanguages = map[string]workspace.Language{
+	".py":    workspace.LanguagePython,
+	".sql":   workspace.LanguageSql,
+	".scala": workspace.LanguageScala,
+	".r":     workspace.LanguageR,
+}
+
+// notebookDetector reports whether body uploaded at filePath is imported as a
+// notebook, and in which language.
+type notebookDetector func(filePath string, body []byte) (workspace.Language, bool)
+
+// detectLegacyNotebook mirrors the legacy import-file endpoint, which looks for
+// the marker on the first line only (NotebookUtils.checkSourceFileNotebook in
+// universe).
+func detectLegacyNotebook(filePath string, body []byte) (workspace.Language, bool) {
+	language, ok := sourceNotebookLanguages[strings.ToLower(path.Ext(filePath))]
+	firstLine, _, _ := bytes.Cut(notebookDetectionPrefix(body), []byte("\n"))
+	return language, ok && bytes.Contains(firstLine, []byte(notebookSourceMarker))
+}
+
+// detectAutoNotebook mirrors /workspace/import with format=AUTO, which finds the
+// marker on any line of the leading bytes.
+func detectAutoNotebook(filePath string, body []byte) (workspace.Language, bool) {
+	language, ok := sourceNotebookLanguages[strings.ToLower(path.Ext(filePath))]
+	return language, ok && bytes.Contains(notebookDetectionPrefix(body), []byte(notebookSourceMarker))
+}
+
+func notebookDetectionPrefix(body []byte) []byte {
+	return body[:min(len(body), notebookDetectionLength)]
+}
+
+// notebookSourceName returns the name a notebook reserves next to it: SQL
+// notebook "x" reserves "x.sql", so a file "x.sql" and notebook "x" can't coexist.
+func notebookSourceName(notebookPath string, language workspace.Language) string {
+	for ext, l := range sourceNotebookLanguages {
+		if l == language {
+			return notebookPath + ext
+		}
+	}
+	return ""
+}
+
+// importConflicts holds an endpoint's responses for an import that would
+// replace an object of another type. Overwrite never changes an object's type.
+type importConflicts struct {
+	// nameTaken is returned when a notebook's source name is taken by a file or directory.
+	nameTaken func(requestPath, name string) Response
+	// notebookTaken is returned when a file's path is an existing notebook's source name.
+	notebookTaken func(filePath string) Response
+}
+
+var workspaceImportConflicts = importConflicts{
+	nameTaken:     workspaceImportNameTaken,
+	notebookTaken: workspaceImportNotebookTaken,
+}
+
+func workspaceImportNameTaken(_, name string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "RESOURCE_ALREADY_EXISTS",
+			"message":    fmt.Sprintf("Node named '%s' already exists", name),
+		},
+	}
+}
+
+func workspaceImportNotebookTaken(string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]any{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "Requested node type [FILE] is different from the existing node type [NOTEBOOK]",
+			"details": []map[string]any{
+				{
+					"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+					"reason": "WORKSPACE_OBJECT_TYPE_MISMATCH",
+					"domain": "workspace.databricks.com",
+				},
+			},
+		},
+	}
+}
+
+var importFileConflicts = importConflicts{
+	nameTaken:     importFileNameTaken,
+	notebookTaken: importFileNotebookTaken,
+}
+
+// importFileNameTaken wraps the notebook import error the way the legacy
+// endpoint does: in the message, without an error code.
+func importFileNameTaken(requestPath, name string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"message": fmt.Sprintf("Request failed for POST %s: RESOURCE_ALREADY_EXISTS: Node named '%s' already exists", requestPath, name),
+		},
+	}
+}
+
+func importFileNotebookTaken(filePath string) Response {
+	return Response{
+		StatusCode: http.StatusConflict,
+		Body: map[string]string{
+			"message": fmt.Sprintf("Creating file failed. An item with path %s already exists", filePath),
+		},
+	}
+}
+
+// WorkspaceFilesImportFile mirrors the legacy import-file endpoint.
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
+	// The endpoint matches this extension case-sensitively.
+	if path.Ext(filePath) == ".zip" {
+		return s.importFileZip(filePath, body, overwrite)
+	}
+	return s.importFile(filePath, body, overwrite, detectLegacyNotebook, importFileConflicts)
+}
+
+// importFileZip mirrors import-file for a .zip (importZipFile in universe): each
+// entry is imported into the archive's parent folder, the archive itself is not
+// stored, and directories must have their own entry.
+func (s *FakeWorkspace) importFileZip(zipPath string, body []byte, overwrite bool) Response {
+	if !strings.HasPrefix(zipPath, "/") {
+		zipPath = "/" + zipPath
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       map[string]string{"message": "Failed to unzip with error: " + err.Error()},
+		}
+	}
+
+	parent := path.Dir(zipPath)
+	for _, entry := range zr.File {
+		// macOS archives carry an extra __MACOSX directory.
+		if strings.HasPrefix(entry.Name, "__MACOSX") {
+			continue
+		}
+		entryPath := path.Join(parent, entry.Name)
+		if entry.FileInfo().IsDir() {
+			s.WorkspaceMkdirs(workspace.Mkdirs{Path: entryPath})
+			continue
+		}
+		if strings.HasSuffix(entry.Name, ".zip") {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": fmt.Sprintf("Request failed for POST %s: don't support importing nested zip files", zipPath)},
+			}
+		}
+		data, err := readZipEntry(entry)
+		if err != nil {
+			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
+		}
+		if resp := s.importFile(entryPath, data, overwrite, detectLegacyNotebook, importFileConflicts); resp.StatusCode != 0 {
+			return resp
+		}
+	}
+	return Response{}
+}
+
+// WorkspaceImportAutoFile mirrors /workspace/import with format=AUTO for a
+// file that is not an archive or another asset type.
+func (s *FakeWorkspace) WorkspaceImportAutoFile(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, detectAutoNotebook, workspaceImportConflicts)
+}
+
+// WorkspaceImportZipFolder mirrors /workspace/import with format=AUTO for a .zip path
+// (ZipImporter in universe): the archive is extracted into a new folder at the path
+// without its .zip extension. An existing object at that path is never overwritten.
+func (s *FakeWorkspace) WorkspaceImportZipFolder(zipPath string, body []byte, overwrite bool) Response {
+	if !strings.HasPrefix(zipPath, "/") {
+		zipPath = "/" + zipPath
+	}
+	targetDir := strings.TrimSuffix(zipPath, ".zip")
+
+	exists := func() bool {
+		defer s.LockUnlock()()
+		_, isDir := s.directories[targetDir]
+		_, isFile := s.files[targetDir]
+		return isDir || isFile
+	}()
+	if exists {
+		if overwrite {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "Overwrite cannot be used for AUTO format when importing a folder.",
+				},
+			}
+		}
+		return importAlreadyExists(targetDir + " already exists. Please pass overwrite=true to overwrite it.")
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message":    "Failed to unzip with error: " + err.Error(),
+			},
+		}
+	}
+
+	var entries []*zip.File
+	roots := map[string]bool{}
+	for _, entry := range zr.File {
+		if strings.HasPrefix(entry.Name, "__MACOSX") || entry.Name == "manifest.mf" {
+			continue
+		}
+		entries = append(entries, entry)
+		if root, _, _ := strings.Cut(entry.Name, "/"); root != "" {
+			roots[root] = true
+		}
+	}
+
+	// With a single root the archive's top-level directory is renamed to the target
+	// directory; with several roots they are all placed inside it.
+	baseDir, dirName := path.Split(targetDir)
+	rebase := func(name string) string {
+		if len(roots) > 1 {
+			return dirName + "/" + name
+		}
+		if _, rest, ok := strings.Cut(name, "/"); ok {
+			return dirName + "/" + rest
+		}
+		return name
+	}
+
+	s.WorkspaceMkdirs(workspace.Mkdirs{Path: targetDir})
+	for _, entry := range entries {
+		entryPath := path.Join(baseDir, rebase(entry.Name))
+		if entry.FileInfo().IsDir() {
+			s.WorkspaceMkdirs(workspace.Mkdirs{Path: entryPath})
+			continue
+		}
+		data, err := readZipEntry(entry)
+		if err != nil {
+			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
+		}
+		if resp := s.importFile(entryPath, data, false, detectAutoNotebook, workspaceImportConflicts); resp.StatusCode != 0 {
+			return resp
+		}
+	}
+	return Response{}
+}
+
+func readZipEntry(entry *zip.File) ([]byte, error) {
+	rc, err := entry.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	return io.ReadAll(rc)
+}
+
+// WorkspaceImportRawFile stores body as a file without notebook detection, as
+// /workspace/import does for format=RAW.
+func (s *FakeWorkspace) WorkspaceImportRawFile(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, nil, workspaceImportConflicts)
+}
+
+// importFile stores body at filePath, as a notebook if detect says so. A nil
+// detect always stores a file.
+func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite bool, detect notebookDetector, conflicts importConflicts) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
 
 	defer s.LockUnlock()()
 
-	workspacePath := filePath
-
-	if resp, ok := s.requireParentDirectory(workspacePath); !ok {
+	if resp, ok := s.requireParentDirectory(filePath); !ok {
 		return resp
 	}
 
 	if !overwrite {
-		if _, exists := s.files[workspacePath]; exists {
+		if _, exists := s.files[filePath]; exists {
 			return Response{
 				StatusCode: 409,
-				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", filePath)},
 			}
 		}
 	}
 
-	// Note: Files with .py, .scala, .r or .sql extension can
-	// be notebooks if they contain a magical "Databricks notebook source"
-	// header comment. We omit support non-python extensions for now for simplicity.
-	extension := filepath.Ext(filePath)
-	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
-		// Notebooks are stripped of their extension by the workspace import API.
-		workspacePath = strings.TrimSuffix(filePath, extension)
-		s.files[workspacePath] = FileEntry{
-			Info: workspace.ObjectInfo{
-				ObjectType: "NOTEBOOK",
-				Path:       workspacePath,
-				Language:   "PYTHON",
-				ObjectId:   nextID(),
-			},
-			Data: body,
-		}
-	} else {
-		// The endpoint does not set language for files, so we omit that
-		// here as well.
-		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
-		s.files[workspacePath] = FileEntry{
-			Info: workspace.ObjectInfo{
-				ObjectType: "FILE",
-				Path:       workspacePath,
-				ObjectId:   nextID(),
-			},
-			Data: body,
+	if detect != nil {
+		if language, isNotebook := detect(filePath, body); isNotebook {
+			// Notebooks are stripped of their extension by the workspace import API.
+			notebookPath := strings.TrimSuffix(filePath, path.Ext(filePath))
+			return s.storeNotebook(filePath, notebookPath, body, language, conflicts)
 		}
 	}
 
+	if s.isNotebookSourceName(filePath) {
+		return conflicts.notebookTaken(filePath)
+	}
+
+	// The endpoint does not set language for files, so we omit that
+	// here as well.
+	// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
+	s.files[filePath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "FILE",
+			Path:       filePath,
+			ObjectId:   nextTreenodeID(),
+		},
+		Data: body,
+	}
 	return Response{}
+}
+
+// storeNotebook stores a notebook at notebookPath unless a file or directory
+// holds its source name. The caller must hold the lock.
+func (s *FakeWorkspace) storeNotebook(requestPath, notebookPath string, body []byte, language workspace.Language, conflicts importConflicts) Response {
+	sourceName := notebookSourceName(notebookPath, language)
+	_, isFile := s.files[sourceName]
+	_, isDir := s.directories[sourceName]
+	if isFile || isDir {
+		return conflicts.nameTaken(requestPath, path.Base(sourceName))
+	}
+
+	s.files[notebookPath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "NOTEBOOK",
+			Path:       notebookPath,
+			Language:   language,
+			ObjectId:   nextTreenodeID(),
+		},
+		Data: body,
+	}
+	return Response{}
+}
+
+// isNotebookSourceName reports whether filePath is the source name of an
+// existing notebook. The caller must hold the lock.
+func (s *FakeWorkspace) isNotebookSourceName(filePath string) bool {
+	ext := path.Ext(filePath)
+	if ext == "" {
+		return false
+	}
+	notebookPath := strings.TrimSuffix(filePath, ext)
+	entry, ok := s.files[notebookPath]
+	return ok && entry.Info.ObjectType == workspace.ObjectTypeNotebook &&
+		strings.EqualFold(notebookSourceName(notebookPath, entry.Info.Language), filePath)
 }
 
 // requireParentDirectory returns a 404 response when objectPath's parent
@@ -593,17 +1379,7 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 		}
 	}
 
-	s.files[filePath] = FileEntry{
-		Info: workspace.ObjectInfo{
-			ObjectType: "NOTEBOOK",
-			Path:       filePath,
-			Language:   language,
-			ObjectId:   nextID(),
-		},
-		Data: body,
-	}
-
-	return Response{}
+	return s.storeNotebook(filePath, filePath, body, language, workspaceImportConflicts)
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {

@@ -1,1 +1,1 @@
-$CLI bundle deploy --plan plan.json
+trace musterr $CLI bundle deploy --plan plan.json

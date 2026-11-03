@@ -1,0 +1,28 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py ambiguous_rename_job)"
+
+# alpha sorts before beta and zzz sorts after aaa, so an order-based pairing produces
+# the crossed result: alpha->aaa (top-level) and beta->zzz (target block).
+title "alpha (top-level) -> zzz and beta (target block) -> aaa, bodies identical"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    if task["task_key"] == "alpha":
+        task["task_key"] = "zzz"
+    elif task["task_key"] == "beta":
+        task["task_key"] = "aaa"
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+title "Neither rename is applied, and both blocks keep their own task"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "task_key: alpha" databricks.yml
+errcode trace grep -c "task_key: beta" databricks.yml
+rm databricks.yml.backup

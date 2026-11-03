@@ -1,0 +1,9 @@
+Cloud = true
+
+# UpdateRegisteredModel payload construction is direct-engine-specific.
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

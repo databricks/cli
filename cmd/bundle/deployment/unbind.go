@@ -2,7 +2,6 @@ package deployment
 
 import (
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -54,7 +53,7 @@ To re-bind the resource later, use:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
-				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				utils.SetForceLock(cmd, b, forceLock)
 			},
 			AlwaysPull: true,
 		})
@@ -63,17 +62,12 @@ To re-bind the resource later, use:
 		}
 		ctx := cmd.Context()
 
-		resource, err := b.Config.Resources.FindResourceByConfigKey(args[0])
+		resource, resourceKey, err := b.Config.Resources.ResolveKey(args[0])
 		if err != nil {
 			return err
 		}
 
-		rd := resource.ResourceDescription()
-		tfName, ok := terraform.GroupToTerraformName[rd.PluralName]
-		if !ok {
-			tfName = rd.PluralName
-		}
-		phases.Unbind(ctx, b, rd.SingularName, tfName, args[0], stateDesc.Engine)
+		phases.Unbind(ctx, b, resource.ResourceDescription().PluralName, resourceKey, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

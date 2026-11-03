@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -37,7 +38,10 @@ type upload struct {
 
 type LocationToUpdate struct {
 	configPath dyn.Path
-	location   dyn.Location
+	location   diag.Location
+	// extras is the pip extras suffix (e.g. "[train]") to re-append to the
+	// rewritten remote path. Empty for libraries that carry no extras.
+	extras string
 }
 
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -64,9 +68,9 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		} else {
 			relPath = filepath.ToSlash(relPath)
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", relPath))
+		cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
-			return UploadFile(errCtx, source, u.client)
+			return UploadFile(errCtx, source, retry.Filer(u.client))
 		})
 	}
 

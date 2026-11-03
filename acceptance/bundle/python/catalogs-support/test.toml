@@ -1,0 +1,6 @@
+Cloud = false # tests don't interact with APIs
+
+# catalogs are only supported in the current version of the wheel
+EnvMatrix.PYDAB_VERSION = ["current"]
+
+# catalogs are only supported on the direct deployment engine

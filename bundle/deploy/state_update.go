@@ -1,20 +1,19 @@
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
-	"github.com/google/uuid"
 )
 
 type stateUpdate struct{}
@@ -47,7 +46,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	state.Files = fl
 
 	// Generate a UUID for the deployment, if one does not already exist
-	if state.ID == uuid.Nil {
+	if state.ID == uuid.Nil() {
 		state.ID = uuid.New()
 	}
 	b.Metrics.DeploymentId = state.ID
@@ -56,21 +55,14 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	// Write the state back to the file.
-	f, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0o600)
-	if err != nil {
-		log.Infof(ctx, "Unable to open deployment state file: %s", err)
-		return diag.FromErr(err)
-	}
-	defer f.Close()
-
 	data, err := json.Marshal(state)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	_, err = io.Copy(f, bytes.NewReader(data))
-	if err != nil {
+	// Write the state back to the file.
+	if err := atomicfile.Write(statePath, data, 0o600); err != nil {
+		log.Infof(ctx, "Unable to write deployment state file: %s", err)
 		return diag.FromErr(err)
 	}
 

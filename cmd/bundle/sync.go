@@ -29,20 +29,16 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	// The root --output flag always has a value (defaults to text), so gate on
-	// it being explicitly set to keep bundle sync silent by default.
-	if cmd.Flag("output").Changed {
-		var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
-		switch root.OutputType(cmd) {
-		case flags.OutputText:
-			outputFunc = sync.TextOutput
-		case flags.OutputJSON:
-			outputFunc = sync.JsonOutput
-		}
-		if outputFunc != nil {
-			opts.OutputHandler = func(ctx context.Context, c <-chan sync.Event) {
-				outputFunc(ctx, c, cmd.OutOrStdout())
-			}
+	var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
+	switch root.OutputType(cmd) {
+	case flags.OutputText:
+		outputFunc = sync.TextOutput
+	case flags.OutputJSON:
+		outputFunc = sync.JsonOutput
+	}
+	if outputFunc != nil {
+		opts.OutputHandler = func(ctx context.Context, c <-chan sync.Event) {
+			outputFunc(ctx, c, cmd.OutOrStdout())
 		}
 	}
 

@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 
@@ -54,6 +54,37 @@ def test_transform_bool():
     assert out == Fake(field=False)
 
 
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("True", True),
+        ("FALSE", False),
+        ("yes", True),
+        ("N", False),
+        ("On", True),
+        ("off", False),
+    ],
+)
+def test_transform_bool_from_string(value, expected):
+    @dataclass
+    class Fake:
+        field: Optional[bool] = None
+
+    out = _transform(Fake, {"field": value})
+
+    assert out == Fake(field=expected)
+
+
+@pytest.mark.parametrize("value", ["tRuE", "1", ""])
+def test_transform_bool_invalid(value):
+    @dataclass
+    class Fake:
+        field: Optional[bool] = None
+
+    with pytest.raises(ValueError, match="Unexpected type"):
+        _transform(Fake, {"field": value})
+
+
 def test_transform_str():
     @dataclass
     class Fake:
@@ -62,6 +93,35 @@ def test_transform_str():
     out = _transform(Fake, {"field": "test"})
 
     assert out == Fake(field="test")
+
+
+def test_transform_any_passthrough():
+    # interface{} fields are generated as Any and pass through untransformed.
+    value = {"a": 1, "b": ["c", "d"]}
+
+    assert _transform(Any, value) is value  # type: ignore
+    assert _transform(Any, "raw string") == "raw string"  # type: ignore
+
+
+def test_transform_any_field():
+    @dataclass
+    class Fake:
+        field: VariableOrOptional[Any] = None
+
+    value = {"a": 1, "b": ["c", "d"]}
+    out = _transform(Fake, {"field": value})
+
+    assert out == Fake(field=value)
+
+
+def test_transform_any_field_variable():
+    @dataclass
+    class Fake:
+        field: VariableOrOptional[Any] = None
+
+    out = _transform(Fake, {"field": "${var.x}"})
+
+    assert out == Fake(field=Variable(path="var.x", type=Any))  # type: ignore
 
 
 def test_transform_str_list():

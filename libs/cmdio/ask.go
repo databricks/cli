@@ -65,6 +65,30 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	return ans, nil
 }
 
+// AskCancellable is like Ask, but stops waiting for the answer when ctx is
+// done and returns ctx.Err(). Reading the input cannot be interrupted, so the
+// read keeps running in the background and its result is discarded. The
+// caller must not read the input again after a cancelled call, because the
+// abandoned read would consume the next line.
+func AskCancellable(ctx context.Context, question, defaultVal string) (string, error) {
+	type answer struct {
+		ans string
+		err error
+	}
+	answers := make(chan answer, 1)
+	go func() {
+		ans, err := Ask(ctx, question, defaultVal)
+		answers <- answer{ans, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case a := <-answers:
+		return a.ans, a.err
+	}
+}
+
 // AskYesOrNo prompts the user with a question and returns true if the answer
 // is "y" or "yes" (case-insensitive). Any other answer, including an empty
 // one, returns false.

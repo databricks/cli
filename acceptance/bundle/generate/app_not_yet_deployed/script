@@ -1,2 +1,4 @@
-trace $CLI apps create my-app --no-compute --no-wait
+trace $CLI apps create my-app --no-compute --no-wait | tee app.json.tmp
+add_repl "$(sed -n 's/.*"service_principal_id": \([0-9]*\).*/\1/p' app.json.tmp)" SERVICE_PRINCIPAL_ID
+rm app.json.tmp
 trace $CLI bundle generate app --existing-app-name my-app --config-dir . --key out

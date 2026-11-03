@@ -1,3 +1,1 @@
-Local = false
 Cloud = false
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]

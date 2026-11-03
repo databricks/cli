@@ -5,12 +5,12 @@ description: First-contact orientation for the Databricks CLI when no Databricks
 
 # Databricks Quickstart
 
-The `databricks` CLI wraps the public Databricks REST API — there's a command for essentially every API endpoint, so almost any Databricks task can be driven from here. If something looks unsupported, it's almost always a command you haven't found yet, not a real gap. The headline workflow: build durable resources as code with **Databricks Asset Bundles (DABs)** and ship them with `databricks bundle deploy` (see Build and deploy below).
+The `databricks` CLI wraps the public Databricks REST API — there's a command for essentially every API endpoint, so almost any Databricks task can be driven from here. If something looks unsupported, it's almost always a command you haven't found yet, not a real gap. The headline workflow: build durable resources as code with **Declarative Automation Bundles (DABs)** and ship them with `databricks bundle deploy` (see Build and deploy below).
 
 ## Golden rules
 
 - **Reason, don't refuse.** Before telling the user something can't be done, run `databricks <group> --help` and install the matching skill (below). Almost everything is reachable through the CLI.
-- **Build with bundles.** For anything durable — jobs, pipelines, dashboards, apps — define it as code in a Databricks Asset Bundle (DABs) and ship with `databricks bundle deploy`, not one-off API calls.
+- **Build with bundles.** For anything durable — jobs, pipelines, dashboards, apps — define it as code in a Declarative Automation Bundle (DABs) and ship with `databricks bundle deploy`, not one-off API calls.
 - **Pick the profile deliberately.** Run `databricks auth profiles`. If only one profile exists, use it. If one is already set as the default (via `databricks auth switch`), assume that one — you can confirm if unsure. Otherwise, show the user the profiles with their workspace URLs and let them choose. Don't invent profile names.
 - **Always pass `--profile <name>`.** Each Bash command runs in its own shell, so a separate `export DATABRICKS_CONFIG_PROFILE=...` line does NOT persist. Use the flag, or chain with `&&`.
 - **OAuth, never PAT.** Authenticate with `databricks auth login`, not personal access tokens.
@@ -30,7 +30,7 @@ No host needed: without `--host`, login opens login.databricks.com and the user 
 databricks current-user me --profile <name>
 ```
 
-## Build and deploy with Asset Bundles (DABs)
+## Build and deploy with Declarative Automation Bundles (DABs)
 
 **DABs are the standard, recommended way to build on Databricks.** A bundle is a project with a `databricks.yml` that declares your resources (jobs, pipelines, dashboards, apps) and its targets (e.g. dev, prod) — one project, one deploy, every resource type:
 

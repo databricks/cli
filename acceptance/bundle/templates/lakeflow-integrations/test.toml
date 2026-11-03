@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # databricks-lakeflow-integrations requires Python 3.12+.

@@ -19,6 +19,18 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 		}
 	}
 
+	// MLflow rejects an empty name; the fake would otherwise store a model under a key
+	// nothing can look up.
+	if request.Name == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Got an invalid name ''. Registered Model names cannot be empty strings.",
+			},
+		}
+	}
+
 	// Create the model with a numeric ID (matching real API behavior)
 	modelId := strconv.FormatInt(nextID(), 10)
 	model := ml.Model{

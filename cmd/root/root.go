@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -74,13 +76,21 @@ func New(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
+		warnIfStaleVersion(ctx)
+
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
 		ctx = withInteractiveModeInUserAgent(ctx)
+		ctx = installer.WithAiToolsInUserAgent(ctx)
+		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+
+		// Recommend installing Databricks AI tooling to Claude Code when it is
+		// driving the CLI without the tooling installed (best-effort, stderr only).
+		agents.MaybeHint(ctx, cmd)
 		return nil
 	}
 
@@ -186,13 +196,14 @@ Stack Trace:
 	ctx = cmd.Context()
 
 	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{
-		CmdExecID:       cmdctx.ExecId(ctx),
-		Version:         build.GetInfo().Version,
-		Command:         commandStr,
-		OperatingSystem: runtime.GOOS,
-		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
-		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
-		ExitCode:        int64(exitCode),
+		CmdExecID:        cmdctx.ExecId(ctx),
+		StateLineageHash: telemetry.StateLineageHash(ctx),
+		Version:          build.GetInfo().Version,
+		Command:          commandStr,
+		OperatingSystem:  runtime.GOOS,
+		DbrVersion:       dbr.RuntimeVersion(ctx).String(),
+		ExecutionTimeMs:  time.Since(startTime).Milliseconds(),
+		ExitCode:         int64(exitCode),
 	})
 	if telemetryErr != nil {
 		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)

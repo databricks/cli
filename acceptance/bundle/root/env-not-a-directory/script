@@ -1,0 +1,2 @@
+# DATABRICKS_BUNDLE_ROOT points at a file rather than a directory.
+musterr trace DATABRICKS_BUNDLE_ROOT=notadir.txt $CLI bundle validate

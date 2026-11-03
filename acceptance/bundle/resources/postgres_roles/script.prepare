@@ -1,0 +1,6 @@
+# role_fields is the allow-list of role fields the acceptance tests assert on.
+# Anything the backend returns outside this list is dropped, so a new field in
+# the API response does not break the golden.
+role_fields() {
+    jq '{name, parent, role_id, status: (.status | {attributes, auth_method, identity_type, postgres_role, role_id})}'
+}

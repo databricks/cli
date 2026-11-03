@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+# Reproduce: resource keys with a leading underscore caused "cannot parse" on the
+# direct engine because the reference regex required segments to start with a letter.
+resources:
+  jobs:
+    _job:
+      name: leading underscore
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+    _asset-bundle-deploymentjob:
+      name: leading underscore with hyphens
+    ref:
+      name: "a=${resources.jobs._job.id} b=${resources.jobs._asset-bundle-deploymentjob.id}"

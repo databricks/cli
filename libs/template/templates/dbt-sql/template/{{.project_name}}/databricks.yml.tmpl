@@ -4,6 +4,7 @@
 bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
+{{- template "experimental_deployment_history" deployment_history}}
 
 include:
   - resources/*.yml

@@ -1,0 +1,4 @@
+trace musterr $CLI bundle init http://github.com/databricks/cli
+trace musterr $CLI bundle init git://github.com/databricks/cli
+trace musterr $CLI bundle init ftp://github.com/databricks/cli
+trace musterr $CLI bundle init ftps://github.com/databricks/cli

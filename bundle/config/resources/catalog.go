@@ -15,6 +15,7 @@ import (
 
 type Catalog struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.CreateCatalog
 
 	// List of grants to apply on this catalog.
@@ -49,10 +50,6 @@ func (c *Catalog) InitializeURL(baseURL url.URL) {
 		return
 	}
 	c.URL = workspaceurls.ResourceURL(baseURL, "catalogs", c.ID)
-}
-
-func (c *Catalog) GetURL() string {
-	return c.URL
 }
 
 func (c *Catalog) GetName() string {

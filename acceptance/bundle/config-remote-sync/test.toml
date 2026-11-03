@@ -1,3 +1,2 @@
 # Disable Windows tests for config-remote-sync tests
-[GOOS]
-windows = false
+GOOS.windows = false

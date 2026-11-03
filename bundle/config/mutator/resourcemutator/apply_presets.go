@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -100,9 +99,11 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		p.Name = prefix + p.Name
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
+			//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 			p.Development = true
 		}
 		if t.TriggerPauseStatus == config.Paused {
+			//nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 			p.Continuous = false
 		}
 
@@ -232,6 +233,26 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Instance Pools: Prefix, Tags
+	for _, pool := range r.InstancePools {
+		if pool == nil {
+			continue
+		}
+		pool.InstancePoolName = prefix + pool.InstancePoolName
+		if len(tags) > 0 {
+			if pool.CustomTags == nil {
+				pool.CustomTags = make(map[string]string, len(tags))
+			}
+			for _, tag := range tags {
+				k := b.Tagging.NormalizeKey(tag.Key)
+				v := b.Tagging.NormalizeValue(tag.Value)
+				if _, ok := pool.CustomTags[k]; !ok {
+					pool.CustomTags[k] = v
+				}
+			}
+		}
+	}
+
 	// Dashboards: Prefix
 	for _, dashboard := range r.Dashboards {
 		if dashboard == nil {
@@ -301,6 +322,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Cluster Policies: Prefix. The policy name is a user-facing display name
+	// (unique, 1-100 chars), not the API id (policy_id), so prefixing it in dev
+	// mode avoids collisions between developers without changing identity.
+	for _, cp := range r.ClusterPolicies {
+		if cp == nil {
+			continue
+		}
+		cp.Name = prefix + cp.Name
+	}
+
 	// Vector Search Endpoints: no prefix. The endpoint name is the primary key
 	// (it's what GET/UPDATE/DELETE address by), so prefixing it would change
 	// the resource's identity rather than just its display name.
@@ -321,7 +352,7 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	return diag.Diagnostics{{
 		Summary:   "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
 		Severity:  diag.Error,
-		Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+		Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 	}}
 }
 

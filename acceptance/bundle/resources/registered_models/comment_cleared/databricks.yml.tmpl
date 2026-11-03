@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    schema1:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+  registered_models:
+    model1:
+      name: test-model-$UNIQUE_NAME
+      catalog_name: main
+      schema_name: ${resources.schemas.schema1.name}
+      comment: declared in the bundle

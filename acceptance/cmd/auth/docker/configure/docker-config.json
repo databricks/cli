@@ -1,0 +1,7 @@
+{
+  "auths": {
+    "registry.example.test": {
+      "auth": "preserved"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+# endpoint_fields projects a `postgres get-endpoint` response (stdin) down to the
+# identifying fields plus the status fields the bundle spec controls. Server-
+# materialized status fields (hosts, current_state, group, settings,
+# last_active_time, ...) are deliberately dropped: they differ between the
+# testserver mock and the real backend, and the backend keeps adding new ones
+# over time. Asserting only these stable fields keeps local and cloud output
+# identical without chasing every backend field.
+endpoint_fields() {
+    jq '{endpoint_id, name, parent, uid, status: (.status | {endpoint_id, endpoint_type, autoscaling_limit_min_cu, autoscaling_limit_max_cu, suspend_timeout_duration})}'
+}

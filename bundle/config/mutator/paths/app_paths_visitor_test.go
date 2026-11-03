@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +15,9 @@ func TestAppPathsVisitor(t *testing.T) {
 		Resources: config.Resources{
 			Apps: map[string]*resources.App{
 				"app0": {
-					SourceCodePath: "foo",
+					App: apps.App{
+						SourceCodePath: "foo",
+					},
 				},
 			},
 		},

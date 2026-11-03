@@ -1,0 +1,28 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_external_location"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "external_locations": {
+      "my_location_1": {
+        "credential_name": "test_cred",
+        "name": "my_location_1 (updated)",
+        "url": "s3://test-bucket/path"
+      },
+      "my_location_2": {
+        "credential_name": "test_cred",
+        "name": "my_location_2 (updated)",
+        "url": "s3://test-bucket/path2"
+      }
+    }
+  }
+}

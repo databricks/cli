@@ -6,7 +6,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/sync"
 )
 
 func FilesToSync() bundle.ReadOnlyMutator {
@@ -26,7 +27,14 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return nil
 	}
 
-	sync, err := files.GetSync(ctx, b)
+	var sync *sync.Sync
+	var err error
+	if b.IsImmutableFolder() {
+		sync, err = files.GetNoValidateSync(ctx, b)
+	} else {
+		sync, err = files.GetSync(ctx, b)
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -48,14 +56,14 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			Summary:  "There are no files to sync, please check your .gitignore",
 		})
 	} else {
-		path := "sync.exclude"
+		path := structpath.NewPath(nil, "sync", "exclude")
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "There are no files to sync, please check your .gitignore and sync.exclude configuration",
 			// Show all locations where sync.exclude is defined, since merging
 			// sync.exclude is additive.
-			Locations: b.Config.GetLocations(path),
-			Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+			Locations: b.Config.GetLocationsOf(path),
+			Paths:     []*structpath.PathNode{path},
 		})
 	}
 

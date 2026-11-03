@@ -1,12 +1,6 @@
 sethome "./home"
 
-# Pre-populate a profile with serverless_compute_id.
-cat > "./home/.databrickscfg" <<EOF
-[DEFAULT]
-host                  = https://host
-serverless_compute_id = auto
-EOF
-
+# home/.databrickscfg is a checked-in input: a profile with serverless_compute_id.
 title "Initial profile with serverless_compute_id\n"
 cat "./home/.databrickscfg"
 

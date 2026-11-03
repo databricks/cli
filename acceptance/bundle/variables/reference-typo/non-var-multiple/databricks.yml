@@ -1,0 +1,9 @@
+bundle:
+  name: reference-typo-non-var-multiple
+
+resources:
+  jobs:
+    one:
+      # A non-"var" reference. "stot_path" is within edit distance 2 of both
+      # workspace.root_path and workspace.state_path
+      name: ${workspace.stot_path}

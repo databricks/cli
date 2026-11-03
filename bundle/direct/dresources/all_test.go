@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -11,12 +13,14 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -35,90 +39,118 @@ import (
 
 var testConfig map[string]any = map[string]any{
 	"apps": &resources.App{
-		App: apps.App{
-			Name: "myapp",
-		},
+		Name: "myapp",
 	},
 
 	"catalogs": &resources.Catalog{
-		CreateCatalog: catalog.CreateCatalog{
-			Name:    "mycatalog",
-			Comment: "Test catalog",
-		},
+		Name:    "mycatalog",
+		Comment: "Test catalog",
 		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
 		// only during updates. They are not included in the test config.
 	},
 
 	"external_locations": &resources.ExternalLocation{
-		CreateExternalLocation: catalog.CreateExternalLocation{
-			Name:           "myexternallocation",
-			Url:            "s3://mybucket/mypath",
-			CredentialName: "mycredential",
-			Comment:        "Test external location",
-		},
+		Name:           "myexternallocation",
+		Url:            "s3://mybucket/mypath",
+		CredentialName: "mycredential",
+		Comment:        "Test external location",
 	},
 
 	"schemas": &resources.Schema{
-		CreateSchema: catalog.CreateSchema{
-			CatalogName: "main",
-			Name:        "myschema",
-		},
+		CatalogName: "main",
+		Name:        "myschema",
+		Comment:     "Test schema",
 	},
 
 	"volumes": &resources.Volume{
-		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-			CatalogName: "main",
-			SchemaName:  "myschema",
-			Name:        "myvolume",
-		},
+		CatalogName: "main",
+		SchemaName:  "myschema",
+		Name:        "myvolume",
+		Comment:     "Test volume",
 	},
 
 	"database_instances": &resources.DatabaseInstance{
-		DatabaseInstance: database.DatabaseInstance{
-			Name: "mydbinstance",
-		},
+		Name: "mydbinstance",
+	},
+
+	"instance_pools": &resources.InstancePool{
+		InstancePoolName: "my-instance-pool",
+		NodeTypeId:       "i3.xlarge",
 	},
 
 	"synced_database_tables": &resources.SyncedDatabaseTable{
-		SyncedDatabaseTable: database.SyncedDatabaseTable{
-			Name: "main.myschema.my_synced_table",
-		},
+		Name: "main.myschema.my_synced_table",
+	},
+
+	"model_services": &resources.ModelService{
+		Parent:         "schemas/main.default",
+		ModelServiceId: "my_model_service",
+		Comment:        "Test model service",
+	},
+
+	"mcp_services": &resources.McpService{
+		Parent:       "schemas/main.default",
+		McpServiceId: "my_mcp_service",
+		Comment:      "Test mcp service",
+	},
+
+	"model_provider_services": &resources.ModelProviderService{
+		Parent:                 "schemas/main.default",
+		ModelProviderServiceId: "my_model_provider_service",
+		Comment:                "Test model provider service",
 	},
 
 	"registered_models": &resources.RegisteredModel{
-		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-			Name:            "my_registered_model",
-			Comment:         "Test registered model",
-			CatalogName:     "main",
-			SchemaName:      "default",
-			StorageLocation: "s3://my-bucket/my-path",
+		Name:            "my_registered_model",
+		Comment:         "Test registered model",
+		CatalogName:     "main",
+		SchemaName:      "default",
+		StorageLocation: "s3://my-bucket/my-path",
+	},
+
+	"features": &resources.Feature{
+		FullName:    "main.default.my_feature",
+		Description: "Test feature",
+		Source: ml.DataSource{
+			DeltaTableSource: &ml.DeltaTableSource{
+				FullName: "main.default.my_source",
+			},
 		},
+		Function: ml.Function{
+			ColumnSelection: &ml.ColumnSelection{Column: "amount"},
+		},
+		Entities:         []ml.EntityColumn{{Name: "id"}},
+		TimeseriesColumn: &ml.TimeseriesColumn{Name: "ts"},
 	},
 
 	"experiments": &resources.MlflowExperiment{
-		CreateExperiment: ml.CreateExperiment{
-			Name: "my-experiment",
-			Tags: []ml.ExperimentTag{
-				{
-					Key:   "my-tag",
-					Value: "my-value",
-				},
+		Name: "my-experiment",
+		Tags: []ml.ExperimentTag{
+			{
+				Key:   "my-tag",
+				Value: "my-value",
 			},
-			ArtifactLocation: "s3://my-bucket/my-experiment",
 		},
+		ArtifactLocation: "s3://my-bucket/my-experiment",
 	},
 
 	"models": &resources.MlflowModel{
-		CreateModelRequest: ml.CreateModelRequest{
-			Name:        "my_mlflow_model",
-			Description: "my_mlflow_model_description",
-			Tags: []ml.ModelTag{
-				{
-					Key:   "k1",
-					Value: "v1",
-				},
+		Name:        "my_mlflow_model",
+		Description: "my_mlflow_model_description",
+		Tags: []ml.ModelTag{
+			{
+				Key:   "k1",
+				Value: "v1",
 			},
 		},
+	},
+
+	"secrets": &resources.Secret{
+		CatalogName: "main",
+		SchemaName:  "default",
+		Name:        "my_secret",
+		Value:       "my_secret_value",
+		Comment:     "Test secret",
 	},
 
 	"secret_scopes": &resources.SecretScope{
@@ -137,44 +169,42 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"model_serving_endpoints": &resources.ModelServingEndpoint{
-		CreateServingEndpoint: serving.CreateServingEndpoint{
+		Name: "my-endpoint",
+		Config: &serving.EndpointCoreConfigInput{
 			Name: "my-endpoint",
-			Config: &serving.EndpointCoreConfigInput{
-				Name: "my-endpoint",
-				//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
-				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
-					CatalogName:     "main",
-					SchemaName:      "myschema",
-					TableNamePrefix: "my_table",
-					Enabled:         true,
-					ForceSendFields: nil,
+			//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
+			AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+				CatalogName:     "main",
+				SchemaName:      "myschema",
+				TableNamePrefix: "my_table",
+				Enabled:         true,
+				ForceSendFields: nil,
+			},
+			ServedModels: nil,
+			ServedEntities: []serving.ServedEntityInput{
+				{
+					EntityName:                "entity-name",
+					EntityVersion:             "1",
+					WorkloadSize:              "Small",
+					ScaleToZeroEnabled:        true,
+					WorkloadType:              serving.ServingModelWorkloadTypeCpu,
+					EnvironmentVars:           map[string]string{"key": "value"},
+					InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
+					MaxProvisionedConcurrency: 10,
+					MaxProvisionedThroughput:  100,
+					MinProvisionedConcurrency: 1,
+					MinProvisionedThroughput:  10,
+					Name:                      "entity-name",
+					ProvisionedModelUnits:     100,
+					ExternalModel:             nil,
+					ForceSendFields:           nil,
 				},
-				ServedModels: nil,
-				ServedEntities: []serving.ServedEntityInput{
+			},
+			TrafficConfig: &serving.TrafficConfig{
+				Routes: []serving.Route{
 					{
-						EntityName:                "entity-name",
-						EntityVersion:             "1",
-						WorkloadSize:              "Small",
-						ScaleToZeroEnabled:        true,
-						WorkloadType:              serving.ServingModelWorkloadTypeCpu,
-						EnvironmentVars:           map[string]string{"key": "value"},
-						InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
-						MaxProvisionedConcurrency: 10,
-						MaxProvisionedThroughput:  100,
-						MinProvisionedConcurrency: 1,
-						MinProvisionedThroughput:  10,
-						Name:                      "entity-name",
-						ProvisionedModelUnits:     100,
-						ExternalModel:             nil,
-						ForceSendFields:           nil,
-					},
-				},
-				TrafficConfig: &serving.TrafficConfig{
-					Routes: []serving.Route{
-						{
-							ServedModelName:   "model-name-1",
-							TrafficPercentage: 100,
-						},
+						ServedModelName:   "model-name-1",
+						TrafficPercentage: 100,
 					},
 				},
 			},
@@ -182,112 +212,87 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"postgres_projects": &resources.PostgresProject{
-		PostgresProjectConfig: resources.PostgresProjectConfig{
-			ProjectId: "test-project",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: "Test Project",
-				PgVersion:   16,
-			},
-		},
+		ProjectId:   "test-project",
+		DisplayName: "Test Project",
+		PgVersion:   16,
 	},
 
 	"postgres_catalogs": &resources.PostgresCatalog{
-		PostgresCatalogConfig: resources.PostgresCatalogConfig{
-			CatalogId: "test_catalog",
-		},
+		CatalogId: "test_catalog",
 	},
 
 	"postgres_synced_tables": &resources.PostgresSyncedTable{
-		PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-			SyncedTableId: "main.public.trips_synced",
-		},
+		SyncedTableId: "main.public.trips_synced",
 	},
 
 	"alerts": &resources.Alert{
-		AlertV2: sql.AlertV2{
-			DisplayName: "my-alert",
-			QueryText:   "SELECT 1",
-			WarehouseId: "test-warehouse-id",
-			Schedule: sql.CronSchedule{
-				QuartzCronSchedule: "0 0 12 * * ?",
-				TimezoneId:         "UTC",
+		DisplayName: "my-alert",
+		QueryText:   "SELECT 1",
+		WarehouseId: "test-warehouse-id",
+		Schedule: sql.CronSchedule{
+			QuartzCronSchedule: "0 0 12 * * ?",
+			TimezoneId:         "UTC",
+		},
+		Evaluation: sql.AlertV2Evaluation{
+			ComparisonOperator: sql.ComparisonOperatorGreaterThan,
+			Source: sql.AlertV2OperandColumn{
+				Name: "column1",
 			},
-			Evaluation: sql.AlertV2Evaluation{
-				ComparisonOperator: sql.ComparisonOperatorGreaterThan,
-				Source: sql.AlertV2OperandColumn{
-					Name: "column1",
-				},
-				Threshold: &sql.AlertV2Operand{
-					Column: &sql.AlertV2OperandColumn{
-						Name: "column2",
-					},
+			Threshold: &sql.AlertV2Operand{
+				Column: &sql.AlertV2OperandColumn{
+					Name: "column2",
 				},
 			},
 		},
 	},
 
 	"quality_monitors": &resources.QualityMonitor{
-		TableName: "main.myschema.mytable",
-		CreateMonitor: catalog.CreateMonitor{
-			AssetsDir:        "/Workspace/Users/user@example.com/assets",
-			OutputSchemaName: "main.myschema",
-		},
+		TableName:        "main.myschema.mytable",
+		AssetsDir:        "/Workspace/Users/user@example.com/assets",
+		OutputSchemaName: "main.myschema",
 	},
 
 	"dashboards": &resources.Dashboard{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName: "my-dashboard",
-			ParentPath:  "/Workspace/Users/user@example.com",
-			WarehouseId: "test-warehouse-id",
-			// Use []any/map[string]any to mirror how this any-typed field is
-			// populated in production (JSON/dyn decoding); a typed []map[string]any
-			// can never come out of that path.
-			SerializedDashboard: map[string]any{
-				"pages": []any{
-					map[string]any{
-						"name":        "page1",
-						"displayName": "Page 1",
-						"pageType":    "PAGE_TYPE_CANVAS",
-					},
-				},
-			},
+		DisplayName:         "my-dashboard",
+		ParentPath:          "/Workspace/Users/user@example.com",
+		WarehouseId:         "test-warehouse-id",
+		SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
 
-			DatasetCatalog: "main",
-			DatasetSchema:  "myschema",
-		},
+		DatasetCatalog: "main",
+		DatasetSchema:  "myschema",
 	},
 
 	"genie_spaces": &resources.GenieSpace{
-		GenieSpaceConfig: resources.GenieSpaceConfig{
-			Title:           "my-genie-space",
-			WarehouseId:     "test-warehouse-id",
-			ParentPath:      "/Workspace/Users/user@example.com",
-			SerializedSpace: "{}",
-		},
+		Title:           "my-genie-space",
+		WarehouseId:     "test-warehouse-id",
+		ParentPath:      "/Workspace/Users/user@example.com",
+		SerializedSpace: "{}",
 	},
 
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
-		CreateEndpoint: vectorsearch.CreateEndpoint{
-			Name:         "my-endpoint",
-			EndpointType: vectorsearch.EndpointTypeStandard,
-		},
+		Name:         "my-endpoint",
+		EndpointType: vectorsearch.EndpointTypeStandard,
 	},
 
 	"vector_search_indexes": &resources.VectorSearchIndex{
-		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			Name:         "main.default.my_index",
-			EndpointName: "my-index-endpoint",
-			PrimaryKey:   "id",
-			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
-			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
-				SourceTable:  "main.default.source_table",
-				PipelineType: vectorsearch.PipelineTypeTriggered,
-			},
+		Name:         "main.default.my_index",
+		EndpointName: "my-index-endpoint",
+		PrimaryKey:   "id",
+		IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+		DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+			SourceTable:  "main.default.source_table",
+			PipelineType: vectorsearch.PipelineTypeTriggered,
 		},
 		Grants: []catalog.PrivilegeAssignment{{
 			Principal:  "user@example.com",
 			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
 		}},
+	},
+
+	"internal_immutable_snapshots": &resources.Snapshot{
+		RemoteRoot: "/Workspace/Users/" + testserver.SnapshotRootUUID + "/.snapshots",
+		BundleID:   "test-bundle-id",
+		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
 }
 
@@ -303,10 +308,8 @@ var testDeps = map[string]prepareWorkspace{
 		})
 
 		return &resources.DatabaseCatalog{
-			DatabaseCatalog: database.DatabaseCatalog{
-				Name:                 "mydbcatalog",
-				DatabaseInstanceName: "mydbinstance1",
-			},
+			Name:                 "mydbcatalog",
+			DatabaseInstanceName: "mydbinstance1",
 		}, err
 	},
 
@@ -340,9 +343,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.JobRun{
-			RunNow: jobs.RunNow{
-				JobId: resp.JobId,
-			},
+			JobId: resp.JobId,
 		}, nil
 	},
 
@@ -427,6 +428,26 @@ var testDeps = map[string]prepareWorkspace{
 	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"cluster_policies.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/cluster-policies/cluster-policy-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_USE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/instance-pools/pool-permissions",
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -693,6 +714,50 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"secrets.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "secret",
+			FullName:      "main.default.my_secret",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_service",
+			FullName:      "main.myschema.mymodelservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"mcp_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "mcp_service",
+			FullName:      "main.myschema.mymcpservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_provider_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_provider_service",
+			FullName:      "main.myschema.myproviderservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
@@ -733,11 +798,30 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresBranch{
-			PostgresBranchConfig: resources.PostgresBranchConfig{
-				Parent:     "projects/test-project-for-branch",
-				BranchId:   "test-branch",
-				BranchSpec: postgres.BranchSpec{},
+			Parent:     "projects/test-project-for-branch",
+			BranchId:   "test-branch",
+			BranchSpec: postgres.BranchSpec{},
+		}, nil
+	},
+
+	"postgres_snapshot_schedules": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Creating the project implicitly provisions the root "production"
+		// branch, the only branch a snapshot schedule may target.
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-snapshot-schedule",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Snapshot Schedule",
+					PgVersion:   16,
+				},
 			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresSnapshotSchedule{
+			Branch: "projects/test-project-for-snapshot-schedule/branches/production",
 		}, nil
 	},
 
@@ -767,13 +851,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresEndpoint{
-			PostgresEndpointConfig: resources.PostgresEndpointConfig{
-				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
-				EndpointId: "test-endpoint",
-				EndpointSpec: postgres.EndpointSpec{
-					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-				},
-			},
+			Parent:       "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+			EndpointId:   "test-endpoint",
+			EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
 		}, nil
 	},
 
@@ -803,14 +883,10 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresDatabase{
-			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
-				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
-				DatabaseId: "test-database",
-				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
-					PostgresDatabase: "app_db",
-					Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
-				},
-			},
+			Parent:           "projects/test-project-for-database/branches/test-branch-for-database",
+			DatabaseId:       "test-database",
+			PostgresDatabase: "app_db",
+			Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
 		}, nil
 	},
 
@@ -840,13 +916,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresRole{
-			PostgresRoleConfig: resources.PostgresRoleConfig{
-				Parent: "projects/test-project-for-role/branches/test-branch-for-role",
-				RoleId: "test-role",
-				RoleRoleSpec: postgres.RoleRoleSpec{
-					PostgresRole: "test_role",
-				},
-			},
+			Parent:       "projects/test-project-for-role/branches/test-branch-for-role",
+			RoleId:       "test-role",
+			PostgresRole: "test_role",
 		}, nil
 	},
 }
@@ -872,9 +944,13 @@ func TestAll(t *testing.T) {
 // testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
 type testIgnoreFilter struct {
 	ignoreFields map[string]bool
+	adapter      *Adapter
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
+// It also ignores fields that exist in StateType but not in RemoteType, because
+// those are automatically suppressed by the planner (reason: missing_in_remote)
+// and RemapState cannot populate them from remote state.
 func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 	ignoreFields := make(map[string]bool)
 	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
@@ -885,7 +961,18 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 			ignoreFields[p.Field.String()] = true
 		}
 	}
-	return &testIgnoreFilter{ignoreFields: ignoreFields}
+	// Auto-include fields present in StateType but absent from RemoteType.
+	_ = structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path.IsRoot() {
+			return true
+		}
+		if structaccess.ValidatePattern(adapter.RemoteType(), path) != nil {
+			ignoreFields[path.String()] = true
+			return false
+		}
+		return true
+	})
+	return &testIgnoreFilter{ignoreFields: ignoreFields, adapter: adapter}
 }
 
 // shouldIgnore returns true if the field at the given path should be ignored.
@@ -898,6 +985,12 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 	if prefix, _, ok := strings.Cut(path, "."); ok {
 		topLevelField = prefix
 	}
+
+	parts := strings.Split(topLevelField, "[")
+	if len(parts) > 1 {
+		topLevelField = parts[0]
+	}
+
 	return f.ignoreFields[topLevelField]
 }
 
@@ -948,6 +1041,22 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
 
+	// The snapshot is content-addressed: DoCreate reads a zip from disk and the server
+	// returns a path derived from that zip's hash. The generic fixture has no ZipPath, so
+	// stage a real zip and align RelativePath/FullPath with its hash; otherwise the
+	// create→read round-trip compares a fixture path against a hash-derived remote path
+	// and fails. This is inherent to content-addressed resources, not a missing hook.
+	if ss, ok := newState.(*SnapshotState); ok {
+		snap := inputConfig.(*resources.Snapshot)
+		content := []byte("test snapshot content")
+		hash := snapshot.HashFromContent(content)
+		zipPath := filepath.Join(t.TempDir(), hash+".zip")
+		require.NoError(t, os.WriteFile(zipPath, content, 0o600))
+		ss.ZipPath = filepath.ToSlash(zipPath)
+		ss.RelativePath = ss.BundleID + "/" + hash
+		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath + "/" + snapshot.ContentSubdir
+	}
+
 	ctx := t.Context()
 
 	// initial DoRead() cannot find the resource
@@ -985,7 +1094,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
+		// Re-read after the wait: the earlier remote can be stale for resources
+		// whose state settles while WaitAfterCreate blocks (e.g. job_runs).
+		remote, err = adapter.DoRead(ctx, createdID)
+		require.NoError(t, err)
 		require.Equal(t, remote, remoteStateFromWaitCreate)
+
+		remappedState, err = adapter.RemapState(remote)
+		require.NoError(t, err)
 	}
 
 	if adapter.HasDoUpdate() {
@@ -1019,6 +1135,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
+		// Skip fields configured in ignore_remote_changes.
+		if ignoreFilter.shouldIgnore(path.String()) {
+			return
+		}
 		remoteValue, err := structaccess.Get(remappedState, path)
 		if err != nil {
 			t.Errorf("Failed to read %s from remapped remote state %#v", path.String(), remappedState)
@@ -1033,10 +1153,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			// testserver can set field to backend-generated value
 			return
 		}
-		// Skip fields configured in ignore_remote_changes.
-		if ignoreFilter.shouldIgnore(path.String()) {
-			return
-		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
@@ -1046,8 +1162,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID, newState)
 	require.NoError(t, err)
 
+	// WaitAfterDelete polls until the resource reads back gone; a NotFound is that
+	// success and the caller (DeploymentUnit.waitDeleted) maps it to nil, so accept it here too.
 	err = adapter.WaitAfterDelete(ctx, createdID)
-	require.NoError(t, err)
+	if !apierr.IsMissing(err) {
+		require.NoError(t, err)
+	}
 
 	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
@@ -1057,12 +1177,38 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// A resource that implements no DoDelete (permissions, grants, job_runs)
+	// leaves the resource in place, so DoRead still succeeds afterwards.
+	// postgres_snapshot_schedules does implement DoDelete but has no delete
+	// endpoint: it disables the schedule by setting an empty cadence set, and the
+	// schedule remains readable (it is intrinsic to the branch).
+	deleteIsNoop := !adapter.HasDoDelete() || group == "postgres_snapshot_schedules"
+	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
+	// Apps DoDelete is fire-and-forget: the API returns success while the app
+	// sits in DELETING state for up to ~20 minutes before the record is removed.
+	// A GET on the DELETING app returns the app, not 404 -- the testserver
+	// mirrors that in libs/testserver/apps.go. DoRead therefore still succeeds
+	// here; the planner treats this transient state as gone via ResourceApp.IsGone
+	// so delete/destroy stay idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+	deleteLeavesDeleting := group == "apps"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
-	if deleteIsNoop {
+	switch {
+	case isImmutable:
 		require.NoError(t, err)
-	} else {
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
+	case deleteIsNoop:
+		require.NoError(t, err)
+		// The resource genuinely still exists, so it must not report as gone.
+		assert.False(t, adapter.IsGone(remoteAfterDelete))
+	case deleteLeavesDeleting:
+		require.NoError(t, err)
+		require.NotNil(t, remoteAfterDelete)
+		// IsGone lets the planner short-circuit the second delete on this
+		// transient DELETING state; this is what keeps the delete/destroy
+		// invariant tests idempotent, so assert the contract directly.
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
+	default:
 		require.Error(t, err)
 		require.Nil(t, remoteAfterDelete)
 	}
@@ -1081,7 +1227,7 @@ func TestResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			validateResourceConfig(t, adapter.StateType(), cfg)
+			validateResourceConfig(t, adapter.StateType(), adapter.RemoteType(), cfg)
 		})
 	}
 }
@@ -1099,12 +1245,12 @@ func TestGeneratedResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			validateResourceConfig(t, adapter.StateType(), cfg)
+			validateResourceConfig(t, adapter.StateType(), adapter.RemoteType(), cfg)
 		})
 	}
 }
 
-func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
+func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cfg *ResourceLifecycleConfig) {
 	for _, p := range cfg.RecreateOnChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
 	}
@@ -1119,6 +1265,13 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	}
 	for _, p := range cfg.BackendDefaults {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
+	}
+	// stable_output_fields must be valid paths in RemoteType: the reference
+	// resolver reads their value from the remote cache. The backend owns the
+	// value, but the field may or may not also appear in StateType, so we only
+	// require presence in RemoteType.
+	for _, p := range cfg.StableOutputFields {
+		assert.NoError(t, structaccess.ValidatePattern(remoteType, p.Field), "StableOutputFields %s: must be a valid RemoteType path", p.Field)
 	}
 }
 
@@ -1193,6 +1346,77 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 				}
 			})
 			require.NoError(t, err)
+		})
+	}
+}
+
+// stableNameOptOut is the explicit escape hatch for TestNameStableOrOptedOut: a
+// resource whose `name` is backend-owned (so not auto-exempt) yet must still NOT
+// be declared stable_output_fields — e.g. the backend recomputes the name on
+// update, so its remote value is not stable. Empty today.
+var stableNameOptOut = map[string]string{}
+
+// nameIsUserProvided reports whether `name` is a plain user-set field: present in
+// StateType and touched by no ignore rule (so not output_only or otherwise
+// backend-owned). Such a name resolves from local config, so a ${...name}
+// reference is never delayed — and it must not be pinned stable, since a rename
+// must change the reference.
+func nameIsUserProvided(adapter *Adapter, path *structpath.PathNode) bool {
+	if structaccess.ValidatePath(adapter.StateType(), path) != nil {
+		return false
+	}
+	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+		if cfg == nil {
+			continue
+		}
+		for _, rules := range [][]FieldRule{cfg.IgnoreRemoteChanges, cfg.IgnoreLocalChanges} {
+			for _, r := range rules {
+				if path.HasPatternPrefix(r.Field) {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// TestNameStableOrOptedOut guards against silently reintroducing ES-2202624: a
+// ${resources.X.name} reference delayed during X's in-place update recreates
+// every dependent that uses it as an immutable parent. To prevent that, a
+// backend-assigned `name` that can be referenced must be declared under
+// stable_output_fields so the reference resolves from the remote cache.
+//
+// For every resource that supports in-place update and has a `name` in RemoteType,
+// the name must be either auto-exempt (a plain user-provided field, which resolves
+// from local config), declared stable, or listed in stableNameOptOut. Resources
+// with no DoUpdate are skipped: they never take an in-place-update action, so the
+// reference is never delayed.
+func TestNameStableOrOptedOut(t *testing.T) {
+	namePath := structpath.MustParsePath("name")
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		if !adapter.HasDoUpdate() {
+			continue
+		}
+		if structaccess.ValidatePath(adapter.RemoteType(), namePath) != nil {
+			continue
+		}
+
+		if nameIsUserProvided(adapter, namePath) {
+			t.Logf("%s: auto-exempt — name is user-provided (in StateType, not output_only or ignored); resolves from local config", resourceType)
+			continue
+		}
+
+		if reason, ok := stableNameOptOut[resourceType]; ok {
+			t.Logf("%s: exempt from the stable-name check: %s", resourceType, reason)
+			continue
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			assert.True(t, adapter.FieldIsStableOutput(namePath),
+				"backend-assigned `name` must be declared under stable_output_fields in configs/%[1]s.yml, or listed in stableNameOptOut; otherwise ${resources.%[1]s.<key>.name} references recreate dependents on an in-place update (ES-2202624)", resourceType)
 		})
 	}
 }

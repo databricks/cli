@@ -1,0 +1,6 @@
+Ignore = [
+    "databricks.yml",
+    "tmp.plan.json",
+]
+
+EnvMatrix.READPLAN = ["", "1"]

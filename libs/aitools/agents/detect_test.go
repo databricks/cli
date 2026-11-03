@@ -44,6 +44,187 @@ func configDir(t *testing.T, create bool) func(context.Context) (string, error) 
 	return func(_ context.Context) (string, error) { return dir, nil }
 }
 
+func TestDetected(t *testing.T) {
+	ctx := t.Context()
+
+	t.Run("bare config dir is the default signal", func(t *testing.T) {
+		a := &Agent{ConfigDir: configDir(t, true)}
+		assert.True(t, a.Detected(ctx))
+	})
+
+	t.Run("missing config dir is not detected", func(t *testing.T) {
+		a := &Agent{ConfigDir: configDir(t, false)}
+		assert.False(t, a.Detected(ctx))
+	})
+
+	t.Run("MandatoryFile requires the marker, not just the dir", func(t *testing.T) {
+		dir := t.TempDir()
+		a := &Agent{ConfigDir: func(context.Context) (string, error) { return dir, nil }, MandatoryFile: "marker"}
+		// Directory exists but the marker does not: not detected.
+		assert.False(t, a.Detected(ctx))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "marker"), []byte("x"), 0o644))
+		assert.True(t, a.Detected(ctx))
+	})
+
+	t.Run("Gemini remains detected after skills install before first run", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("USERPROFILE", home)
+		t.Setenv("GEMINI_CLI_HOME", "")
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "skills", "databricks-core"), 0o755))
+
+		gemini := ByName(NameGemini)
+		require.NotNil(t, gemini)
+		assert.NoFileExists(t, filepath.Join(home, ".gemini", "projects.json"))
+		assert.True(t, gemini.Detected(ctx))
+	})
+
+	t.Run("Gemini is not detected merely because Antigravity exists", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("USERPROFILE", home)
+		// Antigravity creates ~/.gemini/antigravity, which also makes ~/.gemini exist.
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "antigravity"), 0o755))
+
+		gemini := ByName(NameGemini)
+		require.NotNil(t, gemini)
+		antigravity := ByName(NameAntigravity)
+		require.NotNil(t, antigravity)
+
+		assert.True(t, antigravity.Detected(ctx), "Antigravity should be detected from its own dir")
+		assert.False(t, gemini.Detected(ctx), "Gemini must not be detected from Antigravity's shared ~/.gemini")
+
+		// Once Gemini writes its own marker, it is detected.
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", "projects.json"), []byte("id"), 0o644))
+		assert.True(t, gemini.Detected(ctx))
+	})
+}
+
+func TestPiConfigDir(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	t.Run("defaults to ~/.pi/agent", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, ".pi", "agent"), dir)
+	})
+
+	t.Run("honors PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		override := t.TempDir()
+		t.Setenv("PI_CODING_AGENT_DIR", override)
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, override, dir)
+	})
+
+	t.Run("expands home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("expands bare home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, home, dir)
+	})
+
+	t.Run("expands Windows home separator", func(t *testing.T) {
+		if runtime.GOOS != "windows" {
+			t.Skip("Windows-only path form")
+		}
+		t.Setenv("PI_CODING_AGENT_DIR", `~\custom-agent`)
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("preserves other tilde prefixes", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~other/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, "~other/custom-agent", dir)
+	})
+}
+
+func TestGooseConfigDir(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	absRoot := t.TempDir()
+	absXDG := t.TempDir()
+	absAppData := t.TempDir()
+	// Windows resolves under %APPDATA%, falling back to %USERPROFILE%\AppData\Roaming.
+	winDefault := filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config")
+
+	// onlyOn restricts a case to one platform: "windows", "unix" (any non-Windows),
+	// or "" for every platform. Goose only honors an absolute path override.
+	tests := []struct {
+		name      string
+		onlyOn    string
+		gooseRoot string
+		xdg       string
+		appData   string
+		want      string
+	}{
+		{name: "absolute GOOSE_PATH_ROOT wins", gooseRoot: absRoot, want: filepath.Join(absRoot, "config")},
+		{name: "relative GOOSE_PATH_ROOT ignored, unix", onlyOn: "unix", gooseRoot: "relative/root", want: filepath.Join(home, ".config", "goose")},
+		{name: "relative GOOSE_PATH_ROOT ignored, windows", onlyOn: "windows", gooseRoot: "relative/root", want: winDefault},
+		{name: "honors XDG_CONFIG_HOME", onlyOn: "unix", xdg: absXDG, want: filepath.Join(absXDG, "goose")},
+		{name: "ignores relative XDG_CONFIG_HOME", onlyOn: "unix", xdg: "relative/config", want: filepath.Join(home, ".config", "goose")},
+		{name: "defaults to ~/.config when XDG unset", onlyOn: "unix", want: filepath.Join(home, ".config", "goose")},
+		{name: "honors APPDATA", onlyOn: "windows", appData: absAppData, want: filepath.Join(absAppData, "Block", "goose", "config")},
+		{name: "defaults to USERPROFILE when APPDATA unset", onlyOn: "windows", want: winDefault},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.onlyOn == "windows" && runtime.GOOS != "windows" {
+				t.Skip("Windows-only path")
+			}
+			if tc.onlyOn == "unix" && runtime.GOOS == "windows" {
+				t.Skip("non-Windows path")
+			}
+			t.Setenv("GOOSE_PATH_ROOT", tc.gooseRoot)
+			t.Setenv("XDG_CONFIG_HOME", tc.xdg)
+			t.Setenv("APPDATA", tc.appData)
+			dir, err := gooseConfigDir(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, dir)
+		})
+	}
+}
+
+func TestGeminiConfigDir(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	t.Run("defaults to ~/.gemini", func(t *testing.T) {
+		t.Setenv("GEMINI_CLI_HOME", "")
+		dir, err := geminiConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, ".gemini"), dir)
+	})
+
+	t.Run("honors GEMINI_CLI_HOME override and appends .gemini", func(t *testing.T) {
+		root := t.TempDir()
+		t.Setenv("GEMINI_CLI_HOME", root)
+		dir, err := geminiConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(root, ".gemini"), dir)
+	})
+}
+
 func TestHasBinary(t *testing.T) {
 	ctx := t.Context()
 
