@@ -26,10 +26,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # TEMPORARY: force a failure to exercise the Report failure step. Revert before merging.
-      - name: Simulate failure
-        run: exit 1
-
       - name: Setup JFrog
         uses: ./.github/actions/setup-jfrog
 
