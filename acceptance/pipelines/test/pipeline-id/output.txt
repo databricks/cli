@@ -1,6 +1,6 @@
 
 === Relative test selections resolve against the pipeline root_path
->>> [CLI] pipelines test --pipeline-id [UUID] tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/orders/tests --no-wait
+>>> MSYS_NO_PATHCONV=1 [CLI] pipelines test --pipeline-id [UUID] tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/orders/tests --no-wait
 Pipeline: [UUID]
 Update: [UUID]
 
@@ -34,7 +34,7 @@ tests/test_orders.py::test_valid_order  PASSED (1.00s)
 Error: cannot resolve test selection "tests": the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests
 
 === With --no-wait and only workspace paths, the pipeline is not read
->>> [CLI] pipelines test --pipeline-id [UUID] /Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_valid_order --no-wait
+>>> MSYS_NO_PATHCONV=1 [CLI] pipelines test --pipeline-id [UUID] /Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_valid_order --no-wait
 Pipeline: [UUID]
 Update: [UUID]
 

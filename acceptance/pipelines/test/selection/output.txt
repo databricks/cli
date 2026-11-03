@@ -63,7 +63,7 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 
 Error: The test selection '/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/pipeline_file.py' is outside the pipeline's test sources. Select a file or folder inside testing.sources.
 
->>> musterr [CLI] pipelines test my_pipeline /Workspace/Users/someone@example.com/tests/test_other.py
+>>> MSYS_NO_PATHCONV=1 musterr [CLI] pipelines test my_pipeline /Workspace/Users/someone@example.com/tests/test_other.py
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
