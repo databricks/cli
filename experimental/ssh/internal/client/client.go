@@ -1,6 +1,7 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"crypto/md5"
 	_ "embed"
@@ -62,6 +63,9 @@ var errPortForwardingDisabled = errors.New("port forwarding to serverless comput
 var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
 
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+
+// DefaultEnvironmentVersion is the serverless environment version used when --environment-version is not set.
+const DefaultEnvironmentVersion = 4
 
 const (
 	sshServerTaskKey         = "start_ssh_server"
@@ -170,7 +174,7 @@ func (o *ClientOptions) Validate() error {
 	if o.IDE != "" && o.IDE != vscode.VSCodeOption && o.IDE != vscode.CursorOption {
 		return fmt.Errorf("invalid IDE value: %q, expected %q or %q", o.IDE, vscode.VSCodeOption, vscode.CursorOption)
 	}
-	if o.EnvironmentVersion > 0 && o.EnvironmentVersion < minEnvironmentVersion {
+	if o.EnvironmentVersion != 0 && o.EnvironmentVersion < minEnvironmentVersion {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	// base_environment and environment_version are mutually exclusive in the SDK,
@@ -210,15 +214,15 @@ func (o *ClientOptions) Validate() error {
 // serverless server bakes in its environment at startup: distinct environments
 // must map to distinct connection names so they don't reuse each other's server.
 func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, environmentVersion int) string {
-	// Keep the hash host-only when no environment is set so existing default
-	// connection names are preserved.
-	hashInput := host
-	if baseEnvironment != "" {
+	// The version is hashed even when it is the default, so bumping
+	// DefaultEnvironmentVersion intentionally moves users to a new server.
+	var hashInput string
+	switch {
+	case baseEnvironment != "":
 		hashInput = host + "\x00" + baseEnvironment
-	}
-	// The two are mutually exclusive. The key keeps a version from hashing like a
-	// base environment whose name is that number.
-	if environmentVersion > 0 {
+	default:
+		// The key keeps a version from hashing like a base environment
+		// whose name is that number.
 		hashInput = host + "\x00environment_version=" + strconv.Itoa(environmentVersion)
 	}
 	h := md5.Sum([]byte(hashInput))
@@ -850,7 +854,7 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		if baseEnvironment != "" {
 			spec.BaseEnvironment = baseEnvironment
 		} else {
-			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
+			spec.EnvironmentVersion = strconv.Itoa(cmp.Or(opts.EnvironmentVersion, DefaultEnvironmentVersion))
 		}
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
