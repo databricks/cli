@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -225,7 +226,119 @@ func FromGit(root string, testDirs map[string]bool, limit int) (Result, error) {
 		return Result{}, fmt.Errorf("git diff --merge-base origin/main failed: %w", err)
 	}
 
-	return FromDiff(root, strings.TrimSpace(string(out)), testDirs, limit), nil
+	diff, err := withoutAddedExclusions(root, strings.TrimSpace(string(out)))
+	if err != nil {
+		return Result{}, err
+	}
+	return FromDiff(root, diff, testDirs, limit), nil
+}
+
+// withoutAddedExclusions ignores invariant configs that only disable more variants:
+// none of the remaining variants changed, so running the whole directory adds no coverage.
+func withoutAddedExclusions(root, diff string) (string, error) {
+	lines := strings.Split(diff, "\n")
+	var base string
+	for i, line := range lines {
+		fields := strings.Split(line, "\t")
+		if len(fields) != 2 || fields[0] != "M" {
+			continue
+		}
+		path := fields[1]
+		if !strings.HasPrefix(path, acceptanceDirPrefix+invariantDirPrefix) || filepath.Base(path) != internal.ConfigFilename {
+			continue
+		}
+		if base == "" {
+			out, err := exec.Command("git", "merge-base", "HEAD", "origin/main").Output()
+			if err != nil {
+				return "", fmt.Errorf("finding selection merge base: %w", err)
+			}
+			base = strings.TrimSpace(string(out))
+		}
+		before, err := exec.Command("git", "show", base+":"+path).Output()
+		if err != nil {
+			return "", fmt.Errorf("reading %s at %s: %w", path, base, err)
+		}
+		after, err := os.ReadFile(filepath.Join(root, strings.TrimPrefix(path, acceptanceDirPrefix)))
+		if err != nil {
+			return "", fmt.Errorf("reading %s: %w", path, err)
+		}
+		added := addedExclusions(before, after)
+		if len(added) == 0 {
+			continue
+		}
+		inherited, err := inheritedExclusions(base, path)
+		if err != nil {
+			return "", err
+		}
+		// A new leaf rule can override an inherited rule and re-enable its old variants.
+		shadowsInherited := false
+		for name := range added {
+			if inherited[name] {
+				shadowsInherited = true
+				break
+			}
+		}
+		if !shadowsInherited {
+			lines[i] = ""
+		}
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
+// addedExclusions preserves selection for removed/replaced rules and other config changes.
+func addedExclusions(before, after []byte) map[string][]string {
+	var oldConfig, newConfig internal.TestConfig
+	if metadata, err := toml.Decode(string(before), &oldConfig); err != nil || len(metadata.Undecoded()) > 0 {
+		return nil
+	}
+	if metadata, err := toml.Decode(string(after), &newConfig); err != nil || len(metadata.Undecoded()) > 0 {
+		return nil
+	}
+	oldRules, newRules := oldConfig.EnvMatrixExclude, newConfig.EnvMatrixExclude
+	if len(newRules) <= len(oldRules) {
+		return nil
+	}
+	for name, rule := range oldRules {
+		if !reflect.DeepEqual(rule, newRules[name]) {
+			return nil
+		}
+	}
+	oldConfig.EnvMatrixExclude, newConfig.EnvMatrixExclude = nil, nil
+	if !reflect.DeepEqual(oldConfig, newConfig) {
+		return nil
+	}
+	for name := range oldRules {
+		delete(newRules, name)
+	}
+	return newRules
+}
+
+// inheritedExclusions identifies rules a new leaf exclusion would replace.
+func inheritedExclusions(base, path string) (map[string]bool, error) {
+	args := []string{"ls-tree", "-r", "--full-tree", "--name-only", base, "--"}
+	for dir := filepath.Dir(filepath.Dir(path)); filepath.ToSlash(dir)+"/" != acceptanceDirPrefix; dir = filepath.Dir(dir) {
+		args = append(args, filepath.ToSlash(filepath.Join(dir, internal.ConfigFilename)))
+	}
+	args = append(args, acceptanceDirPrefix+internal.ConfigFilename)
+	out, err := exec.Command("git", args...).Output()
+	if err != nil {
+		return nil, fmt.Errorf("listing inherited configs at %s: %w", base, err)
+	}
+	rules := map[string]bool{}
+	for path := range strings.FieldsSeq(string(out)) {
+		contents, err := exec.Command("git", "show", base+":"+path).Output()
+		if err != nil {
+			return nil, fmt.Errorf("reading %s at %s: %w", path, base, err)
+		}
+		var config internal.TestConfig
+		if _, err := toml.Decode(string(contents), &config); err != nil {
+			return nil, fmt.Errorf("parsing %s at %s: %w", path, base, err)
+		}
+		for name := range config.EnvMatrixExclude {
+			rules[name] = true
+		}
+	}
+	return rules, nil
 }
 
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
