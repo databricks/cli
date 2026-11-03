@@ -75,8 +75,9 @@ type promptModel struct {
 	deleted   bool
 	submitted bool
 
-	// edited is set by the first change to runes.
-	edited bool
+	// touched is set by the first edit or Enter. Until then an invalid input
+	// shows a blank glyph, so a required field does not open as an error.
+	touched bool
 
 	// submitErr is the error from the last failed Enter attempt. Rendered
 	// below the prompt and cleared on the next edit.
@@ -103,7 +104,7 @@ func (m *promptModel) glyph() string {
 	if m.validate == nil || m.validate(m.value()) == nil {
 		return ansiBold + ansiGreen + glyphValid + ansiReset
 	}
-	if !m.edited && m.submitErr == nil {
+	if !m.touched {
 		return " "
 	}
 	return ansiBold + ansiRed + glyphInvalid + ansiReset
@@ -124,6 +125,7 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyEnter, tea.KeyCtrlJ:
 		// Enter sends CR, Ctrl+J sends LF; treat both as submit.
+		m.touched = true
 		if m.validate != nil {
 			if err := m.validate(m.value()); err != nil {
 				m.submitErr = err
@@ -181,7 +183,7 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.runes = append(m.runes[:m.cursor], typed...)
 		m.runes = append(m.runes, tail...)
 		m.cursor += len(typed)
-		m.edited = true
+		m.touched = true
 		m.submitErr = nil
 
 	default:
