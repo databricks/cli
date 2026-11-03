@@ -1,1 +1,2 @@
-$CLI bundle validate -o json | grep run_as
+# An empty run_as in a target override removes run_as.
+trace $CLI bundle validate -o json | jq '{run_as, job_run_as: .resources.jobs.foo.run_as}'

@@ -107,3 +107,31 @@ func TestElementByKeyWithOverride(t *testing.T) {
 		}, vout.Index(1).AsAny(),
 	)
 }
+
+func TestElementByKeyKeepingNulls(t *testing.T) {
+	vin := dyn.V([]dyn.Value{
+		dyn.V(map[string]dyn.Value{
+			"key":     dyn.V("foo"),
+			"removed": dyn.V(42),
+			"kept":    dyn.V(42),
+		}),
+		dyn.V(map[string]dyn.Value{
+			"key":     dyn.V("foo"),
+			"removed": dyn.NilValue,
+		}),
+	})
+
+	keyFunc := func(v dyn.Value) string {
+		return v.MustString()
+	}
+
+	vout, err := dyn.MapByPath(vin, dyn.EmptyPath, ElementsByKeyKeepingNulls("key", keyFunc))
+	require.NoError(t, err)
+	assert.Equal(t, []any{
+		map[string]any{
+			"key":     "foo",
+			"removed": nil,
+			"kept":    42,
+		},
+	}, vout.AsAny())
+}
