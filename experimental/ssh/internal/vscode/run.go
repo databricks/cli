@@ -116,7 +116,7 @@ func CheckIDECommand(ctx context.Context, option string) error {
 			return fmt.Errorf("%w: %s must be an absolute path, got %q", ErrIDECommandOverrideInvalid, IDECommandEnv, command)
 		}
 		if _, err := exec.LookPath(command); err != nil {
-			return fmt.Errorf("%w: %s command %q from %s: %w", ErrIDECommandOverrideInvalid, ide.Name, command, IDECommandEnv, err)
+			return fmt.Errorf("%w: %s command %s from %s: %w", ErrIDECommandOverrideInvalid, ide.Name, command, IDECommandEnv, err)
 		}
 		return nil
 	}
