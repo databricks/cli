@@ -125,26 +125,8 @@ jobs:
           git push origin "HEAD:$BRANCH"
 
       # A failed scheduled run is otherwise only visible in the Actions tab.
-      # Track failures in a single open issue: open it on the first failure and
-      # comment on it for every subsequent one until someone closes it.
       - name: Report failure
         if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |-
-          label="bump-vuln-deps-failure"
-          gh label create "$label" --force \
-            --color B60205 \
-            --description "The Bump vulnerable dependencies workflow is failing"
-          issue="$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')"
-          if [ -n "$issue" ]; then
-            gh issue comment "$issue" --body "Failed again: $RUN_URL"
-          else
-            gh issue create --label "$label" \
-              --title "Bump vulnerable dependencies workflow is failing" \
-              --body "@databricks/eng-deco-cli the scheduled \`Bump vulnerable dependencies\` workflow failed.
-
-          $RUN_URL"
-          fi
+        uses: ./.github/actions/report-failure
+        with:
+          label: bump-vuln-deps-failure

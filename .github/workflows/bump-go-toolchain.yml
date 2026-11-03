@@ -16,6 +16,9 @@ permissions:
   contents: write
   pull-requests: write
 
+  # Required to open or comment on the failure-tracking issue.
+  issues: write
+
 jobs:
   bump-go-toolchain:
     runs-on:
@@ -125,3 +128,10 @@ jobs:
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
               commit -m "Add changelog fragment"
           git push origin "HEAD:$BRANCH"
+
+      # A failed scheduled run is otherwise only visible in the Actions tab.
+      - name: Report failure
+        if: failure()
+        uses: ./.github/actions/report-failure
+        with:
+          label: bump-go-toolchain-failure
