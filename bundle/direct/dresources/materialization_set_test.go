@@ -128,33 +128,57 @@ func TestMaterializationSetOperationFailureWithoutFailedMembers(t *testing.T) {
 	assert.ErrorIs(t, err, waitErr)
 }
 
-// TestMaterializationSetMembershipChangeIsAnUpdate enumerates every path shape the planner hands
-// this resource, so the membership carve-out's reach is visible rather than inferred. The two
-// shapes it covers are a member added or removed whole and the member list emptied whole; every
-// other path keeps the action the rules gave it.
-func TestMaterializationSetMembershipChangeIsAnUpdate(t *testing.T) {
+// TestMaterializationSetMembershipChangeAction enumerates every path shape the planner hands this
+// resource: a whole member and the whole member list are an update unless they hold a member the
+// deployed set lacks, and every other path keeps the action the rules gave it.
+func TestMaterializationSetMembershipChangeAction(t *testing.T) {
 	const member = "materialized_features[member='feature_name=main.ns.feat|online_store_name=store|is_streaming_mode=false']"
+	const streamingMember = "materialized_features[member='feature_name=main.ns.feat|online_store_name=store|is_streaming_mode=true']"
+	const movedStoreMember = "materialized_features[member='feature_name=main.ns.feat|online_store_name=other|is_streaming_mode=false']"
+	const addedMember = "materialized_features[member='feature_name=main.ns.other|is_streaming_mode=false']"
+
+	deployed := ml.MaterializedFeature{
+		FeatureName:       "main.ns.feat",
+		OnlineStoreConfig: &ml.OnlineStoreConfig{OnlineStoreName: "store"},
+	}
+	added := ml.MaterializedFeature{FeatureName: "main.ns.other"}
+	turnedStreaming := deployed
+	turnedStreaming.StreamingMode = &ml.StreamingMode{}
+	movedStore := deployed
+	movedStore.OnlineStoreConfig = &ml.OnlineStoreConfig{OnlineStoreName: "other"}
+	remote := &ml.MaterializationSet{MaterializedFeatures: []ml.MaterializedFeature{deployed}}
 
 	for _, test := range []struct {
+		name   string
 		path   string
+		new    any
+		remote *ml.MaterializationSet
 		action deployplan.ActionType
+		reason string
 	}{
-		{"materialized_features", deployplan.Update},
-		{member, deployplan.Update},
-		{"materialized_features[member='feature_name=main.ns.feat|is_streaming_mode=false']", deployplan.Update},
-		{member + ".feature_name", deployplan.Recreate},
-		{member + ".cron_schedule_trigger", deployplan.Recreate},
-		{member + ".online_store_config.table_name_prefix", deployplan.Recreate},
-		{"materialization_set_id", deployplan.Recreate},
+		{"member the deployed set lacks", addedMember, added, remote, deployplan.Recreate, reasonMemberAdded},
+		{"member whose trigger turned streaming", streamingMember, turnedStreaming, remote, deployplan.Recreate, reasonMemberAdded},
+		{"member whose online store changed", movedStoreMember, movedStore, remote, deployplan.Recreate, reasonMemberAdded},
+		{"member the deployed set has", member, deployed, remote, deployplan.Update, "immutable"},
+		{"member removed", member, nil, remote, deployplan.Update, "immutable"},
+		{"list holding a member the deployed set lacks", "materialized_features", []ml.MaterializedFeature{deployed, added}, remote, deployplan.Recreate, reasonMemberAdded},
+		{"list the deployed set has", "materialized_features", []ml.MaterializedFeature{deployed}, remote, deployplan.Update, "immutable"},
+		{"list emptied", "materialized_features", nil, remote, deployplan.Update, "immutable"},
+		{"set missing remotely", addedMember, added, nil, deployplan.Update, "immutable"},
+		{"feature name field", member + ".feature_name", nil, remote, deployplan.Recreate, "immutable"},
+		{"trigger field", member + ".cron_schedule_trigger", nil, remote, deployplan.Recreate, "immutable"},
+		{"destination field", member + ".online_store_config.table_name_prefix", nil, remote, deployplan.Recreate, "immutable"},
+		{"set id", "materialization_set_id", nil, remote, deployplan.Recreate, "immutable"},
 	} {
-		t.Run(test.path, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			path, err := structpath.ParsePath(test.path)
 			require.NoError(t, err)
 
-			change := &ChangeDesc{Action: deployplan.Recreate, Reason: "immutable"}
+			change := &ChangeDesc{Action: deployplan.Recreate, Reason: "immutable", New: test.new}
 			require.NoError(t, (&ResourceMaterializationSet{}).OverrideChangeDesc(
-				t.Context(), path, change, nil))
+				t.Context(), path, change, test.remote))
 			assert.Equal(t, test.action, change.Action)
+			assert.Equal(t, test.reason, change.Reason)
 		})
 	}
 }

@@ -20,8 +20,8 @@ resources:
         - name: id
       timeseries_column:
         name: timestamp
-    # Declared so the set can try to add a member for it. A member names a feature that must
-    # already exist, and the add is refused by the set update rather than by the feature lookup.
+    # Declared so a later phase can add a member for it, or rename the set's member to it. A member
+    # names a feature that must already exist.
     featb:
       full_name: $CATALOG_NAME.$SCHEMA_NAME.immb_$UNIQUE_NAME
       source:

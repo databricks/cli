@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
@@ -72,19 +73,30 @@ func isAbsentRemotely(remote any) bool {
 	return isString && text == ""
 }
 
-// OverrideChangeDesc does two things the generic classification gets wrong here: it marks a whole
-// materialized feature member added to or removed from the set as an update rather than a
-// destroy-and-recreate, and it suppresses the drift left behind by an ignore_remote_changes rule
+// reasonMemberAdded marks a recreate caused by a configured member the deployed set lacks.
+const reasonMemberAdded = "member_added"
+
+// OverrideChangeDesc plans a member removed from the set as an update and a member the deployed
+// set lacks as a recreate, and suppresses the drift left behind by an ignore_remote_changes rule
 // that cannot fire.
-func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.MaterializationSet) error {
-	// A member added or removed whole is a two-segment path, materialized_features[member=...]
-	// carrying the key materializationSetMemberKey builds, and the member list emptied whole is the
-	// one-segment materialized_features. An immutable field rule
-	// under materialized_features[*] matches either, because the matcher truncates a pattern longer
-	// than the path. Both count as an update rather than a destroy-and-recreate, because
-	// reconciling membership is what the update endpoint does.
+func (*ResourceMaterializationSet) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remote *ml.MaterializationSet) error {
+	// The immutable field rules also match a whole member, materialized_features[member=...], and
+	// the whole list, materialized_features, because the matcher truncates a longer pattern. The
+	// update endpoint removes members but cannot add one, so only a configured member the deployed
+	// set lacks recreates the set.
 	if path.Len() <= 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
-		change.Action = deployplan.Update
+		added := membersAbsentRemotely(change.New, remote)
+		if len(added) == 0 {
+			change.Action = deployplan.Update
+			return nil
+		}
+		for _, member := range added {
+			log.Warnf(ctx, "the member for feature %q is not in the deployed set, and members cannot be "+
+				"added to an existing set, so the whole set will be recreated: every member is dropped "+
+				"and recomputed", member.FeatureName)
+		}
+		change.Action = deployplan.Recreate
+		change.Reason = reasonMemberAdded
 		return nil
 	}
 
@@ -101,6 +113,35 @@ func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *s
 		change.Reason = "input_only_not_returned"
 	}
 	return nil
+}
+
+// membersAbsentRemotely returns the configured members, given one member or the whole list, whose
+// key no member of the remote set has. A set missing remotely has none, because the planner then
+// creates the set instead of recreating it.
+func membersAbsentRemotely(configured any, remote *ml.MaterializationSet) []ml.MaterializedFeature {
+	if remote == nil {
+		return nil
+	}
+	var members []ml.MaterializedFeature
+	switch value := configured.(type) {
+	case ml.MaterializedFeature:
+		members = []ml.MaterializedFeature{value}
+	case []ml.MaterializedFeature:
+		members = value
+	}
+
+	remoteKeys := make(map[string]bool, len(remote.MaterializedFeatures))
+	for _, member := range remote.MaterializedFeatures {
+		_, key := resources.MaterializedFeatureMemberKey(member)
+		remoteKeys[key] = true
+	}
+	var absent []ml.MaterializedFeature
+	for _, member := range members {
+		if _, key := resources.MaterializedFeatureMemberKey(member); !remoteKeys[key] {
+			absent = append(absent, member)
+		}
+	}
+	return absent
 }
 
 func (r *ResourceMaterializationSet) DoRead(ctx context.Context, id string) (*ml.MaterializationSet, error) {

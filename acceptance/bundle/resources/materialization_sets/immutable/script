@@ -33,21 +33,29 @@ update_file.py databricks.yml '0 0 * * * ?' '0 30 * * * ?'
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 
-title "Adding a member is routed to update, where the server refuses it by name rather than"
-title "recreating the set and destroying the members the config left alone"
+title "The endpoint cannot add a member either, so adding one plans a recreate of the whole set"
+title "and warns that every member is dropped and recomputed"
 render added-member.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
-trace musterr $CLI bundle deploy --auto-approve
 
-title "Every refusal above leaves destroy and redeploy as the only route, so that pair is what a"
-title "member-field change costs. The delete settles its own operation, and the re-created set"
-title "plans clean."
-render databricks.yml.tmpl
-trace $CLI bundle destroy --auto-approve
+title "A recreate needs approval, so a deploy that cannot prompt stops before changing anything"
+trace musterr $CLI bundle deploy
+
+title "With approval the set is rebuilt holding both members, and the rebuilt set plans clean"
+trace $CLI bundle deploy --auto-approve
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
-trace $CLI bundle deploy
+
+title "Removing a member is still an update"
+render databricks.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace $CLI bundle deploy --auto-approve
+
+title "A member whose feature name changes reads as one member removed and another added, so it"
+title "plans a recreate as well"
+render renamed-member.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 
