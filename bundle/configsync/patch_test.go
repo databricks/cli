@@ -446,7 +446,12 @@ func TestApplyChangeScalarParents(t *testing.T) {
 		want    string
 	}{
 		{"string", "parent: text\n", "parent.key", ""},
+		{"quoted null", "parent: \"null\"\n", "parent.key", ""},
+		{"empty string", "parent: \"\"\n", "parent.key", ""},
 		{"boolean", "parent: false\n", "parent.key", ""},
+		{"anchored null", "parent: &shared null\nother: *shared\n", "parent.key", ""},
+		{"aliased null", "other: &shared null\nparent: *shared\n", "parent.key", ""},
+		{"anchored container", "parent: &shared {tags: null}\nother: *shared\n", "parent.tags.key", ""},
 		{"nonzero index", "parent: null\n", "parent[1].key", ""},
 		{"append", "parent: null\n", "parent[*]", "parent: [value]"},
 		{"nested sequence", "parent: ~\n", "parent[0].key", "parent: [{key: value}]"},

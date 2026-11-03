@@ -13,8 +13,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
@@ -118,7 +116,7 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			}})
 
 			if patchErr != nil {
-				patch, err := nullParentPatch(content, fieldPathCandidate, path, fieldChange.Change.Value)
+				patch, err := nullAncestorPatch(content, fieldPathCandidate, path, fieldChange.Change.Value)
 				if err != nil {
 					return nil, err
 				}
@@ -186,39 +184,68 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 	return content, nil
 }
 
-// nullParentPatch replaces a null ancestor with the containers needed for an add.
-func nullParentPatch(content []byte, fieldPath string, path yamlpatch.Path, value any) (yamlpatch.Patch, error) {
-	config, err := yamlloader.LoadYAML("", bytes.NewReader(content))
-	if err != nil {
+// nullAncestorPatch replaces a null ancestor with the containers needed for an add.
+// It returns nil when no null ancestor can be replaced safely.
+func nullAncestorPatch(content []byte, fieldPath string, path yamlpatch.Path, value any) (yamlpatch.Patch, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
 		return nil, err
 	}
-	node, err := structpath.ParsePattern(fieldPath)
-	if err != nil {
-		return nil, err
-	}
-	for ; node.Parent() != nil; node = node.Parent() {
-		key, isKey := node.StringKey()
-		index, isIndex := node.Index()
-		switch {
-		case isKey:
-			value = map[string]any{key: value}
-		case node.BracketStar(), isIndex && index == 0:
-			value = []any{value}
+	current := &doc
+	for i, part := range path[:len(path)-1] {
+		switch current.Kind {
+		case yaml.DocumentNode:
+			if len(current.Content) != 1 {
+				return nil, nil
+			}
+			current = current.Content[0]
+		case yaml.MappingNode:
+			var child *yaml.Node
+			for j := 0; j+1 < len(current.Content); j += 2 {
+				if current.Content[j].Value == part {
+					child = current.Content[j+1]
+					break
+				}
+			}
+			if child == nil {
+				return nil, nil
+			}
+			current = child
+		case yaml.SequenceNode:
+			index, err := strconv.Atoi(part)
+			if err != nil || index < 0 || index >= len(current.Content) {
+				return nil, nil //nolint:nilerr // keep the original patch error for unsupported paths
+			}
+			current = current.Content[index]
 		default:
-			// Only the first element can be added to an empty sequence.
 			return nil, nil
 		}
-
-		parent := node.Parent()
-		v, ok := preResolvedValueAt(config, parent.String())
-		if !ok {
+		// Replacing anchored content could alter aliases or leave dangling references.
+		if current.Anchor != "" {
+			return nil, nil
+		}
+		if current.Kind != yaml.ScalarNode || current.ShortTag() != "!!null" {
 			continue
 		}
-		if v.Kind() != dyn.KindNil {
-			return nil, nil
+		pattern, err := structpath.ParsePattern(fieldPath)
+		if err != nil {
+			return nil, err
+		}
+		for ; pattern.Len() > i; pattern = pattern.Parent() {
+			key, isKey := pattern.StringKey()
+			index, isIndex := pattern.Index()
+			switch {
+			case isKey:
+				value = map[string]any{key: value}
+			case pattern.BracketStar(), isIndex && index == 0:
+				value = []any{value}
+			default:
+				// Only the first element can be added to an empty sequence.
+				return nil, nil
+			}
 		}
 		// yamlpatch includes the document node as an empty first component.
-		parentPath := path[:parent.Len()+1]
+		parentPath := path[:i+1]
 		return yamlpatch.Patch{{Type: yamlpatch.OperationReplace, Path: parentPath, Value: value}}, nil
 	}
 	return nil, nil
