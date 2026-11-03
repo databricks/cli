@@ -1,3 +1,6 @@
+update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+update_file.py databricks_unbound.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+
 # Create a pipeline whose storage matches the config and bind it
 NEW_PIPELINE_ID=$($CLI pipelines create --json '{"name": "test-pipeline", "storage": "/old/storage/path", "allow_duplicate_names": true, "libraries": [{"notebook": {"path": "/Workspace/test"}}]}' | jq -r .pipeline_id)
 add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID

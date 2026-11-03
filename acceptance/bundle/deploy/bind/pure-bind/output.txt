@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure-[UNIQUE_NAME]/default/files...
 Bound and updated jobs.foo
 Created jobs.foo.permissions
 Files: 1 uploaded, 0 deleted
@@ -31,7 +31,7 @@ json.plan.resources.jobs.foo.action = "bind";
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure-[UNIQUE_NAME]/default/files...
 Bound jobs.foo
 Created jobs.foo.permissions
 Files: 0 uploaded, 0 deleted
@@ -49,6 +49,6 @@ json.state.resources.jobs.foo.permissions.__id__ = "/jobs/[NEW_JOB_ID]";
 The following resources will be deleted:
   delete resources.jobs.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-pure/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-pure-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted

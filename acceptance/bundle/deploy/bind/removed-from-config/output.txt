@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-removed-from-config/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-removed-from-config-[UNIQUE_NAME]/default/files...
 Bound and updated jobs.foo
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
@@ -12,7 +12,7 @@ delete jobs.foo
 Plan: 0 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-removed-from-config/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-removed-from-config-[UNIQUE_NAME]/default/files...
 Deleted jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 1 deleted, 0 unchanged
@@ -21,6 +21,6 @@ Resources: 0 created, 0 changed, 1 deleted, 0 unchanged
 Error: Job [NEW_JOB_ID] does not exist.
 
 >>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-removed-from-config/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-removed-from-config-[UNIQUE_NAME]/default
 
 Destroy: 0 deleted

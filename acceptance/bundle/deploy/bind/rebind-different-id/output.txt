@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-rebind-different-id/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-rebind-different-id-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
@@ -18,6 +18,6 @@ Error: bind validation failed
 The following resources will be deleted:
   delete resources.jobs.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-rebind-different-id/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-rebind-different-id-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted

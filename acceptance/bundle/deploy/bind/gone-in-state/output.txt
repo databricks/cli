@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state-[UNIQUE_NAME]/default/files...
 Bound and updated jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
@@ -15,7 +15,7 @@ Error: planning failed
 
 
 >>> musterr [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state-[UNIQUE_NAME]/default/files...
 Error: cannot plan resources.jobs.foo: bound resource with ID "[NEW_JOB_ID]" no longer exists in the workspace; remove lifecycle.bind to create a new resource
 
 Error: planning failed
@@ -23,6 +23,6 @@ Error: planning failed
 Files: 0 uploaded, 0 deleted
 
 >>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state-[UNIQUE_NAME]/default
 
 Destroy: 0 deleted

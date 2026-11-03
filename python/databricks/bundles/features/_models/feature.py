@@ -23,7 +23,10 @@ from databricks.bundles.features._models.function import (
     Function,
     FunctionParam,
 )
-from databricks.bundles.features._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.features._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.features._models.lineage_context import (
     LineageContext,
     LineageContextParam,

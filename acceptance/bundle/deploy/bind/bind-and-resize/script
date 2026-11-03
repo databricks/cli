@@ -1,8 +1,9 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 # Create a cluster out-of-band, then bring it to RUNNING so that a num_workers
-# change is planned as a resize rather than an edit.
-CLUSTER_ID=$($CLI clusters create --json "{\"cluster_name\": \"test-cluster-$UNIQUE_NAME\", \"spark_version\": \"$DEFAULT_SPARK_VERSION\", \"node_type_id\": \"$NODE_TYPE_ID\", \"instance_pool_id\": \"$TEST_INSTANCE_POOL_ID\", \"num_workers\": 2, \"autotermination_minutes\": 60}" | jq -r .cluster_id)
+# change is planned as a resize rather than an edit. The cluster uses an instance
+# pool only: the API rejects node_type_id together with instance_pool_id.
+CLUSTER_ID=$($CLI clusters create --json "{\"cluster_name\": \"test-cluster-$UNIQUE_NAME\", \"spark_version\": \"$DEFAULT_SPARK_VERSION\", \"instance_pool_id\": \"$TEST_INSTANCE_POOL_ID\", \"num_workers\": 2, \"autotermination_minutes\": 60}" | jq -r .cluster_id)
 add_repl.py "$CLUSTER_ID" CLUSTER_ID
 update_file.py databricks.yml 'PLACEHOLDER_CLUSTER_ID' "$CLUSTER_ID"
 

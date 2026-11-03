@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-variable-id
+  name: test-bind-variable-id-UNIQUE_NAME
 
 variables:
   job_id:

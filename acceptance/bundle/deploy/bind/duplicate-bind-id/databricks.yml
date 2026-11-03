@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-duplicate-id
+  name: test-bind-duplicate-id-UNIQUE_NAME
 
 resources:
   jobs:
@@ -14,6 +14,3 @@ resources:
           environment_key: default
           spark_python_task:
             python_file: ./hello.py
-
-targets:
-  default:

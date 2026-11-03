@@ -11,7 +11,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.mcp_services._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.mcp_services._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.mcp_services._models.mcp_service_config import (
     McpServiceConfig,
     McpServiceConfigParam,
