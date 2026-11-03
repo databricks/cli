@@ -152,7 +152,7 @@ Data Classification
   data-classification                    Manage data classification for Unity Catalog catalogs.
 
 Data Quality Monitoring
-  data-quality                           *Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).
+  data-quality                           Manage the data quality of Unity Catalog objects (currently support schema and table).
 
 Database Instances
   database                               *Public Preview* Database Instances provide access to a database via REST API or direct SQL.
