@@ -83,7 +83,7 @@ func populateMaterializationSetMember(member ml.MaterializedFeature, setID strin
 	member.MaterializedFeatureId = nextUUID()
 	member.MaterializationSetId = setID
 	member.IsOnline = member.OnlineStoreConfig != nil
-	member.PipelineScheduleState = effectivePipelineScheduleState(member.PipelineScheduleState)
+	member.PipelineScheduleState = effectivePipelineScheduleState(member.PipelineScheduleState) //nolint:staticcheck // SA1019: the service still validates schedule state
 	member.OfflineStoreConfig = nil
 	if member.OnlineStoreConfig != nil {
 		member.OnlineStoreConfig = &ml.OnlineStoreConfig{
@@ -101,7 +101,7 @@ func validateBatchPipelineScheduleStates(members []ml.MaterializedFeature) *Resp
 		if member.StreamingMode != nil {
 			continue
 		}
-		states[effectivePipelineScheduleState(member.PipelineScheduleState)] = true
+		states[effectivePipelineScheduleState(member.PipelineScheduleState)] = true //nolint:staticcheck // SA1019: the service still validates schedule state
 	}
 	if len(states) > 1 {
 		response := materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
@@ -682,8 +682,8 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		}
 		// An unset state asks for no change: the server falls back to the stored one before
 		// comparing, so a member the config never declares is not read as a change.
-		if member.PipelineScheduleState != "" &&
-			member.PipelineScheduleState != stored.PipelineScheduleState {
+		if member.PipelineScheduleState != "" && //nolint:staticcheck // SA1019: the service still validates schedule state
+			member.PipelineScheduleState != stored.PipelineScheduleState { //nolint:staticcheck // SA1019: the service still validates schedule state
 			return materializedFeatureFieldCannotBeChanged(member.FeatureName,
 				stored.MaterializedFeatureId, "pipeline_schedule_state")
 		}
