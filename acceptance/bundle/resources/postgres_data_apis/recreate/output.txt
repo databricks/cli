@@ -2,13 +2,14 @@
 === Deploy the Data API on the first database
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default/files...
+Created postgres_branches.production
 Created postgres_data_apis.my_data_api
 Created postgres_databases.first
 Created postgres_databases.second
 Created postgres_projects.my_project
 Created postgres_roles.owner
 Files: 0 uploaded, 0 deleted
-Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database/data-api
 {
@@ -31,13 +32,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 recreate postgres_data_apis.my_data_api
 
-Plan: 1 to add, 0 to change, 1 to delete, 4 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 5 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default/files...
 Recreated postgres_data_apis.my_data_api
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 4 unchanged
+Resources: 1 created, 0 changed, 1 deleted, 5 unchanged
 
 >>> musterr [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database/data-api
 Error: Data API is not enabled for this database
@@ -59,6 +60,7 @@ Error: Data API is not enabled for this database
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.postgres_branches.production
   delete resources.postgres_data_apis.my_data_api
   delete resources.postgres_databases.first
   delete resources.postgres_databases.second
@@ -69,6 +71,10 @@ This action will result in the deletion of the following Lakebase projects along
 all their branches, databases, and endpoints. All data stored in them will be permanently lost:
   delete resources.postgres_projects.my_project
 
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.production
+
 This action will result in the deletion of the following Lakebase databases.
 All data stored in them will be permanently lost:
   delete resources.postgres_databases.first
@@ -76,4 +82,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default
 
-Destroy: 5 deleted
+Destroy: 6 deleted

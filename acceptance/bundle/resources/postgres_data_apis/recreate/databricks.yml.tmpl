@@ -11,20 +11,27 @@ resources:
       display_name: "Test Project for Data API Recreate"
       pg_version: 16
 
+  postgres_branches:
+    production:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: production
+      replace_existing: true
+      no_expiry: true
+
   postgres_roles:
     owner:
-      parent: ${resources.postgres_projects.my_project.id}/branches/production
+      parent: ${resources.postgres_branches.production.id}
       role_id: app-owner
       postgres_role: app_owner
 
   postgres_databases:
     first:
-      parent: ${resources.postgres_projects.my_project.id}/branches/production
+      parent: ${resources.postgres_branches.production.id}
       database_id: first-database
       postgres_database: first_db
       role: ${resources.postgres_roles.owner.id}
     second:
-      parent: ${resources.postgres_projects.my_project.id}/branches/production
+      parent: ${resources.postgres_branches.production.id}
       database_id: second-database
       postgres_database: second_db
       role: ${resources.postgres_roles.owner.id}

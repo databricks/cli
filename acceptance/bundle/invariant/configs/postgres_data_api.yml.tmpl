@@ -7,17 +7,24 @@ resources:
       project_id: test-pg-project-$UNIQUE_NAME
       display_name: Test Postgres Project
 
-  # The Data API needs a read-write endpoint on the branch; the "production"
-  # branch created with the project comes with one.
+  # The Data API needs a read-write endpoint on the branch. Take over the
+  # "production" branch created with the project, which comes with one.
+  postgres_branches:
+    production:
+      parent: ${resources.postgres_projects.project.name}
+      branch_id: production
+      replace_existing: true
+      no_expiry: true
+
   postgres_roles:
     owner:
-      parent: ${resources.postgres_projects.project.name}/branches/production
+      parent: ${resources.postgres_branches.production.name}
       role_id: test-role-$UNIQUE_NAME
       postgres_role: app_role
 
   postgres_databases:
     database:
-      parent: ${resources.postgres_projects.project.name}/branches/production
+      parent: ${resources.postgres_branches.production.name}
       database_id: test-database-$UNIQUE_NAME
       postgres_database: app_db
       role: ${resources.postgres_roles.owner.name}

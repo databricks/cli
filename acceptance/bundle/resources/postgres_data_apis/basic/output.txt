@@ -18,6 +18,9 @@ Resources:
   Postgres Data APIs:
     my_data_api:
       Name: 
+  Postgres branches:
+    production:
+      Name: 
   Postgres databases:
     my_database:
       Name: 
@@ -29,22 +32,24 @@ Resources:
       Name: 
 
 >>> [CLI] bundle plan
+create postgres_branches.production
 create postgres_data_apis.my_data_api
 create postgres_databases.my_database
 create postgres_projects.my_project
 create postgres_roles.owner
 
-Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
 
 === Deploy enables the Data API
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-data-api-[UNIQUE_NAME]/default/files...
+Created postgres_branches.production
 Created postgres_data_apis.my_data_api
 Created postgres_databases.my_database
 Created postgres_projects.my_project
 Created postgres_roles.owner
 Files: 0 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 {
@@ -71,6 +76,9 @@ Resources:
   Postgres Data APIs:
     my_data_api:
       Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
+  Postgres branches:
+    production:
+      Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/production
   Postgres databases:
     my_database:
       Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database
@@ -83,19 +91,19 @@ Resources:
 
 === Plan after deploy shows no changes
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === Removing the resource turns off the Data API but keeps the database
 >>> [CLI] bundle plan
 delete postgres_data_apis.my_data_api
 
-Plan: 0 to add, 0 to change, 1 to delete, 3 unchanged
+Plan: 0 to add, 0 to change, 1 to delete, 4 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-data-api-[UNIQUE_NAME]/default/files...
 Deleted postgres_data_apis.my_data_api
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 1 deleted, 3 unchanged
+Resources: 0 created, 0 changed, 1 deleted, 4 unchanged
 
 >>> musterr [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 Error: Data API is not enabled for this database
@@ -107,6 +115,7 @@ Error: Data API is not enabled for this database
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.postgres_branches.production
   delete resources.postgres_databases.my_database
   delete resources.postgres_projects.my_project
   delete resources.postgres_roles.owner
@@ -115,10 +124,14 @@ This action will result in the deletion of the following Lakebase projects along
 all their branches, databases, and endpoints. All data stored in them will be permanently lost:
   delete resources.postgres_projects.my_project
 
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.production
+
 This action will result in the deletion of the following Lakebase databases.
 All data stored in them will be permanently lost:
   delete resources.postgres_databases.my_database
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-pg-data-api-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted
+Destroy: 4 deleted

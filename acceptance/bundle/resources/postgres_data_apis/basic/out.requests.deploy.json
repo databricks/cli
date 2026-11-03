@@ -13,6 +13,19 @@
 }
 {
   "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
+    "branch_id": "production",
+    "replace_existing": "true"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/roles",
   "q": {
     "role_id": "app-owner"
