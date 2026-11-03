@@ -258,7 +258,7 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 		// The agent runs this step, so the error above is addressed to it.
 		// Only the user may approve the login.
 		if note := agent.AgentNote("ask the user to check the confirmation code\n" +
-			"and to approve the login if they haven't. Do not approve it yourself."); note != "" {
+			"and to approve the login if they haven't. Do not approve it yourself"); note != "" {
 			err = fmt.Errorf("%w\n\n%s", err, note)
 		}
 		return nil, err
