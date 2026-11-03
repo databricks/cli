@@ -26,8 +26,8 @@ type FileInfoWithWorkspaceObjectInfo interface {
 // notebook (NOTEBOOK_IDENTIFIER in universe's NotebookUtils).
 const notebookSourceMarker = "Databricks notebook source"
 
-// Number of leading bytes the workspace inspects for the marker
-// (NOTEBOOK_IDENTIFIER_BUFFER_LENGTH in universe's NotebookUtils).
+// Number of leading bytes the workspace reads before checking only the first line among them
+// for the marker (NOTEBOOK_IDENTIFIER_BUFFER_LENGTH in universe's NotebookUtils).
 const headerLength = 200
 
 // file wraps an fs.File and implements a few helper methods such that
