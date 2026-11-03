@@ -1,1 +1,6 @@
 RecordRequests = false
+
+# Replace error message from windows
+[[Repls]]
+Old = 'open missing/report.xml: The system cannot find the path specified\.'
+New = 'open missing/report.xml: no such file or directory'
