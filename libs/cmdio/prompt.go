@@ -181,6 +181,12 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if key.Type == tea.KeySpace {
 			typed = []rune{' '}
 		}
+		// Some terminals send an empty bracketed paste when the clipboard is
+		// empty. Nothing changes, so it must not count as an edit or clear the
+		// error line.
+		if len(typed) == 0 {
+			return m, nil
+		}
 		tail := append([]rune{}, m.runes[m.cursor:]...)
 		m.runes = append(m.runes[:m.cursor], typed...)
 		m.runes = append(m.runes, tail...)
