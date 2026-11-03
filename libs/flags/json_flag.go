@@ -125,6 +125,18 @@ func (j *JsonFlag) Raw() []byte {
 	return j.raw
 }
 
+// Validate parses the JSON for well-formedness and returns the same positioned
+// error Unmarshal would (including the @file source in the location), without
+// decoding it into a value. Callers that send the raw bytes verbatim use this
+// to keep client-side validation. Returns nil when the flag was not set.
+func (j *JsonFlag) Validate() error {
+	if j.raw == nil {
+		return nil
+	}
+	_, err := jsonloader.LoadJSON(j.raw, j.source)
+	return err
+}
+
 // RejectWrappedJSON returns a clear client-side error when the --json body
 // is a top-level object containing outerKey. It detects the common mistake
 // of wrapping the body in '{"<outerKey>": ...}' when the flag binds to the

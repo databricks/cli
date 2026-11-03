@@ -7,7 +7,9 @@ type Experimental struct {
 	// single immutable snapshot rather than being synced individually. When true,
 	// the deployment calls /api/2.0/repos/snapshots with a zip of all files and sets
 	// workspace.file_path and workspace.artifact_path to the returned content-addressed
-	// path. Only supported with the direct deployment engine.
+	// path.
+	//
+	// ImmutableFolder is deprecated, use workspace.sync_mode: immutable instead.
 	ImmutableFolder bool `json:"immutable_folder,omitempty"`
 
 	// By default Python wheel tasks deployed as is to Databricks platform.
@@ -54,9 +56,10 @@ type Experimental struct {
 	// service (DMS), which records deployment history and tracks what changed
 	// across deployments.
 	//
-	// Only for bundles with no deployed resources yet: DMS becomes the source of
-	// truth for their state.
-	DeploymentHistory bool `json:"deployment_history,omitempty"`
+	// Resource state remains in resources.json. History uploads are best effort:
+	// DMS errors do not fail file-backed deployments.
+	// An explicit value takes priority over the environment setting.
+	DeploymentHistory *bool `json:"deployment_history,omitempty"`
 }
 
 type Python struct {

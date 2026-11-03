@@ -226,12 +226,15 @@ func TestRendererSharedLibraryAndOverride(t *testing.T) {
 	require.NoError(t, err)
 	got := string(b)
 
-	// agents_md is defined only in the shared library, so rendering it (a heading)
-	// without error proves the shared library is parsed into the template's namespace.
-	assert.Contains(t, got, "shared: #")
-	// claude_md is defined in both the shared library and this template's own
+	// agents_md is defined in both the shared library and this template's own
 	// library; the template's own definition must take precedence.
 	assert.Contains(t, got, "own: OWN WINS")
+
+	r, err = newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", "./testdata/library-override/no-library")
+	require.NoError(t, err)
+	got, err = r.executeTemplate(`{{template "agents_md" .}}`)
+	require.NoError(t, err)
+	assert.Contains(t, got, "# Declarative Automation Bundles Project")
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {

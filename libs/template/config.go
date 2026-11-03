@@ -217,9 +217,9 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 		// RunSelect's Label is single-line, so render any preceding lines
 		// of the description separately.
 		label := description
-		if i := strings.LastIndex(description, "\n"); i != -1 {
-			cmdio.LogString(c.ctx, description[:i])
-			label = description[i+1:]
+		if before, after, ok := strings.CutLast(description, "\n"); ok {
+			cmdio.LogString(c.ctx, before)
+			label = after
 		}
 		idx, err := cmdio.RunSelect(c.ctx, cmdio.SelectOptions{
 			Label:         label,

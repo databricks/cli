@@ -373,7 +373,7 @@ func newRead() *cobra.Command {
   the **USE_SCHEMA** privilege on the parent schema.
 
   Arguments:
-    NAME: The three-level (fully qualified) name of the volume`
+    NAME: The fully qualified name of the volume.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -392,14 +392,14 @@ func newRead() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
+			id, err := cmdio.Select(ctx, names, "The fully qualified name of the volume")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the three-level (fully qualified) name of the volume")
+			return errors.New("expected to have the fully qualified name of the volume")
 		}
 		readReq.Name = args[0]
 

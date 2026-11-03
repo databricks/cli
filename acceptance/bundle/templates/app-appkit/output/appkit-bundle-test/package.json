@@ -1,0 +1,13 @@
+{
+  "name": "appkit-bundle-test",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AppKit bundle initialization test",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@databricks/appkit": "0.57.0"
+  },
+  "packageManager": "pnpm@11.0.8"
+}

@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,6 +21,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// dryRunValidationTimeout bounds only the config:validate request.
+const dryRunValidationTimeout = 15 * time.Second
+
+// Bounds the workspace lookup performed by config help.
+const computeOptionsHelpTimeout = 3 * time.Second
+
 // runResult is the JSON payload for `air run`.
 type runResult struct {
 	Status       string `json:"status"`
@@ -28,7 +35,47 @@ type runResult struct {
 	DashboardURL string `json:"dashboard_url,omitempty"`
 }
 
+const experimentalContainersWarning = `+--------------------------------------------------------------------+
+| WARNING: EXPERIMENTAL FEATURE                                      |
+|                                                                    |
+| This feature is experimental and may change without notice,        |
+| including changes that could break existing workflows.             |
+| Use it only if you accept these risks.                             |
++--------------------------------------------------------------------+`
+
+func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
+	if len(cfg.Containers) > 0 {
+		cmdio.LogString(ctx, experimentalContainersWarning)
+	}
+}
+
+// validateDryRunInWorkspace keeps caller errors distinct from service failures.
+func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		if err := root.MustWorkspaceClient(cmd, args); err != nil {
+			return ctx, err
+		}
+		ctx = cmd.Context()
+	}
+
+	w := cmdctx.WorkspaceClient(ctx)
+	_, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
+	if err != nil {
+		unavailable, retryable := classifyValidationFailure(err)
+		if !unavailable {
+			return ctx, err
+		}
+		return ctx, asValidationUnavailable(err, retryable)
+	}
+
+	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
+}
+
 func newRunCommand() *cobra.Command {
+	return newRunCommandWithValidationTimeout(dryRunValidationTimeout)
+}
+
+func newRunCommandWithValidationTimeout(validationTimeout time.Duration) *cobra.Command {
 	var (
 		file           string
 		watch          bool
@@ -68,20 +115,28 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			_ = c.Usage()
 			return
 		}
-		if err := writeConfigFieldHelp(c.OutOrStdout(), fields[0]); err != nil {
+		field, err := resolveConfigField(fields[0])
+		if err != nil {
 			c.PrintErrln("Error:", err)
+			return
 		}
+
+		var computeOptions []computeOption
+		if field.path == "config.compute" || field.path == "config.compute.accelerator_type" {
+			computeOptions = loadComputeOptionsForHelp(c, args)
+		}
+		renderConfigField(c.OutOrStdout(), field, computeOptions)
 	})
 
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to the workload YAML config")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Stream logs until the run completes")
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config without submitting")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config against the workspace without submitting a run")
 	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used")
 	_ = cmd.MarkFlagRequired("file")
 
-	// --dry-run only validates the config locally, so it needs no workspace.
-	// Submission requires an authenticated client.
+	// --dry-run authenticates after local parsing and validation so syntax, unknown
+	// fields, and invalid overrides remain actionable without valid credentials.
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if dryRun {
 			return nil
@@ -98,12 +153,30 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		if dryRun {
+			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
+			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
+			if err := validateIdempotencyToken(idempotencyToken); err != nil {
+				return err
+			}
+			if validationErr != nil {
+				unavailable, ok := validationUnavailable(validationErr)
+				if !ok {
+					return validationErr
+				}
+				kind := "PERMANENT"
+				if unavailable.retryable {
+					kind = "TRANSIENT"
+				}
+				return renderError(ctx, cmd, "VALIDATION_UNAVAILABLE", kind, unavailable.retryable, validationErr)
+			}
 			if root.OutputType(cmd) == flags.OutputText {
 				cmdio.LogString(ctx, fmt.Sprintf("Dry run: configuration for %q is valid; not submitting.", cfg.ExperimentName))
 				return nil
 			}
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
+
+		warnExperimentalContainers(ctx, cfg)
 
 		jsonOut := root.OutputType(cmd) == flags.OutputJSON
 
@@ -170,13 +243,6 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			// Separate the submit summary from the streamed logs.
 			fmt.Fprintln(out)
 			fmt.Fprintln(out, monitoringMessage)
-			if maxRetries > 0 {
-				unit := "times"
-				if maxRetries == 1 {
-					unit = "time"
-				}
-				fmt.Fprintf(out, "Failed attempts will be retried up to %d %s.\n", maxRetries, unit)
-			}
 			printLogsDivider(ctx, out)
 			return handleWatchResult(out, w.Config.Profile, runIDStr, runLogs(watchCtx, cmd, req))
 		}
@@ -201,6 +267,32 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	}
 
 	return cmd
+}
+
+func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOption {
+	ctx, cancel := context.WithTimeout(cmd.Context(), computeOptionsHelpTimeout)
+	defer cancel()
+	cmd.SetContext(root.SkipPrompt(ctx))
+
+	if !cmdctx.HasWorkspaceClient(cmd.Context()) {
+		if err := root.MustWorkspaceClient(cmd, args); err != nil {
+			cmd.PrintErrf("Warning: couldn't resolve a workspace to list accelerator types; showing the built-in list instead: %v\n", err)
+			return fallbackComputeOptions()
+		}
+	}
+
+	options, err := listWorkspaceComputeOptions(cmd.Context(), cmdctx.WorkspaceClient(cmd.Context()))
+	if err != nil {
+		unavailable, retryable := classifyValidationFailure(err)
+		if !unavailable || retryable {
+			cmd.PrintErrf("Warning: couldn't fetch the accelerator types available in this workspace; showing the built-in list instead: %v\n", err)
+		}
+		return fallbackComputeOptions()
+	}
+	if options == nil {
+		return []computeOption{}
+	}
+	return options
 }
 
 func airLogsCommand(profile, runID string) string {

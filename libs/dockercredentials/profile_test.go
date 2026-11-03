@@ -22,7 +22,7 @@ type invalidRefreshTokenError struct {
 	error
 }
 
-func (e *invalidRefreshTokenError) As(target any) bool {
+func (e invalidRefreshTokenError) As(target any) bool {
 	invalidRefreshToken, ok := target.(**u2m.InvalidRefreshTokenError)
 	if !ok {
 		return false
@@ -236,7 +236,7 @@ func TestProfileForRegistry(t *testing.T) {
 }
 
 func TestRewriteProfileErrorPreservesInvalidRefreshTokenCause(t *testing.T) {
-	cause := &invalidRefreshTokenError{error: errors.New("raw token refresh error")}
+	cause := invalidRefreshTokenError{error: errors.New("raw token refresh error")}
 	err := dockercredentials.RewriteProfileError(t.Context(), workspaceProfile("workspace"), fmt.Errorf("refresh token: %w", cause))
 
 	assert.EqualError(t, err, `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:

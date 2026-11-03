@@ -6,10 +6,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -65,7 +63,7 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 	// Without this, substring matching against the typed value misses the
 	// actual deployed path and variables are lost on Replace. Keep this in
 	// sync with mutator.lookup if new overrides are added there.
-	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+	if b.IsSourceLinkedDeployment() {
 		fpPath := dyn.NewPath(dyn.Key("workspace"), dyn.Key("file_path"))
 		if updated, err := dyn.SetByPath(resolved, fpPath, dyn.V(b.SyncRootPath)); err == nil {
 			resolved = updated
@@ -79,7 +77,7 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 	// no resource refs to avoid opening state DB files unnecessarily.
 	resourceRefs := collectResourceIDRefs(preResolved)
 	if len(resourceRefs) > 0 {
-		if lookup := resourceIDLookup(ctx, b); lookup != nil {
+		if lookup := resourceIDLookup(b); lookup != nil {
 			resolved = injectResourceIDs(ctx, resolved, resourceRefs, lookup)
 		} else {
 			log.Debugf(ctx, "variable restoration: state DB unavailable, skipping resource ID injection for %d refs", len(resourceRefs))
@@ -146,21 +144,13 @@ func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 }
 
 // resourceIDLookup returns a function that resolves resource keys to their
-// deployed IDs from state. For the direct engine, the StateDB is already open
-// on b.DeploymentBundle. For the terraform engine, the config snapshot is
-// opened locally (it was downloaded by ensureSnapshotAvailable during
-// OpenDeploymentState). Returns nil if no state is available.
-func resourceIDLookup(ctx context.Context, b *bundle.Bundle) func(string) string {
+// deployed IDs from the direct StateDB already open on b.DeploymentBundle.
+// Returns nil if no state is available.
+func resourceIDLookup(b *bundle.Bundle) func(string) string {
 	if b.DeploymentBundle.StateDB.Path != "" {
 		return b.DeploymentBundle.StateDB.GetResourceID
 	}
-	_, statePath := b.StateFilenameConfigSnapshot(ctx)
-	db := &dstate.DeploymentState{}
-	if err := db.Open(ctx, statePath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		log.Debugf(ctx, "variable restoration: failed to open state DB at %s: %v", statePath, err)
-		return nil
-	}
-	return db.GetResourceID
+	return nil
 }
 
 // collectResourceIDRefs walks the pre-resolved merged config to find pure

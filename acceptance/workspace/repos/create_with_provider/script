@@ -3,6 +3,7 @@ provider=gitHub
 path=/Repos/me@databricks.com/test-repo
 
 repo_id=$(MSYS_NO_PATHCONV=1 trace $CLI repos create $url $provider --path $path | jq .id -r)
+add_repl "$repo_id" REPO_ID
 
 title "Get by id should work"
 MSYS_NO_PATHCONV=1 trace $CLI repos get $repo_id -o json

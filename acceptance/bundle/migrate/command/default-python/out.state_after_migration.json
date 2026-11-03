@@ -5,7 +5,7 @@
  "serial": 5,
  "state": {
   "resources.jobs.sample_job": {
-   "__id__": "[NUMID]",
+   "__id__": "[SAMPLE_JOB_ID]",
    "state": {
     "deployment": {
      "kind": "BUNDLE",
@@ -89,7 +89,7 @@
        }
       ],
       "pipeline_task": {
-       "pipeline_id": "[UUID]"
+       "pipeline_id": "[MY_DEFAULT_PYTHON_ETL_ID]"
       },
       "task_key": "refresh_pipeline"
      }
@@ -110,7 +110,7 @@
    ]
   },
   "resources.pipelines.my_default_python_etl": {
-   "__id__": "[UUID]",
+   "__id__": "[MY_DEFAULT_PYTHON_ETL_ID]",
    "state": {
     "channel": "CURRENT",
     "deployment": {

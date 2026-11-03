@@ -45,7 +45,7 @@ Exit code: 1
     "job_id": [MY_JOB_ID],
     "run_id": [MY_RUN_ID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]",
     "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "RUNNING"

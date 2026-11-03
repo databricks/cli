@@ -103,10 +103,10 @@ Warning: unknown field: description
   in resources/ml-artifacts-resource.yml:28:7
 
 {
-  "experiment_id": "[NUMID]",
-  "model_id": "main.project_name_[UNIQUE_NAME].dev_[USERNAME]_project_name_[UNIQUE_NAME]-model",
-  "inference_job_id": "[NUMID]",
-  "training_job_id": "[NUMID]"
+  "experiment_id": "[EXPERIMENT_ID]",
+  "model_id": "[MODEL_ID]",
+  "inference_job_id": "[BATCH_INFERENCE_JOB_ID]",
+  "training_job_id": "[MODEL_TRAINING_JOB_ID]"
 }
 
 === Assert the batch inference job actually exists

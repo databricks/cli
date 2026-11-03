@@ -27,8 +27,8 @@ Exit code: 1
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
 === Retry: the local direct state is used (no re-migration) and the push completes
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -46,7 +46,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup

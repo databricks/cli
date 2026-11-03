@@ -1,4 +1,3 @@
 RecordRequests = true
 
 # Not a bundle command; pin a single engine so it runs once.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

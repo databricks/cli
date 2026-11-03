@@ -55,7 +55,7 @@ To get started, refer to the project README.md file and the documentation at htt
      "catalog": {
 -     "currentValue": "hive_metastore",
 +     "currentValue": "customcatalog",
-      "nuid": "c4t4l0g-w1dg-3t12-3456-[NUMID]",
+      "nuid": "c4t4l0g-w1dg-3t12-3456-789012345678",
       "typedWidgetInfo": {
        "autoCreated": false,
 -      "defaultValue": "hive_metastore",

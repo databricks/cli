@@ -62,10 +62,10 @@ func TestClassifyLogError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := classifyLogError(tt.err)
-			switch tt.want {
-			case errBricklensFeatureDisabled:
+			switch {
+			case errors.Is(tt.want, errBricklensFeatureDisabled):
 				assert.ErrorIs(t, got, errBricklensFeatureDisabled)
-			case nil:
+			case tt.want == nil:
 				assert.NoError(t, got)
 			default:
 				assert.ErrorIs(t, got, tt.want)

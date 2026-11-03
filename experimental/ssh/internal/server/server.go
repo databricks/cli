@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/env"
@@ -80,6 +81,12 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	listenAddr := fmt.Sprintf("0.0.0.0:%d", port)
 	log.Info(ctx, "Starting server on "+listenAddr)
 
+	// Resolved once and shared by the metadata write and the agent launchers.
+	wsHome, err := workspace.GetWorkspaceHomeDir(ctx, client)
+	if err != nil {
+		return fmt.Errorf("failed to resolve the workspace home directory: %w", err)
+	}
+
 	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
 	metadata := &workspace.WorkspaceMetadata{
 		Port:                  port,
@@ -87,7 +94,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		UsagePolicyID:         opts.UsagePolicyID,
 		KeepDetachedProcesses: opts.KeepDetachedProcesses,
 	}
-	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.SessionID, metadata)
+	err = workspace.SaveWorkspaceMetadata(ctx, client, wsHome, opts.Version, opts.SessionID, metadata)
 	if err != nil {
 		return fmt.Errorf("failed to save metadata to the workspace: %w", err)
 	}
@@ -108,6 +115,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	// server. Mirrors the /run/sshd handling in prepareSSHDConfig.
 	if err := seedEnvActivation(ctx); err != nil {
 		log.Warnf(ctx, "Failed to seed environment activation, bare python/pip may resolve to the wrong interpreter in interactive sessions: %v", err)
+	}
+
+	// Best-effort for the same reason as seedEnvActivation: the tunnel works without them.
+	if err := installAgentLaunchers(ctx, wsHome); err != nil {
+		log.Warnf(ctx, "Failed to install agent launchers, the affected agents won't be available in SSH sessions: %v", err)
 	}
 
 	createServerCommand := func(ctx context.Context) *exec.Cmd {
@@ -292,4 +304,15 @@ func seedEnvActivation(ctx context.Context) error {
 
 	log.Info(ctx, "Seeded environment activation in "+bashrcPath)
 	return nil
+}
+
+// installAgentLaunchers writes the agent launchers under $HOME; prepareSSHDConfig
+// puts them on PATH for every session. The launchers run the agent shim from the
+// same uploaded CLI binary this server runs from.
+func installAgentLaunchers(ctx context.Context, wsHome string) error {
+	binary, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to resolve the CLI binary: %w", err)
+	}
+	return agentlauncher.Install(ctx, binary, wsHome)
 }

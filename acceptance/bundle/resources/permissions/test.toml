@@ -1,3 +1,2 @@
-Phase = 1
 RecordRequests = true
 Ignore = ['.databricks']

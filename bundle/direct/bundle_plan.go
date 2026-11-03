@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -19,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -236,7 +238,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return true
 			}
 
-			remoteState, err := retryOnTransient(ctx, func() (any, error) {
+			remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
@@ -314,7 +316,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := retryOnTransient(ctx, func() (any, error) {
+		remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
@@ -833,34 +835,42 @@ func allEmpty(values ...any) bool {
 }
 
 // allEmptyChange reports whether a change is an empty no-op that should be skipped.
-// All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero int, "", empty map).
+// All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero scalar, "", empty map).
 //
-// The one exception is a genuine local change involving an explicit integer zero: an int
-// force-sent on either side of the diff that differs from the other side is a real change
-// the config makes, so it must be applied rather than dismissed as empty. This covers both
-// setting gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field
-// (Old nil, New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes
-// for a field nobody set (Old and New empty) or a value the config did not actually change
-// (Old == New, e.g. an unchanged num_workers: 0) stays a no-op.
+// The one exception is a genuine local change involving an explicit zero scalar: a value
+// force-sent on either side of the diff that differs from the other side is a real change the
+// config makes, so it must be applied rather than dismissed as empty. This covers both setting
+// gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field (Old nil,
+// New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes for a field
+// nobody set (Old and New empty) or a value the config did not actually change (Old == New,
+// e.g. an unchanged num_workers: 0) stays a no-op.
+//
+// The check reads only Old (saved state) and New (desired state); both are derived from config
+// (saveState persists newState, never the remote read), so a non-nil zero here always means the
+// value was explicitly configured. The backend-supplied Remote value is only consulted by the
+// allEmpty gate above, so backend normalization of a zero (e.g. "" <-> null) never triggers this.
 func allEmptyChange(ch *deployplan.ChangeDesc) bool {
 	if !allEmpty(ch.Old, ch.New, ch.Remote) {
 		return false
 	}
-	if (isZeroInt(ch.Old) || isZeroInt(ch.New)) && !structdiff.IsEqual(ch.Old, ch.New) {
+	if (isZeroScalar(ch.Old) || isZeroScalar(ch.New)) && !structdiff.IsEqual(ch.Old, ch.New) {
 		return false
 	}
 	return true
 }
 
-// isZeroInt reports whether v is an integer whose value is zero.
-func isZeroInt(v any) bool {
+// isZeroScalar reports whether v is a number or bool holding its zero value (0, 0.0, false).
+// Strings are left out to stay in line with the DropEmptyStrings mutator, which drops an
+// explicit "" before the plan runs.
+func isZeroScalar(v any) bool {
 	if v == nil {
 		return false
 	}
 	rv := reflect.ValueOf(v)
 	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.Bool:
 		return rv.IsZero()
 	default:
 		return false
@@ -1210,8 +1220,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
-		// gets deployed and saved. The terraform engine leaves the escape in place for
-		// Terraform itself to unescape; the direct engine has to do it here.
+		// gets deployed and saved.
 		//
 		// This runs on the typed state rather than the dynamic config so that
 		// extractReferences below still sees the escaped form and does not mistake
@@ -1277,6 +1286,16 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 		}
 
+		lifecycleDeps, err := LifecycleDependsOn(configRoot, inputConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+		for _, dep := range lifecycleDeps {
+			if !slices.Contains(dependsOn, dep) {
+				dependsOn = append(dependsOn, dep)
+			}
+		}
+
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
@@ -1320,6 +1339,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		p.Plan[node] = &e
+	}
+
+	// lifecycle.depends_on only orders resources: a target that is not in the plan
+	// (e.g. skipped as empty) needs no ordering.
+	for _, entry := range p.Plan {
+		entry.DependsOn = slices.DeleteFunc(entry.DependsOn, func(dep deployplan.DependsOnEntry) bool {
+			return dep.Label == lifecycleDependsOnLabel && p.Plan[dep.Node] == nil
+		})
 	}
 
 	for n, entry := range existingKeys {
@@ -1420,4 +1447,29 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	}
 
 	return adapter, nil
+}
+
+const lifecycleDependsOnLabel = "depends_on"
+
+// LifecycleDependsOn returns the edges declared in lifecycle.depends_on of a resource,
+// given its config as returned by [config.Root.GetResourceConfig].
+func LifecycleDependsOn(configRoot *config.Root, inputConfig any) ([]deployplan.DependsOnEntry, error) {
+	// Not every node has a lifecycle, e.g. permissions and grants.
+	resource, ok := inputConfig.(interface {
+		GetLifecycle() resources.LifecycleConfig
+	})
+	if !ok {
+		return nil, nil
+	}
+
+	var result []deployplan.DependsOnEntry
+	for _, dep := range resource.GetLifecycle().GetDependsOn() {
+		res, key, err := configRoot.Resources.ResolveKey(dep.Resource)
+		if err != nil {
+			return nil, fmt.Errorf("lifecycle.depends_on: %w", err)
+		}
+		target := "resources." + res.ResourceDescription().PluralName + "." + key
+		result = append(result, deployplan.DependsOnEntry{Node: target, Label: lifecycleDependsOnLabel})
+	}
+	return result, nil
 }

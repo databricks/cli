@@ -22,6 +22,7 @@ __all__ = [
     database_catalog_mutator,
     database_instance_mutator,
     external_location_mutator,
+    feature_mutator,
     genie_space_mutator,
     instance_pool_mutator,
     job_mutator,
@@ -101,6 +102,7 @@ class Resources:
     def add_diagnostic_warning(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostics(self, other: Diagnostics) -> None
     def add_external_location(self, resource_name: str, external_location: ExternalLocationParam, *, location: Union[Location, None] = None) -> None
+    def add_feature(self, resource_name: str, feature: FeatureParam, *, location: Union[Location, None] = None) -> None
     def add_genie_space(self, resource_name: str, genie_space: GenieSpaceParam, *, location: Union[Location, None] = None) -> None
     def add_instance_pool(self, resource_name: str, instance_pool: InstancePoolParam, *, location: Union[Location, None] = None) -> None
     def add_job(self, resource_name: str, job: JobParam, *, location: Union[Location, None] = None) -> None
@@ -136,6 +138,7 @@ class Resources:
     @property diagnostics -> Diagnostics
     @property experiments -> dict[str, MlflowExperiment]
     @property external_locations -> dict[str, ExternalLocation]
+    @property features -> dict[str, Feature]
     @property genie_spaces -> dict[str, GenieSpace]
     @property instance_pools -> dict[str, InstancePool]
     @property job_runs -> dict[str, JobRun]
@@ -209,6 +212,10 @@ def database_instance_mutator(function: Callable) -> ResourceMutator[DatabaseIns
 @overload def external_location_mutator(function: Callable[[Bundle, ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
 @overload def external_location_mutator(function: Callable[[ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
 def external_location_mutator(function: Callable) -> ResourceMutator[ExternalLocation]
+
+@overload def feature_mutator(function: Callable[[Bundle, Feature], Feature]) -> ResourceMutator[Feature]
+@overload def feature_mutator(function: Callable[[Feature], Feature]) -> ResourceMutator[Feature]
+def feature_mutator(function: Callable) -> ResourceMutator[Feature]
 
 @overload def genie_space_mutator(function: Callable[[Bundle, GenieSpace], GenieSpace]) -> ResourceMutator[GenieSpace]
 @overload def genie_space_mutator(function: Callable[[GenieSpace], GenieSpace]) -> ResourceMutator[GenieSpace]
@@ -314,6 +321,7 @@ singular_name=dashboard plural_name=dashboards resource_type=Dashboard
 singular_name=database_catalog plural_name=database_catalogs resource_type=DatabaseCatalog
 singular_name=database_instance plural_name=database_instances resource_type=DatabaseInstance
 singular_name=external_location plural_name=external_locations resource_type=ExternalLocation
+singular_name=feature plural_name=features resource_type=Feature
 singular_name=genie_space plural_name=genie_spaces resource_type=GenieSpace
 singular_name=instance_pool plural_name=instance_pools resource_type=InstancePool
 singular_name=job plural_name=jobs resource_type=Job

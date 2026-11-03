@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    # Required field catalog_name is missing.
+    my_schema:
+      name: my_schema

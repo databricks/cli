@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "job_prevent_destroy": false,
+  "cluster_prevent_destroy": false
+}

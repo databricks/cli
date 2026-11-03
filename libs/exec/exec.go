@@ -3,6 +3,7 @@ package exec
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -190,7 +191,7 @@ func (e *Executor) ExecAndCapture(ctx context.Context, command string) (*ExecOut
 	err = cmd.Wait()
 	exitCode := 0
 	if err != nil {
-		if exitErr, ok := err.(*osexec.ExitError); ok {
+		if exitErr, ok := errors.AsType[*osexec.ExitError](err); ok {
 			exitCode = exitErr.ExitCode()
 		} else {
 			return nil, err

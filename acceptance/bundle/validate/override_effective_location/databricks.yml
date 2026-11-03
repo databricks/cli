@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle
+  engine: direct
+
+presets:
+  trigger_pause_status: PAUSED
+  name_prefix: "${workspace.current_user.short_name}_"
+
+targets:
+  bad_engine:
+    bundle:
+      engine: invalid_value
+  dev_trigger:
+    mode: development
+    default: true
+    presets:
+      trigger_pause_status: UNPAUSED
+  dev_prefix:
+    mode: development
+    presets:
+      name_prefix: nouser_

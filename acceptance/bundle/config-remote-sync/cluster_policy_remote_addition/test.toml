@@ -1,4 +1,3 @@
 Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 RecordRequests = false
 Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]

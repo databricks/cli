@@ -9,7 +9,7 @@ import (
 func TestSubsetDisabled(t *testing.T) {
 	var s subsetSelector
 	assert.Empty(t, s.skipReason("bundle/foo", nil))
-	assert.Empty(t, s.skipReason("bundle/foo", []string{"DATABRICKS_BUNDLE_ENGINE=direct"}))
+	assert.Empty(t, s.skipReason("bundle/foo", []string{"DMS=true"}))
 }
 
 func TestSubsetPctBoundaries(t *testing.T) {
@@ -30,7 +30,7 @@ func TestSubsetChangedAlwaysRuns(t *testing.T) {
 		seed:    "seed",
 		changed: map[string][]string{"bundle/changed": nil},
 	}
-	assert.Empty(t, s.skipReason("bundle/changed", []string{"DATABRICKS_BUNDLE_ENGINE=direct"}))
+	assert.Empty(t, s.skipReason("bundle/changed", []string{"DMS=true"}))
 	assert.NotEmpty(t, s.skipReason("bundle/other", nil))
 }
 
@@ -93,8 +93,8 @@ func TestSubsetVariantsIndependent(t *testing.T) {
 	sawDifferent := false
 	for i := range 50 {
 		dir := "bundle/d" + string(rune('a'+i%26))
-		a := s.skipReason(dir, []string{"DATABRICKS_BUNDLE_ENGINE=direct"}) == ""
-		b := s.skipReason(dir, []string{"DATABRICKS_BUNDLE_ENGINE=terraform"}) == ""
+		a := s.skipReason(dir, []string{"DMS=true"}) == ""
+		b := s.skipReason(dir, []string{"DMS="}) == ""
 		if a != b {
 			sawDifferent = true
 			break

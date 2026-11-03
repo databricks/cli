@@ -10,6 +10,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.jobs._models.ai_function_task import (
+    AiFunctionTask,
+    AiFunctionTaskParam,
+)
 from databricks.bundles.jobs._models.ai_runtime_task import (
     AiRuntimeTask,
     AiRuntimeTaskParam,
@@ -34,7 +38,10 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
+from databricks.bundles.jobs._models.for_each_task import (
+    ForEachTask,
+    ForEachTaskParam,
+)
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
     GenAiComputeTaskParam,
@@ -62,10 +69,7 @@ from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTaskParam,
 )
 from databricks.bundles.jobs._models.run_if import RunIf, RunIfParam
-from databricks.bundles.jobs._models.run_job_task import (
-    RunJobTask,
-    RunJobTaskParam,
-)
+from databricks.bundles.jobs._models.run_job_task import RunJobTask, RunJobTaskParam
 from databricks.bundles.jobs._models.spark_jar_task import (
     SparkJarTask,
     SparkJarTaskParam,
@@ -111,6 +115,13 @@ class Task:
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
     """
 
+    ai_function_task: VariableOrOptional[AiFunctionTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Applies an AI function to a set of input documents or rows.
+    """
+
     ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
     """
     [Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify
@@ -132,9 +143,7 @@ class Task:
 
     compute: VariableOrOptional[Compute] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Task level compute configuration.
+    [Public Preview] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTask] = None
@@ -189,6 +198,16 @@ class Task:
     environment_key: VariableOrOptional[str] = None
     """
     The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.
+    """
+
+    environment_variables_key: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Reference to a `JobEnvironmentVariables` entry defined in
+    `JobSettings.environment_variables`. The selected entry's variables are
+    applied to this task at execution time. This field supports serverless
+    tasks using environment version 5 or later.
     """
 
     existing_cluster_id: VariableOrOptional[str] = None
@@ -350,6 +369,13 @@ class TaskDict(TypedDict, total=False):
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
     """
 
+    ai_function_task: VariableOrOptional[AiFunctionTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Applies an AI function to a set of input documents or rows.
+    """
+
     ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]
     """
     [Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify
@@ -371,9 +397,7 @@ class TaskDict(TypedDict, total=False):
 
     compute: VariableOrOptional[ComputeParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Task level compute configuration.
+    [Public Preview] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTaskParam]
@@ -428,6 +452,16 @@ class TaskDict(TypedDict, total=False):
     environment_key: VariableOrOptional[str]
     """
     The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.
+    """
+
+    environment_variables_key: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Reference to a `JobEnvironmentVariables` entry defined in
+    `JobSettings.environment_variables`. The selected entry's variables are
+    applied to this task at execution time. This field supports serverless
+    tasks using environment version 5 or later.
     """
 
     existing_cluster_id: VariableOrOptional[str]

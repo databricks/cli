@@ -44,7 +44,7 @@
             "format": "MULTI_TASK",
             "git_source": [],
             "health": [],
-            "id": "[NUMID]",
+            "id": "[SAMPLE_JOB_ID]",
             "job_cluster": [
               {
                 "job_cluster_key": "job_cluster",
@@ -123,7 +123,7 @@
             "pipeline_task": [],
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "python_wheel_task": [],
@@ -343,7 +343,7 @@
                     "full_refresh": false,
                     "full_refresh_selection": null,
                     "parameters": null,
-                    "pipeline_id": "[UUID]",
+                    "pipeline_id": "[MY_DEFAULT_PYTHON_ETL_ID]",
                     "refresh_flow_selection": null,
                     "refresh_selection": null,
                     "reset_checkpoint_selection": null
@@ -382,7 +382,7 @@
               }
             ],
             "triggers": [],
-            "url": "[DATABRICKS_URL]/#job/[NUMID]",
+            "url": "[DATABRICKS_URL]/#job/[SAMPLE_JOB_ID]",
             "usage_policy_id": null,
             "webhook_notifications": [
               {
@@ -444,7 +444,7 @@
             "filters": [],
             "gateway_definition": [],
             "health": null,
-            "id": "[UUID]",
+            "id": "[MY_DEFAULT_PYTHON_ETL_ID]",
             "ingestion_definition": [],
             "last_modified": [UNIX_TIME_MILLIS],
             "latest_updates": null,
@@ -467,7 +467,7 @@
             "photon": false,
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "restart_window": [],
@@ -478,14 +478,14 @@
             "serverless": false,
             "serverless_compute_id": null,
             "state": "IDLE",
-            "storage": "dbfs:/pipelines/[UUID]",
+            "storage": "dbfs:/pipelines/[MY_DEFAULT_PYTHON_ETL_ID]",
             "tags": {
               "dev": "[USERNAME]"
             },
             "target": null,
             "timeouts": null,
             "trigger": [],
-            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[MY_DEFAULT_PYTHON_ETL_ID]",
             "usage_policy_id": null
           },
           "sensitive_attributes": [],

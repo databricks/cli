@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -34,7 +34,7 @@ func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	// strictly parses the org ID header as an integer and would error on a
 	// UUID. Skip the API call entirely and pass it through unchanged.
 	cfgID := client.Config.WorkspaceID
-	if cfgID != "" && cfgID != auth.WorkspaceIDNone {
+	if cfgID != "" && cfgID != profile.WorkspaceIDNone {
 		if _, err := strconv.ParseInt(cfgID, 10, 64); err != nil {
 			if err := initializeForWorkspace(b, cfgID, host); err != nil {
 				return diag.FromErr(err)
@@ -55,7 +55,7 @@ func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 	orgID := strconv.FormatInt(apiID, 10)
 
-	if cfgID != "" && cfgID != auth.WorkspaceIDNone && cfgID != orgID {
+	if cfgID != "" && cfgID != profile.WorkspaceIDNone && cfgID != orgID {
 		return diag.Errorf(
 			"workspace_id %s in your configuration does not match the connected workspace (ID: %s); "+
 				"remove or correct workspace_id in your profile or bundle config to disambiguate",

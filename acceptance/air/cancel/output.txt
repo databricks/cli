@@ -24,6 +24,6 @@ Successfully requested cancellation for 2 run(s).
 === cancel --all
 >>> [CLI] air cancel --all -y
 Searching active runs for [USERNAME] in [DATABRICKS_URL]...
-Successfully requested cancellation for run [NUMID]
-Successfully requested cancellation for run [NUMID]
+Successfully requested cancellation for run 334747067049496
+Successfully requested cancellation for run 566001814929041
 Successfully requested cancellation for 2 run(s).

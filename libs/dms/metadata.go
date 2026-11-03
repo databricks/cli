@@ -34,8 +34,8 @@ type Metadata struct {
 // among them: the service derives the deployment's from the version that carried it.
 var deploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
 
-// deployment renders the metadata the deployment owns.
-func (m Metadata) deployment() bundledeployments.Deployment {
+// Deployment renders the metadata the deployment owns.
+func (m Metadata) Deployment() bundledeployments.Deployment {
 	return bundledeployments.Deployment{
 		DisplayName:    m.DisplayName,
 		TargetName:     m.TargetName,
@@ -51,7 +51,7 @@ func (m Metadata) StaleFields(current *bundledeployments.Deployment) string {
 		return strings.Join(deploymentFields, ",")
 	}
 
-	want := m.deployment()
+	want := m.Deployment()
 	var stale []string
 	if want.DisplayName != current.DisplayName {
 		stale = append(stale, "display_name")
@@ -79,4 +79,56 @@ func NextVersion(lastVersionID string) (int, error) {
 		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", lastVersionID, err)
 	}
 	return last + 1, nil
+}
+
+// DeploymentNodeName is the workspace node DMS makes for each deployment.
+// Keep it equal to the service's DEPLOYMENT_NODE_NAME.
+const DeploymentNodeName = "resources.deployment.json"
+
+// DeploymentName, VersionName and OperationName build the resource names the
+// service uses, so callers pass only ids.
+func DeploymentName(deploymentID string) string {
+	return "deployments/" + deploymentID
+}
+
+func VersionName(deploymentID string, version int) string {
+	return fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version)
+}
+
+// OperationName drops the state prefix DMS keys don't use (see StatePrefix).
+func OperationName(deploymentID string, version int, stateKey string) string {
+	return VersionName(deploymentID, version) + "/operations/" + strings.TrimPrefix(stateKey, StatePrefix)
+}
+
+// DeploymentIDFromName pulls the id out of a "deployments/{id}" name.
+func DeploymentIDFromName(name string) (string, error) {
+	id, ok := strings.CutPrefix(name, DeploymentName(""))
+	if !ok || id == "" {
+		return "", fmt.Errorf("unexpected deployment name %q from the deployment history service", name)
+	}
+	return id, nil
+}
+
+// DeploymentUpdate builds the deployment with only the masked fields.
+// A masked field must be sent even when empty (empty = clear it), so ForceSendFields stops omitempty dropping it.
+func DeploymentUpdate(metadata Metadata, mask string) bundledeployments.Deployment {
+	full := metadata.Deployment()
+	var dep bundledeployments.Deployment
+	for path := range strings.SplitSeq(mask, ",") {
+		switch path {
+		case "display_name":
+			dep.DisplayName = full.DisplayName
+			dep.ForceSendFields = append(dep.ForceSendFields, "DisplayName")
+		case "target_name":
+			dep.TargetName = full.TargetName
+			dep.ForceSendFields = append(dep.ForceSendFields, "TargetName")
+		case "deployment_mode":
+			dep.DeploymentMode = full.DeploymentMode
+			dep.ForceSendFields = append(dep.ForceSendFields, "DeploymentMode")
+		case "workspace_info":
+			dep.WorkspaceInfo = full.WorkspaceInfo
+			dep.ForceSendFields = append(dep.ForceSendFields, "WorkspaceInfo")
+		}
+	}
+	return dep
 }

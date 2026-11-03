@@ -11,7 +11,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -198,7 +198,7 @@ func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, 
 	}
 	// The workspace routing header is needed on unified ("SPOG") hosts; the CLI's
 	// "none" sentinel means "no workspace ID", so it is not forwarded.
-	if id := cfg.WorkspaceID; id != "" && id != auth.WorkspaceIDNone {
+	if id := cfg.WorkspaceID; id != "" && id != profile.WorkspaceIDNone {
 		copts = append(copts, client.WithWorkspaceID(id))
 	}
 	return files.NewClient(ctx, copts...)

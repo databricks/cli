@@ -7,7 +7,10 @@ from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.dashboards._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.dashboards._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.dashboards._models.lifecycle_state import (
     LifecycleState,
     LifecycleStateParam,

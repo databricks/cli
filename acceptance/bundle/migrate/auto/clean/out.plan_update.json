@@ -31,7 +31,7 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [NUMID],
+        "job_id": [TEST_JOB_ID],
         "max_concurrent_runs": 1,
         "name": "Test Auto-Migrate Job",
         "queue": {

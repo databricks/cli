@@ -1,0 +1,5 @@
+trace uv run $UV_ARGS -q $CLI bundle validate
+
+trace uv run $UV_ARGS -q $CLI bundle validate --output json | jq '.resources.pipelines | map_values(.development)'
+
+rm -fr .databricks __pycache__

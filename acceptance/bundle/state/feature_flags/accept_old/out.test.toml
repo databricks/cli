@@ -1,5 +1,4 @@
 Cloud = false
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = [""]
 EnvMatrix.STATE_FILE = [
   "resources.v2.json",

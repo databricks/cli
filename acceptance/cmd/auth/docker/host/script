@@ -37,9 +37,10 @@ mkdir -p "$DOCKER_CONFIG"
 cp invalid-docker-config.json "$DOCKER_CONFIG/config.json"
 trace musterr $CLI auth docker host --profile docker-test
 
-title "Credential helper configured as the default store\n"
+title "Default credential store without an installed helper\n"
 cp docker-config.json "$DOCKER_CONFIG/config.json"
-trace $CLI auth docker host --profile docker-test --output json
+trace PATH="$HOME" $CLI auth docker host --profile docker-test
+trace PATH="$HOME" $CLI auth docker host --profile docker-test --output json
 
 title "Profiles unchanged\n"
 cmp "$HOME/databrickscfg.before" "$HOME/.databrickscfg"

@@ -1,3 +1,7 @@
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:8:20
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
 Created pipelines.my_pipeline
@@ -7,6 +11,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === Modify pipeline_task full_refresh to True
 === Modify pipeline continuous to True
 === Detect and save changes
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:8:20
+
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
@@ -37,6 +45,10 @@ Resource: resources.pipelines.my_pipeline
  targets:
 
 >>> [CLI] bundle destroy --auto-approve
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:8:20
+
 The following resources will be deleted:
   delete resources.jobs.my_job
   delete resources.pipelines.my_pipeline

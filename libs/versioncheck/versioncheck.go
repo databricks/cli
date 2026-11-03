@@ -127,13 +127,17 @@ type latestRelease struct {
 	URL     string `json:"url"`
 }
 
-func fetchLatestRelease(ctx context.Context) (latestRelease, error) {
-	base := env.Get(ctx, gitHubAPIURLEnv)
-	if base == "" {
-		base = defaultGitHubAPIURL
+// GitHubAPIURL returns the GitHub API base URL. DATABRICKS_CLI_GITHUB_API_URL
+// overrides it.
+func GitHubAPIURL(ctx context.Context) string {
+	if base := env.Get(ctx, gitHubAPIURLEnv); base != "" {
+		return strings.TrimRight(base, "/")
 	}
+	return defaultGitHubAPIURL
+}
 
-	url := base + latestReleasePath
+func fetchLatestRelease(ctx context.Context) (latestRelease, error) {
+	url := GitHubAPIURL(ctx) + latestReleasePath
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return latestRelease{}, err

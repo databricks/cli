@@ -3,6 +3,7 @@
 # this stands in for `DATABRICKS_BUNDLE_ENGINE=terraform bundle deploy` now that migrate tests must
 # not deploy with terraform.
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
+read_id.py test_job > /dev/null
 print_state.py > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 4 resources'

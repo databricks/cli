@@ -93,8 +93,8 @@ func TestConfigureDashboardSerializedDashboard(t *testing.T) {
 			}
 
 			dash := &resources.Dashboard{
-				DashboardConfig: resources.DashboardConfig{DisplayName: "My Dashboard"},
-				FilePath:        tt.filePath,
+				DisplayName: "My Dashboard",
+				FilePath:    tt.filePath,
 			}
 			if tt.setSerialized {
 				dash.SerializedDashboard = tt.serializedDashboard

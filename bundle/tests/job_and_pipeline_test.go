@@ -15,7 +15,7 @@ func TestJobAndPipelineDevelopment(t *testing.T) {
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
 	assert.Equal(t, config.Development, b.Config.Bundle.Mode)
-	assert.True(t, p.Development)
+	assert.True(t, p.Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
 	assert.Equal(t, "nyc_taxi_development", p.Target)
@@ -27,7 +27,7 @@ func TestJobAndPipelineStaging(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
-	assert.False(t, p.Development)
+	assert.False(t, p.Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
 	assert.Equal(t, "nyc_taxi_staging", p.Target)
@@ -39,7 +39,7 @@ func TestJobAndPipelineProduction(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
-	assert.False(t, p.Development)
+	assert.False(t, p.Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
 	assert.Equal(t, "nyc_taxi_production", p.Target)

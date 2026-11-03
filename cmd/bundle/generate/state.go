@@ -23,17 +23,17 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 		return ctx
 	}
 
-	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
-	if err != nil {
+	if err := utils.ValidateEngineSetting(ctx, b); err != nil {
 		logdiag.LogError(ctx, err)
 		return ctx
 	}
 
-	stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
+	stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
 	if logdiag.HasError(ctx) {
 		return ctx
 	}
 	ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
+	ctx = utils.WithLineage(ctx, stateDesc)
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
@@ -43,6 +43,7 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 		}
 		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
+		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)

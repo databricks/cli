@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
@@ -65,7 +66,7 @@ func TestResolveWorkspaceID_NoneSentinelFallsThroughToAPI(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:        server.URL,
 		Token:       "testtoken",
-		WorkspaceID: auth.WorkspaceIDNone,
+		WorkspaceID: profile.WorkspaceIDNone,
 	})
 	require.NoError(t, err)
 

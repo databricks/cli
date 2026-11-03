@@ -1,3 +1,0 @@
-# `bundle unbind` does not yet drop the resource from what the deployment metadata service
-# reports, so the plan after the unbind still sees the database as tracked.
-EnvMatrix.DMS = [""]

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

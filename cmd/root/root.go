@@ -76,6 +76,8 @@ func New(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
+		warnIfStaleVersion(ctx)
+
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
@@ -194,13 +196,14 @@ Stack Trace:
 	ctx = cmd.Context()
 
 	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{
-		CmdExecID:       cmdctx.ExecId(ctx),
-		Version:         build.GetInfo().Version,
-		Command:         commandStr,
-		OperatingSystem: runtime.GOOS,
-		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
-		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
-		ExitCode:        int64(exitCode),
+		CmdExecID:        cmdctx.ExecId(ctx),
+		StateLineageHash: telemetry.StateLineageHash(ctx),
+		Version:          build.GetInfo().Version,
+		Command:          commandStr,
+		OperatingSystem:  runtime.GOOS,
+		DbrVersion:       dbr.RuntimeVersion(ctx).String(),
+		ExecutionTimeMs:  time.Since(startTime).Milliseconds(),
+		ExitCode:         int64(exitCode),
 	})
 	if telemetryErr != nil {
 		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)

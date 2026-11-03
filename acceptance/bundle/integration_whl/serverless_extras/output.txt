@@ -14,7 +14,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "My Wheel Job" RUNNING
 [TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS

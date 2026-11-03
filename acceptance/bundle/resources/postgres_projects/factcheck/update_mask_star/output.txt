@@ -5,7 +5,7 @@
   "name": "projects/factcheck-star-[UNIQUE_NAME]",
   "project_id": "factcheck-star-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": [NUMID],
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/factcheck-star-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 1,
@@ -50,7 +50,7 @@ Exit code: 1
   "name": "projects/factcheck-star-[UNIQUE_NAME]",
   "project_id": "factcheck-star-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": [NUMID],
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/factcheck-star-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
@@ -113,7 +113,7 @@ Exit code: 1
   "name": "projects/factcheck-star-[UNIQUE_NAME]",
   "project_id": "factcheck-star-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": [NUMID],
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/factcheck-star-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,

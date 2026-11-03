@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle validate -o json --include-locations
+Warning: required field "catalog_name" is not set
+  at resources.schemas.my_schema
+  in databricks.yml:8:7
+
+{"files":["databricks.yml"],"locations":{"bundle":[[0,2,3]],"resources":[[0,5,3]],"resources.schemas":[[0,7,5]],"resources.schemas.my_schema":[[0,8,7]]},"version":1}

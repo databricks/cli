@@ -53,9 +53,8 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 // See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
 //
 // CustomMaxRetentionHours is force-sent here even though schemaForceSend deliberately omits it:
-// that omission is for terraform parity, but catalogs are direct-only (no terraform converter, see
-// validate_direct_only_resources), so there is no cross-engine payload to diverge from. Verified
-// against a real workspace: {"custom_max_retention_hours": 0} clears it (an empty PATCH is otherwise
+// that omission was for parity with the removed Terraform engine, which does not apply to catalogs
+// anyway. Verified against a real workspace: {"custom_max_retention_hours": 0} clears it (an empty PATCH is otherwise
 // rejected with "Nothing to update").
 var catalogForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 

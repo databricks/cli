@@ -30,10 +30,11 @@ func TestPostgresBranchConfigMarshalHonorsForceSendFields(t *testing.T) {
 // produce the same bytes. A pointer-only marshaler would send them down two
 // different code paths.
 func TestPostgresBranchMarshalValueAndPointerAgree(t *testing.T) {
-	b := PostgresBranch{}
-	b.ID = "the-id"
-	b.BranchId = "b1"
-	b.Parent = "projects/p1"
+	b := PostgresBranch{
+		ID:       "the-id",
+		BranchId: "b1",
+		Parent:   "projects/p1",
+	}
 
 	byValue, err := json.Marshal(b)
 	require.NoError(t, err)

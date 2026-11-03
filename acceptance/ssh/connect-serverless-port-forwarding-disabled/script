@@ -1,0 +1,16 @@
+# An administrator disabled port forwarding to serverless compute. The CLI reads the setting
+# before anything else, so it refuses the connection without creating a secret scope, uploading
+# binaries or starting compute that nobody could reach.
+# The body repeats the name: with only {"value": false} in it, the API sees an empty message.
+trace $CLI workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json '{"name": "port_fwd_serverless_enabled", "boolean_val": {"value": false}}' >/dev/null
+# Drop the setup request so the check below only sees what ssh connect sent.
+print_requests.py //api/2.1/settings >/dev/null
+
+title "CLI ssh connect\n"
+trace musterr $CLI ssh connect --name port-forwarding-disabled -- "echo 'Connection successful'"
+
+title "Reported error category\n"
+trace jq -r 'select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category' "$OUT_REQUESTS"
+
+# Expect no requests other than reads: the connection stops at the settings check.
+trace print_requests.py //api

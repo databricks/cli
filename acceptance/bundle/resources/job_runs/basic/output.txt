@@ -34,7 +34,7 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
 Created jobs.my_job
-Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Files: 1 uploaded, 0 deleted
@@ -58,11 +58,11 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[WORKSPACE_ID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 === exactly one run-now request was made
 >>> print_requests.py //jobs/run-now

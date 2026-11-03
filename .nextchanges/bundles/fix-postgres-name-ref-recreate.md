@@ -1,1 +1,0 @@
-* Fix spurious recreation of Lakebase (Postgres) branches, roles, and catalogs when the referenced project is updated in place: an in-place project change (e.g. `display_name`) no longer forces a delete + create of resources that reference the project's or branch's `name`. ([#6865](https://github.com/databricks/cli/pull/6865))

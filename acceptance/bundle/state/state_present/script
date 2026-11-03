@@ -1,56 +1,44 @@
-title 'Terraform state is present, empty env var uses state engine\n'
-mkdir -p .databricks/bundle/default/terraform
-echo '{"version": 4, "serial": 1, "lineage": "test-lineage"}' > .databricks/bundle/default/terraform/terraform.tfstate
+title 'Terraform state present: the direct default migrates it to the direct engine\n'
+# Keep the committed fixtures (and generated files) out of `bundle deploy`'s upload.
+printf '%s\n' '.gitignore' 'out.*' 'terraform*.tfstate' 'terraform*-requests.json' > .gitignore
 
-# Deploy on terraform explicitly: with an empty env var direct is the default, so
-# the deploy would migrate the state away from terraform (that path is covered by
-# bundle/migrate/auto-migrate-default) and the rest of this test needs it intact.
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'terraform' 'tf-provider' '!direct'
+# The terraform engine was removed in v1.20.0, so replay a prior terraform deployment (captured once
+# from a real terraform run) to reconstruct the terraform-shaped state locally, standing in for a
+# `DATABRICKS_BUNDLE_ENGINE=terraform bundle deploy`.
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
-# An empty env var defaults to direct, which migrates the terraform state in memory (no commit), so plan runs on direct.
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
+# The serial-resolution cases below add a direct state (resources.json); it must share the terraform
+# state's lineage, or the two are rejected as unrelated ("lineage mismatch") before serials matter.
+lineage=$(jq -r .lineage .databricks/bundle/default/terraform/terraform.tfstate)
+
+# An empty env var defaults to direct, which migrates the terraform state in memory (no commit), so
+# plan runs on direct and finds the schema unchanged.
+trace $CLI bundle plan
 trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
 
-title 'Adding resources.json with lower serial does not change anything'
-rm .databricks/bundle/default/terraform/terraform.tfstate
-echo '{"serial": 0, "lineage": "test-lineage"}' > .databricks/bundle/default/resources.json
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
+title 'A resources.json with a lower serial does not win: the terraform state still migrates'
+echo "{\"serial\": 0, \"lineage\": \"$lineage\"}" > .databricks/bundle/default/resources.json
+trace $CLI bundle plan
 
 rm "$OUT_REQUESTS"
-title 'Adding resources.json with higher serial, env var mismatch warns but uses state engine\n'
-echo '{"serial": 10, "lineage": "test-lineage"}' > .databricks/bundle/default/resources.json
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
-
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
-# env=terraform, but the higher-serial direct state (serial 10) wins engine resolution, so this
-# plan and deploy run on direct (with a mismatch warning), NOT terraform.
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-# Verify it: every schemas request from the =terraform plan+deploy above carries the direct-engine
-# User-Agent and none the terraform provider.
+title 'A resources.json with a higher serial wins: the direct state is authoritative, no migration\n'
+echo "{\"serial\": 10, \"lineage\": \"$lineage\"}" > .databricks/bundle/default/resources.json
+# serial 10 outranks the terraform state (serial 1), so direct wins; its (empty) state plans to
+# create the schema, and every schemas request carries the direct-engine User-Agent, not terraform.
+trace $CLI bundle plan
+trace $CLI bundle deploy
 trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle destroy --auto-approve
+trace $CLI bundle destroy --auto-approve
 
 rm "$OUT_REQUESTS"
-# The three =terraform commands above all ran on the higher-serial direct state (serial 10), not
-# terraform. The destroy tore everything down: it removed all local state (both engines) and the
-# remote deployment - a destroy does not preserve a superseded terraform state for a later deploy to
-# resurrect. So this deploy starts fresh on the direct engine: there is nothing to migrate, it just
-# recreates the resource.
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+# The destroy tore everything down: it removed all local state (both engines) and the remote
+# deployment - a destroy does not preserve a superseded terraform state for a later deploy to
+# resurrect. So this deploy starts fresh on the direct engine: nothing to migrate, serial 1.
+trace $CLI bundle deploy
 trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
-trace print_state.py | jq .serial | contains.py "1"
+trace print_state.py | jq .serial
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-#trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
-
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
-trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
-trace print_state.py | jq .serial | contains.py "1"
-
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
+trace $CLI bundle debug states
+trace $CLI bundle debug states --force-pull
 
 rm "$OUT_REQUESTS"

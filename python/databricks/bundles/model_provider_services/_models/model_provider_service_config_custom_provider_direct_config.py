@@ -43,9 +43,7 @@ class ModelProviderServiceConfigCustomProviderDirectConfig:
         ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Header-based API-key auth: the secret is forwarded on outbound requests
+    Header-based API-key auth: the secret is forwarded on outbound requests
     under a caller-chosen HTTP header rather than as an `Authorization`
     bearer token. Set this instead of `api_key` for header auth.
     """
@@ -79,9 +77,7 @@ class ModelProviderServiceConfigCustomProviderDirectConfigDict(TypedDict, total=
         ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Header-based API-key auth: the secret is forwarded on outbound requests
+    Header-based API-key auth: the secret is forwarded on outbound requests
     under a caller-chosen HTTP header rather than as an `Authorization`
     bearer token. Set this instead of `api_key` for header auth.
     """

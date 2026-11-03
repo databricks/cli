@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type rejectInternalResources struct{}
@@ -26,7 +26,7 @@ func (m *rejectInternalResources) Apply(ctx context.Context, b *bundle.Bundle) d
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "Internal resources cannot be set in bundle configuration",
-			Paths:     []dyn.Path{dyn.MustPathFromString("resources")},
+			Paths:     structpath.NewPathSlice("resources"),
 			Locations: b.Config.GetLocations("resources"),
 		})
 	}

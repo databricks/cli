@@ -35,7 +35,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle summary -o json
 {
   "id": "main.myschema.myservice",
-  "url": "[DATABRICKS_URL]/explore/data/model-services/main/myschema/myservice?w=[NUMID]"
+  "url": "[DATABRICKS_URL]/explore/data/model-services/main/myschema/myservice?w=[WORKSPACE_ID]"
 }
 
 === Verify deployment

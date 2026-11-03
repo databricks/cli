@@ -13,12 +13,19 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -30,10 +37,7 @@ import (
 
 const (
 	// home-relative directory to hold files/dependencies for the shim.
-	agentRootDir = ".agent-shim"
-
-	// directory which holds the per-agent wrappers; must match remoteShimDir in client.go.
-	agentBinDir = agentRootDir + "/bin"
+	agentRootDir = agentlauncher.RootDir
 
 	// directory which holds toolchain deps (npm, uv) fetched when the image ships none.
 	agentDepsDir = agentRootDir + "/deps"
@@ -42,32 +46,39 @@ const (
 	ugRepo = "databricks/unity-gateway"
 
 	// pins the Unity Gateway CLI commit the shim installs.
-	ugCommit = "7f408803f9c0fe4958e6d264fd94595283a49a19" // v0.1.0
+	ugCommit = "034ea0fd11f8e1286b7dd3d945d189be4ff1f42d"
+
+	ugExecutable = "ug"
 
 	// pins the version of uv downloaded
-	uvBaseURL = "https://github.com/astral-sh/uv/releases/download/0.12.18/"
+	uvVersion = "0.12.18"
+	uvBaseURL = "https://github.com/astral-sh/uv/releases/download/" + uvVersion + "/"
 
 	// SHA-256 of each pinned uv release tarball
 	uvX64LinuxChecksum   = "89eadd7c76fc063887959510d5ba0ab1264dfd5f1143b925ddb73021a40acf16"
 	uvArm64LinuxChecksum = "afb6291f3f0a6b4521fc67b947822506c41dde5b60d2189dd8f3695b2ac8c9e7"
 
-	// overrides for uv tool installs so they are isolated to a directory we control
-	uvToolDir    = agentDepsDir + "/uv_tools"
-	uvToolBinDir = agentDepsDir + "/uv_tools_bin"
+	// overrides for uv tool installs so they are isolated to a directory we control.
+	// Keyed by ugCommit so bumping the pin installs it afresh on a long-lived cluster
+	// rather than reusing the previous commit's install.
+	uvToolDir    = agentDepsDir + "/uv_tools-" + ugCommit
+	uvToolBinDir = agentDepsDir + "/uv_tools_bin-" + ugCommit
 
 	// pins the version of node/npm downloaded
-	nodeVersion = "v24.21.0"
+	nodeVersion = "v24.22.2"
 	nodeBaseURL = "https://nodejs.org/dist/" + nodeVersion + "/"
 
 	// SHA-256 of each pinned node release tarball
-	nodeX64LinuxChecksum   = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6"
-	nodeArm64LinuxChecksum = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
+	nodeX64LinuxChecksum   = "48cc0e21e048790e54c0cf5749c2725005313d652651c40b7a21feb9697aaf75"
+	nodeArm64LinuxChecksum = "eb187837a2230d4047161ac0be008584e16b46f726e9c9490ee35dc6b17d9ba8"
+
+	npmExecutable = "npm"
 
 	// environment variable used to pass the user's workspace home to the shim for the agent context.
-	workspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
+	workspaceHomeEnv = agentlauncher.WorkspaceHomeEnv
 
 	// the file holding the Databricks session context.
-	contextFile = "agent-system-context.md"
+	contextFile = agentlauncher.ContextFile
 
 	// lock file to serialize first-run toolchain setup across
 	// concurrent SSH clients sharing this driver's $HOME.
@@ -79,49 +90,169 @@ const (
 	setupLockStaleAfter = 2 * time.Minute
 )
 
-type agentSpec struct {
-	name string
-	// contextFlag passes the context file via this CLI flag (Claude's --append-system-prompt-file).
-	contextFlag string
-	// contextHomeFile writes the context to this $HOME instructions file (codex's AGENTS.md).
-	contextHomeFile string
-}
-
-// Currently limited to the agents whose Unity Gateway CLI command supports --workspace
-var supportedAgents = []agentSpec{
-	{name: "claude", contextFlag: "--append-system-prompt-file"},
-	{name: "codex", contextHomeFile: ".codex/AGENTS.md"},
-}
-
-// SupportedAgentNames lists the agents the ssh command registers a subcommand for.
-func SupportedAgentNames() []string {
-	names := make([]string, len(supportedAgents))
-	for i, a := range supportedAgents {
-		names[i] = a.name
-	}
-	return names
-}
-
-func agentByName(name string) (agentSpec, bool) {
-	for _, a := range supportedAgents {
-		if a.name == name {
-			return a, true
+func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
+	// Report the outcome of the launch. Setup runs from here to the exec below, so time it
+	// from here too. Each failing step sets outcome.errorCategory; the returned error is
+	// picked up via the named return.
+	start := time.Now()
+	outcome := agentShimOutcome{}
+	launched := false
+	defer func() {
+		// A successful launch replaces this process with execve below (having emitted and
+		// uploaded its own event first), so this defer normally runs only when the launch
+		// failed; cmd/root then uploads the buffered event as usual on the returned error.
+		// `launched` guards the rare case where execProcess itself returns an error: the
+		// success event is already uploaded, so don't emit a second, contradictory event.
+		if retErr == nil || launched {
+			return
 		}
-	}
-	return agentSpec{}, false
-}
+		outcome.err = retErr
+		outcome.ctxErr = ctx.Err()
+		logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
+	}()
 
-func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) error {
-	agent, ok := agentByName(agentName)
+	agent, ok := agentlauncher.AgentByName(agentName)
 	if !ok {
-		return fmt.Errorf("unsupported agent %q", agentName)
+		return categorize(protos.SshAgentShimErrorCategoryUnsupportedAgent, fmt.Errorf("unsupported agent %q", agentName))
 	}
 	// Probe first: fail fast before the slow first-run bootstrap if the gateway is off.
+	// probeAIGateway attributes the specific GATEWAY_* cause; GATEWAY_UNAVAILABLE is the fallback.
 	if err := probeAIGateway(ctx, client); err != nil {
-		return err
+		return ensureCategory(protos.SshAgentShimErrorCategoryGatewayUnavailable, err)
 	}
 	workspace := strings.TrimRight(client.Config.Host, "/")
-	return bootstrapAndLaunchAgent(ctx, agent, workspace, agentArgs)
+
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return categorize(protos.SshAgentShimErrorCategoryToolchainSetupFailed, fmt.Errorf("failed to resolve home directory: %w", err))
+	}
+
+	ugPath, err := bootstrapToolchain(ctx, home)
+	if err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryToolchainSetupFailed, err)
+	}
+
+	err = setEnvForUnityGateway(ctx)
+	if err != nil {
+		return categorize(protos.SshAgentShimErrorCategoryAgentConfigurationFailed, fmt.Errorf("failed to set environment variables: %w", err))
+	}
+
+	err = runAgentConfiguration(ctx, agent, workspace)
+	if err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryAgentConfigurationFailed, err)
+	}
+
+	argv, environ, err := prepareAgentLaunch(ctx, home, agent, agentArgs)
+	if err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryAgentLaunchFailed, err)
+	}
+
+	// The agent is ready to launch. execProcess replaces this process, so cmd/root's
+	// end-of-command telemetry upload never runs; emit and flush the success event first.
+	launched = true
+	logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
+	uploadAgentShimTelemetry(ctx, agentName, time.Since(start))
+	return execProcess(ugPath, argv, environ)
+}
+
+// agentShimOutcome is the observed result of an agent-shim launch, collected by
+// RunAgentShim for telemetry.
+type agentShimOutcome struct {
+	err error
+	// ctxErr is the context's error when the outcome is logged. Tracked apart from err
+	// because a step that shells out reports a killed child as *exec.ExitError, which carries
+	// no trace of the cancellation.
+	ctxErr error
+}
+
+// launchError carries the telemetry category for a failure alongside the underlying error,
+// so RunAgentShim can attribute it via errors.As rather than matching on the error text
+// (which the repo forbids). It is transparent to the user: Error and Unwrap both delegate.
+type launchError struct {
+	category protos.SshAgentShimErrorCategory
+	err      error
+}
+
+func (e *launchError) Error() string { return e.err.Error() }
+func (e *launchError) Unwrap() error { return e.err }
+
+// categorize tags err with a telemetry category. A nil err is returned unchanged.
+func categorize(category protos.SshAgentShimErrorCategory, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &launchError{category: category, err: err}
+}
+
+// ensureCategory tags err with fallback unless a deeper call already attributed it, so the
+// most specific category set at the failure site wins over the stage's coarse fallback.
+func ensureCategory(fallback protos.SshAgentShimErrorCategory, err error) error {
+	if err == nil {
+		return nil
+	}
+	if _, ok := errors.AsType[*launchError](err); ok {
+		return err
+	}
+	return categorize(fallback, err)
+}
+
+// category returns the error category to report. An interruption means the user gave up,
+// whichever step observed it first, so it wins over the category attributed at the failure
+// site; an unattributed failure is reported as UNKNOWN so it stays countable.
+func (o agentShimOutcome) category() protos.SshAgentShimErrorCategory {
+	if o.err == nil {
+		return protos.SshAgentShimErrorCategoryUnspecified
+	}
+	if errors.Is(o.ctxErr, context.Canceled) || errors.Is(o.err, context.Canceled) {
+		return protos.SshAgentShimErrorCategoryUserAborted
+	}
+	if le, ok := errors.AsType[*launchError](o.err); ok {
+		return le.category
+	}
+	return protos.SshAgentShimErrorCategoryUnknown
+}
+
+func logAgentShimEvent(ctx context.Context, agentName string, outcome agentShimOutcome, setupDuration time.Duration) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshAgentShimEvent: buildAgentShimEvent(agentName, outcome, setupDuration),
+	})
+}
+
+// buildAgentShimEvent maps the agent name and outcome onto the telemetry event. It is
+// separated from logAgentShimEvent so the field mapping can be unit tested.
+func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDuration time.Duration) *protos.SshAgentShimEvent {
+	// lookup agent by name so this function is the single decision point for
+	// telemetry and is easily testable
+	telemetryName := protos.SshAgentShimAgentUnspecified
+	agent, ok := agentlauncher.AgentByName(agentName)
+	if ok {
+		telemetryName = agent.TelemetryName
+	}
+	return &protos.SshAgentShimEvent{
+		Agent:           telemetryName,
+		IsSuccess:       outcome.err == nil,
+		ErrorCategory:   outcome.category(),
+		SetupDurationMs: setupDuration.Milliseconds(),
+	}
+}
+
+// uploadAgentShimTelemetry flushes buffered telemetry before the shim execs into the agent.
+// A successful launch replaces this process (see execProcess), so the end-of-command upload
+// in cmd/root.Execute never runs; this rebuilds the ExecutionContext that upload would have
+// attached. Best-effort: an upload failure must not stop the launch.
+func uploadAgentShimTelemetry(ctx context.Context, agentName string, execDuration time.Duration) {
+	err := telemetry.Upload(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdctx.ExecId(ctx),
+		Version:         build.GetInfo().Version,
+		Command:         "ssh_agent-shim_" + agentName,
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
+		ExecutionTimeMs: execDuration.Milliseconds(),
+		ExitCode:        0,
+	})
+	if err != nil {
+		log.Debugf(ctx, "agent-shim telemetry upload failed: %s", err)
+	}
 }
 
 // --- Unity AI Gateway preflight ---
@@ -193,26 +324,26 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 	case looksLikeTransient(modelSvc.err) || looksLikeTransient(legacy.err):
 		// A rate-limit/5xx/network blip is not "disabled" — tell the user to retry
 		// rather than sending them to the enablement docs.
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayTransientError, versionNeutralGatewayError(
 			fmt.Sprintf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.err.Error(), legacy.err.Error()),
-		)
+		))
 	case errors.Is(modelSvc.err, apierr.ErrPermissionDenied):
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.err.Error(), legacy.err.Error()),
-		)
+		))
 	case errors.Is(legacy.err, apierr.ErrPermissionDenied):
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.err.Error(), modelSvc.err.Error()),
-		)
+		))
 	default:
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayNotEnabled, versionNeutralGatewayError(
 			fmt.Sprintf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.err.Error(), legacy.err.Error(), aiGatewayDocsURL),
-		)
+		))
 	}
 }
 
 // newProbeAPIClient builds a low-level client from cfg with the SDK's retries
-// turned off, so the gateway preflight is one-shot. Clearing ErrorRetriable and
+// turned off, so a preflight check is one-shot. Clearing ErrorRetriable and
 // TransientErrors makes a retriable status (429, 503, ...) surface on the first
 // attempt rather than looping until the retry budget expires; it mirrors
 // client.New, which builds the retrying client the rest of the CLI uses.
@@ -230,7 +361,7 @@ func probeModelServices(ctx context.Context, apiClient *client.DatabricksClient)
 	it := catalog.NewAiGateway(apiClient).ListModelServices(ctx, catalog.ListModelServicesRequest{PageSize: modelServiceProbePageSize})
 	_, err := it.Next(ctx)
 	if err != nil {
-		if err == listing.ErrNoMoreItems {
+		if errors.Is(err, listing.ErrNoMoreItems) {
 			// endpoint is reachable but there are no results
 			return gatewayProbe{reachable: true}
 		}
@@ -296,51 +427,58 @@ func looksLikeTransient(err error) bool {
 }
 
 func aiGatewayAuthError(host, reason string) error {
-	return versionNeutralGatewayError(
+	return categorize(protos.SshAgentShimErrorCategoryGatewayAuthFailed, versionNeutralGatewayError(
 		fmt.Sprintf("the Databricks workspace %s rejected the access token (%s). Try:\n  databricks auth logout --host %s\n  databricks auth login --host %s", host, reason, host, host),
-	)
+	))
 }
 
 func aiGatewayScopeError(host, reason string) error {
-	return versionNeutralGatewayError(
+	return categorize(protos.SshAgentShimErrorCategoryGatewayScopeFailed, versionNeutralGatewayError(
 		fmt.Sprintf("the access token for %s is missing an OAuth scope required by the AI Gateway APIs (%s). Re-authenticate to mint a token with the needed scopes:\n  databricks auth login --host %s", host, reason, host),
-	)
+	))
 }
 
 // --- end Unity AI Gateway preflight ---
 
-func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace string, agentArgs []string) error {
-	home, err := env.UserHomeDir(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to resolve home directory: %w", err)
-	}
-
+func bootstrapToolchain(ctx context.Context, home string) (string, error) {
 	// Reconstruct the PATH tooling runs under on every launch rather than caching
 	// it: every entry is a known location, so deriving it can't restore a stale
 	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
 	// Unity Gateway CLI execs the real agent rather than this wrapper
-	removePath(ctx, filepath.Join(home, agentBinDir))
+	removePath(ctx, filepath.Join(home, agentlauncher.BinDir))
 	// add this CLI to PATH so agents can use it
 	if self, err := os.Executable(); err == nil {
 		prependPath(ctx, filepath.Dir(self))
 	}
 
-	err = ensureToolchain(ctx, home, runtime.GOARCH)
+	err := ensureToolchain(ctx, home, runtime.GOARCH)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// npm is on PATH now (shipped or just installed); silence its update-notifier
 	// box so it doesn't clutter the agent session.
 	disableNpmUpdateNotifier(ctx)
 
-	return launchAgent(ctx, home, agent, workspace, agentArgs)
+	ugPath, err := exec.LookPath(ugExecutable)
+	if err != nil {
+		return "", categorize(protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err))
+	}
+
+	return ugPath, nil
 }
 
-func toolchainReady() bool {
-	_, ugErr := exec.LookPath("ucode")
-	_, npmErr := exec.LookPath("npm")
-	return ugErr == nil && npmErr == nil
+// toolchainReady reports whether the pinned Unity Gateway CLI and some npm are
+// installed. npm (and uv) shipped with the image are used as-is, but ug must be the
+// pinned commit, so it is checked at its versioned path rather than looked up on PATH.
+func toolchainReady(home string) bool {
+	_, npmErr := exec.LookPath(npmExecutable)
+	return ugInstalled(home) && npmErr == nil
+}
+
+func ugInstalled(home string) bool {
+	_, err := os.Stat(filepath.Join(home, uvToolBinDir, ugExecutable))
+	return err == nil
 }
 
 func ensureToolchain(ctx context.Context, home, arch string) error {
@@ -351,11 +489,10 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 	uvToolBinDirAbsolute := filepath.Join(home, uvToolBinDir)
 	prependPath(ctx, uvToolBinDirAbsolute)
 	for _, spec := range []archiveSpec{uvSpec, nodeSpec} {
-		binDir := filepath.Join(home, agentDepsDir, spec.dirName, spec.binDirName)
-		prependPath(ctx, binDir)
+		prependPath(ctx, spec.binDir(home))
 	}
 
-	if toolchainReady() {
+	if toolchainReady(home) {
 		return nil
 	}
 	unlock, err := acquireSetupLock(ctx, home)
@@ -364,7 +501,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 	}
 	defer unlock()
 	// Another client may have finished the install while we waited for the lock.
-	if toolchainReady() {
+	if toolchainReady(home) {
 		return nil
 	}
 
@@ -375,11 +512,11 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 			}
 			return nil
 		}); err != nil {
-			return err
+			return categorize(protos.SshAgentShimErrorCategoryUvInstallFailed, err)
 		}
 	}
 
-	if _, err := exec.LookPath("ucode"); err != nil {
+	if !ugInstalled(home) {
 		if err := runStep(ctx, "Installing Unity Gateway CLI", func(out io.Writer) error {
 			env := os.Environ()
 			env = append(env, "UV_TOOL_DIR="+uvToolDirAbsolute, "UV_TOOL_BIN_DIR="+uvToolBinDirAbsolute)
@@ -388,7 +525,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 			}
 			return nil
 		}); err != nil {
-			return err
+			return categorize(protos.SshAgentShimErrorCategoryGatewayCLIInstallFailed, err)
 		}
 	}
 
@@ -396,7 +533,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 		if err := runStep(ctx, "Installing Node.js", func(out io.Writer) error {
 			return ensureBinary(ctx, home, out, nodeSpec)
 		}); err != nil {
-			return err
+			return categorize(protos.SshAgentShimErrorCategoryNodeInstallFailed, err)
 		}
 	}
 
@@ -408,9 +545,20 @@ type archiveSpec struct {
 	archiveURL string
 	binaryName string
 	dirName    string
-	// sub-directory inside dirName where the binary is located, "" if it's the same as dirName
+	// installed under dirName-version, so a version bump installs afresh on a
+	// long-lived cluster instead of reusing the previous version
+	version string
+	// sub-directory inside the install dir where the binary is located, "" if it's the install dir itself
 	binDirName string
 	checksum   string
+}
+
+func (s archiveSpec) installDirName() string {
+	return s.dirName + "-" + s.version
+}
+
+func (s archiveSpec) binDir(home string) string {
+	return filepath.Join(home, agentDepsDir, s.installDirName(), s.binDirName)
 }
 
 // ensure the specified binary is installed, installing it if it's not already
@@ -422,9 +570,8 @@ func ensureBinary(ctx context.Context, home string, out io.Writer, spec archiveS
 	}
 
 	depsRoot := filepath.Join(home, agentDepsDir)
-	depsDir := filepath.Join(depsRoot, spec.dirName)
-	binDir := filepath.Join(depsDir, spec.binDirName)
-	if _, err := os.Stat(filepath.Join(binDir, spec.binaryName)); err == nil {
+	depsDir := filepath.Join(depsRoot, spec.installDirName())
+	if _, err := os.Stat(filepath.Join(spec.binDir(home), spec.binaryName)); err == nil {
 		return nil
 	}
 
@@ -461,7 +608,7 @@ func ensureBinary(ctx context.Context, home string, out io.Writer, spec archiveS
 }
 
 func uvArchiveSpec(goarch string) archiveSpec {
-	spec := archiveSpec{dirName: "uv", binaryName: "uv"}
+	spec := archiveSpec{dirName: "uv", version: uvVersion, binaryName: "uv"}
 	switch goarch {
 	case "amd64":
 		spec.archiveURL = uvBaseURL + "uv-x86_64-unknown-linux-gnu.tar.gz"
@@ -505,64 +652,61 @@ func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 	}
 }
 
-func launchAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {
-	ugPath, err := exec.LookPath("ucode")
-	if err != nil {
-		return fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err)
+func setEnvForUnityGateway(ctx context.Context) error {
+	// Pass the session token as DATABRICKS_BEARER so Unity Gateway CLI authenticates headlessly.
+	if token := env.Get(ctx, "DATABRICKS_TOKEN"); token != "" {
+		err := os.Setenv("DATABRICKS_BEARER", token)
+		if err != nil {
+			return err
+		}
 	}
-	contextArgs, err := injectAgentContext(ctx, home, agent)
+	err := os.Setenv("UG_SKIP_OS_SETTINGS", "1")
 	if err != nil {
 		return err
 	}
-	argv := []string{"ucode", agent.name}
-	if workspace != "" {
-		argv = append(argv, "--workspace", workspace)
+	err = os.Setenv("AI_GATEWAY_REQUEST_TAGS", "{\"source\":\"databricks-ssh\"}")
+	if err != nil {
+		return err
 	}
-	argv = append(argv, "--")
-	argv = append(argv, contextArgs...)
-	argv = append(argv, agentArgs...)
-	// Pass the session token as DATABRICKS_BEARER so Unity Gateway CLI authenticates headlessly.
-	if env.Get(ctx, "DATABRICKS_BEARER") == "" {
-		if token := env.Get(ctx, "DATABRICKS_TOKEN"); token != "" {
-			_ = os.Setenv("DATABRICKS_BEARER", token)
+	return nil
+}
+
+func runAgentConfiguration(ctx context.Context, agent agentlauncher.AgentSpec, workspace string) error {
+	if err := runStep(ctx, "Configuring "+agent.Name, func(out io.Writer) error {
+		if err := runCommand(ctx, out, nil, ugExecutable, "configure", "--agent", agent.Name, "--workspace", workspace, "--enable-databricks-ai-tools"); err != nil {
+			return fmt.Errorf("failed to configure %s: %w", agent.Name, err)
 		}
+		return nil
+	}); err != nil {
+		return categorize(protos.SshAgentShimErrorCategoryAgentConfigurationFailed, err)
 	}
-	return execProcess(ugPath, argv, os.Environ())
+	return nil
+}
+
+func prepareAgentLaunch(ctx context.Context, home string, agent agentlauncher.AgentSpec, agentArgs []string) (argv, environ []string, err error) {
+	contextArgs, err := injectAgentContext(ctx, home, agent)
+	if err != nil {
+		return nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
+	}
+	argv = []string{ugExecutable, agent.Name, "--"}
+	// If the user passed `--` then inject context args just before, otherwise add
+	// them after the user's args. This is needed so we don't interfere with `ug`'s
+	// heuristics around positional args
+	i := slices.Index(agentArgs, "--")
+	if i == -1 {
+		argv = append(argv, agentArgs...)
+		argv = append(argv, contextArgs...)
+	} else {
+		argv = slices.Concat(argv, agentArgs[:i], contextArgs, agentArgs[i:])
+	}
+	return argv, os.Environ(), nil
 }
 
 // put the Databricks context where the agent reads it, returning any extra argv.
-func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]string, error) {
-	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv))
-	switch {
-	case agent.contextFlag != "":
-		// Keep the scratch context file under the shim's own directory so it never
-		// clobbers an unrelated file the user happens to have in their home.
-		dir := filepath.Join(home, agentRootDir)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return nil, fmt.Errorf("failed to create %s: %w", dir, err)
-		}
-		f := filepath.Join(dir, contextFile)
-		if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
-			return nil, fmt.Errorf("failed to write agent context file: %w", err)
-		}
-		return []string{agent.contextFlag, f}, nil
-	case agent.contextHomeFile != "":
-		f := filepath.Join(home, agent.contextHomeFile)
-		if _, err := os.Stat(f); err == nil {
-			return nil, nil // already present — don't clobber
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("failed to stat %s: %w", f, err)
-		}
-		if err := os.MkdirAll(filepath.Dir(f), 0o755); err != nil {
-			return nil, fmt.Errorf("failed to create %s: %w", filepath.Dir(f), err)
-		}
-		if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
-			return nil, fmt.Errorf("failed to write %s: %w", f, err)
-		}
-		return nil, nil
-	default:
-		return nil, nil
-	}
+func injectAgentContext(ctx context.Context, home string, agent agentlauncher.AgentSpec) ([]string, error) {
+	serverless := dbr.RuntimeVersion(ctx).Type == dbr.ClusterTypeServerless
+	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv), serverless)
+	return agent.ContextArg(home, systemContext)
 }
 
 // fetch url to a temp file, failing unless its SHA256 matches the expected checksum.
@@ -605,7 +749,7 @@ func downloadVerified(ctx context.Context, spec archiveSpec) (string, error) {
 }
 
 func nodeArchiveSpec(goarch string) archiveSpec {
-	spec := archiveSpec{binDirName: "bin", dirName: "node", binaryName: "npm"}
+	spec := archiveSpec{binDirName: "bin", dirName: "node", version: nodeVersion, binaryName: "npm"}
 	switch goarch {
 	case "amd64":
 		spec.archiveURL = nodeBaseURL + "node-" + nodeVersion + "-linux-x64.tar.xz"
@@ -660,14 +804,20 @@ func removePath(ctx context.Context, dir string) {
 	_ = os.Setenv("PATH", strings.Join(dirs, string(os.PathListSeparator)))
 }
 
-func agentSystemContext(wsHome string) string {
-	cwd := "the user's Databricks workspace home directory"
+func agentSystemContext(wsHome string, serverless bool) string {
+	userHomePart := ""
 	if wsHome != "" {
-		cwd = wsHome
+		userHomePart = " The user's Databricks workspace home directory is " + wsHome + "."
+	}
+	computePart := "dedicated cluster"
+	persistencePart := "Local files persist across sessions until the cluster restarts or terminates; only paths under /Workspace and /Volumes persist beyond that."
+	if serverless {
+		computePart = "serverless cluster"
+		persistencePart = "This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions."
 	}
 	return fmt.Sprintf(`You are running inside a "databricks ssh connect" session on the driver node of a
-Databricks serverless cluster.
+Databricks %s.
 - The "databricks" CLI is installed and already authenticated: DATABRICKS_HOST and DATABRICKS_TOKEN are set in the environment, so "databricks ..." commands work with no "databricks auth login". The same token governs Unity Catalog and serving-endpoint access.
-- This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions. Your working directory is %s.
-- You can run shell commands and use the "databricks" CLI to explore the workspace.`, cwd)
+- %s%s
+- You can run shell commands and use the "databricks" CLI to explore the workspace.`, computePart, persistencePart, userHomePart)
 }

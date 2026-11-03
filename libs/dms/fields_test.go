@@ -8,10 +8,10 @@ import (
 
 func TestFieldsMask(t *testing.T) {
 	// The order is fixed, so the same set always sends the same mask.
-	assert.Equal(t, "state,error_message,resource_id,status", DescribesResource.Mask())
-	assert.Equal(t, "error_message,status", KeepsState.Mask())
-	assert.Equal(t, "state", FieldState.Mask())
-	assert.Empty(t, Fields(0).Mask())
+	assert.Equal(t, []string{"state", "error_message", "resource_id", "status"}, DescribesResource.Mask().Paths)
+	assert.Equal(t, []string{"error_message", "status"}, KeepsState.Mask().Paths)
+	assert.Equal(t, []string{"state"}, FieldState.Mask().Paths)
+	assert.Empty(t, Fields(0).Mask().Paths)
 }
 
 func TestFieldsHas(t *testing.T) {

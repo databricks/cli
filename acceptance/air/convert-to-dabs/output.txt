@@ -57,12 +57,12 @@ resources:
                   provisioned_capacity_id: capacity-1
             code_source_path: ./dist/code_source.tgz
             mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
+            priority_class: CRITICAL
+            unity_catalog_image_path: main.air.training:prod
       environments:
         - environment_key: default
           spec:
-            environment_version: "5"
-            dependencies:
-              - numpy
+            environment_version: "6"
 
 === the generated command.sh carries the run command
 >>> cat generated_artifacts/command.sh

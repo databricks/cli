@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle
+
+variables:
+  env:
+  region:
+  size:
+  other:
+
+definitions:
+  dev_env: &dev "dev-value"
+  common: &common
+    region: us-east-1
+    size: small
+
+targets:
+  dev:
+    variables:
+      env: *dev
+      <<: *common
+      size: large
+      other: plain

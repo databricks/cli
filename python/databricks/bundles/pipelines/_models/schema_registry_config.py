@@ -17,22 +17,20 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class SchemaRegistryConfig:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     confluent_options: VariableOrOptional[ConfluentSchemaRegistryOptions] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: Confluent-compatible schema registry options.
+    [Beta] Required: Confluent-compatible schema registry options.
     """
 
     connection_name: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) UC connection for registry authentication.
+    [Beta] (Optional) UC connection for registry authentication.
     Specify if different from the top-level source connection.
     """
 
@@ -40,7 +38,7 @@ class SchemaRegistryConfig:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional, Protobuf only) Selects a specific message from a schema that
+    [Beta] (Optional, Protobuf only) Selects a specific message from a schema that
     defines multiple Protobuf messages. Simple ("Location") or fully-qualified
     ("com.example.protos.Location"). Defaults to the first message.
     """
@@ -60,14 +58,14 @@ class SchemaRegistryConfigDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: Confluent-compatible schema registry options.
+    [Beta] Required: Confluent-compatible schema registry options.
     """
 
     connection_name: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) UC connection for registry authentication.
+    [Beta] (Optional) UC connection for registry authentication.
     Specify if different from the top-level source connection.
     """
 
@@ -75,7 +73,7 @@ class SchemaRegistryConfigDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional, Protobuf only) Selects a specific message from a schema that
+    [Beta] (Optional, Protobuf only) Selects a specific message from a schema that
     defines multiple Protobuf messages. Simple ("Location") or fully-qualified
     ("com.example.protos.Location"). Defaults to the first message.
     """

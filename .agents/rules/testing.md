@@ -66,7 +66,7 @@ The whole `Cloud*` family lives inside an `if isRunningOnCloud` branch in `getSk
 
 Exception: mass string replacement when the change is predictable and much cheaper than re-running the test suite.
 
-**RULE: All `EnvMatrix` variants MUST produce identical output files.** Filenames containing `$DATABRICKS_BUNDLE_ENGINE` (e.g. `output.direct.txt`) are the only per-engine exception.
+**RULE: All `EnvMatrix` variants MUST produce identical output files.** The only exception is a test that sets `EnvVaryOutput`, whose files named after the variant value (e.g. `out.deploy.<value>.txt`) are per-variant.
 
 **RULE: Do not run `-update` while a divergent variant exists.** It is destructive: it overwrites with the last variant and breaks the others. To debug: run a single variant you consider correct with `-update`, then debug the other variant to find why it diverges.
 
@@ -95,13 +95,9 @@ acceptance/cmd/fs/cp/file-to-dir/
   output.txt
 ```
 
-**RULE: When output genuinely diverges between engines (terraform vs direct), split only the diverging file into per-engine variants.** Keep the rest of the output unified. Files named `output.$DATABRICKS_BUNDLE_ENGINE.txt` or `out.requests.$DATABRICKS_BUNDLE_ENGINE.json` are the allowed per-engine form.
-
-If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
-
 **RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `Env.MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
 
-**RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
+**RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). For example, `acceptance/bundle/test.toml` matrixes `DMS = ["", "true"]`, so a bundle test opts out of the DMS run with `EnvMatrix.DMS = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
 
 **RULE: Write every map-valued setting in dotted form at the top of `test.toml`, never under a table header.** This covers `Env`, `EnvMatrix`, `EnvMatrixExclude`, `EnvRepl`, `GOOS` and `CloudEnvs` — e.g. `Env.MSYS_NO_PATHCONV = "1"`, `GOOS.windows = false`. In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering.
 
@@ -110,7 +106,7 @@ If the only reason for divergence is a server-side default that one engine sets 
 GOOD:
 
 ```toml
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
 Ignore = ["databricks.yml"]
 ```
 
@@ -118,7 +114,7 @@ BAD:
 
 ```toml
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
+READPLAN = ["", "1"]
 
 Ignore = ["databricks.yml"]   # parsed as EnvMatrix.Ignore, not top-level Ignore
 ```
@@ -132,7 +128,7 @@ Ignore = ["databricks.yml"]   # parsed as EnvMatrix.Ignore, not top-level Ignore
 - Source files: `test.toml`, `script`, `script.prepare`, `databricks.yml`, etc.
 - Tests are configured via `test.toml`. Config schema and explanation is in `acceptance/internal/config.go`. Certain options are also dumped to `out.test.toml` so that inherited values are visible on PRs.
 - Run a single test: `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder>`
-- Run a specific variant by appending `EnvMatrix` values to the test name: `go test ./acceptance -run 'TestAccept/.../DATABRICKS_BUNDLE_ENGINE=direct'`. When there are multiple `EnvMatrix` variables, they appear in alphabetical order.
+- Run a specific variant by appending `EnvMatrix` values to the test name: `go test ./acceptance -run 'TestAccept/.../DMS=true'`. When there are multiple `EnvMatrix` variables, they appear in alphabetical order.
 - Useful flags: `-v` for verbose output, `-tail` to follow test output (requires `-v`), `-logrequests` to log all HTTP requests/responses (requires `-v`).
 - Run tests on cloud: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires `deco` tool and access to test env). This is an *additional* pass over the same test directories, restricted to those with `Cloud = true` set; it does not replace the local run.
 - `script.prepare` files from parent directories are concatenated into the test script. Use them for shared bash helpers.
@@ -183,7 +179,7 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 - `update_file.py FILENAME OLD NEW`: replace all occurrences of OLD with NEW in FILENAME. Errors if OLD is not found. Cannot be used on `output.txt`.
 - `find.py REGEX [--expect N]`: find files matching regex in current directory. `--expect N` asserts an exact count.
 - `diff.py DIR1 DIR2` or `diff.py FILE1 FILE2`: recursive diff with test replacements applied.
-- `print_state.py [-t TARGET] [--backup]`: print deployment state (terraform or direct).
+- `print_state.py [-t TARGET] [--backup]`: print deployment state (`resources.json`, or a terraform state left by an older CLI).
 - `edit_resource.py TYPE ID < script.py`: fetch resource by ID, execute Python on it (resource in `r`), then update it. TYPE is `jobs` or `pipelines`.
 - `gron.py`: flatten JSON into greppable discrete assignments (simpler than `jq` for searching JSON).
 - `jq` is also available for JSON processing.

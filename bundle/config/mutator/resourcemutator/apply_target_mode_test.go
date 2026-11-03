@@ -96,7 +96,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
+					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}}, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {CreateExperiment: ml.CreateExperiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
@@ -155,6 +155,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Volumes: map[string]*resources.Volume{
 					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
+				},
+				Features: map[string]*resources.Feature{
+					"feature1": {Feature: ml.Feature{FullName: "catalog1.schema1.feature1"}},
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
@@ -375,7 +378,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
@@ -484,13 +487,14 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
+	assert.Equal(t, "catalog1.schema1.feature1", b.Config.Resources.Features["feature1"].FullName)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
@@ -535,6 +539,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	// Name field on these via embedded SDK types, hence the explicit skip.
 	notUserNamed := []string{
 		"Apps",
+		"Features",
 		"SecretScopes",
 		"Secrets",
 		"DatabaseInstances",
@@ -670,5 +675,5 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 }

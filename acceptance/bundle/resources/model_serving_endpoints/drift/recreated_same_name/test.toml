@@ -2,5 +2,3 @@ Badness = "After deleting and recreating a model serving endpoint remotely with 
 
 Cloud = true
 RecordRequests = false
-
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

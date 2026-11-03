@@ -142,6 +142,29 @@ func TestRenderDryRun(t *testing.T) {
 	assert.Contains(t, out, "No files were modified")
 }
 
+func TestActivateHintWorkspaceMember(t *testing.T) {
+	// venvPath is in slash form; cmd.exe needs backslashes in a relative path.
+	hint := activateHint("../../.venv")
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, `..\..\.venv\Scripts\activate`, hint)
+	} else {
+		assert.Equal(t, "source ../../.venv/bin/activate", hint)
+	}
+}
+
+func TestActivateHintQuotesShellCharacters(t *testing.T) {
+	// UV_PROJECT_ENVIRONMENT can name a folder with spaces or shell characters.
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, `"my env\Scripts\activate"`, activateHint("my env"))
+		assert.Equal(t, `"R&D\Scripts\activate"`, activateHint("R&D"))
+		return
+	}
+	assert.Equal(t, `source 'my env/bin/activate'`, activateHint("my env"))
+	assert.Equal(t, `source '/tmp/env$1/bin/activate'`, activateHint("/tmp/env$1"))
+	// A leading dash would be read as an option.
+	assert.Equal(t, `source ./-env/bin/activate`, activateHint("-env"))
+}
+
 func TestActivateHint(t *testing.T) {
 	hint := activateHint(".venv")
 	if runtime.GOOS == "windows" {
@@ -153,4 +176,54 @@ func TestActivateHint(t *testing.T) {
 	} else {
 		assert.Equal(t, "source .venv/bin/activate", hint)
 	}
+}
+
+func TestRenderSuccessWorkspaceMember(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.Resolved = &libslocalenv.ResolvedInfo{PythonVersion: "3.12"}
+	res.VenvPath = "../../.venv"
+	res.UvWorkspaceRoot = "/repo"
+	res.UvWorkspaceBackupPath = "/repo/pyproject.toml.bak"
+
+	out := renderText(t, res, nil)
+
+	assert.Contains(t, out, "uv workspace root")
+	assert.Contains(t, out, "/repo")
+	assert.Contains(t, out, "Root pyproject.toml")
+	assert.Contains(t, out, "constraints updated (backup: /repo/pyproject.toml.bak)")
+}
+
+func TestRenderSuccessStandaloneOmitsWorkspaceRows(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.VenvPath = ".venv"
+
+	out := renderText(t, res, nil)
+
+	assert.NotContains(t, out, "uv workspace root")
+	assert.NotContains(t, out, "Root pyproject.toml")
+}
+
+func TestRenderDryRunWorkspaceMember(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.DryRun = true
+	res.Plan = &libslocalenv.Plan{WouldWrite: "/repo/a/pyproject.toml", WouldWriteUvWorkspace: "/repo/pyproject.toml"}
+	out := renderText(t, res, nil)
+	assert.Contains(t, out, "Plan: /repo/pyproject.toml (uv workspace root)")
+}
+
+func TestRenderSuccessWorkspaceMemberUnchangedRoot(t *testing.T) {
+	// --no-constraints or an idempotent re-run: the root file was not changed.
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.VenvPath = "../../.venv"
+	res.UvWorkspaceRoot = "/repo"
+
+	out := renderText(t, res, nil)
+
+	assert.Contains(t, out, "Root pyproject.toml")
+	assert.Contains(t, out, "unchanged")
+	assert.NotContains(t, out, "constraints updated")
 }

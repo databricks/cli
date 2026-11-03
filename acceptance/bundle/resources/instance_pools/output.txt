@@ -61,7 +61,7 @@ Resources:
   Instance Pools:
     test_instance_pool:
       Name: my_instance_pool
-      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[WORKSPACE_ID]
 
 === Update the instance pool name
 >>> update_file.py databricks.yml my_instance_pool my_instance_pool_2
@@ -97,7 +97,7 @@ Resources:
   Instance Pools:
     test_instance_pool:
       Name: my_instance_pool_2
-      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[WORKSPACE_ID]
 
 === Destroy the instance pool
 >>> [CLI] bundle destroy --auto-approve

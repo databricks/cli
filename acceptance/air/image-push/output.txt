@@ -3,12 +3,12 @@
 >>> databricks air images push -p docker-test -s nvidia/cuda:13.4.1 --catalog my-catalog --schema my-schema --artifact cuda:13.4.1-cudnn-devel-ubuntu26.04
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing nvidia/cuda:13.4.1 as my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image nvidia/cuda:13.4.1
-Tagging image as [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
-Pushing image to [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 Docker push progress
 Pushed image.
 Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04` in your YAML config and create a workload with `databricks air run -f config.yaml`.
@@ -31,20 +31,20 @@ Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.
 === docker commands
 image ls --quiet nvidia/cuda:13.4.1
 image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
-tag nvidia/cuda:13.4.1 [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
-push [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 
 === missing image is pulled for AIR; destination defaults to source
 >>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
-Tagging image as [NUMID].container.us-west-2.localhost/main.training.image:v1
-Pushing image to [NUMID].container.us-west-2.localhost/main.training.image:v1
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
@@ -53,13 +53,13 @@ Now you can set `environment.unity_catalog_image = main.training.image:v1` in yo
 >>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull -o json
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
-Tagging image as [NUMID].container.us-west-2.localhost/main.training.image:v1
-Pushing image to [NUMID].container.us-west-2.localhost/main.training.image:v1
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
 
@@ -68,7 +68,7 @@ Pushed image.
   "v": 1,
   "data": {
     "unity_catalog_image": "main.training.image:v1",
-    "registry_image": "[NUMID].container.us-west-2.localhost/main.training.image:v1"
+    "registry_image": "[WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1"
   }
 }
 
@@ -76,7 +76,7 @@ Pushed image.
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Cannot connect to the Docker daemon
@@ -86,7 +86,7 @@ Error: check local source image example/image:v1 (ensure Docker is running and a
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image example/image:v1
@@ -97,7 +97,7 @@ Error: inspect source image example/image:v1: exit status 1
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image example/image:v1
@@ -107,7 +107,7 @@ Error: source image example/image:v1 has platform "linux/arm64"; AIR requires li
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
@@ -118,7 +118,7 @@ Error: source image example/image:v1 has platform "linux/arm64"; AIR requires li
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
@@ -184,17 +184,17 @@ Error: invalid image repository name: catalog.schema.artifact must be 255 charac
 === all docker commands
 image ls --quiet nvidia/cuda:13.4.1
 image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
-tag nvidia/cuda:13.4.1 [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
-push [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 image ls --quiet example/image:v1
 pull --platform linux/amd64 example/image:v1
 image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
-tag example/image:v1 [NUMID].container.us-west-2.localhost/main.training.image:v1
-push [NUMID].container.us-west-2.localhost/main.training.image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1
 image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
-tag example/image:v1 [NUMID].container.us-west-2.localhost/main.training.image:v1
-push [NUMID].container.us-west-2.localhost/main.training.image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
 image ls --quiet example/image:v1
 image inspect --format {{.Os}}/{{.Architecture}} example/image:v1

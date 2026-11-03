@@ -33,10 +33,11 @@ const (
 
 // DiffOutput represents the complete output of the config-remote-sync command
 type DiffOutput struct {
-	Status  SyncStatus   `json:"status"`
-	Error   string       `json:"error,omitempty"`
-	Files   []FileChange `json:"files"`
-	Changes Changes      `json:"changes"`
+	Status    SyncStatus                                 `json:"status"`
+	Error     string                                     `json:"error,omitempty"`
+	ErrorCode protos.BundleConfigRemoteSyncErrorCategory `json:"errorCode,omitempty"`
+	Files     []FileChange                               `json:"files"`
+	Changes   Changes                                    `json:"changes"`
 }
 
 // WriteResult renders the result and records the error payload on stats for
@@ -45,13 +46,15 @@ type DiffOutput struct {
 // returns the error so the CLI still fails loudly for humans.
 func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChange, changes Changes, err error) error {
 	status := StatusSuccess
+	// Read before the fallback below so unclassified errors carry no code.
+	errorCode := stats.ErrorCategory
 	if err != nil {
 		if stats.ErrorCategory == "" {
 			stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
 		}
 		stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
-		// Missing state or a selector that matched nothing: nothing to sync, not a failure.
-		if errors.Is(err, ErrStateSnapshotNotFound) || errors.Is(err, ErrNoMatchingSelector) {
+		// A selector that matched nothing: nothing to sync, not a failure.
+		if errors.Is(err, ErrNoMatchingSelector) {
 			status = StatusSkipped
 		} else {
 			status = StatusFailed
@@ -74,6 +77,7 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 	}
 	if err != nil {
 		output.Error = err.Error()
+		output.ErrorCode = errorCode
 	}
 	result, marshalErr := json.MarshalIndent(output, "", "  ")
 	if marshalErr != nil {

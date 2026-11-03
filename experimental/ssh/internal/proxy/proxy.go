@@ -12,9 +12,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
@@ -247,7 +247,7 @@ type createWebsocketConnectionFunc func(ctx context.Context, req DialRequest) (*
 
 func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnection {
 	return &proxyConnection{
-		connID:                    uuid.NewString(),
+		connID:                    uuid.New().String(),
 		createWebsocketConnection: createConn,
 		ready:                     make(chan struct{}),
 	}
@@ -535,7 +535,18 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 			// reattachment to recover bytes the close-frame exchange did not drain.
 			if handover := pc.handoverState.Load(); handover != nil {
 				var closeConnSignal error
-				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				switch {
+				case websocket.IsCloseError(err, websocket.CloseNormalClosure):
+					// A normal close ends the old connection cleanly, usually as the peer's side of
+					// the handover. Complete the swap even when the session is ending: teardown then
+					// closes the replacement connection gracefully, and a resumable peer does not
+					// wait for a reattach.
+				case ctx.Err() != nil:
+					// The session is ending and teardown closed the connection under the handover
+					// (see the ctx.Err() check below). Pass the cancellation on, so the handover
+					// initiator does not report a failed handover for an ordinary exit.
+					closeConnSignal = ctx.Err()
+				default:
 					closeConnSignal = errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket during handover: %w", err))
 				}
 				// Signal the current connection is closed to the handover initiator (initiateHandover or acceptHandover).

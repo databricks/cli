@@ -3,6 +3,7 @@ package environments
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/spf13/cobra"
 )
 
@@ -75,6 +77,9 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 	if res.DryRun {
 		if res.Plan != nil {
 			cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWrite)
+			if res.Plan.WouldWriteUvWorkspace != "" {
+				cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWriteUvWorkspace+" (uv workspace root)")
+			}
 			for _, region := range res.Plan.ChangedRegions {
 				cmdio.LogString(ctx, "  changed region: "+region)
 			}
@@ -114,6 +119,16 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 		pyprojectDetail = "updated (backup: " + res.BackupPath + ")"
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "pyproject.toml", pyprojectDetail))
+	if res.UvWorkspaceRoot != "" {
+		// The root file changes only when its constraint block changes, and every
+		// change writes a backup; --no-constraints and a no-op re-run leave it alone.
+		rootDetail := "unchanged"
+		if res.UvWorkspaceBackupPath != "" {
+			rootDetail = "constraints updated (backup: " + res.UvWorkspaceBackupPath + ")"
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "uv workspace root", res.UvWorkspaceRoot))
+		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Root pyproject.toml", rootDetail))
+	}
 	renderInstalledPythonFallback(ctx, res)
 
 	cmdio.LogString(ctx, "")
@@ -139,9 +154,25 @@ func renderInstalledPythonFallback(ctx context.Context, res *libslocalenv.Result
 // that fails with "source is not recognized" and a path that does not exist.
 func activateHint(venvPath string) string {
 	if runtime.GOOS == "windows" {
-		return venvPath + `\Scripts\activate`
+		// venvPath is in slash form; cmd.exe reads "/" as a switch character, so a
+		// relative path such as ../../.venv needs backslashes.
+		return quoteForCmd(filepath.FromSlash(venvPath) + `\Scripts\activate`)
 	}
-	return "source " + venvPath + "/bin/activate"
+	// A leading dash would be read as an option of source.
+	if strings.HasPrefix(venvPath, "-") {
+		venvPath = "./" + venvPath
+	}
+	return "source " + shellquote.BashArg(venvPath+"/bin/activate")
+}
+
+// quoteForCmd wraps path in double quotes when cmd.exe would otherwise split
+// it at a space or a command separator (UV_PROJECT_ENVIRONMENT can name such a
+// folder). Quotes do not stop %VAR% expansion; such folder names are rare.
+func quoteForCmd(path string) string {
+	if strings.ContainsAny(path, " \t&^()<>|,;=!") {
+		return `"` + path + `"`
+	}
+	return path
 }
 
 // failureClause maps the failing phase to a human clause for the failure line,

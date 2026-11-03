@@ -79,7 +79,7 @@ type IResource interface {
 
 	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
 	// omits the node instead of planning a create, and apply drops the state entry instead of
-	// persisting one, so both engines converge on "this node does not exist".
+	// persisting one, so plan and apply converge on "this node does not exist".
 	// Example: func (*ResourceGrants) IsEmptyState(state *GrantsState) bool
 	IsEmptyState(newState any) bool
 
