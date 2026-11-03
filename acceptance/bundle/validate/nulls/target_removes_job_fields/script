@@ -1,0 +1,2 @@
+# Null fields of a resource in a target are meant to remove the fields: scalars, blocks, nested fields, map entries and lists. A null for a field missing from the base should add nothing.
+trace $CLI bundle validate -o json -t dev | jq '.resources.jobs.foo | del(.deployment, .edit_mode, .format)'

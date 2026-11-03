@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle validate -o json
+Warning: expected a string value, found null
+  at resources.jobs.foo.description
+  in databricks.yml:8:20
+
+Warning: expected a string value, found null
+  at resources.jobs.foo.tags.not_in_base
+  in databricks.yml:11:22
+
+{
+  "email_notifications": {
+    "on_failure": null
+  },
+  "max_concurrent_runs": 1,
+  "name": "foo",
+  "queue": {
+    "enabled": true
+  },
+  "tags": {
+    "kept": "1"
+  }
+}

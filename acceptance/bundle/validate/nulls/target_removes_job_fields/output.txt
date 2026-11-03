@@ -1,0 +1,51 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.description
+  in databricks.yml:30:24
+
+Warning: expected a int value, found null
+  at targets.dev.resources.jobs.foo.max_concurrent_runs
+  in databricks.yml:31:32
+
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.schedule.pause_status
+  in databricks.yml:34:27
+
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.tags.removed
+  in databricks.yml:36:22
+
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.tags.not_in_base
+  in databricks.yml:37:26
+
+Warning: expected a int value, found null
+  at targets.dev.resources.jobs.foo.timeout_seconds
+  in databricks.yml:40:28
+
+{
+  "description": "base description",
+  "email_notifications": {
+    "on_failure": [
+      "base@example.com"
+    ],
+    "on_success": [
+      "base@example.com"
+    ]
+  },
+  "max_concurrent_runs": 5,
+  "name": "foo",
+  "queue": {
+    "enabled": false
+  },
+  "schedule": {
+    "pause_status": "PAUSED",
+    "quartz_cron_expression": "0 0 * * * ?",
+    "timezone_id": "UTC"
+  },
+  "tags": {
+    "kept": "1",
+    "removed": "1"
+  }
+}

@@ -1,0 +1,2 @@
+# A null in databricks.yml outside a target has nothing to remove and is meant to add nothing.
+trace $CLI bundle validate -o json | jq '.resources.jobs.foo | del(.deployment, .edit_mode, .format)'
