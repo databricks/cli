@@ -13,9 +13,10 @@ trace $CLI bundle deploy --auto-approve
 
 # Change storage (immutable) while the bind block is still defined. The bind
 # block must keep guarding against recreate even after the resource is in state.
-update_file.py databricks.yml '/old/storage/path' '/new/storage/path'
+# No leading slash in the arguments: Git Bash on Windows would rewrite it as a path.
+update_file.py databricks.yml 'old/storage/path' 'new/storage/path'
 trace musterr $CLI bundle plan
 
 # Cleanup
-update_file.py databricks.yml '/new/storage/path' '/old/storage/path'
+update_file.py databricks.yml 'new/storage/path' 'old/storage/path'
 trace $CLI bundle destroy --auto-approve
