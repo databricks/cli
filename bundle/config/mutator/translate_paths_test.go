@@ -850,7 +850,7 @@ func TestTranslatePathEditableProjectFolder(t *testing.T) {
 
 	// Without pipeline testing, a folder after -e stays an error, as it was before the feature.
 	_, diags := translate(t.Context(), "-e ./project")
-	assert.ErrorContains(t, diags.Error(), "is a directory")
+	assert.ErrorContains(t, diags.Error(), "unable to determine if "+filepath.Join(dir, "project")+" is not a notebook")
 
 	ctx := libsenv.Set(t.Context(), bundleenv.ExperimentalPipelineTestingVariable, "true")
 	b, diags := translate(ctx, "-e ./project", "-e ./project[test]", "-e .", "-e .[test]", "-r ./requirements.txt")
