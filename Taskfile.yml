@@ -1012,7 +1012,7 @@ tasks:
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
 
   generate-validation:
-    desc: Generate enum and required field validation code
+    desc: Generate the walkers of the enum and required field validators
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -1020,9 +1020,9 @@ tasks:
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
-      - bundle/internal/validation/generated/**/*.go
+      - bundle/config/validate/*_walk.go
     cmds:
-      - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
+      - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/config/validate/required_walk.go ./bundle/config/validate/enum_walk.go'"
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
