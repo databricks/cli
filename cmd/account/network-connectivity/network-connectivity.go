@@ -5,11 +5,13 @@ package network_connectivity
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
@@ -48,6 +50,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetPrivateEndpointRule())
 	cmd.AddCommand(newListNetworkConnectivityConfigurations())
 	cmd.AddCommand(newListPrivateEndpointRules())
+	cmd.AddCommand(newUpdateNetworkConnectivityConfig())
 	cmd.AddCommand(newUpdatePrivateEndpointRule())
 
 	// Apply optional overrides to this command.
@@ -634,6 +637,98 @@ func newListPrivateEndpointRules() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listPrivateEndpointRulesOverrides {
 		fn(cmd, &listPrivateEndpointRulesReq)
+	}
+
+	return cmd
+}
+
+// start update-network-connectivity-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateNetworkConnectivityConfigOverrides []func(
+	*cobra.Command,
+	*settings.UpdateNetworkConnectivityConfigRequest,
+)
+
+func newUpdateNetworkConnectivityConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateNetworkConnectivityConfigReq settings.UpdateNetworkConnectivityConfigRequest
+	updateNetworkConnectivityConfigReq.NetworkConnectivityConfig = settings.NetworkConnectivityConfiguration{}
+	var updateNetworkConnectivityConfigJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateNetworkConnectivityConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.AccountId, "account-id", updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.AccountId, `Your Databricks account ID.`)
+	cmd.Flags().Int64Var(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.BillingWorkspaceId, "billing-workspace-id", updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.BillingWorkspaceId, `The workspace to which charges for this network connectivity configuration are attributed.`)
+	cmd.Flags().Int64Var(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.CreationTime, "creation-time", updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.CreationTime, `Time in epoch milliseconds when this object was created.`)
+	// TODO: complex arg: egress_config
+	cmd.Flags().StringVar(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.Name, "name", updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.Name, `The name of the network connectivity configuration.`)
+	cmd.Flags().StringVar(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.NetworkConnectivityConfigId, "network-connectivity-config-id", updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.NetworkConnectivityConfigId, `Databricks network connectivity configuration ID.`)
+	cmd.Flags().StringVar(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.Region, "region", updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.Region, `The region for the network connectivity configuration.`)
+	cmd.Flags().Int64Var(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.UpdatedTime, "updated-time", updateNetworkConnectivityConfigReq.NetworkConnectivityConfig.UpdatedTime, `Time in epoch milliseconds when this object was updated.`)
+
+	cmd.Use = "update-network-connectivity-config NETWORK_CONNECTIVITY_CONFIG_ID UPDATE_MASK"
+	cmd.Short = `*Public Preview* Update a network connectivity configuration.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a network connectivity configuration.
+
+  Updates the name or billing workspace for a network connectivity
+  configuration.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.
+    UPDATE_MASK: Must contain at least one of name or billing_workspace_id.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateNetworkConnectivityConfigJson.Unmarshal(&updateNetworkConnectivityConfigReq.NetworkConnectivityConfig)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateNetworkConnectivityConfigReq.NetworkConnectivityConfigId = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateNetworkConnectivityConfigReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		response, err := a.NetworkConnectivity.UpdateNetworkConnectivityConfig(ctx, updateNetworkConnectivityConfigReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateNetworkConnectivityConfigOverrides {
+		fn(cmd, &updateNetworkConnectivityConfigReq)
 	}
 
 	return cmd

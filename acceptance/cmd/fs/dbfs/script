@@ -1,0 +1,38 @@
+# fs commands against DBFS: the filer's error mapping for DBFS-specific responses, and a file over
+# the 1 MB DBFS block size so writes and reads are split into several API calls.
+DBFS="dbfs:/tmp/fs-dbfs-${UNIQUE_NAME}"
+
+cleanup() {
+  $CLI fs rm -r ${DBFS} 2>/dev/null || true
+  rm -f big.bin big.back
+}
+trap cleanup EXIT
+
+python3 -c 'import sys; sys.stdout.buffer.write(bytes(range(256)) * 6000)' > big.bin
+
+title "Create a directory and write a file in it"
+trace $CLI fs mkdir ${DBFS}/dir
+trace $CLI fs cp big.bin ${DBFS}/dir/big.bin
+
+title "Read the file back"
+$CLI fs cp ${DBFS}/dir/big.bin big.back > /dev/null
+trace cmp big.bin big.back && echo "contents match"
+
+title "Writing over an existing file needs --overwrite"
+trace $CLI fs cp big.bin ${DBFS}/dir/big.bin
+trace $CLI fs cp --overwrite big.bin ${DBFS}/dir/big.bin
+
+title "Writing into a directory that does not exist fails"
+errcode trace $CLI fs cp big.bin ${DBFS}/missing/big.bin
+
+title "List a directory, then a file"
+trace $CLI fs ls ${DBFS}/dir
+errcode trace $CLI fs ls ${DBFS}/dir/big.bin
+
+title "cat a directory fails"
+errcode trace $CLI fs cat ${DBFS}/dir
+
+title "rm a non-empty directory needs -r"
+errcode trace $CLI fs rm ${DBFS}/dir
+trace $CLI fs rm -r ${DBFS}/dir
+errcode trace $CLI fs ls ${DBFS}/dir
