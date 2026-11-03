@@ -33,16 +33,12 @@ class SubscriptionAttachmentDataAttachment:
 
     file_format: VariableOr[SubscriptionAttachmentDataAttachmentFileFormat]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The file format of the exported tabular data files.
+    [Public Preview] The file format of the exported tabular data files.
     """
 
     include_applied_filters: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] When true, the dashboard's applied filter values are included alongside the tabular data as
+    [Public Preview] When true, the dashboard's applied filter values are included alongside the tabular data as
     an additional attached file.
     """
 
@@ -50,9 +46,7 @@ class SubscriptionAttachmentDataAttachment:
         default_factory=list
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The widgets whose underlying data is exported. At least one widget must be referenced.
+    [Public Preview] The widgets whose underlying data is exported. At least one widget must be referenced.
     """
 
     @classmethod
@@ -68,24 +62,18 @@ class SubscriptionAttachmentDataAttachmentDict(TypedDict, total=False):
 
     file_format: VariableOr[SubscriptionAttachmentDataAttachmentFileFormatParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The file format of the exported tabular data files.
+    [Public Preview] The file format of the exported tabular data files.
     """
 
     include_applied_filters: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] When true, the dashboard's applied filter values are included alongside the tabular data as
+    [Public Preview] When true, the dashboard's applied filter values are included alongside the tabular data as
     an additional attached file.
     """
 
     widgets: VariableOrList[SubscriptionAttachmentDataAttachmentWidgetParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The widgets whose underlying data is exported. At least one widget must be referenced.
+    [Public Preview] The widgets whose underlying data is exported. At least one widget must be referenced.
     """
 
 
