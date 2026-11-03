@@ -9,9 +9,11 @@ stable_output_fields:
   # see the stable_output_fields doc in config.go and ES-2202624.
   - field: name
   # url is built from the read-write endpoint host, the workspace and the
-  # database's Postgres name, none of which a Data API update can change, so a
+  # database's Postgres name. A Data API update cannot change any of them, so a
   # ${resources.postgres_data_apis.<key>.status.url} reference resolves during
   # an in-place update instead of planning a no-op update of its dependents.
+  # Renaming the database's postgres_database changes the URL; a reference
+  # resolved in that same deploy keeps the old URL until the next deploy.
   - field: status.url
 backend_defaults:
   # DoRead fills the spec from status, which reports every setting in effect.
