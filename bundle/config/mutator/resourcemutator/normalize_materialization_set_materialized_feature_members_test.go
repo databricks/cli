@@ -88,7 +88,7 @@ func pathStrings(paths []*structpath.PathNode) []string {
 }
 
 // duplicateMemberKeyError is the wording the service uses for the same rejection, so the two read
-// alike wherever a caller meets it. See FeatureStoreMessages.materializationSetMemberKeysNotUnique.
+// alike wherever a caller meets it.
 func duplicateMemberKeyError(featureNames string) string {
 	return "Features " + featureNames + " in materialization set 'set1' each declares more than " +
 		"one materialized feature with the following same fields: feature name, online store " +

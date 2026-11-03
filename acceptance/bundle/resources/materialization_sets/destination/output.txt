@@ -18,15 +18,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.catalog_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.schema_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.table_name_prefix": {
       "action": "skip",
       "reason": "input_only_not_returned"
     }
@@ -51,15 +51,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.catalog_name": {
       "action": "recreate",
       "reason": "spec:immutable"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.schema_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.table_name_prefix": {
       "action": "skip",
       "reason": "input_only_not_returned"
     }
@@ -85,15 +85,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "action": "recreate",
       "reason": "spec:immutable"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.catalog_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.schema_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=my_online_store|is_streaming_mode=false'].online_store_config.table_name_prefix": {
       "action": "skip",
       "reason": "input_only_not_returned"
     }

@@ -44,11 +44,8 @@ func escapeMemberKeyPart(part string) string {
 // online_store_name is omitted rather than left empty when the member has no online destination,
 // which is what keeps an offline member distinct from an online one whose store name is unset.
 //
-// The server pairs members by the same components in MaterializationSetMemberKey -- see
-// feature-store/src/main/scala/com/databricks/feature-store/utils/materialized-features/MaterializationSetUtils.scala
-// -- holding them in a case class rather than a joined string, so this encoding is the CLI's own
-// and only the component list has to agree. Adding, dropping or redefining one takes the same
-// change there.
+// The server pairs members by the same components, so this encoding is the CLI's own and only the
+// component list has to agree with the service.
 func MaterializedFeatureMemberKey(member ml.MaterializedFeature) (string, string) {
 	parts := []string{"feature_name=" + escapeMemberKeyPart(member.FeatureName)}
 	if member.OnlineStoreConfig != nil {
@@ -60,9 +57,8 @@ func MaterializedFeatureMemberKey(member ml.MaterializedFeature) (string, string
 	return "member", strings.Join(parts, "|")
 }
 
-// MaterializedFeatureMemberKeyFieldDescription names the key's components in plain words. It
-// mirrors MaterializationSetMemberKey.fieldDescription in MaterializationSetUtils.scala, so the
-// CLI's rejection reads like the service's own.
+// MaterializedFeatureMemberKeyFieldDescription names the key's components in the service's own
+// wording, so the CLI's rejection reads like the service's.
 const MaterializedFeatureMemberKeyFieldDescription = "feature name, online store name, trigger is streaming mode"
 
 func (s *MaterializationSet) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {

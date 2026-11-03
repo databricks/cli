@@ -1,5 +1,5 @@
 # Local only. Every arm needs an online member, and the integration workspaces have no online store.
-# Run it against a workspace by hand, naming one with MATSET_ONLINE_STORE -- see README.md. Creates
+# Run it against a workspace by hand, naming one with MATSET_ONLINE_STORE. Creates
 # its own schema and deletes it on exit.
 Cloud = false
 

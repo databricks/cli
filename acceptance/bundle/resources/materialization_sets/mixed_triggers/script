@@ -1,7 +1,7 @@
-export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
-export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
-export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
-export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
+export CATALOG_NAME="${MATSET_CATALOG:-main}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-myschema}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-my_online_store}"
+export STREAM_FULL_NAME="${MATSET_STREAM:-main.myschema.my_stream}"
 export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
 
 render() {

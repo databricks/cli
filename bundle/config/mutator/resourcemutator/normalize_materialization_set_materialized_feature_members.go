@@ -24,7 +24,7 @@ func (m *normalizeMaterializationSetMaterializedFeatureMembers) Name() string {
 	return "NormalizeMaterializationSetMaterializedFeatureMembers"
 }
 
-// quotedFeatureNames renders a feature name list the way FeatureStoreMessages.quotedIds does.
+// quotedFeatureNames renders a feature name list the way the service's error messages do.
 func quotedFeatureNames(names []string) string {
 	quoted := make([]string, len(names))
 	for i, name := range names {
@@ -34,12 +34,10 @@ func quotedFeatureNames(names []string) string {
 }
 
 // duplicateMemberKeyDiagnostic rejects a set listing two members with the same member key, which is
-// the identity resources.MaterializedFeatureMemberKey builds and the server's own
-// MaterializationSetMemberKey shares.
+// the identity resources.MaterializedFeatureMemberKey builds and the server shares.
 //
-// It mirrors MaterializationSetUtils.validateMaterializationSetMemberKeysAreUnique: group the
-// members by key, then name every feature holding a key more than one member shares, once and
-// sorted.
+// It reports the way the service does: group the members by key, then name every feature holding a
+// key more than one member shares, once and sorted.
 func duplicateMemberKeyDiagnostic(
 	b *bundle.Bundle,
 	setKey string,

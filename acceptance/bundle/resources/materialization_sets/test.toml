@@ -1,6 +1,6 @@
 # Local-only for now. The fake in libs/testserver/materialization_set.go mirrors
 # UpdateMaterializationSet's reconcile semantics, so these goldens are a claim about the real API;
-# turning on Cloud = true checks that claim against a workspace. See README.md for the delta.
+# turning on Cloud = true checks that claim against a workspace.
 Ignore = [
     "databricks.yml",
     ".databricks",
@@ -8,5 +8,5 @@ Ignore = [
 
 # Deployment history has no "materialization_sets." or "features." resource-key prefix, so the
 # deploy fails before anything is created. See dmsResourceTypes in
-# libs/testserver/bundledeployments.go, which mirrors Universe.
+# libs/testserver/bundledeployments.go, which mirrors the service's allowlist.
 EnvMatrixExclude.no_matset_dms = ["DMS=true"]

@@ -1,9 +1,9 @@
 # A sawtooth feature needs a Stream source, and a Stream is not a bundle resource, so this case
 # references one that already exists rather than creating it. Everything else is per-run.
-export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
-export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
-export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
-export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
+export CATALOG_NAME="${MATSET_CATALOG:-main}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-myschema}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-my_online_store}"
+export STREAM_FULL_NAME="${MATSET_STREAM:-main.myschema.my_stream}"
 
 # The harness resolves auth from the ambient environment, which on a cloud run is the workspace
 # under test. Pointing a local run at a named profile needs it in the bundle, because

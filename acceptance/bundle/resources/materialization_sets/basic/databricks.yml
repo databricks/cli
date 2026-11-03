@@ -36,7 +36,7 @@ resources:
             cron_expression: "0 0 * * * ?"
         - feature_name: main.myschema.batchfeat
           online_store_config:
-            online_store_name: danielb
+            online_store_name: my_online_store
             catalog_name: main
             schema_name: myschema
             table_name_prefix: batchfeat

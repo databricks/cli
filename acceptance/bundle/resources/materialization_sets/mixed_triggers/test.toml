@@ -2,7 +2,7 @@
 # command, so the integration suite has no way to provision one; it also needs a Unity Catalog
 # connection to a Kafka topic whose payload the feature definitions name. Run it against a
 # workspace by hand, overriding MATSET_CATALOG / MATSET_SCHEMA / MATSET_ONLINE_STORE /
-# MATSET_STREAM -- see README.md.
+# MATSET_STREAM.
 Cloud = false
 
 Ignore = [

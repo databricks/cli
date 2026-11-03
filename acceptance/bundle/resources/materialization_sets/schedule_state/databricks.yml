@@ -13,7 +13,7 @@ resources:
           pipeline_schedule_state: ACTIVE
         - feature_name: main.myschema.featA
           online_store_config:
-            online_store_name: danielb
+            online_store_name: my_online_store
             catalog_name: main
             schema_name: myschema
             table_name_prefix: feata

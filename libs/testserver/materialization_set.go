@@ -33,7 +33,7 @@ func materializationSetError(statusCode int, errorCode, message string) Response
 	}
 }
 
-// quotedMaterializedFeatureIDs renders an id list the way FeatureStoreMessages.quotedIds does.
+// quotedMaterializedFeatureIDs renders an id list the way the service's error messages do.
 func quotedMaterializedFeatureIDs(ids []string) string {
 	quoted := make([]string, len(ids))
 	for i, id := range ids {
@@ -259,9 +259,8 @@ func (s *FakeWorkspace) validateBatchAndStreamingFeaturesNotMixed(
 	}
 }
 
-// isDerivedCronSchedule mirrors MaterializedFeatureUtils.isDerivedCronSchedule: only a cron
-// schedule trigger carrying DERIVED opts out of a pinned schedule, and an unset mode reads as
-// MANUAL.
+// isDerivedCronSchedule matches the service: only a cron schedule trigger carrying DERIVED opts out
+// of a pinned schedule, and an unset mode reads as MANUAL.
 func isDerivedCronSchedule(member ml.MaterializedFeature) bool {
 	return member.CronScheduleTrigger != nil &&
 		member.CronScheduleTrigger.Mode == ml.CronScheduleModeDerived
@@ -564,9 +563,8 @@ func (s *FakeWorkspace) OperationsGet(operationID string) Response {
 
 	operation, ok := s.Operations["operations/"+operationID]
 	if !ok {
-		// Unlike every other message here, this wording is not taken from the backend: an unknown
-		// operation is resolved inside the entity-store client rather than from
-		// FeatureStoreMessages. No case reaches this branch, so nothing pins it either way.
+		// Unlike every other message here, this wording is not taken from the service. No case
+		// reaches this branch, so nothing pins it either way.
 		return materializationSetError(http.StatusNotFound, "NOT_FOUND",
 			fmt.Sprintf("Operation with name 'operations/%s' does not exist.", operationID))
 	}

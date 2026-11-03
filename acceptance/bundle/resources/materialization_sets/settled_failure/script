@@ -1,6 +1,6 @@
 export CATALOG_NAME="${MATSET_CATALOG:-main}"
 export SCHEMA_NAME="${MATSET_SCHEMA:-myschema}"
-export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-my_online_store}"
 export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
 
 render() {
