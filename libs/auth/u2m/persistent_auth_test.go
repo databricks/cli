@@ -69,6 +69,32 @@ func TestToken(t *testing.T) {
 	}
 }
 
+func TestToken_EntryWithoutToken(t *testing.T) {
+	cache := &tokenStoreMock{
+		lookup: func(key string) (*oauth2.Token, error) {
+			return nil, nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://abc", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+	}
+	p, err := NewPersistentAuth(t.Context(), WithTokenStore(cache), WithOAuthArgument(arg))
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+	}
+	defer p.Close()
+
+	for name, get := range map[string]func() (*oauth2.Token, error){
+		"Token":             p.Token,
+		"ForceRefreshToken": p.ForceRefreshToken,
+	} {
+		if _, err := get(); !errors.Is(err, storage.ErrNotFound) {
+			t.Errorf("p.%s(): want storage.ErrNotFound, got %v", name, err)
+		}
+	}
+}
+
 func TestToken_WithProfile(t *testing.T) {
 	profileKey := "my-profile"
 	cache := &tokenStoreMock{

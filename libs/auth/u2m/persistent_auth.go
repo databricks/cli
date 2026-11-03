@@ -304,6 +304,10 @@ func (a *PersistentAuth) loadToken() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cache: %w", err)
 	}
+	// An entry that holds a pending login has no token yet.
+	if e.Token == nil {
+		return nil, fmt.Errorf("cache: %w", storage.ErrNotFound)
+	}
 	return e.Token, nil
 }
 
@@ -389,7 +393,7 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 		}
 
 		cached, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
-		if err == nil && isFreshReplacement(old, candidate, cached.Token) {
+		if err == nil && cached.Token != nil && isFreshReplacement(old, candidate, cached.Token) {
 			return cached.Token
 		}
 	}

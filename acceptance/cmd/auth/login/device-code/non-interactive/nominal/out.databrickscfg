@@ -8,9 +8,3 @@ auth_type    = databricks-cli
 
 [__settings__]
 default_profile = test
-
-[scoped]
-host         = [DATABRICKS_URL]
-workspace_id = [WORKSPACE_ID]
-scopes       = sql
-auth_type    = databricks-cli

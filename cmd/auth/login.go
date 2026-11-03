@@ -54,6 +54,9 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 			if err := databrickscfg.ValidateProfileName(input); err != nil {
 				return err
 			}
+			if err := validateLoginProfileName(input); err != nil {
+				return err
+			}
 			if slices.Contains(takenNames, input) {
 				return fmt.Errorf("profile %s already exists. Choose a different name, or rerun with --profile %s to use it", input, input)
 			}
@@ -182,6 +185,8 @@ a new profile is created.
 	var clientID string
 	var resources []string
 	var useDeviceCode bool
+	var userCode string
+	var confirmationCode string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -200,6 +205,15 @@ a new profile is created.
 		"Log in with a device code, using a browser on another device (experimental)")
 	// Hidden while device code login is experimental.
 	cmd.Flags().MarkHidden("use-device-code")
+	// The non-interactive device code login tells the user to rerun the
+	// command with these flags, which completes the login. Hidden because only
+	// that rerun uses them.
+	cmd.Flags().StringVar(&userCode, "user-code", "",
+		"User code of the device code login to complete")
+	cmd.Flags().StringVar(&confirmationCode, "confirmation-code", "",
+		"Confirmation code that completes a device code login")
+	cmd.Flags().MarkHidden("user-code")
+	cmd.Flags().MarkHidden("confirmation-code")
 
 	cmd.PreRunE = profileHostConflictCheck
 
@@ -232,9 +246,24 @@ a new profile is created.
 			}
 		}
 
+		if err := validateDeviceCodeCompletionFlags(cmd); err != nil {
+			return err
+		}
+		completeLogin := cmd.Flags().Changed("confirmation-code")
+		// Device code login reads the confirmation code from stdin. When stdin
+		// is not a terminal, e.g. when an AI agent runs the login as a one-off
+		// command, nobody can type the code in. The non-interactive login then
+		// stores the device code, and a rerun of the command with --user-code
+		// and --confirmation-code completes the login. Neither step prompts
+		// for the profile or the host.
+		var nonInteractive bool
 		if useDeviceCode {
 			if err := validateDeviceCodeLogin(ctx, cmd); err != nil {
 				return err
+			}
+			nonInteractive = completeLogin || !cmdio.IsInputTTY(ctx)
+			if nonInteractive && configureCluster {
+				return errDeviceCodeNonInteractiveCluster
 			}
 		}
 
@@ -256,7 +285,7 @@ a new profile is created.
 		// discovery, so its "Create a new profile" asks for the host after the
 		// profile name.
 		var takenProfileNames []string
-		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) && !nonInteractive {
 			matchProfiles := profile.MatchAllProfiles
 			if useDeviceCode {
 				matchProfiles = matchDeviceCodeProfiles
@@ -321,8 +350,9 @@ a new profile is created.
 			runHostDiscovery(ctx, authArguments)
 		}
 
-		// If the user has not specified a profile name, prompt for one.
-		if profileName == "" {
+		// If the user has not specified a profile name, prompt for one. Without
+		// a profile, the non-interactive login stores the token under the host.
+		if profileName == "" && !nonInteractive {
 			var err error
 			profileName = getProfileName(authArguments)
 			if profileName == "" {
@@ -332,6 +362,9 @@ a new profile is created.
 			if err != nil {
 				return err
 			}
+		}
+		if err := validateLoginProfileName(profileName); err != nil {
+			return err
 		}
 
 		// Load parameters from the existing profile if any.
@@ -349,6 +382,11 @@ a new profile is created.
 			if useDeviceCode && len(resources) > 0 {
 				return fmt.Errorf("--use-device-code cannot be used with profile %s because its login is scoped to resources. Log in without --use-device-code", profileName)
 			}
+		}
+
+		// The non-interactive login cannot answer the host prompt of setHost.
+		if nonInteractive && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
+			return errDeviceCodeNeedsHost
 		}
 
 		// If no host is available from any source, use the discovery flow
@@ -434,10 +472,24 @@ a new profile is created.
 		}
 		defer persistentAuth.Close()
 
+		nonInteractiveLogin := nonInteractiveDeviceCodeLogin{
+			persistentAuth: persistentAuth,
+			tokenStore:     tokenStore,
+			key:            pendingLoginKey(oauthArgument.GetCacheKey()),
+			profile:        profileName,
+			host:           (&config.Config{Host: authArguments.Host}).CanonicalHostName(),
+			clientID:       clientID,
+			scopes:         slices.Sorted(slices.Values(scopesList)),
+		}
 		var token *oauth2.Token
-		if useDeviceCode {
+		switch {
+		case completeLogin:
+			token, err = nonInteractiveLogin.complete(ctx, userCode, confirmationCode)
+		case nonInteractive:
+			return nonInteractiveLogin.start(ctx)
+		case useDeviceCode:
 			token, err = deviceCodeLogin(ctx, persistentAuth)
-		} else {
+		default:
 			token, err = persistentAuth.Challenge()
 		}
 		if err != nil {
