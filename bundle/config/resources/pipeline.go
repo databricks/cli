@@ -22,6 +22,34 @@ type Pipeline struct {
 	// Nil (unset) uses the server default, which cascades. Set to false to retain datasets
 	// when the pipeline is deleted. Delete-time only: never sent on create/update.
 	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
+
+	// Testing is PipelineSpec.testing, which the Go SDK does not have yet. Remove it, and the
+	// types below, once CreatePipeline has it.
+	Testing *PipelineTesting `json:"testing,omitempty"`
+}
+
+// PipelineTesting is the test configuration of a pipeline. Only test-only updates use it.
+type PipelineTesting struct {
+	// Sources are the workspace files and folders that hold the pipeline's tests. They must
+	// not overlap the pipeline's libraries.
+	Sources []PipelineTestSource `json:"sources,omitempty"`
+
+	// Environment lists the packages that only the tests need.
+	Environment *PipelineTestEnvironment `json:"environment,omitempty"`
+}
+
+// PipelineTestSource is a workspace location that holds pipeline tests.
+type PipelineTestSource struct {
+	// Glob is a test file, or a folder followed by /**.
+	Glob *pipelines.PathPattern `json:"glob,omitempty"`
+}
+
+// PipelineTestEnvironment lists the packages that a pipeline's tests need in addition to the
+// pipeline's environment.
+type PipelineTestEnvironment struct {
+	// Dependencies are files that declare the packages: a project folder, a requirements
+	// file, or a wheel. Package names and URLs are rejected by the API.
+	Dependencies []string `json:"dependencies,omitempty"`
 }
 
 func (p *Pipeline) UnmarshalJSON(b []byte) error {

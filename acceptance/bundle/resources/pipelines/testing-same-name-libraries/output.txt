@@ -1,0 +1,12 @@
+
+>>> errcode [CLI] bundle deploy
+Error: Duplicate local library names: test_helpers-0.1-py3-none-any.whl
+  at resources.pipelines.orders.environment.dependencies[0]
+     resources.pipelines.orders.testing.environment.dependencies[0]
+  in databricks.yml:13:13
+     databricks.yml:21:15
+
+Local library names must be unique but found libraries with the same name: pipeline/test_helpers-0.1-py3-none-any.whl, tests/test_helpers-0.1-py3-none-any.whl
+
+
+Exit code: 1

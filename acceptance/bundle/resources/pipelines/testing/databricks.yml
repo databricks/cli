@@ -1,0 +1,19 @@
+bundle:
+  name: pipeline-testing
+
+resources:
+  pipelines:
+    orders:
+      name: orders
+      libraries:
+        - glob:
+            include: ./transformations/**
+      testing:
+        sources:
+          - glob:
+              include: ./tests/**
+        environment:
+          dependencies:
+            - --editable ${workspace.file_path}[test]
+            - -r ./tests/requirements.txt
+            - ./dist/*.whl

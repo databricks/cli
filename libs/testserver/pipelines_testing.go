@@ -130,17 +130,98 @@ func pipelineTestOptionsError(pytestArgs, selection []string) string {
 	return ""
 }
 
-// collectPipelineTests stands in for pytest collection: it finds the top-level "def test_*"
-// functions in the workspace test_*.py files under each selection, or under rootPath without one.
-// Like origin.test_case_id, a test ID is the absolute workspace path of its file followed by the
-// pytest test ID, such as /Workspace/Users/someone/orders/tests/test_orders.py::test_backfill.
-func (s *FakeWorkspace) collectPipelineTests(rootPath string, selection []string) []string {
-	if len(selection) == 0 && rootPath != "" {
-		selection = []string{rootPath}
-	}
+// pipelineTestingRequest holds the testing field of a Create or Edit request, which is not in the
+// Go SDK yet.
+type pipelineTestingRequest struct {
+	Testing json.RawMessage `json:"testing"`
+}
 
-	var ids []string
+// pipelineTesting is the part of the testing field that test-only updates read.
+type pipelineTesting struct {
+	Sources []struct {
+		Glob *struct {
+			Include string `json:"include"`
+		} `json:"glob"`
+	} `json:"sources"`
+}
+
+// setPipelineTesting records the testing field of a Create or Edit body, so that Get returns it.
+// Like the rest of the spec, an Edit without testing removes it.
+func (s *FakeWorkspace) setPipelineTesting(pipelineID string, body []byte) {
+	var request pipelineTestingRequest
+	_ = json.Unmarshal(body, &request)
+	if len(request.Testing) == 0 || string(request.Testing) == "null" {
+		delete(s.pipelineTesting, pipelineID)
+		return
+	}
+	s.pipelineTesting[pipelineID] = request.Testing
+}
+
+// pipelineTestSources returns the glob includes of the pipeline's testing.sources.
+func (s *FakeWorkspace) pipelineTestSources(pipelineID string) []string {
+	var testing pipelineTesting
+	_ = json.Unmarshal(s.pipelineTesting[pipelineID], &testing)
+	var sources []string
+	for _, source := range testing.Sources {
+		if source.Glob != nil {
+			sources = append(sources, source.Glob.Include)
+		}
+	}
+	return sources
+}
+
+// withPipelineTesting adds spec.testing to a Get Pipeline response, which the Go SDK type cannot
+// hold. The JSON is merged as raw values, so numbers and the other fields are kept as they are.
+func withPipelineTesting(value pipelines.GetPipelineResponse, testing json.RawMessage) (map[string]json.RawMessage, error) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(data, &body); err != nil {
+		return nil, err
+	}
+	var spec map[string]json.RawMessage
+	if err := json.Unmarshal(body["spec"], &spec); err != nil {
+		return nil, err
+	}
+	spec["testing"] = testing
+	body["spec"], err = json.Marshal(spec)
+	return body, err
+}
+
+// pipelineTestTargets returns the paths to collect tests from: the selection, which must be
+// within the test sources, or the test sources themselves. A non-empty message rejects the request.
+func pipelineTestTargets(sources, selection []string) ([]string, string) {
+	if len(sources) == 0 {
+		return nil, "The pipeline has no test sources. Set `testing.sources` to the test files or folders to run."
+	}
+	if len(selection) == 0 {
+		var targets []string
+		for _, source := range sources {
+			targets = append(targets, strings.TrimSuffix(source, "/**"))
+		}
+		return targets, ""
+	}
 	for _, target := range selection {
+		targetPath, _, _ := strings.Cut(target, "::")
+		if !slices.ContainsFunc(sources, func(source string) bool {
+			folder, recursive := strings.CutSuffix(source, "/**")
+			return targetPath == folder || (recursive && strings.HasPrefix(targetPath, folder+"/"))
+		}) {
+			return nil, fmt.Sprintf("The test selection '%s' is outside the pipeline's test sources. Select a file or folder inside testing.sources.", target)
+		}
+	}
+	return selection, ""
+}
+
+// collectPipelineTests stands in for pytest collection: it finds the top-level "def test_*"
+// functions in the workspace test_*.py files under each target. Like origin.test_case_id, a test ID
+// is the absolute workspace path of its file followed by the pytest test ID, such as
+// /Workspace/Users/someone/orders/tests/test_orders.py::test_backfill.
+func (s *FakeWorkspace) collectPipelineTests(targets []string) []string {
+	var ids []string
+	for _, target := range targets {
 		targetPath, testName, _ := strings.Cut(target, "::")
 		var files []string
 		if _, ok := s.files[targetPath]; ok {

@@ -20,34 +20,6 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Pipeline: my_pipeline ([UUID])
-Update: [UUID]
+Error: The pipeline has no test sources. Set `testing.sources` to the test files or folders to run.
 
->>> [CLI] pipelines test my_pipeline --no-wait
-Recommendation: This command runs the last deployed version of the code
-
-If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
-
-Pipeline: my_pipeline ([UUID])
-Update: [UUID]
-
->>> print_requests.py //updates
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
-  "body": {
-    "test_only": true,
-    "test_options": {
-      "test_selection": [
-        "/Workspace/Users/someone@example.com/tests/test_orders.py::test_backfill"
-      ]
-    }
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
-  "body": {
-    "test_only": true
-  }
-}
+Exit code: 1

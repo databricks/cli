@@ -2,3 +2,4 @@ RecordRequests = true
 Ignore = ['.databricks']
 # The command is experimental; the gate case in arguments turns it off.
 Env.DATABRICKS_CLI_PIPELINES_TEST = "true"
+Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING = "true"

@@ -18,6 +18,13 @@ func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
 		}
 	}
+	if testing, ok := s.pipelineTesting[pipelineId]; ok {
+		body, err := withPipelineTesting(value, testing)
+		if err != nil {
+			return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
+		}
+		return Response{Body: body}
+	}
 	return Response{
 		Body: value,
 	}
@@ -80,6 +87,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
+	s.setPipelineTesting(pipelineId, req.Body)
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
@@ -139,6 +147,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	}
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
+	s.setPipelineTesting(pipelineId, req.Body)
 
 	return Response{}
 }
@@ -146,8 +155,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string, body []byte) Response {
 	defer s.LockUnlock()()
 
-	pipeline, exists := s.Pipelines[pipelineId]
-	if !exists {
+	if _, exists := s.Pipelines[pipelineId]; !exists {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
@@ -200,11 +208,14 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string, body []byte) Resp
 		if test.TestOptions != nil {
 			selection = test.TestOptions.TestSelection
 		}
-		var rootPath string
-		if pipeline.Spec != nil {
-			rootPath = pipeline.Spec.RootPath
+		targets, message := pipelineTestTargets(s.pipelineTestSources(pipelineId), selection)
+		if message != "" {
+			return Response{
+				StatusCode: 400,
+				Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": message},
+			}
 		}
-		update = s.startPipelineTestRun(pipelineId, updateId, s.collectPipelineTests(rootPath, selection))
+		update = s.startPipelineTestRun(pipelineId, updateId, s.collectPipelineTests(targets))
 	}
 	s.PipelineUpdates[updateId] = update
 

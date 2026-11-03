@@ -1,0 +1,2 @@
+# Runs only against the local test server. The experimental gate is off.
+Cloud = false

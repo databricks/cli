@@ -16,6 +16,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -162,6 +163,15 @@ func (t *translateContext) rewritePath(
 	localPath = filepath.ToSlash(localPath)
 	localRelPath = filepath.ToSlash(localRelPath)
 
+	// With pipeline testing enabled, the path after -e can also be a project folder, with optional
+	// extras such as ./project[test].
+	if opts.Mode == paths.TranslateModeEnvironmentPipFlag && flag == "-e" && env.ExperimentalPipelineTesting(ctx) {
+		if interp, ok := t.translateEditableFolder(localRelPath); ok {
+			t.seen[key] = interp
+			return interp, nil
+		}
+	}
+
 	// Convert local path into workspace path via specified function.
 	var interp string
 	switch opts.Mode {
@@ -249,6 +259,20 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 		return "", ErrIsNotebook{localFullPath}
 	}
 	return path.Join(t.remoteRoot, localRelPath), nil
+}
+
+// translateEditableFolder maps a project folder after -e, with optional extras such as [test], to
+// its deployed folder. It reports false if the path is not a folder in the sync root.
+func (t *translateContext) translateEditableFolder(localRelPath string) (string, bool) {
+	folder, extras := localRelPath, ""
+	if i := strings.LastIndex(localRelPath, "["); i > 0 && strings.HasSuffix(localRelPath, "]") {
+		folder, extras = localRelPath[:i], localRelPath[i:]
+	}
+	info, err := t.b.SyncRoot.Stat(folder)
+	if err != nil || !info.IsDir() {
+		return "", false
+	}
+	return "-e " + path.Join(t.remoteRoot, folder) + extras, true
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
