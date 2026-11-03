@@ -1568,14 +1568,16 @@ func TestLoginRejectsInvalidHostBeforeProfileNamePrompt(t *testing.T) {
 	}
 }
 
-func TestLoginProfileNamePromptSuggestsNameFromNormalizedHost(t *testing.T) {
+func TestLoginProfileNamePromptSuggestsNameFromHost(t *testing.T) {
 	tests := []struct {
 		name string
 		host string
 		want string
 	}{
 		{name: "spaces", host: " https://myworkspace.test ", want: "[myworkspace]"},
-		{name: "account ID", host: "https://myworkspace.test/?a=123", want: "[ACCOUNT-123]"},
+		// Without --skip-workspace this is a workspace login, so the account
+		// ID must not turn the suggestion into ACCOUNT-<id>.
+		{name: "workspace and account ID", host: "https://myworkspace.test/?w=456&account_id=123", want: "[myworkspace]"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

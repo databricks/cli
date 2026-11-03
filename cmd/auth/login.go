@@ -247,13 +247,15 @@ a new profile is created.
 			}
 		}
 
-		// Normalize the host before the keyring probe and the profile name
-		// prompt, so an invalid host fails before them and the prompt suggests
-		// a name based on the normalized host and account ID.
+		// setHost normalizes the host only after the keyring probe and the
+		// profile name prompt, so reject an invalid host before them. Only trim
+		// it here: an account ID from the query params would make the prompt
+		// suggest ACCOUNT-<id> for a workspace login.
 		if authArguments.Host != "" {
-			if err := normalizeLoginHost(authArguments); err != nil {
+			if err := normalizeLoginHost(&auth.AuthArguments{Host: authArguments.Host}); err != nil {
 				return err
 			}
+			authArguments.Host = strings.TrimSpace(authArguments.Host)
 		}
 
 		if err := validateDeviceCodeCompletionFlags(cmd); err != nil {
