@@ -103,10 +103,12 @@ var (
 	workspaceID  atomic.Int64
 )
 
-// nextTreenodeID starts above common version numbers and counts, which scripts
-// can otherwise mask when registering literal ID replacements.
+// nextTreenodeID returns 16-digit ids, like real workspace object ids. Scripts register them as
+// literal replacements, which apply before the harness's patterns; a short id would also match
+// inside other numbers in the output (timestamps, UUIDs, ports) and cut them up. A 16-digit id
+// starting with 4 practically never occurs inside those, and never looks like a timestamp.
 func nextTreenodeID() int64 {
-	return 1000 + workspaceID.Add(1)
+	return 4_000_000_000_000_000 + workspaceID.Add(1)
 }
 
 // IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
