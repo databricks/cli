@@ -365,8 +365,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	}
 
 	if opts.IDE != "" && !opts.ProxyMode {
-		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
-			outcome.errorCategory = protos.SshTunnelErrorCategoryIDECommandNotOnPath
+		if err := vscode.CheckIDECommand(ctx, opts.IDE); err != nil {
+			outcome.errorCategory = ideCommandErrorCategory(err)
 			return err
 		}
 		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
@@ -1491,6 +1491,15 @@ type connectOutcome struct {
 	// trace of the cancellation. Only a cancellation counts as the user giving up: a deadline
 	// would be a timeout, so category() matches the cause rather than testing for non-nil.
 	ctxErr error
+}
+
+// ideCommandErrorCategory tells a broken IDE command override apart from a command missing on
+// PATH: the first points at whatever set the override, the second at the user's machine.
+func ideCommandErrorCategory(err error) protos.SshTunnelErrorCategory {
+	if errors.Is(err, vscode.ErrIDECommandOverrideInvalid) {
+		return protos.SshTunnelErrorCategoryIDECommandOverrideInvalid
+	}
+	return protos.SshTunnelErrorCategoryIDECommandNotOnPath
 }
 
 // sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
