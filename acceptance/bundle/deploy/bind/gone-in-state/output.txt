@@ -1,0 +1,28 @@
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state/default/files...
+Bound and updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
+
+=== Delete the bound job out-of-band: the bind block pins that ID, so the deploy must not create a replacement
+>>> [CLI] jobs delete [NEW_JOB_ID]
+
+>>> musterr [CLI] bundle plan
+Error: cannot plan resources.jobs.foo: bound resource with ID "[NEW_JOB_ID]" no longer exists in the workspace; remove the bind block to create a new resource
+
+Error: planning failed
+
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state/default/files...
+Error: cannot plan resources.jobs.foo: bound resource with ID "[NEW_JOB_ID]" no longer exists in the workspace; remove the bind block to create a new resource
+
+Error: planning failed
+
+Files: 0 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-gone-in-state/default
+
+Destroy: 0 deleted
