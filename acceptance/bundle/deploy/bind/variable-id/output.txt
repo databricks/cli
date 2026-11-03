@@ -5,7 +5,7 @@ bind_and_update jobs.foo (id: [NEW_JOB_ID])
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-variable-id/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-variable-id-[UNIQUE_NAME]/default/files...
 Bound and updated jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
@@ -17,6 +17,6 @@ json.state.resources.jobs.foo.__id__ = "[NEW_JOB_ID]";
 The following resources will be deleted:
   delete resources.jobs.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-variable-id/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-variable-id-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted

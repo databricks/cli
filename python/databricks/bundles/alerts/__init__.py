@@ -32,6 +32,9 @@ __all__ = [
     "AlertV2Subscription",
     "AlertV2SubscriptionDict",
     "AlertV2SubscriptionParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "ComparisonOperator",
     "ComparisonOperatorParam",
     "CronSchedule",
@@ -101,6 +104,7 @@ from databricks.bundles.alerts._models.alert_v2_subscription import (
     AlertV2SubscriptionDict,
     AlertV2SubscriptionParam,
 )
+from databricks.bundles.alerts._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.alerts._models.comparison_operator import (
     ComparisonOperator,
     ComparisonOperatorParam,

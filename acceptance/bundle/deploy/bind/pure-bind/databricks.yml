@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-pure
+  name: test-bind-pure-UNIQUE_NAME
 
 resources:
   jobs:

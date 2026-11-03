@@ -10,7 +10,7 @@ Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 json.plan.resources.jobs.bar.new_state.value.tasks[0].run_job_task.job_id = [NEW_JOB_ID];
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-ref-to-bound/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-ref-to-bound-[UNIQUE_NAME]/default/files...
 Bound and updated jobs.foo
 Created jobs.bar
 Files: 1 uploaded, 0 deleted
@@ -24,6 +24,6 @@ The following resources will be deleted:
   delete resources.jobs.bar
   delete resources.jobs.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-ref-to-bound/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-ref-to-bound-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted

@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-ref-to-bound
+  name: test-bind-ref-to-bound-UNIQUE_NAME
 
 resources:
   jobs:

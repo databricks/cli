@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-duplicate-id
+  name: test-bind-duplicate-id-UNIQUE_NAME
 
 resources:
   jobs:

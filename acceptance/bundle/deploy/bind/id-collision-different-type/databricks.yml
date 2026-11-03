@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-id-collision-type
+  name: test-bind-id-collision-type-UNIQUE_NAME
 
 resources:
   jobs:
@@ -14,6 +14,3 @@ resources:
           environment_key: default
           spark_python_task:
             python_file: /Workspace/test.py
-
-targets:
-  default:

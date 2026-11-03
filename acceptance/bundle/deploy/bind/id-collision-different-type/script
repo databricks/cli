@@ -1,3 +1,6 @@
+update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+update_file.py databricks_with_bind.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+
 # Deploy foo to create it in state
 trace $CLI bundle deploy --auto-approve
 

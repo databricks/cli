@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-delete-conflict
+  name: test-bind-delete-conflict-UNIQUE_NAME
 
 resources:
   jobs:

@@ -1,3 +1,5 @@
+update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+
 # Create a pipeline whose storage matches the config, so the first deploy binds
 # it cleanly (no recreate).
 NEW_PIPELINE_ID=$($CLI pipelines create --json '{"name": "test-pipeline", "storage": "/old/storage/path", "allow_duplicate_names": true, "libraries": [{"notebook": {"path": "/Workspace/test"}}]}' | jq -r .pipeline_id)
@@ -13,3 +15,7 @@ trace $CLI bundle deploy --auto-approve
 # block must keep guarding against recreate even after the resource is in state.
 update_file.py databricks.yml '/old/storage/path' '/new/storage/path'
 trace musterr $CLI bundle plan
+
+# Cleanup
+update_file.py databricks.yml '/new/storage/path' '/old/storage/path'
+trace $CLI bundle destroy --auto-approve

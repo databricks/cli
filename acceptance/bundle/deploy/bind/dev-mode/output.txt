@@ -5,10 +5,6 @@ bind_and_update jobs.foo (id: [NEW_JOB_ID])
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle plan -o json
-json.plan.resources.jobs.foo.changes.name.action = "update";
 json.plan.resources.jobs.foo.changes.name.new = "[dev [USERNAME]] test-bind-job";
-json.plan.resources.jobs.foo.changes.name.remote = "test-bind-job";
-json.plan.resources.jobs.foo.changes.schedule.pause_status.action = "update";
 json.plan.resources.jobs.foo.changes.schedule.pause_status.new = "PAUSED";
-json.plan.resources.jobs.foo.changes.tags.action = "update";
 json.plan.resources.jobs.foo.changes.tags.new.dev = "[USERNAME]";

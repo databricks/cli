@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
+from databricks.bundles.alerts._models.bind import Bind, BindParam
 from databricks.bundles.alerts._models.depends_on import DependsOn, DependsOnParam
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
@@ -15,6 +16,11 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Lifecycle:
     """"""
+
+    bind: VariableOrOptional[Bind] = None
+    """
+    Existing workspace resource to adopt into the deployment state instead of creating a new one. The first deploy binds it (`bind`) and applies the configuration if it differs (`bind_and_update`), including target settings such as `mode: development`. While the block is present the resource cannot be recreated; removing the resource or the block ends that protection, and `bundle destroy` deletes bound resources like any other. Nothing is recorded in the state about the adoption.
+    """
 
     depends_on: VariableOrList[DependsOn] = field(default_factory=list)
     """
@@ -36,6 +42,11 @@ class Lifecycle:
 
 class LifecycleDict(TypedDict, total=False):
     """"""
+
+    bind: VariableOrOptional[BindParam]
+    """
+    Existing workspace resource to adopt into the deployment state instead of creating a new one. The first deploy binds it (`bind`) and applies the configuration if it differs (`bind_and_update`), including target settings such as `mode: development`. While the block is present the resource cannot be recreated; removing the resource or the block ends that protection, and `bundle destroy` deletes bound resources like any other. Nothing is recorded in the state about the adoption.
+    """
 
     depends_on: VariableOrList[DependsOnParam]
     """
