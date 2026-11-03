@@ -1,3 +1,7 @@
 # Runs only against the local test server.
 Cloud = false
 Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING = "true"
+
+[[Repls]]
+Old = '\\'
+New = '/'
