@@ -101,9 +101,10 @@ func AppliedLine(resourceKey string, action ActionType) string {
 		return "Bound " + key
 	case BindAndUpdate:
 		return "Bound and updated " + key
+	default:
+		verb := action.StringShort() + "d"
+		return strings.ToUpper(verb[:1]) + verb[1:] + " " + key
 	}
-	verb := action.StringShort() + "d"
-	return strings.ToUpper(verb[:1]) + verb[1:] + " " + key
 }
 
 // GetHigherAction returns the action with higher severity between a and b.
