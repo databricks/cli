@@ -163,7 +163,6 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.runes = append(m.runes[:m.cursor-1], m.runes[m.cursor:]...)
 		m.cursor--
-		m.edited = true
 		m.submitErr = nil
 
 	case tea.KeyRunes, tea.KeySpace:

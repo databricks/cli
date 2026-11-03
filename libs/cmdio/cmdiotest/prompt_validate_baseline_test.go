@@ -65,7 +65,8 @@ func TestPromptBaseline_ValidateEnterBeforeEdit(t *testing.T) {
 
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
-	assert.Error(t, err)
+	require.Error(t, err)
+	assert.EqualError(t, err, "^C")
 }
 
 // TestPromptBaseline_ValidateValidBeforeEdit pins that an untouched prompt
