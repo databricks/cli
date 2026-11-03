@@ -55,31 +55,56 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 }
 
 func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
-	var patterns []pipelineRewritePattern
-	// Test dependencies take the same forms as the pipeline's environment dependencies.
-	for _, dependencies := range []dyn.Pattern{
-		base.Append(dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
-		base.Append(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
-	} {
-		patterns = append(patterns,
-			pipelineRewritePattern{
-				pattern: dependencies,
-				mode:    TranslateModeLocalRelativeWithPrefix,
-				skipRewrite: func(s string) bool {
-					return !libraries.IsLibraryLocal(s)
-				},
+	pipelineEnvironmentsPatterns := []pipelineRewritePattern{
+		{
+			pattern: dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("pipelines"),
+				dyn.AnyKey(),
+				dyn.Key("environment"),
+				dyn.Key("dependencies"),
+				dyn.AnyIndex(),
+			),
+			mode: TranslateModeLocalRelativeWithPrefix,
+			skipRewrite: func(s string) bool {
+				return !libraries.IsLibraryLocal(s)
 			},
-			pipelineRewritePattern{
-				pattern: dependencies,
-				mode:    TranslateModeEnvironmentPipFlag,
-				skipRewrite: func(s string) bool {
-					_, _, ok := libraries.IsLocalPathInPipFlag(s)
-					return !ok
-				},
-			},
-		)
+		},
+		// Test dependencies take the same forms as the pipeline's environment dependencies.
+		{
+			pattern:     base.Append(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+			mode:        TranslateModeLocalRelativeWithPrefix,
+			skipRewrite: func(s string) bool { return !libraries.IsLibraryLocal(s) },
+		},
 	}
-	return patterns
+
+	pipelineEnvironmentsPatternsWithPipFlags := []pipelineRewritePattern{
+		{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("pipelines"),
+				dyn.AnyKey(),
+				dyn.Key("environment"),
+				dyn.Key("dependencies"),
+				dyn.AnyIndex(),
+			),
+			TranslateModeEnvironmentPipFlag,
+			func(s string) bool {
+				_, _, ok := libraries.IsLocalPathInPipFlag(s)
+				return !ok
+			},
+		},
+		{
+			base.Append(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+			TranslateModeEnvironmentPipFlag,
+			func(s string) bool {
+				_, _, ok := libraries.IsLocalPathInPipFlag(s)
+				return !ok
+			},
+		},
+	}
+
+	return append(pipelineEnvironmentsPatterns, pipelineEnvironmentsPatternsWithPipFlags...)
 }
 
 func VisitPipelinePaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {

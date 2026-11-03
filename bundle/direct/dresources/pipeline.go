@@ -78,20 +78,12 @@ func (s PipelineRemote) MarshalJSON() ([]byte, error) {
 
 type ResourcePipeline struct {
 	client *databricks.WorkspaceClient
-
-	// apiClient sends the requests that the Go SDK cannot express yet because it lacks the testing
-	// field. It is built once, so that those requests share one rate limiter.
-	apiClient    *client.DatabricksClient
-	apiClientErr error
 }
 
-func (*ResourcePipeline) New(w *databricks.WorkspaceClient) *ResourcePipeline {
-	r := &ResourcePipeline{client: w, apiClient: nil, apiClientErr: nil}
-	// The adapter also builds a resource without a client to read its configuration.
-	if w != nil {
-		r.apiClient, r.apiClientErr = client.New(w.Config)
+func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeline {
+	return &ResourcePipeline{
+		client: client,
 	}
-	return r
 }
 
 func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState {
@@ -118,16 +110,20 @@ type pipelineTestingResponse struct {
 	} `json:"spec"`
 }
 
-// DoRead sends the same request as GetByPipelineId, but raw, so that it can also read spec.testing,
-// which GetPipelineResponse does not have yet. Switch back to GetByPipelineId once it does.
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
-	if !env.ExperimentalPipelineTesting(ctx) {
-		resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		return makePipelineRemote(resp), nil
+	if env.ExperimentalPipelineTesting(ctx) {
+		return r.doReadWithTesting(ctx, id)
 	}
+	resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return makePipelineRemote(resp), nil
+}
+
+// doReadWithTesting sends the same request as GetByPipelineId, but raw, so that it can also read
+// spec.testing, which GetPipelineResponse does not have yet. Remove it once GetPipelineResponse has it.
+func (r *ResourcePipeline) doReadWithTesting(ctx context.Context, id string) (*PipelineRemote, error) {
 	var raw json.RawMessage
 	if err := r.doRaw(ctx, http.MethodGet, "/api/2.0/pipelines/"+id, nil, &raw); err != nil {
 		return nil, err
@@ -325,10 +321,11 @@ func (r *ResourcePipeline) doWithTesting(ctx context.Context, method, path strin
 
 // doRaw sends a request that the Go SDK cannot express yet because it lacks the testing field.
 func (r *ResourcePipeline) doRaw(ctx context.Context, method, path string, request, response any) error {
-	if r.apiClientErr != nil {
-		return fmt.Errorf("failed to create API client: %w", r.apiClientErr)
+	apiClient, err := client.New(r.client.Config)
+	if err != nil {
+		return fmt.Errorf("failed to create API client: %w", err)
 	}
-	return r.apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, request, response)
+	return apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, request, response)
 }
 
 // Note, terraform provider either
