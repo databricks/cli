@@ -22,12 +22,10 @@ type FileInfoWithWorkspaceObjectInfo interface {
 	WorkspaceObjectInfo() workspace.ObjectInfo
 }
 
-// Marker the workspace looks for on the first line of a source file to import it as a
-// notebook (NOTEBOOK_IDENTIFIER in universe's NotebookUtils).
+// Marker the workspace looks for to import a source file as a notebook.
 const notebookSourceMarker = "Databricks notebook source"
 
-// Number of leading bytes the workspace reads before checking only the first line among them
-// for the marker (NOTEBOOK_IDENTIFIER_BUFFER_LENGTH in universe's NotebookUtils).
+// The workspace reads the first line out of this many leading bytes.
 const headerLength = 200
 
 // file wraps an fs.File and implements a few helper methods such that
@@ -130,11 +128,8 @@ func DetectBytes(name string, content []byte) (notebook bool, language workspace
 	return notebook, language, nil
 }
 
-// detectSource reports whether a source file with the given name and first line is a notebook.
-// It applies the same rule as the workspace's import-file endpoint (checkSourceFileNotebook in
-// universe's NotebookUtils), so the remote name the CLI predicts matches what the server creates:
-// the extension picks the language and the first line only has to contain the marker. A leading
-// byte order mark or a different comment prefix therefore still counts.
+// detectSource reports whether a source file with the given name and first line is a notebook,
+// using the import-file rule: the extension picks the language and the first line contains the marker.
 func detectSource(name, fileHeader string) (notebook bool, language workspace.Language) {
 	switch strings.ToLower(filepath.Ext(name)) {
 	case ExtensionPython:
