@@ -8,6 +8,7 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 job_id=$(read_id.py my_job)
 
+# Target overrides supply existing keys; new keys route to the null parents in the base config.
 edit_resource.py jobs "$job_id" <<'EOF'
 for jc in r["job_clusters"]:
     cluster = jc["new_cluster"]

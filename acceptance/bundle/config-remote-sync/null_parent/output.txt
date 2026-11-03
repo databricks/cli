@@ -25,21 +25,21 @@ Resource: resources.jobs.my_job
 @@ -12,9 +12,18 @@
              node_type_id: [NODE_TYPE_ID]
              custom_tags: # Keep this comment when adding tags.
--            spark_env_vars: null
+-            spark_env_vars: null # Keep the environment comment.
 -            init_scripts: ~
--            autoscale: null
+-            autoscale: ~ # Keep the autoscale comment.
 +              "123": numeric key
 +              team: analytics
-+            spark_env_vars:
++            spark_env_vars: # Keep the environment comment.
 +              ENV: dev
 +            init_scripts:
 +              - workspace:
 +                  destination: /Workspace/init.sh
-+            autoscale:
++            autoscale: # Keep the autoscale comment.
 +              max_workers: 2
          - job_cluster_key: nested
--          new_cluster: null
-+          new_cluster:
+-          new_cluster: null # Keep the cluster comment through both tag additions.
++          new_cluster: # Keep the cluster comment through both tag additions.
 +            custom_tags:
 +              "123": numeric key
 +              team: analytics

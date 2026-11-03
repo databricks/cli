@@ -23,6 +23,7 @@ cluster["init_scripts"][0]["workspace"]["destination"] = "/Workspace/updated-ini
 
 cluster = r["job_clusters"][1]["new_cluster"]
 cluster["spark_env_vars"] = {"ADDED": "value"}
+cluster["custom_tags"]["added"] = "new"
 cluster["custom_tags"]["changed"] = "updated"
 del cluster["custom_tags"]["removed"]
 EOF

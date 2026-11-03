@@ -116,12 +116,12 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			}})
 
 			if patchErr != nil {
-				patch, err := nullAncestorPatch(content, fieldPathCandidate, path, fieldChange.Change.Value)
+				patched, err := addThroughNullAncestor(content, fieldPathCandidate, fieldChange.Change.Value)
 				if err != nil {
 					return nil, err
 				}
-				if len(patch) > 0 {
-					modifiedContent, patchErr = patcher.Apply(content, patch)
+				if patched != nil {
+					modifiedContent, patchErr = patched, nil
 				}
 			}
 
@@ -184,69 +184,86 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 	return content, nil
 }
 
-// nullAncestorPatch replaces a null ancestor with the containers needed for an add.
+// addThroughNullAncestor applies an add by materializing its null ancestor.
 // It returns nil when no null ancestor can be replaced safely.
-func nullAncestorPatch(content []byte, fieldPath string, path yamlpatch.Path, value any) (yamlpatch.Patch, error) {
+func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(content, &doc); err != nil {
 		return nil, err
 	}
-	current := &doc
-	for i, part := range path[:len(path)-1] {
-		switch current.Kind {
-		case yaml.DocumentNode:
-			if len(current.Content) != 1 {
-				return nil, nil
-			}
-			current = current.Content[0]
-		case yaml.MappingNode:
-			var child *yaml.Node
-			for j := 0; j+1 < len(current.Content); j += 2 {
-				if current.Content[j].Value == part {
-					child = current.Content[j+1]
-					break
-				}
-			}
-			if child == nil {
-				return nil, nil
-			}
-			current = child
-		case yaml.SequenceNode:
-			index, err := strconv.Atoi(part)
-			if err != nil || index < 0 || index >= len(current.Content) {
-				return nil, nil //nolint:nilerr // keep the original patch error for unsupported paths
-			}
-			current = current.Content[index]
-		default:
-			return nil, nil
-		}
+	if len(doc.Content) != 1 {
+		return nil, nil
+	}
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil, err
+	}
+	current := doc.Content[0]
+	var keyNode *yaml.Node
+	for depth, part := range pattern.AsSlice() {
 		// Replacing anchored content could alter aliases or leave dangling references.
 		if current.Anchor != "" {
 			return nil, nil
 		}
-		if current.Kind != yaml.ScalarNode || current.ShortTag() != "!!null" {
-			continue
+		if current.Kind == yaml.ScalarNode && current.ShortTag() == "!!null" {
+			for node := pattern; node.Len() > depth; node = node.Parent() {
+				key, isKey := node.StringKey()
+				index, isIndex := node.Index()
+				switch {
+				case isKey:
+					value = map[string]any{key: value}
+				case node.BracketStar(), isIndex && index == 0:
+					value = []any{value}
+				default:
+					// Only the first element can be added to an empty sequence.
+					return nil, nil
+				}
+			}
+			var replacement yaml.Node
+			if err := replacement.Encode(value); err != nil {
+				return nil, err
+			}
+			replacement.HeadComment = current.HeadComment
+			replacement.FootComment = current.FootComment
+			// Block containers cannot carry the scalar's inline comment themselves.
+			if current.LineComment != "" {
+				if keyNode != nil {
+					keyNode.LineComment = strings.TrimSpace(keyNode.LineComment + "\n" + current.LineComment)
+				} else {
+					replacement.HeadComment = strings.TrimSpace(replacement.HeadComment + "\n" + current.LineComment)
+				}
+			}
+			*current = replacement
+			return encodeYAML(&doc)
 		}
-		pattern, err := structpath.ParsePattern(fieldPath)
-		if err != nil {
-			return nil, err
-		}
-		for ; pattern.Len() > i; pattern = pattern.Parent() {
-			key, isKey := pattern.StringKey()
-			index, isIndex := pattern.Index()
-			switch {
-			case isKey:
-				value = map[string]any{key: value}
-			case pattern.BracketStar(), isIndex && index == 0:
-				value = []any{value}
-			default:
-				// Only the first element can be added to an empty sequence.
+
+		switch current.Kind {
+		case yaml.MappingNode:
+			key, ok := part.StringKey()
+			if !ok {
 				return nil, nil
 			}
+			keyNode = nil
+			for j := 0; j+1 < len(current.Content); j += 2 {
+				if current.Content[j].Value == key {
+					keyNode = current.Content[j]
+					current = current.Content[j+1]
+					break
+				}
+			}
+			if keyNode == nil {
+				return nil, nil
+			}
+		case yaml.SequenceNode:
+			index, ok := part.Index()
+			if !ok || index < 0 || index >= len(current.Content) {
+				return nil, nil
+			}
+			keyNode = nil
+			current = current.Content[index]
+		default:
+			return nil, nil
 		}
-		// yamlpatch includes the document node as an empty first component.
-		parentPath := path[:i+1]
-		return yamlpatch.Patch{{Type: yamlpatch.OperationReplace, Path: parentPath, Value: value}}, nil
 	}
 	return nil, nil
 }
@@ -366,10 +383,15 @@ func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, er
 			clearFlowStyleAlongPath(&doc, candidate)
 		}
 	}
+	return encodeYAML(&doc)
+}
+
+// encodeYAML uses the same indentation as the YAML patcher.
+func encodeYAML(doc *yaml.Node) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
-	if err := enc.Encode(&doc); err != nil {
+	if err := enc.Encode(doc); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), enc.Close()

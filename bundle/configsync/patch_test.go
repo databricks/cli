@@ -470,3 +470,27 @@ func TestApplyChangeScalarParents(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyChangeNullParentComments(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"root", "# head\nnull # inline\n# foot\n", "key", "key: value"},
+		{"sequence item", "parent:\n  # head\n  - null # inline\n  # foot\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+			for _, comment := range []string{"# head", "# inline", "# foot"} {
+				assert.Equal(t, 1, strings.Count(string(result), comment), "%s in %s", comment, result)
+			}
+		})
+	}
+}

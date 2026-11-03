@@ -11,6 +11,7 @@ Detected changes in 1 resource(s):
 Resource: resources.jobs.my_job
   job_clusters[job_cluster_key='shared'].new_cluster.init_scripts[0].workspace.destination: skip
   job_clusters[job_cluster_key='shared'].new_cluster.spark_conf['spark.executor.memory']: skip
+  job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['added']: skip
   job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['changed']: skip
   job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['removed']: skip
   job_clusters[job_cluster_key='variable_cluster'].new_cluster.spark_env_vars: skip
@@ -36,22 +37,22 @@ Resource: resources.jobs.my_job
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "save": true,
-  "changes_total": 6,
-  "add_count": 2,
+  "changes_total": 7,
+  "add_count": 3,
   "replace_count": 3,
   "remove_count": 1,
   "resource_changes": [
     {
       "resource_type": "jobs",
-      "changes_count": 6,
-      "add_count": 2,
+      "changes_count": 7,
+      "add_count": 3,
       "replace_count": 3,
       "remove_count": 1
     }
   ],
   "files_changed_count": 1,
   "files_written_count": 1,
-  "skipped_changes_count": 5,
+  "skipped_changes_count": 6,
   "state_serial": 1,
   "state_lineage": "[UUID]",
   "state_source": "local",

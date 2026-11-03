@@ -11,11 +11,11 @@ resources:
             spark_version: $DEFAULT_SPARK_VERSION
             node_type_id: $NODE_TYPE_ID
             custom_tags: # Keep this comment when adding tags.
-            spark_env_vars: null
+            spark_env_vars: null # Keep the environment comment.
             init_scripts: ~
-            autoscale: null
+            autoscale: ~ # Keep the autoscale comment.
         - job_cluster_key: nested
-          new_cluster: null
+          new_cluster: null # Keep the cluster comment through both tag additions.
       tasks:
         - task_key: main
           job_cluster_key: shared
