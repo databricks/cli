@@ -3866,7 +3866,7 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "description": "The ID of the existing workspace resource to bind.",
+                      "description": "The ID of the existing workspace resource to bind, as used by its API (for example a job ID, or the full name of a schema or volume). Variable references such as `${var.job_id}` are resolved.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -3877,7 +3877,7 @@
                 },
                 {
                   "type": "string",
-                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
             },
@@ -4413,7 +4413,7 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
                     },
                     "bind": {
-                      "description": "The existing workspace resources to bind into bundle management for this target.",
+                      "description": "Existing workspace resources to bring under this target's management, keyed by resource type and by the resource key defined under `resources`. The first deploy adopts each resource (`bind`) and applies the configuration if it differs (`bind_and_update`), including target settings such as `mode: development`. While the block remains, deploys can neither delete nor recreate the resource. Removing the block lifts that protection, and `bundle destroy` deletes bound resources like any other; the deployment state does not record that a resource was bound.",
                       "$ref": "#/$defs/map/map/github.com/databricks/cli/bundle/config.BindResource"
                     },
                     "bundle": {
@@ -21171,7 +21171,7 @@
                   },
                   {
                     "type": "string",
-                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
                   }
                 ]
               },
@@ -21236,7 +21236,7 @@
                     },
                     {
                       "type": "string",
-                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
                     }
                   ]
                 }
