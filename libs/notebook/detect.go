@@ -128,8 +128,7 @@ func DetectBytes(name string, content []byte) (notebook bool, language workspace
 	return notebook, language, nil
 }
 
-// detectSource reports whether a source file with the given name and first line is a notebook,
-// using the import-file rule: the extension picks the language and the first line contains the marker.
+// detectSource reports whether a source file with the given name and first line is a notebook.
 func detectSource(name, fileHeader string) (notebook bool, language workspace.Language) {
 	switch strings.ToLower(filepath.Ext(name)) {
 	case ExtensionPython:
