@@ -1689,7 +1689,7 @@ resources:
         The Postgres Data API definitions for the bundle, where each key is the name of the Data API. Each entry enables and configures the Data API (a REST interface) of a database on a Lakebase Autoscaling branch. Removing an entry turns off the Data API; the database and its data are not affected.
       "$type":
         "description": |-
-          The Data API (a PostgREST-compatible REST interface) of a Postgres database on a Lakebase Autoscaling branch. A database has at most one Data API. Its serving URL is available as `status.url`; reference it as `${resources.postgres_data_apis.<key>.status.url}`. Durations use the protobuf seconds format, such as `300s`.
+          The Data API (a PostgREST-compatible REST interface) of a Postgres database on a Lakebase Autoscaling branch. A database has at most one Data API. At least one setting besides `parent` is required, such as `db_schemas`. Its serving URL is available as `status.url`; reference it as `${resources.postgres_data_apis.<key>.status.url}`. Durations use the protobuf seconds format, such as `300s`.
       "$fields":
         "lifecycle":
           "description": |-
