@@ -461,6 +461,8 @@ resources.model_serving_endpoints.*.endpoint_details.telemetry_config.telemetry_
 resources.model_serving_endpoints.*.endpoint_id	string	REMOTE
 resources.model_serving_endpoints.*.id	string	INPUT
 resources.model_serving_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.model_serving_endpoints.*.lifecycle.bind	*resources.Bind	INPUT
+resources.model_serving_endpoints.*.lifecycle.bind.id	string	INPUT
 resources.model_serving_endpoints.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.model_serving_endpoints.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.model_serving_endpoints.*.lifecycle.depends_on[*].resource	string	INPUT

@@ -7,6 +7,8 @@ resources.postgres_roles.*.create_time	*time.Time	REMOTE
 resources.postgres_roles.*.id	string	INPUT
 resources.postgres_roles.*.identity_type	postgres.RoleIdentityType	ALL
 resources.postgres_roles.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_roles.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_roles.*.lifecycle.bind.id	string	INPUT
 resources.postgres_roles.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_roles.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_roles.*.lifecycle.depends_on[*].resource	string	INPUT

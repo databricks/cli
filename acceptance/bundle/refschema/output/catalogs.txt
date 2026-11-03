@@ -14,6 +14,8 @@ resources.catalogs.*.full_name	string	REMOTE
 resources.catalogs.*.id	string	INPUT
 resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	REMOTE
 resources.catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.catalogs.*.lifecycle.bind	*resources.Bind	INPUT
+resources.catalogs.*.lifecycle.bind.id	string	INPUT
 resources.catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.catalogs.*.lifecycle.depends_on[*].resource	string	INPUT
