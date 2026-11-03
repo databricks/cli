@@ -1,0 +1,148 @@
+# Hand-written documentation for fields that the upstream API spec
+# (.codegen/cli.json) already defines: description overrides, gap fills for
+# undocumented upstream fields, and deprecations the spec does not carry. Every
+# entry here is a candidate to move upstream (fix the proto / OpenAPI docs) and
+# then delete. "task generate-schema" routes entries between this file and
+# annotations.yml by whether the field exists upstream, so an entry added to
+# the wrong file lands here on the next run. Same format as annotations.yml.
+resources:
+  "$fields":
+    "apps":
+      "$fields":
+        "git_source":
+          "description": |-
+            Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+            to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+            The source_code_path within git_source specifies the relative path to the app code within the repository.
+    "external_locations":
+      "$fields":
+        "encryption_details":
+          "$fields":
+            "sse_encryption_details":
+              "$fields":
+                "algorithm":
+                  "$type":
+                    "description": |-
+                      SSE algorithm to use for encrypting S3 objects
+    "instance_pools":
+      "$fields":
+        "disk_spec":
+          "$fields":
+            "disk_iops":
+              "description": |-
+                The number of IOPS to provision for each attached disk.
+            "disk_throughput":
+              "description": |-
+                The disk throughput to provision for each attached disk, in MB per second.
+    "jobs":
+      "$fields":
+        "environments":
+          "$fields":
+            "spec":
+              "$fields":
+                "dependencies":
+                  "description": |-
+                    List of pip dependencies, as supported by the version of pip in this environment.
+        "job_clusters":
+          "$fields":
+            "new_cluster":
+              "$fields":
+                "azure_attributes":
+                  "$fields":
+                    "log_analytics_info":
+                      "$fields":
+                        "log_analytics_primary_key":
+                          "description": |-
+                            The primary key for the Azure Log Analytics agent configuration
+                        "log_analytics_workspace_id":
+                          "description": |-
+                            The workspace ID for the Azure Log Analytics agent configuration
+                "init_scripts":
+                  "$fields":
+                    "abfss":
+                      "description": |-
+                        Contains the Azure Data Lake Storage destination path
+        "run_as":
+          "$fields":
+            "service_principal_name":
+              "description": |-
+                The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+            "user_name":
+              "description": |-
+                The email of an active workspace user. Non-admin users can only set this field to their own email.
+    "pipelines":
+      "$fields":
+        "libraries":
+          "$fields":
+            "whl":
+              "deprecation_message": |-
+                This field is deprecated
+        "trigger":
+          "deprecation_message": |-
+            Use continuous instead
+    "postgres_roles":
+      "$fields":
+        "attributes":
+          "description": |-
+            The desired API-exposed Postgres role attributes to associate with the role.
+          "$fields":
+            "bypassrls":
+              "description": |-
+                Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.
+            "createdb":
+              "description": |-
+                Grants the Postgres `CREATEDB` attribute, which lets the role create databases.
+            "createrole":
+              "description": |-
+                Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.
+        "auth_method":
+          "description": |-
+            How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.
+        "identity_type":
+          "description": |-
+            The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.
+        "membership_roles":
+          "description": |-
+            Standard roles that this role is a member of.
+        "postgres_role":
+          "description": |-
+            The name of the Postgres role. Required when creating the role.
+    "quality_monitors":
+      "$fields":
+        "inference_log":
+          "$fields":
+            "granularities":
+              "description": |-
+                Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+        "time_series":
+          "$fields":
+            "granularities":
+              "description": |-
+                Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+    "secrets":
+      "$fields":
+        "catalog_name":
+          "description": |-
+            The name of the catalog where the schema and the secret reside.
+        "comment":
+          "description": |-
+            User-provided free-form text description of the secret.
+        "expire_time":
+          "description": |-
+            User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.
+        "name":
+          "description": |-
+            The name of the secret, relative to its parent schema.
+        "schema_name":
+          "description": |-
+            The name of the schema where the secret resides.
+        "value":
+          "description": |-
+            The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.
+    "sql_warehouses":
+      "$fields":
+        "enable_photon":
+          "description": |-
+            Configures whether the warehouse should use Photon optimized clusters.
+
+            Defaults to true.

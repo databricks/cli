@@ -17,10 +17,11 @@
 #     types that occur again later (for example everything under "targets")
 #     are documented at that first occurrence.
 #
-# Every entry in this file is hand-written. Running "task generate-schema"
-# only normalizes it (key order, formatting) and drops entries for fields that
-# no longer exist. Fields that have no documentation yet are listed in
-# annotations.generated.yml.
+# Every entry in this file is hand-written and documents a field that only
+# the CLI defines. Running "task generate-schema" only normalizes it (key
+# order, formatting) and drops entries for fields that no longer exist. Entries
+# for fields cli.json already defines are moved to annotations.overrides.yml;
+# fields that have no documentation yet are listed in annotations.generated.yml.
 artifacts:
   "description": |-
     Defines the attributes to build an artifact
@@ -279,11 +280,6 @@ resources:
       "markdown_description": |-
         The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
       "$fields":
-        "git_source":
-          "description": |-
-            Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
-            to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
-            The source_code_path within git_source specifies the relative path to the app code within the repository.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -630,14 +626,6 @@ resources:
                 The name of the user granted the permission level.
     "external_locations":
       "$fields":
-        "encryption_details":
-          "$fields":
-            "sse_encryption_details":
-              "$fields":
-                "algorithm":
-                  "$type":
-                    "description": |-
-                      SSE algorithm to use for encrypting S3 objects
         "grants":
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
@@ -725,14 +713,6 @@ resources:
                 idle_instance_autotermination_minutes: 60
           ```
       "$fields":
-        "disk_spec":
-          "$fields":
-            "disk_iops":
-              "description": |-
-                The number of IOPS to provision for each attached disk.
-            "disk_throughput":
-              "description": |-
-                The disk throughput to provision for each attached disk, in MB per second.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -806,32 +786,6 @@ resources:
 
           For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
       "$fields":
-        "environments":
-          "$fields":
-            "spec":
-              "$fields":
-                "dependencies":
-                  "description": |-
-                    List of pip dependencies, as supported by the version of pip in this environment.
-        "job_clusters":
-          "$fields":
-            "new_cluster":
-              "$fields":
-                "azure_attributes":
-                  "$fields":
-                    "log_analytics_info":
-                      "$fields":
-                        "log_analytics_primary_key":
-                          "description": |-
-                            The primary key for the Azure Log Analytics agent configuration
-                        "log_analytics_workspace_id":
-                          "description": |-
-                            The workspace ID for the Azure Log Analytics agent configuration
-                "init_scripts":
-                  "$fields":
-                    "abfss":
-                      "description": |-
-                        Contains the Azure Data Lake Storage destination path
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -876,14 +830,6 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "run_as":
-          "$fields":
-            "service_principal_name":
-              "description": |-
-                The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
-            "user_name":
-              "description": |-
-                The email of an active workspace user. Non-admin users can only set this field to their own email.
     "model_serving_endpoints":
       "description": |-
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
@@ -1022,11 +968,6 @@ resources:
         "cascade_on_destroy":
           "description": |-
             Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.
-        "libraries":
-          "$fields":
-            "whl":
-              "deprecation_message": |-
-                This field is deprecated
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1060,9 +1001,6 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "trigger":
-          "deprecation_message": |-
-            Use continuous instead
     "postgres_branches":
       "description": |-
         The Postgres branch definitions for the bundle, where each key is the name of the branch. Each entry defines a branch of a Lakebase Autoscaling project, holding its own copy of the project's databases and roles.
@@ -1160,37 +1098,12 @@ resources:
       "description": |-
         The Postgres role definitions for the bundle, where each key is the name of the role. Each entry defines a role on a Lakebase Autoscaling branch, optionally backed by a Databricks identity.
       "$fields":
-        "attributes":
-          "description": |-
-            The desired API-exposed Postgres role attributes to associate with the role.
-          "$fields":
-            "bypassrls":
-              "description": |-
-                Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.
-            "createdb":
-              "description": |-
-                Grants the Postgres `CREATEDB` attribute, which lets the role create databases.
-            "createrole":
-              "description": |-
-                Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.
-        "auth_method":
-          "description": |-
-            How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.
-        "identity_type":
-          "description": |-
-            The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "membership_roles":
-          "description": |-
-            Standard roles that this role is a member of.
         "parent":
           "description": |-
             The branch where this role is created. Format projects/{project_id}/branches/{branch_id}.
-        "postgres_role":
-          "description": |-
-            The name of the Postgres role. Required when creating the role.
         "replace_existing":
           "description": |-
             When true, take over an existing role with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a role that already exists on the branch (for example, one inherited from the parent branch) under bundle management. Only takes effect when the role is created.
@@ -1252,19 +1165,9 @@ resources:
                   timezone_id: UTC
           ```
       "$fields":
-        "inference_log":
-          "$fields":
-            "granularities":
-              "description": |-
-                Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "time_series":
-          "$fields":
-            "granularities":
-              "description": |-
-                Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
     "registered_models":
       "description": |-
         The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
@@ -1430,41 +1333,18 @@ resources:
       "markdown_description": |-
         The Unity Catalog secret definitions for the bundle, where each key is the name of the secret. See [\_](/dev-tools/bundles/resources.md#secrets).
       "$fields":
-        "catalog_name":
-          "description": |-
-            The name of the catalog where the schema and the secret reside.
-        "comment":
-          "description": |-
-            User-provided free-form text description of the secret.
-        "expire_time":
-          "description": |-
-            User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.
         "grants":
           "description": |-
             The grants to apply on this secret.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "name":
-          "description": |-
-            The name of the secret, relative to its parent schema.
-        "schema_name":
-          "description": |-
-            The name of the schema where the secret resides.
-        "value":
-          "description": |-
-            The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.
     "sql_warehouses":
       "description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
       "markdown_description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
       "$fields":
-        "enable_photon":
-          "description": |-
-            Configures whether the warehouse should use Photon optimized clusters.
-
-            Defaults to true.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

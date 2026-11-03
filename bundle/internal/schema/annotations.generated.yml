@@ -6,7 +6,9 @@
 #
 # To document a field, add its node at the same tree position in
 # annotations.yml (copying the surrounding structure from here) and run
-# "task generate-schema"; the entry then disappears from this file.
+# "task generate-schema"; the entry then disappears from this file. Prefer
+# documenting upstream fields in the API spec itself: a hand-written entry for
+# one of those is routed to annotations.overrides.yml.
 environments:
   "description": |-
     PLACEHOLDER

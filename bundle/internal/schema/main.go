@@ -230,10 +230,12 @@ func main() {
 	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
-// Names of the two annotation files in the generator's work directory: the
-// hand-authored docs and the generated list of undocumented fields.
+// Names of the annotation files in the generator's work directory: the
+// hand-written docs for CLI-only fields, the hand-written entries for fields
+// cli.json already defines, and the generated list of undocumented fields.
 const (
 	annotationsFileName = "annotations.yml"
+	overridesFileName   = "annotations.overrides.yml"
 	generatedFileName   = "annotations.generated.yml"
 )
 
@@ -247,6 +249,7 @@ func configTypeGraph() (*typeGraph, error) {
 
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, annotationsFileName)
+	overridesPath := filepath.Join(workdir, overridesFileName)
 	generatedPath := filepath.Join(workdir, generatedFileName)
 
 	// The cli.json schema graph is keyed by SDK type name (e.g.
@@ -270,12 +273,22 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
+	// Both hand-written files share one format and are merged into one layer;
+	// the split between them is recomputed on save.
 	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, k := range unknown {
+	overrides, unknownOverrides, err := loadAnnotationsFile(overridesPath, graph)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, k := range append(unknown, unknownOverrides...) {
 		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
+	}
+	fromFile, err = mergeAnnotationFiles(fromFile, overrides)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// fromFile feeds both the merge in newAnnotationHandler and the
@@ -316,9 +329,9 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	// Rewrite the annotations file in canonical form and the generated file
+	// Rewrite the hand-written files in canonical form and the generated file
 	// with the fields that still lack documentation.
-	err = a.syncAnnotationFiles(annotationsPath, generatedPath, graph)
+	err = a.syncAnnotationFiles(annotationsPath, overridesPath, generatedPath, graph)
 	if err != nil {
 		log.Fatal(err)
 	}

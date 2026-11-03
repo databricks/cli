@@ -108,6 +108,56 @@ func TestDropPlaceholders(t *testing.T) {
 	}
 }
 
+func TestSplitOverrides(t *testing.T) {
+	extracted := annotation.File{
+		testTypePath: {
+			Self: annotation.Descriptor{Description: "upstream type"},
+			Fields: map[string]annotation.Descriptor{
+				"documented":   {Description: "upstream description"},
+				"undocumented": {},
+				"deprecated":   {Description: "upstream description"},
+			},
+		},
+	}
+	fromFile := annotation.File{
+		testTypePath: {
+			Self: annotation.Descriptor{MarkdownDescription: "docs-site blurb"},
+			Fields: map[string]annotation.Descriptor{
+				"documented":   {Description: "hand-written override"},
+				"undocumented": {Description: "gap fill"},
+				"cli_only":     {Description: "cli field"},
+				"deprecated":   {DeprecationMessage: "gone"},
+			},
+		},
+		"github.com/databricks/cli/bundle/config.Bar": {
+			Self: annotation.Descriptor{Description: "cli-only type"},
+		},
+	}
+
+	cliOnly, overrides := splitOverrides(fromFile, extracted)
+
+	assert.Equal(t, annotation.File{
+		testTypePath: {
+			Self: annotation.Descriptor{MarkdownDescription: "docs-site blurb"},
+			Fields: map[string]annotation.Descriptor{
+				"cli_only": {Description: "cli field"},
+			},
+		},
+		"github.com/databricks/cli/bundle/config.Bar": {
+			Self: annotation.Descriptor{Description: "cli-only type"},
+		},
+	}, cliOnly)
+	assert.Equal(t, annotation.File{
+		testTypePath: {
+			Fields: map[string]annotation.Descriptor{
+				"documented":   {Description: "hand-written override"},
+				"undocumented": {Description: "gap fill"},
+				"deprecated":   {DeprecationMessage: "gone"},
+			},
+		},
+	}, overrides)
+}
+
 // A placeholder left in the annotations file must not swallow the upstream
 // description in the merged view the schema is generated from.
 func TestPlaceholderDoesNotShadowMergedDescription(t *testing.T) {

@@ -60,7 +60,7 @@ func copyFile(src, dst string) error {
 // paths that were changed or removed.
 func regenerateAnnotationFiles(t *testing.T) (added, changed map[string][]string) {
 	workdir := t.TempDir()
-	for _, name := range []string{annotationsFileName, generatedFileName} {
+	for _, name := range []string{annotationsFileName, overridesFileName, generatedFileName} {
 		require.NoError(t, copyFile(name, path.Join(workdir, name)))
 	}
 
@@ -68,7 +68,7 @@ func regenerateAnnotationFiles(t *testing.T) (added, changed map[string][]string
 
 	added = map[string][]string{}
 	changed = map[string][]string{}
-	for _, name := range []string{annotationsFileName, generatedFileName} {
+	for _, name := range []string{annotationsFileName, overridesFileName, generatedFileName} {
 		originalFile, err := os.ReadFile(name)
 		require.NoError(t, err)
 		currentFile, err := os.ReadFile(path.Join(workdir, name))
@@ -111,9 +111,11 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	assert.Empty(t, added[generatedFileName], "Missing JSON-schema descriptions for new config fields; run `./task generate-schema` and document them in bundle/internal/schema/annotations.yml:\n%s", strings.Join(added[generatedFileName], "\n"))
 	assert.Empty(t, changed[generatedFileName], "annotations.generated.yml is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(changed[generatedFileName], "\n"))
 
-	// Regenerating from the committed hand-authored file must be a no-op.
-	assert.Empty(t, added[annotationsFileName], "annotations.yml is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(added[annotationsFileName], "\n"))
-	assert.Empty(t, changed[annotationsFileName], "annotations.yml is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(changed[annotationsFileName], "\n"))
+	// Regenerating from the committed hand-written files must be a no-op.
+	for _, name := range []string{annotationsFileName, overridesFileName} {
+		assert.Empty(t, added[name], "%s is out of sync; run `./task generate-schema` and commit the result:\n%s", name, strings.Join(added[name], "\n"))
+		assert.Empty(t, changed[name], "%s is out of sync; run `./task generate-schema` and commit the result:\n%s", name, strings.Join(changed[name], "\n"))
+	}
 }
 
 // Checks that the annotations file only contains entries that match the
@@ -122,7 +124,7 @@ func TestNoDetachedAnnotations(t *testing.T) {
 	g, err := configTypeGraph()
 	require.NoError(t, err)
 
-	for _, name := range []string{annotationsFileName, generatedFileName} {
+	for _, name := range []string{annotationsFileName, overridesFileName, generatedFileName} {
 		_, unknown, err := loadAnnotationsFile(name, g)
 		require.NoError(t, err)
 		assert.Empty(t, unknown, "Detached annotations found in %s; run `./task generate-schema` to drop them", name)
