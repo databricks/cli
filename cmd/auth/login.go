@@ -631,16 +631,15 @@ var errInvalidHost = errors.New("invalid host")
 // "https://" or "https://my workspace.test", because login would then use discovery
 // or DATABRICKS_HOST, connect to a host named "https", or fail later.
 func normalizeLoginHost(authArguments *auth.AuthArguments) error {
-	rawHost := authArguments.Host
-	authArguments.Host = strings.TrimSuffix(strings.TrimSpace(authArguments.Host), "/")
+	host := strings.TrimSuffix(strings.TrimSpace(authArguments.Host), "/")
 
 	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
 	// URL params from explicit --host override stale profile values.
-	params := auth.ExtractHostQueryParams(authArguments.Host)
-	authArguments.Host = params.Host
-	if !hasHostname(authArguments.Host) {
-		return fmt.Errorf("%w %q", errInvalidHost, rawHost)
+	params := auth.ExtractHostQueryParams(host)
+	if !hasHostname(params.Host) {
+		return fmt.Errorf("%w %q", errInvalidHost, authArguments.Host)
 	}
+	authArguments.Host = params.Host
 	if authArguments.WorkspaceID == "" {
 		authArguments.WorkspaceID = params.WorkspaceID
 	}

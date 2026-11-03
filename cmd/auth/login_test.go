@@ -843,6 +843,13 @@ func TestGetProfileName(t *testing.T) {
 	}
 }
 
+func TestNormalizeLoginHostKeepsArgumentsOnError(t *testing.T) {
+	args := &auth.AuthArguments{Host: "https://?o=123", WorkspaceID: "456"}
+	err := normalizeLoginHost(args)
+	assert.ErrorIs(t, err, errInvalidHost)
+	assert.Equal(t, &auth.AuthArguments{Host: "https://?o=123", WorkspaceID: "456"}, args)
+}
+
 // TestSkipWorkspaceProfileNameUsesDiscoveredAccountID verifies that the
 // pre-naming discovery block populates AccountID from .well-known so the
 // profile-name prompt suggests ACCOUNT-<account-id> instead of the host-based
