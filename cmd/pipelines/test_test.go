@@ -2,13 +2,18 @@ package pipelines
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-
+	"github.com/databricks/cli/cmd/root"
+	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,6 +71,44 @@ func TestResolveTestSelections(t *testing.T) {
 	assert.EqualError(t, err, `cannot resolve test selection "missing::test_x": not found`)
 }
 
+func TestBundleShortTestID(t *testing.T) {
+	syncRoot := t.TempDir()
+	filesRoot := "/Workspace/Users/someone/.bundle/orders/dev/files"
+	id := filesRoot + "/tests/test_a.py::TestA::test_x[a::b]"
+
+	// The local path, relative to where the user stands, selects the test again.
+	assert.Equal(t, "tests/test_a.py::TestA::test_x[a::b]", bundleShortTestID(syncRoot, syncRoot, filesRoot, id))
+	assert.Equal(t, "test_a.py::TestA::test_x[a::b]", bundleShortTestID(filepath.Join(syncRoot, "tests"), syncRoot, filesRoot, id))
+	assert.Equal(t, "../tests/test_a.py::TestA::test_x[a::b]", bundleShortTestID(filepath.Join(syncRoot, "src"), syncRoot, filesRoot, id))
+	assert.Equal(t, "tests", bundleShortTestID(syncRoot, syncRoot, filesRoot, filesRoot+"/tests"))
+
+	// Other IDs are shown as the service sends them.
+	for _, other := range []string{
+		"/Workspace/Users/someone/tests/test_s.py::test_s",
+		filesRoot + "2/tests/test_a.py::test_x",
+		"tests/test_a.py::test_x",
+	} {
+		assert.Equal(t, other, bundleShortTestID(syncRoot, syncRoot, filesRoot, other))
+	}
+	assert.Equal(t, id, bundleShortTestID(syncRoot, syncRoot, "", id))
+}
+
+func TestRootPathShortTestID(t *testing.T) {
+	rootPath := "/Workspace/Users/someone/orders"
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath, rootPath+"/tests/test_a.py::test_x"))
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID(rootPath+"/", rootPath+"/tests/test_a.py::test_x"))
+	// The service accepts workspace paths with or without the /Workspace prefix.
+	assert.Equal(t, "tests/test_a.py::test_x", rootPathShortTestID("/Users/someone/orders", rootPath+"/tests/test_a.py::test_x"))
+	for _, other := range []string{
+		"/Workspace/Users/someone/shared/test_s.py::test_s",
+		rootPath + "2/test_a.py::test_x",
+		"tests/test_a.py::test_x",
+	} {
+		assert.Equal(t, other, rootPathShortTestID(rootPath, other))
+	}
+	assert.Equal(t, rootPath+"/tests/test_a.py::test_x", rootPathShortTestID("", rootPath+"/tests/test_a.py::test_x"))
+}
+
 // Source-linked deployments run the source files, as TranslatePaths maps them.
 func TestBundleFilesRootSourceLinked(t *testing.T) {
 	b := &bundle.Bundle{SyncRootPath: "/Workspace/Users/someone/orders"}
@@ -92,4 +135,127 @@ func TestBundleTestSelectionPath(t *testing.T) {
 	// A path outside the synchronized files is an error. The error shows forward slashes.
 	_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, filepath.Join("..", "tests"))
 	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+filepath.ToSlash(syncRoot))
+}
+
+func TestTestTargetResumeCommand(t *testing.T) {
+	tests := []struct {
+		name   string
+		target testTarget
+		flags  map[string]string
+		want   string
+	}{
+		{
+			name:   "names that need quoting",
+			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
+			flags:  map[string]string{"target": "dev west", "profile": "CI West"},
+			want:   "databricks pipelines test my_pipeline --target 'dev west' --profile 'CI West' --resume u1",
+		},
+		{
+			name:   "pipeline ID with profile",
+			target: testTarget{pipelineID: "p1"},
+			flags:  map[string]string{"profile": "staging"},
+			want:   "databricks pipelines test --pipeline-id p1 --profile staging --resume u1",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rootCmd := &cobra.Command{Use: "databricks"}
+			rootCmd.PersistentFlags().StringP("profile", "p", "", "")
+			rootCmd.PersistentFlags().StringP("target", "t", "", "")
+			pipelinesCmd := &cobra.Command{Use: "pipelines"}
+			cmd := &cobra.Command{Use: "test"}
+			rootCmd.AddCommand(pipelinesCmd)
+			pipelinesCmd.AddCommand(cmd)
+			for name, value := range tc.flags {
+				require.NoError(t, cmd.Flag(name).Value.Set(value))
+			}
+			assert.Equal(t, tc.want, tc.target.resumeCommand(cmd, "u1"))
+		})
+	}
+}
+
+// Where the service cannot report test_only, as before pipeline testing is enabled, the update
+// may be a test update, so the command reads its results instead of rejecting it.
+func TestCheckTestUpdateWithoutTestOnly(t *testing.T) {
+	const updateID = "11111111-1111-1111-1111-111111111111"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/pipelines/p1/updates/"+updateID {
+			_, _ = w.Write([]byte(`{"update": {"state": "COMPLETED"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token"})
+	require.NoError(t, err)
+
+	assert.NoError(t, checkTestUpdate(t.Context(), w, "p1", updateID))
+}
+
+func TestTestRunError(t *testing.T) {
+	tests := []struct {
+		name    string
+		events  func() []testPipelineEvent
+		state   pipelines.UpdateInfoState
+		wantErr string
+	}{
+		{
+			name: "incomplete after completion",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "PASSED", "")}
+			},
+			state:   pipelines.UpdateInfoStateCompleted,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "update failed with the service's verdict although no test failed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{
+					caseEvent(t, "t::a", "PASSED", ""),
+					summaryEvent(t, 1, 1, 0, 0, 0),
+					decodeTestEvent(t, `{"id": "fatal", "error": {"fatal": true, "exceptions": [{"message": "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed."}]}}`),
+				}
+			},
+			state:   pipelines.UpdateInfoStateFailed,
+			wantErr: "update u1 is FAILED: [PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed.",
+		},
+		{
+			name: "tests failed although the update completed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 0, 1, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateCompleted,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "no tests collected although the update completed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{summaryEvent(t, 0, 0, 0, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateCompleted,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "canceled after tests failed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 0, 1, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateCanceled,
+			wantErr: "update u1 is CANCELED",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			run := newTestRun()
+			for _, e := range tc.events() {
+				run.add(e)
+			}
+			err := testRunError("u1", tc.state, run, run.incompleteReason(tc.state))
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tc.wantErr)
+			}
+		})
+	}
 }

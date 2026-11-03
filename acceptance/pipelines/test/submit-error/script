@@ -1,3 +1,7 @@
+# The pipeline exists, so that the command reaches the submit, which the test server rejects.
+pipeline_id=$($CLI pipelines create --json '{"name": "orders"}' | jq -r .pipeline_id)
+rm "$OUT_REQUESTS"
+
 title "A submit error from the service is shown as is, and no update ID is printed"
-trace musterr $CLI pipelines test --pipeline-id 1234
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id
 trace print_requests.py //updates
