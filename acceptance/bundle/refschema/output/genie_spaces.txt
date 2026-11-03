@@ -3,6 +3,8 @@ resources.genie_spaces.*.etag	string	ALL
 resources.genie_spaces.*.file_path	string	INPUT
 resources.genie_spaces.*.id	string	INPUT
 resources.genie_spaces.*.lifecycle	resources.Lifecycle	INPUT
+resources.genie_spaces.*.lifecycle.bind	*resources.Bind	INPUT
+resources.genie_spaces.*.lifecycle.bind.id	string	INPUT
 resources.genie_spaces.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.genie_spaces.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.genie_spaces.*.lifecycle.depends_on[*].resource	string	INPUT

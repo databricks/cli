@@ -831,6 +831,8 @@ resources.pipelines.*.libraries[*].notebook	*pipelines.NotebookLibrary	ALL
 resources.pipelines.*.libraries[*].notebook.path	string	ALL
 resources.pipelines.*.libraries[*].whl	string	ALL
 resources.pipelines.*.lifecycle	resources.Lifecycle	INPUT
+resources.pipelines.*.lifecycle.bind	*resources.Bind	INPUT
+resources.pipelines.*.lifecycle.bind.id	string	INPUT
 resources.pipelines.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.pipelines.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.pipelines.*.lifecycle.depends_on[*].resource	string	INPUT

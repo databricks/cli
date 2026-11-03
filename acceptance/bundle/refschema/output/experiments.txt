@@ -4,6 +4,8 @@ resources.experiments.*.experiment_id	string	REMOTE
 resources.experiments.*.id	string	INPUT
 resources.experiments.*.last_update_time	int64	REMOTE
 resources.experiments.*.lifecycle	resources.Lifecycle	INPUT
+resources.experiments.*.lifecycle.bind	*resources.Bind	INPUT
+resources.experiments.*.lifecycle.bind.id	string	INPUT
 resources.experiments.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.experiments.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.experiments.*.lifecycle.depends_on[*].resource	string	INPUT

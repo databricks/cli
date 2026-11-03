@@ -1,6 +1,8 @@
 resources.postgres_snapshot_schedules.*.branch	string	ALL
 resources.postgres_snapshot_schedules.*.id	string	INPUT
 resources.postgres_snapshot_schedules.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_snapshot_schedules.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_snapshot_schedules.*.lifecycle.bind.id	string	INPUT
 resources.postgres_snapshot_schedules.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_snapshot_schedules.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_snapshot_schedules.*.lifecycle.depends_on[*].resource	string	INPUT

@@ -198,6 +198,8 @@ resources.jobs.*.job_clusters[*].serverless_compute.policy_id	string	ALL
 resources.jobs.*.job_clusters[*].serverless_compute_id	string	ALL
 resources.jobs.*.job_id	int64	REMOTE
 resources.jobs.*.lifecycle	resources.Lifecycle	INPUT
+resources.jobs.*.lifecycle.bind	*resources.Bind	INPUT
+resources.jobs.*.lifecycle.bind.id	string	INPUT
 resources.jobs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.jobs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.jobs.*.lifecycle.depends_on[*].resource	string	INPUT

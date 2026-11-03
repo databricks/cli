@@ -11,6 +11,8 @@ resources.job_runs.*.job_parameters.*	string	ALL
 resources.job_runs.*.lifecycle	*dresources.JobRunLifecycleState	STATE
 resources.job_runs.*.lifecycle	*resources.JobRunLifecycle	INPUT
 resources.job_runs.*.lifecycle	resources.Lifecycle	INPUT
+resources.job_runs.*.lifecycle.bind	*resources.Bind	INPUT
+resources.job_runs.*.lifecycle.bind.id	string	INPUT
 resources.job_runs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.job_runs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.job_runs.*.lifecycle.depends_on[*].resource	string	INPUT

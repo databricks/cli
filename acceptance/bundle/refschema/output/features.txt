@@ -89,6 +89,8 @@ resources.features.*.id	string	INPUT
 resources.features.*.inputs	[]string	ALL
 resources.features.*.inputs[*]	string	ALL
 resources.features.*.lifecycle	resources.Lifecycle	INPUT
+resources.features.*.lifecycle.bind	*resources.Bind	INPUT
+resources.features.*.lifecycle.bind.id	string	INPUT
 resources.features.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.features.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.features.*.lifecycle.depends_on[*].resource	string	INPUT
