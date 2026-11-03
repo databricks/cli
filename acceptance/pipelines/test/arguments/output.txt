@@ -2,6 +2,8 @@
 >>> [CLI] pipelines test --help
 Run the tests of a pipeline in a test-only update.
 
+This command is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it.
+
 PIPELINE_KEY is the unique name of the pipeline, as defined in its YAML file.
 It is required when test selections are given. If there is only one pipeline
 in the project and no arguments are given, it is selected automatically.
@@ -37,6 +39,10 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
       --var strings      set values for variables defined in project config. Example: --var="foo=bar"
+
+=== The command is experimental and off by default
+>>> musterr [CLI] pipelines test --pipeline-id 1234
+Error: pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it
 
 === pytest arguments must be passed with --pytest-arg
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -k orders
