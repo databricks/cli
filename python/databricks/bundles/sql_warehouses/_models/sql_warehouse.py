@@ -108,8 +108,8 @@ class SqlWarehouse(Resource):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.
-    Must be a multiple of 3 between 3 and 960. The effective maximum cannot be
-    lower than the warehouse's minimum capacity.
+    Must be at least the minimum DBU for the selected warehouse size and no greater
+    than the configured DBU limit. Actual capacity may be below this ceiling.
     """
 
     max_num_clusters: VariableOrOptional[int] = None
@@ -275,8 +275,8 @@ class SqlWarehouseDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.
-    Must be a multiple of 3 between 3 and 960. The effective maximum cannot be
-    lower than the warehouse's minimum capacity.
+    Must be at least the minimum DBU for the selected warehouse size and no greater
+    than the configured DBU limit. Actual capacity may be below this ceiling.
     """
 
     max_num_clusters: VariableOrOptional[int]
