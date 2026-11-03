@@ -246,6 +246,19 @@ func TestSetHost(t *testing.T) {
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.EqualError(t, err, `invalid host "https://my workspace.test"`)
 
+	// Test hosts with a malformed or unsupported scheme from flag
+	for _, host := range []string{"https//www.host1.test", "https:www.host1.test", "//www.host1.test", "ftp://www.host1.test"} {
+		authArguments.Host = host
+		err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+		assert.ErrorIs(t, err, errInvalidHost, host)
+	}
+
+	// Test host with an uppercase scheme from flag
+	authArguments = auth.AuthArguments{Host: "HTTPS://WWW.HOST1.TEST"}
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "HTTPS://WWW.HOST1.TEST", authArguments.Host)
+
 	// Test host:port without a scheme from flag
 	authArguments = auth.AuthArguments{Host: "www.host1.test:8080"}
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})

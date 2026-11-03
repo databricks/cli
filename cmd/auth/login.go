@@ -654,17 +654,21 @@ func validateLoginHost(host string) error {
 	return normalizeLoginHost(&auth.AuthArguments{Host: host})
 }
 
-// hasHostname reports whether host, with or without a scheme, is a URL with a
-// hostname.
+// hasHostname reports whether host, with or without a scheme, is an http or
+// https URL with a hostname.
 func hasHostname(host string) bool {
-	// url.Parse can't read a host without a scheme, e.g. "localhost:8080",
-	// so check it as an https host.
-	lower := strings.ToLower(host)
-	if !strings.HasPrefix(lower, "https:") && !strings.HasPrefix(lower, "http:") {
-		host = "https://" + host
-	}
 	u, err := url.Parse(host)
-	return err == nil && u.Hostname() != ""
+	// url.Parse can't read a host without a scheme, e.g. "localhost:8080", so
+	// check it as an https host. A host with "//" has a scheme, possibly a
+	// malformed one like in "https//x.test", so it is checked as is.
+	if (err != nil || !isHTTPScheme(u.Scheme)) && !strings.Contains(host, "//") {
+		u, err = url.Parse("https://" + host)
+	}
+	return err == nil && isHTTPScheme(u.Scheme) && u.Hostname() != ""
+}
+
+func isHTTPScheme(scheme string) bool {
+	return scheme == "http" || scheme == "https"
 }
 
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
