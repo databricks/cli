@@ -1,0 +1,16 @@
+# Deploy foo to create it in state
+trace $CLI bundle deploy --auto-approve
+
+JOB_ID=$(read_id.py foo)
+
+# Bind an experiment whose ID happens to equal the job's ID. IDs are only unique
+# per resource type, so this is not a collision with jobs.foo; the bind proceeds and
+# fails only because no experiment with that ID exists.
+cp databricks.yml databricks.yml.bak
+cp databricks_with_bind.yml databricks.yml
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$JOB_ID"
+trace musterr $CLI bundle plan
+
+# Cleanup
+cp databricks.yml.bak databricks.yml
+trace $CLI bundle destroy --auto-approve

@@ -297,8 +297,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// plan a Bind / BindAndUpdate instead of a Create.
 			if bindID, ok := bindIDByKey[resourceKey]; ok {
 				entry.BindID = bindID
-				b.handleBindPlan(ctx, resourceKey, entry, adapter)
-				return !logdiag.HasError(ctx)
+				return b.handleBindPlan(ctx, resourceKey, entry, adapter)
 			}
 			entry.Action = deployplan.Create
 			return true
@@ -420,7 +419,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// state, a config change that would recreate or re-ID it still surfaces as an
 		// error so the bind block behaves as a persistent guard (see handleBindPlan).
 		if bound && (action == deployplan.Recreate || action == deployplan.UpdateWithID) {
-			logdiag.LogError(ctx, buildBindConflictError("cannot bind "+resourceKey, action, entry.Changes, resourceKey))
+			logdiag.LogError(ctx, buildBindConflictError(resourceKey, action, entry.Changes, false))
 			return false
 		}
 
@@ -1032,6 +1031,11 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 				return nil, errors.New("internal error: no db entry")
 			}
 			return id, nil
+		}
+		// A bind adopts the resource under the ID from the bind block; it is known
+		// before deployment even though the state has no entry yet.
+		if targetEntry.BindID != "" {
+			return targetEntry.BindID, nil
 		}
 		// id may change after deployment, this needs to be done later
 		return nil, errDelayed

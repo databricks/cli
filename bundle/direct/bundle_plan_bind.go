@@ -80,6 +80,8 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 	// A bind ID must not collide with another resource's ID in state. Such a collision
 	// would let a bind silently redirect a delete/recreate/update_id at a resource the
 	// user is also trying to import; reject it instead of choosing one over the other.
+	// IDs are only unique within a resource type (a job and an experiment can share a
+	// numeric ID), so only entries of the bind's own type can collide.
 	stateKeys := make([]string, 0, len(b.StateDB.Data.State))
 	for stateKey := range b.StateDB.Data.State {
 		stateKeys = append(stateKeys, stateKey)
@@ -91,6 +93,9 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 		for _, stateKey := range stateKeys {
 			stateEntry := b.StateDB.Data.State[stateKey]
 			if stateKey == bindKey || stateEntry.ID != bindID {
+				continue
+			}
+			if stateType, _ := splitResourceKey(stateKey); stateType != resourceType {
 				continue
 			}
 			bindPath := bindBlockPath(targetName, resourceType, resourceName)
@@ -113,7 +118,8 @@ func (b *DeploymentBundle) validateBindConfig(ctx context.Context, configRoot *c
 //
 // Recreate / UpdateWithID actions imply destroying or replacing the workspace
 // resource — incompatible with bind — so they surface as actionable errors.
-func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter) {
+// Returns false if an error was logged.
+func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter) bool {
 	bindID := entry.BindID
 	errorPrefix := "cannot bind " + resourceKey
 
@@ -126,7 +132,7 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 		} else {
 			logdiag.LogError(ctx, fmt.Errorf("%s: reading remote resource id=%q: %w", errorPrefix, bindID, err))
 		}
-		return
+		return false
 	}
 
 	entry.RemoteState = remoteState
@@ -135,13 +141,13 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 	sv, ok := b.StateCache.Load(resourceKey)
 	if !ok {
 		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry", errorPrefix))
-		return
+		return false
 	}
 
 	remoteStateComparable, err := adapter.RemapState(remoteState)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state: %w", errorPrefix, err))
-		return
+		return false
 	}
 
 	// Compact both sides on the same fields, so a hashed_fields field is a hash on
@@ -149,49 +155,59 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 	remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state: %w", errorPrefix, err))
-		return
+		return false
 	}
 	localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
-		return
+		return false
 	}
 
 	remoteDiff, err := structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
-		return
+		return false
 	}
 
 	// No "saved state" exists for a first-time bind; the diff is purely remote vs. config.
 	entry.Changes, err = prepareChanges(ctx, adapter, nil, remoteDiff, nil, remoteStateComparable)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-		return
+		return false
 	}
 
 	err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
-		return
+		return false
 	}
 
 	switch maxAction := getMaxAction(entry.Changes); maxAction {
 	case deployplan.Skip, deployplan.Undefined:
 		entry.Action = deployplan.Bind
 	case deployplan.Update, deployplan.Resize:
+		// Same guard as the in-state path: an update can only be applied if the
+		// resource implements DoUpdate.
+		if maxAction == deployplan.Update && !adapter.HasDoUpdate() {
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
+			return false
+		}
 		entry.Action = deployplan.BindAndUpdate
 	case deployplan.Recreate, deployplan.UpdateWithID:
-		logdiag.LogError(ctx, buildBindConflictError(errorPrefix, maxAction, entry.Changes, resourceKey))
+		logdiag.LogError(ctx, buildBindConflictError(resourceKey, maxAction, entry.Changes, true))
+		return false
 	default:
 		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: unexpected action %q during bind planning", errorPrefix, maxAction))
+		return false
 	}
+	return true
 }
 
 // buildBindConflictError formats a multi-line message that names the fields whose
 // changes forced an incompatible action (Recreate / UpdateWithID) and shows the two
-// concrete resolutions: drop the offending fields, or drop the bind block.
-func buildBindConflictError(errorPrefix string, action deployplan.ActionType, changes deployplan.Changes, resourceKey string) error {
+// concrete resolutions: drop the offending fields, or drop the bind block. firstBind
+// tells a resource being adopted apart from one that is already bound in state.
+func buildBindConflictError(resourceKey string, action deployplan.ActionType, changes deployplan.Changes, firstBind bool) error {
 	problematicFields := make([]string, 0, len(changes))
 	for fieldPath, change := range changes {
 		if change.Action == action {
@@ -203,17 +219,32 @@ func buildBindConflictError(errorPrefix string, action deployplan.ActionType, ch
 
 	resourceType, resourceName := splitResourceKey(resourceKey)
 
-	var msg strings.Builder
+	var headline, effect, option1 string
 	// buildBindConflictError is only invoked for Recreate / UpdateWithID; other
 	// action types are guarded by the caller.
-	switch action { //nolint:exhaustive
-	case deployplan.Recreate:
-		msg.WriteString(errorPrefix + ": cannot recreate resource with bind block\n\n")
-		msg.WriteString("This would destroy and recreate the existing workspace resource, changing its ID.\n\n")
-	case deployplan.UpdateWithID:
-		msg.WriteString(errorPrefix + ": cannot update resource ID with bind block\n\n")
-		msg.WriteString("This would replace the existing workspace resource with a new ID.\n\n")
+	switch { //nolint:exhaustive
+	case action == deployplan.Recreate && firstBind:
+		headline = "cannot bind " + resourceKey + ": cannot recreate resource with bind block"
+		effect = "This would destroy and recreate the existing workspace resource, changing its ID."
+	case action == deployplan.Recreate:
+		headline = "cannot plan " + resourceKey + ": bind block prevents recreating the bound resource"
+		effect = "This would destroy and recreate the bound workspace resource, changing its ID."
+	case action == deployplan.UpdateWithID && firstBind:
+		headline = "cannot bind " + resourceKey + ": cannot update resource ID with bind block"
+		effect = "This would replace the existing workspace resource with a new ID."
+	case action == deployplan.UpdateWithID:
+		headline = "cannot plan " + resourceKey + ": bind block prevents changing the ID of the bound resource"
+		effect = "This would replace the bound workspace resource with a new ID."
 	}
+	if firstBind {
+		option1 = "Remove the problematic fields from your configuration to make this a bind-only operation:"
+	} else {
+		option1 = "Revert the problematic fields in your configuration to keep the bound resource as it is:"
+	}
+
+	var msg strings.Builder
+	msg.WriteString(headline + "\n\n")
+	msg.WriteString(effect + "\n\n")
 
 	msg.WriteString("The following fields cannot be modified because they require ")
 	if action == deployplan.Recreate {
@@ -231,7 +262,7 @@ func buildBindConflictError(errorPrefix string, action deployplan.ActionType, ch
 	msg.WriteString("\n")
 
 	msg.WriteString("To resolve this issue, you have two options:\n\n")
-	msg.WriteString("1. Remove the problematic fields from your configuration to make this a bind-only operation:\n\n")
+	msg.WriteString("1. " + option1 + "\n\n")
 	msg.WriteString("   resources:\n")
 	fmt.Fprintf(&msg, "     %s:\n", resourceType)
 	fmt.Fprintf(&msg, "       %s:\n", resourceName)
@@ -247,7 +278,8 @@ func buildBindConflictError(errorPrefix string, action deployplan.ActionType, ch
 	msg.WriteString("       # bind:\n")
 	fmt.Fprintf(&msg, "       #   %s:\n", resourceType)
 	fmt.Fprintf(&msg, "       #     %s:\n", resourceName)
-	msg.WriteString("       #       id: <resource_id>\n")
+	// No trailing newline: error strings must not end with one.
+	msg.WriteString("       #       id: <resource_id>")
 
 	return errors.New(msg.String())
 }
