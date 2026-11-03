@@ -144,7 +144,7 @@ jobs:
           else
             gh issue create --label "$label" \
               --title "Bump vulnerable dependencies workflow is failing" \
-              --body "@databricks/eng-deco-cli the scheduled \`Bump vulnerable dependencies\` workflow failed: $RUN_URL
+              --body "@databricks/eng-deco-cli the scheduled \`Bump vulnerable dependencies\` workflow failed.
 
-          Dependencies with known vulnerabilities are not being bumped until this is fixed. Subsequent failures are added as comments; close this issue once the workflow is fixed."
+          $RUN_URL"
           fi
