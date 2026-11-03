@@ -5,6 +5,11 @@ on:
     # Run daily at 05:30 UTC, just after the Go toolchain bumper.
     - cron: "30 5 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Compute and show the bump without creating a pull request or failure issue"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -35,11 +40,16 @@ jobs:
           # vulnbump lives in the tools module, which is what this job compiles.
           go-version-file: tools/go.mod
 
-      - name: Build vulnbump
-        run: go -C tools/vulnbump build -o "$RUNNER_TEMP/vulnbump" .
+      - name: Build vulnbump and repoadvisory
+        run: |
+          go -C tools/vulnbump build -o "$RUNNER_TEMP/vulnbump" .
+          go -C tools/repoadvisory build -o "$RUNNER_TEMP/repoadvisory" .
 
       - name: Bump vulnerable dependencies
         id: bump
+        env:
+          # repoadvisory reads public repository advisories through the GitHub API.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -57,8 +67,18 @@ jobs:
           scan="$(mktemp)"
           go tool -modfile=tools/go.mod govulncheck -scan module -format json > "$scan"
 
+          # Maintainers publish GitHub repository security advisories before
+          # they reach the Go vulnerability database, so govulncheck misses
+          # them. repoadvisory checks the modules linked into the CLI against
+          # those advisories and emits the ones with a patched version in the
+          # same JSON format. Each scan writes to its own file so a failure in
+          # either aborts the job.
+          advisories="$(mktemp)"
+          go list -deps -f '{{with .Module}}{{if .Version}}{{.Path}} {{.Version}}{{end}}{{end}}' . \
+            | "$RUNNER_TEMP/repoadvisory" > "$advisories"
+
           summary_file="$(mktemp)"
-          "$RUNNER_TEMP/vulnbump" . < "$scan" > "$summary_file"
+          cat "$scan" "$advisories" | "$RUNNER_TEMP/vulnbump" . > "$summary_file"
 
           if git diff --quiet; then
             echo "No vulnerable dependencies to bump."
@@ -78,7 +98,7 @@ jobs:
 
       - name: Create pull request
         id: cpr
-        if: steps.bump.outputs.needed == 'true'
+        if: steps.bump.outputs.needed == 'true' && !inputs.dry_run
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # A fixed branch means a daily run updates the existing open PR in
@@ -87,9 +107,9 @@ jobs:
           commit-message: "Bump dependencies with known vulnerabilities"
           title: "Bump dependencies with known vulnerabilities"
           body: |
-            Bump dependencies flagged by `govulncheck -scan module` to their fixed versions.
+            Bump dependencies flagged by `govulncheck -scan module` or by GitHub repository security advisories to their fixed versions.
 
-            Each CVE links to its Go advisory page.
+            Each advisory links to its advisory page.
 
             ${{ steps.bump.outputs.summary }}
 
@@ -126,7 +146,7 @@ jobs:
 
       # A failed scheduled run is otherwise only visible in the Actions tab.
       - name: Report failure
-        if: failure()
+        if: failure() && !inputs.dry_run
         uses: ./.github/actions/report-failure
         with:
           label: bump-vuln-deps-failure
