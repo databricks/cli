@@ -1,5 +1,3 @@
-Badness = "After a BOM-prefixed SQL notebook is removed locally, sync reports deleting bom.sql but leaves the remote notebook bom. The CLI does not detect the file as a notebook, so the snapshot keeps tracking it as bom.sql"
-
 Cloud = true
 Env.MSYS_NO_PATHCONV = "1"
 Ignore = [".databricks"]
