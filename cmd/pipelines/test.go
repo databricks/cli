@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
@@ -49,6 +50,9 @@ func newStartTestUpdateRequest(selection, pytestArgs []string) startTestUpdateRe
 	}
 	return req
 }
+
+// pipelinesTestEnvVar enables the experimental pipelines test command.
+const pipelinesTestEnvVar = "DATABRICKS_CLI_PIPELINES_TEST"
 
 const pytestArgHint = "pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'"
 
@@ -313,6 +317,8 @@ func testCommand() *cobra.Command {
 		Short: "*Preview* Run the tests of a pipeline",
 		Long: `Run the tests of a pipeline in a test-only update.
 
+This command is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it.
+
 PIPELINE_KEY is the unique name of the pipeline, as defined in its YAML file.
 It is required when test selections are given. If there is only one pipeline
 in the project and no arguments are given, it is selected automatically.
@@ -346,6 +352,9 @@ example:
 	cmd.SetFlagErrorFunc(testFlagErrorFunc)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if enabled, _ := env.GetBool(cmd.Context(), pipelinesTestEnvVar); !enabled {
+			return fmt.Errorf("pipelines test is experimental. Set %s=true to enable it", pipelinesTestEnvVar)
+		}
 		if cmd.ArgsLenAtDash() >= 0 {
 			return errors.New("the -- separator is not supported: " + pytestArgHint)
 		}

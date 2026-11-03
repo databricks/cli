@@ -1,5 +1,8 @@
 trace $CLI pipelines test --help
 
+title "The command is experimental and off by default"
+(unset DATABRICKS_CLI_PIPELINES_TEST; trace musterr $CLI pipelines test --pipeline-id 1234)
+
 title "pytest arguments must be passed with --pytest-arg"
 trace musterr $CLI pipelines test --pipeline-id 1234 -k orders
 trace musterr $CLI pipelines test --pipeline-id 1234 -- -k orders
