@@ -54,6 +54,12 @@ The conversation history attached to a deleted space is permanently lost:`
 This action will result in the deletion or recreation of the following materialization sets.
 Every materialized feature in a recreated set is dropped and recomputed from scratch, including
 the members whose configuration did not change:`
+
+	deleteOrRecreateFeatureMessage = `
+This action will result in the deletion or recreation of the following Feature Views.
+A Feature View that a materialization set still materializes cannot be recreated: remove its
+members from the set in an earlier deploy. The CLI does not check whether a FeatureSpec still
+uses a Feature View:`
 )
 
 // DataLossWarning is the warning shown when a non-interactive command is about
@@ -104,4 +110,7 @@ For Direct Access indexes, all upserted vectors are permanently lost:`
 
 	deleteGenieSpaceMessage = `This action will result in the deletion of the following Genie spaces.
 The conversation history attached to them is permanently lost:`
+
+	deleteFeatureMessage = `This action will result in the deletion of the following Feature Views.
+The CLI does not check whether a FeatureSpec still uses a Feature View:`
 )

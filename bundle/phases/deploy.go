@@ -41,6 +41,7 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
 	{group: "materialization_sets", message: deleteOrRecreateMaterializationSetMessage},
+	{group: "features", message: deleteOrRecreateFeatureMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {

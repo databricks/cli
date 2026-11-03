@@ -38,6 +38,11 @@ The following resources will be deleted:
   delete resources.features.okfeat
   delete resources.materialization_sets.set1
 
+This action will result in the deletion of the following Feature Views.
+The CLI does not check whether a FeatureSpec still uses a Feature View:
+  delete resources.features.failfeat
+  delete resources.features.okfeat
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-matset-settled-[UNIQUE_NAME]/default
 
 Destroy: 3 deleted
