@@ -49,7 +49,7 @@ func TestPermissionDiagnosticsApplyFail(t *testing.T) {
 	require.Contains(t, diags[0].Summary, expectedMsg)
 }
 
-func TestPermissionDiagnosticsRunAsFileAccess(t *testing.T) {
+func TestPermissionDiagnosticsRunAsAccess(t *testing.T) {
 	deployerPermission := resources.Permission{Level: "CAN_MANAGE", UserName: "testuser@databricks.com"}
 	servicePrincipalName := "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee"
 	servicePrincipal := jobs.JobRunAs{ServicePrincipalName: servicePrincipalName}
@@ -67,26 +67,26 @@ func TestPermissionDiagnosticsRunAsFileAccess(t *testing.T) {
 		{
 			name:           "service principal without permissions",
 			runAs:          servicePrincipal,
-			wantSummary:    "is not in top-level permissions for bundle files",
+			wantSummary:    "is not in bundle top-level permissions",
 			wantSuggestion: "service_principal_name: " + servicePrincipalName + "\n      level: CAN_VIEW",
 		},
 		{
 			name:           "user without permissions",
 			runAs:          jobs.JobRunAs{UserName: "runner@example.test"},
-			wantSummary:    "is not in top-level permissions for bundle files",
+			wantSummary:    "is not in bundle top-level permissions",
 			wantSuggestion: "user_name: runner@example.test\n      level: CAN_VIEW",
 		},
 		{
 			name:           "group without permissions",
 			runAs:          jobs.JobRunAs{GroupName: "runners"},
-			wantSummary:    "is not in top-level permissions for bundle files",
+			wantSummary:    "is not in bundle top-level permissions",
 			wantSuggestion: "group_name: runners\n      level: CAN_VIEW",
 		},
 		{
 			name:           "unrelated group permission",
 			runAs:          servicePrincipal,
 			permissions:    []resources.Permission{deployerPermission, {Level: "CAN_VIEW", GroupName: "runners"}},
-			wantSummary:    "is not in top-level permissions for bundle files",
+			wantSummary:    "is not in bundle top-level permissions",
 			wantSuggestion: "service_principal_name: " + servicePrincipalName,
 		},
 		{
@@ -137,7 +137,7 @@ func TestPermissionDiagnosticsRunAsFileAccess(t *testing.T) {
 			name:           "immutable bundle without permissions",
 			runAs:          servicePrincipal,
 			syncMode:       config.SyncModeImmutable,
-			wantSummary:    "is not in top-level permissions for bundle files",
+			wantSummary:    "is not in bundle top-level permissions",
 			wantSuggestion: "level: CAN_VIEW",
 		},
 		{
@@ -164,7 +164,7 @@ func TestPermissionDiagnosticsRunAsFileAccess(t *testing.T) {
 			deployment.Config.Workspace.SyncMode = testCase.syncMode
 			deployment.Config.Workspace.FilePath = testCase.filePath
 			if testCase.currentUser != "" {
-				deployment.Config.Workspace.CurrentUser.User.UserName = testCase.currentUser
+				deployment.Config.Workspace.CurrentUser.UserName = testCase.currentUser
 			}
 
 			diags := bundle.Apply(t.Context(), deployment, permissions.PermissionDiagnostics())

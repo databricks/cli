@@ -31,7 +31,7 @@ func (m *permissionDiagnostics) Name() string {
 }
 
 func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := runAsFileAccessDiagnostics(b)
+	diags := runAsAccessDiagnostics(b)
 	// Only recommend deployment-identity access when top-level permissions are explicit.
 	if len(b.Config.Permissions) == 0 {
 		return diags
@@ -66,7 +66,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 	})
 }
 
-func runAsFileAccessDiagnostics(b *bundle.Bundle) diag.Diagnostics {
+func runAsAccessDiagnostics(b *bundle.Bundle) diag.Diagnostics {
 	runAs := b.Config.RunAs
 	if runAs == nil {
 		return nil
@@ -113,8 +113,8 @@ func runAsFileAccessDiagnostics(b *bundle.Bundle) diag.Diagnostics {
 
 	return diag.Diagnostics{{
 		Severity: diag.Warning,
-		Summary:  fmt.Sprintf("run_as identity %q is not in top-level permissions for bundle files", identity),
-		Detail: fmt.Sprintf("Add a top-level permission so this identity can read deployed files:\n"+
+		Summary:  fmt.Sprintf("run_as identity %q is not in bundle top-level permissions", identity),
+		Detail: fmt.Sprintf("Add a top-level permission so this identity can access deployed files and resources:\n"+
 			"  permissions:\n"+
 			"    - %s: %s\n"+
 			"      level: CAN_VIEW", identityType, identity),

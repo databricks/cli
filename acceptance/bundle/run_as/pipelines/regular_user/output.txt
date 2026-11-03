@@ -25,10 +25,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 \nProcessing target: t_user_name_different
 
 >>> [CLI] bundle validate -t t_user_name_different
-Warning: run_as identity "different@databricks.com" is not in top-level permissions for bundle files
+Warning: run_as identity "different@databricks.com" is not in bundle top-level permissions
   in databricks.yml:13:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: different@databricks.com
       level: CAN_VIEW
@@ -42,10 +42,10 @@ Workspace:
 Found 1 warning
 
 >>> [CLI] bundle plan -t t_user_name_different
-Warning: run_as identity "different@databricks.com" is not in top-level permissions for bundle files
+Warning: run_as identity "different@databricks.com" is not in bundle top-level permissions
   in databricks.yml:13:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: different@databricks.com
       level: CAN_VIEW
@@ -54,20 +54,20 @@ create pipelines.nyc_taxi_pipeline
 create pipelines.nyc_taxi_pipeline.permissions
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
-Warning: run_as identity "different@databricks.com" is not in top-level permissions for bundle files
+Warning: run_as identity "different@databricks.com" is not in bundle top-level permissions
   in databricks.yml:13:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: different@databricks.com
       level: CAN_VIEW
 
 
 >>> [CLI] bundle deploy -t t_user_name_different
-Warning: run_as identity "different@databricks.com" is not in top-level permissions for bundle files
+Warning: run_as identity "different@databricks.com" is not in bundle top-level permissions
   in databricks.yml:13:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: different@databricks.com
       level: CAN_VIEW
@@ -80,10 +80,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 \nProcessing target: t_service_principal_name
 
 >>> [CLI] bundle validate -t t_service_principal_name
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:10:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - service_principal_name: [UUID]
       level: CAN_VIEW
@@ -97,10 +97,10 @@ Workspace:
 Found 1 warning
 
 >>> [CLI] bundle plan -t t_service_principal_name
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:10:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - service_principal_name: [UUID]
       level: CAN_VIEW
@@ -109,20 +109,20 @@ create pipelines.nyc_taxi_pipeline
 create pipelines.nyc_taxi_pipeline.permissions
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:10:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - service_principal_name: [UUID]
       level: CAN_VIEW
 
 
 >>> [CLI] bundle deploy -t t_service_principal_name
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:10:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - service_principal_name: [UUID]
       level: CAN_VIEW
@@ -135,10 +135,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 \nProcessing target: t_service_principal_name_different
 
 >>> [CLI] bundle validate -t t_service_principal_name_different
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:16:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: [UUID]
       level: CAN_VIEW
@@ -152,10 +152,10 @@ Workspace:
 Found 1 warning
 
 >>> [CLI] bundle plan -t t_service_principal_name_different
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:16:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: [UUID]
       level: CAN_VIEW
@@ -164,20 +164,20 @@ create pipelines.nyc_taxi_pipeline
 create pipelines.nyc_taxi_pipeline.permissions
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:16:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: [UUID]
       level: CAN_VIEW
 
 
 >>> [CLI] bundle deploy -t t_service_principal_name_different
-Warning: run_as identity "[UUID]" is not in top-level permissions for bundle files
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
   in databricks.yml:16:7
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: [UUID]
       level: CAN_VIEW

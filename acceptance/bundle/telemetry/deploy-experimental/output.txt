@@ -4,10 +4,10 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
   at experimental.use_legacy_run_as
   in databricks.yml:5:22
 
-Warning: run_as identity "abcd" is not in top-level permissions for bundle files
+Warning: run_as identity "abcd" is not in bundle top-level permissions
   in databricks.yml:8:3
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - user_name: abcd
       level: CAN_VIEW

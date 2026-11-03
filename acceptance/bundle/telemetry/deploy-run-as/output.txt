@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
-Warning: run_as identity "sp_test" is not in top-level permissions for bundle files
+Warning: run_as identity "sp_test" is not in bundle top-level permissions
   in databricks.yml:5:3
 
-Add a top-level permission so this identity can read deployed files:
+Add a top-level permission so this identity can access deployed files and resources:
   permissions:
     - service_principal_name: sp_test
       level: CAN_VIEW
