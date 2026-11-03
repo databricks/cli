@@ -224,27 +224,27 @@ func TestSetHost(t *testing.T) {
 	// Test host of only spaces from flag
 	authArguments.Host = "  "
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
-	assert.EqualError(t, err, `invalid host "  "`)
+	assert.EqualError(t, err, `invalid host "  ". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
 
 	// Test host with a scheme but no hostname from flag
 	authArguments.Host = "https://"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
-	assert.EqualError(t, err, `invalid host "https://"`)
+	assert.EqualError(t, err, `invalid host "https://". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
 
 	// Test host with a scheme and query params but no hostname from flag
 	authArguments.Host = "https://?o=123"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
-	assert.EqualError(t, err, `invalid host "https://?o=123"`)
+	assert.EqualError(t, err, `invalid host "https://?o=123". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
 
 	// Test host that is not a URL from flag
 	authArguments.Host = "my workspace.test"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
-	assert.EqualError(t, err, `invalid host "my workspace.test"`)
+	assert.EqualError(t, err, `invalid host "my workspace.test". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
 
 	// Test host with a scheme that is not a URL from flag
 	authArguments.Host = "https://my workspace.test"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
-	assert.EqualError(t, err, `invalid host "https://my workspace.test"`)
+	assert.EqualError(t, err, `invalid host "https://my workspace.test". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
 
 	// Test hosts with a malformed or unsupported scheme from flag
 	for _, host := range []string{"https//www.host1.test", "https:www.host1.test", "//www.host1.test", "ftp://www.host1.test"} {
@@ -1546,7 +1546,7 @@ func TestLoginSkipWorkspaceRejectsInvalidHost(t *testing.T) {
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skip-workspace"})
 	err := cmd.Execute()
-	assert.EqualError(t, err, `invalid host "?a=123"`)
+	assert.EqualError(t, err, `invalid host "?a=123". Expected a URL like https://<databricks-instance>.cloud.databricks.com`)
 }
 
 func TestLoginRejectsInvalidHostBeforeProfileNamePrompt(t *testing.T) {

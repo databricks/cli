@@ -1,6 +1,6 @@
 
 >>> musterr [CLI] auth login --host ?o=123 --profile test
-Error: invalid host "?o=123"
+Error: invalid host "?o=123". Expected a URL like https://<databricks-instance>.cloud.databricks.com
 
 >>> musterr [CLI] auth login --host https:// --profile test
-Error: invalid host "https://"
+Error: invalid host "https://". Expected a URL like https://<databricks-instance>.cloud.databricks.com

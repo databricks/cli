@@ -624,6 +624,8 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 
 var errInvalidHost = errors.New("invalid host")
 
+const exampleHost = "https://<databricks-instance>.cloud.databricks.com"
+
 // normalizeLoginHost strips the trailing slash and the query params from the
 // host and moves the workspace and account ID query params into WorkspaceID and
 // AccountID unless they are set.
@@ -631,13 +633,11 @@ var errInvalidHost = errors.New("invalid host")
 // "https://" or "https://my workspace.test", because login would then use discovery
 // or DATABRICKS_HOST, connect to a host named "https", or fail later.
 func normalizeLoginHost(authArguments *auth.AuthArguments) error {
-	host := strings.TrimSuffix(strings.TrimSpace(authArguments.Host), "/")
-
-	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
-	// URL params from explicit --host override stale profile values.
-	params := auth.ExtractHostQueryParams(host)
-	if !hasHostname(params.Host) {
-		return fmt.Errorf("%w %q", errInvalidHost, authArguments.Host)
+	params, err := parseLoginHost(authArguments.Host)
+	if err != nil {
+		// The host may come from a profile or DATABRICKS_HOST, so say what
+		// shape is expected.
+		return fmt.Errorf("%w. Expected a URL like %s", err, exampleHost)
 	}
 	authArguments.Host = params.Host
 	if authArguments.WorkspaceID == "" {
@@ -649,9 +649,23 @@ func normalizeLoginHost(authArguments *auth.AuthArguments) error {
 	return nil
 }
 
-// validateLoginHost returns the error normalizeLoginHost returns for host.
+// parseLoginHost trims host and extracts its query params. It returns
+// errInvalidHost if host is not a URL with a hostname.
+func parseLoginHost(host string) (auth.HostParams, error) {
+	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
+	// URL params from explicit --host override stale profile values.
+	params := auth.ExtractHostQueryParams(strings.TrimSuffix(strings.TrimSpace(host), "/"))
+	if !hasHostname(params.Host) {
+		return auth.HostParams{}, fmt.Errorf("%w %q", errInvalidHost, host)
+	}
+	return params, nil
+}
+
+// validateLoginHost returns the error normalizeLoginHost returns for host,
+// without the example host that the host prompt prints above the input.
 func validateLoginHost(host string) error {
-	return normalizeLoginHost(&auth.AuthArguments{Host: host})
+	_, err := parseLoginHost(host)
+	return err
 }
 
 // hasHostname reports whether host, with or without a scheme, is an http or

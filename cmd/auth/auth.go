@@ -51,7 +51,7 @@ func promptForHost(ctx context.Context) (string, error) {
 	// promptui's screenbuf does not account for terminal line wrapping, and a
 	// long "label + value" line that wraps causes each keystroke to leave a
 	// stale render on screen instead of overwriting the previous one.
-	cmdio.LogString(ctx, "Example: https://<databricks-instance>.cloud.databricks.com")
+	cmdio.LogString(ctx, "Example: "+exampleHost)
 	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
 		Label: "Databricks host",
 		Validate: func(input string) error {
