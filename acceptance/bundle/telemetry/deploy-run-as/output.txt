@@ -1,5 +1,13 @@
 
 >>> [CLI] bundle deploy
+Warning: run_as identity "sp_test" is not in top-level permissions for bundle files
+  in databricks.yml:5:3
+
+Add a top-level permission so this identity can read deployed files:
+  permissions:
+    - service_principal_name: sp_test
+      level: CAN_VIEW
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
 Files: 1 uploaded, 0 deleted

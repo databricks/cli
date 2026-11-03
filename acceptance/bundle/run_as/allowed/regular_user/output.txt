@@ -1,5 +1,13 @@
 
 >>> [CLI] bundle validate -o json
+Warning: run_as identity "my_service_principal" is not in top-level permissions for bundle files
+  in databricks.yml:5:3
+
+Add a top-level permission so this identity can read deployed files:
+  permissions:
+    - service_principal_name: my_service_principal
+      level: CAN_VIEW
+
 
 >>> jq .run_as
 {
@@ -38,6 +46,14 @@
 }
 
 >>> [CLI] bundle validate -o json -t development
+Warning: run_as identity "my_user_name" is not in top-level permissions for bundle files
+  in databricks.yml:13:7
+
+Add a top-level permission so this identity can read deployed files:
+  permissions:
+    - user_name: my_user_name
+      level: CAN_VIEW
+
 
 >>> jq .run_as
 {

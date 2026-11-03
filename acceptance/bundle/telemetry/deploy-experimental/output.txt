@@ -4,6 +4,14 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
   at experimental.use_legacy_run_as
   in databricks.yml:5:22
 
+Warning: run_as identity "abcd" is not in top-level permissions for bundle files
+  in databricks.yml:8:3
+
+Add a top-level permission so this identity can read deployed files:
+  permissions:
+    - user_name: abcd
+      level: CAN_VIEW
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.foo
 Files: 1 uploaded, 0 deleted
