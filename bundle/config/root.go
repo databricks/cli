@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynloc"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
@@ -129,6 +131,10 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	v, err = rewriteShorthands(v)
 	if err != nil {
 		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
+	}
+	v, err = rewriteForEachTaskInputs(v)
+	if err != nil {
+		return nil, diag.FromErr(fmt.Errorf("failed to rewrite for_each_task.inputs in %s: %w", path, err))
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
@@ -550,6 +556,36 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 			}
 		}))
 	}))
+}
+
+func rewriteForEachTaskInputs(v dyn.Value) (dyn.Value, error) {
+	return dyn.Walk(v, func(p dyn.Path, input dyn.Value) (dyn.Value, error) {
+		if !isForEachTaskInputsPath(p) || input.Kind() != dyn.KindSequence {
+			return input, nil
+		}
+
+		data, err := json.Marshal(input.AsAny())
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("%s at %s: %w", p, input.Location(), err)
+		}
+		// Leave unresolved references for normal validation instead of interpolating into JSON text.
+		if dynvar.ContainsVariableReference(string(data)) {
+			return input, nil
+		}
+		return dyn.NewValue(string(data), input.Locations()), nil
+	})
+}
+
+func isForEachTaskInputsPath(p dyn.Path) bool {
+	if len(p) == 9 && (p[0] == dyn.Key("targets") || p[0] == dyn.Key("environments")) && p[1].Key() != "" {
+		p = p[2:]
+	}
+	return len(p) == 7 &&
+		p.HasPrefix(dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))) &&
+		p[2].Key() != "" &&
+		p[3] == dyn.Key("tasks") &&
+		p[4].Key() == "" &&
+		p.HasSuffix(dyn.NewPath(dyn.Key("for_each_task"), dyn.Key("inputs")))
 }
 
 // validateVariableOverrides checks that all variables specified

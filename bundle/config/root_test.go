@@ -31,6 +31,58 @@ func TestRootLoad(t *testing.T) {
 	assert.Equal(t, "basic", root.Bundle.Name)
 }
 
+func TestLoadForEachTaskInputs(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		inputs string
+		want   string
+	}{
+		{name: "YAML array", inputs: "[input_1, input_2]", want: `["input_1","input_2"]`},
+		{name: "YAML object array", inputs: "[{name: input_1, enabled: true}]", want: `[{"enabled":true,"name":"input_1"}]`},
+		{name: "empty YAML array", inputs: "[]", want: `[]`},
+		{name: "JSON string", inputs: `'[ "input_1", "input_2" ]'`, want: `[ "input_1", "input_2" ]`},
+		{name: "variable reference string", inputs: `${var.items}`, want: `${var.items}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := "bundle:\n  name: foreach\nresources:\n  jobs:\n    fan:\n      tasks:\n        - task_key: fan\n          for_each_task:\n            inputs: " + tc.inputs + "\n            task:\n              task_key: inner\n"
+			root, diags := LoadFromBytes("databricks.yml", []byte(config))
+			require.NoError(t, diags.Error())
+			inputs := root.Resources.Jobs["fan"].Tasks[0].ForEachTask.Inputs
+			require.Equal(t, tc.want, inputs)
+
+			body, err := json.Marshal(root.Resources.Jobs["fan"].Tasks[0].ForEachTask)
+			require.NoError(t, err)
+			var apiTask struct {
+				Inputs string `json:"inputs"`
+			}
+			require.NoError(t, json.Unmarshal(body, &apiTask))
+			assert.Equal(t, tc.want, apiTask.Inputs)
+		})
+	}
+}
+
+func TestLoadForEachTaskInputsInTarget(t *testing.T) {
+	config := `bundle:
+  name: foreach
+targets:
+  dev:
+    resources:
+      jobs:
+        fan:
+          tasks:
+            - task_key: fan
+              for_each_task:
+                inputs: [input_1, input_2]
+                task:
+                  task_key: inner
+`
+	root, diags := LoadFromBytes("databricks.yml", []byte(config))
+	require.NoError(t, diags.Error())
+	require.Equal(t, `["input_1","input_2"]`, root.Targets["dev"].Resources.Jobs["fan"].Tasks[0].ForEachTask.Inputs)
+	require.NoError(t, root.MergeTargetOverrides("dev"))
+	assert.Equal(t, `["input_1","input_2"]`, root.Resources.Jobs["fan"].Tasks[0].ForEachTask.Inputs)
+}
+
 func TestInitializeVariables(t *testing.T) {
 	fooDefault := "abc"
 	root := &Root{
