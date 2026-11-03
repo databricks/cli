@@ -15,8 +15,10 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type BindOptions struct {
@@ -142,4 +144,14 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	}
 
 	statemgmt.PushResourcesState(ctx, b)
+
+	// Bind is state-less: nothing records that the resource was just unbound, so a
+	// bind block still in config re-adopts it on the next deploy.
+	if _, ok := b.BindConfig()[group][resourceKey]; ok {
+		logdiag.LogDiag(ctx, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  fmt.Sprintf("the bind block for %s re-binds the resource on the next deploy; remove it to keep the resource unbound", fullResourceKey),
+			Paths:    structpath.NewPathSlice("targets", b.Config.Bundle.Target, "bind", group, resourceKey),
+		})
+	}
 }
