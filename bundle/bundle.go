@@ -12,8 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"uuid"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -70,9 +70,9 @@ type Metrics struct {
 	ConfigurationFileCount   int64
 	TargetCount              int64
 	DeploymentId             uuid.UUID
-	BoolValues                  []protos.BoolMapEntry
+	BoolValues               []protos.BoolMapEntry
 	ExecutionTimes           []protos.IntMapEntry
-	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
 
 	// Number of resources added and updated by the Python mutator, keyed by resource type.
 	PythonAddedResources   map[string]int64

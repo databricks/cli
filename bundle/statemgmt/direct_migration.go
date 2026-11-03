@@ -56,6 +56,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) error {
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+		b.Telemetry.DirectMigrateError = true
 		return fmt.Errorf("parsing terraform state: %w%s", err, migrationFailedHint)
 	}
 	if tfState == nil {
@@ -76,9 +77,11 @@ func Migrate(ctx context.Context, b *bundle.Bundle) error {
 	}
 	if hasWarnings {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateWarnings, true)
+		b.Telemetry.DirectMigrateWarnings = true
 	}
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+		b.Telemetry.DirectMigrateError = true
 		return fmt.Errorf("converting terraform state to the direct engine: %w%s", err, migrationFailedHint)
 	}
 
@@ -87,6 +90,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) error {
 	plan, err := checkPlanOnTempState(ctx, b, tempStatePath, cfg)
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
+		b.Telemetry.DirectMigratePlanError = true
 		return fmt.Errorf("the migrated state failed its plan check: %w%s", err, migrationFailedHint)
 	}
 
@@ -95,6 +99,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) error {
 	// the command's approval flow gates it behind --auto-approve exactly like any other recreate.
 	if recreated := recreatedResources(plan); len(recreated) > 0 {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateRecreatePlanned, true)
+		b.Telemetry.DirectMigrateRecreatePlanned = true
 		log.Infof(ctx, "migration to the direct engine will recreate %v; the command's approval gates this", recreated)
 	}
 
@@ -170,10 +175,13 @@ func recordAutoMigrateSource(ctx context.Context, b *bundle.Bundle) {
 	switch {
 	case b.Config.Bundle.Engine != engine.EngineNotSet:
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
+		b.Telemetry.DirectMigratedViaConfig = true
 	case env.Get(ctx, engine.EnvVar) != "":
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
+		b.Telemetry.DirectMigratedViaEnv = true
 	default:
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaDefault, true)
+		b.Telemetry.DirectMigratedViaDefault = true
 	}
 }
 

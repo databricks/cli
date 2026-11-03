@@ -15,8 +15,8 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -259,6 +259,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
 	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.RecordsHistory())
 	b.Metrics.SetBoolValue(metrics.ImmutableSnapshotUsed, len(b.Config.Resources.Snapshots) > 0)
+	b.Telemetry.SetPaired(&b.Telemetry.DeploymentHistoryEnabledTrue, &b.Telemetry.DeploymentHistoryEnabledFalse, b.DeploymentBundle.StateDB.RecordsHistory())
+	b.Telemetry.SetPaired(&b.Telemetry.ImmutableSnapshotUsedTrue, &b.Telemetry.ImmutableSnapshotUsedFalse, len(b.Config.Resources.Snapshots) > 0)
 	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   metrics.SnapshotUploadDuration,
@@ -361,12 +363,17 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 	// Record which task types the bundle uses (has_<task_type> per type present),
 	// plus the ai_runtime_task-specific scheduling / multi-task dimensions.
+	// The has_<task_type> keys are not mirrored into b.Telemetry: the bitmap
+	// already records each task type as a config field
+	// (resources.jobs.*.tasks[*].<type>_task).
 	for _, key := range collectTaskTypes(b.Config.Resources.Jobs) {
 		b.Metrics.SetBoolValue(key, true)
 	}
 	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
 		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskScheduled, airScheduled)
 		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
+		b.Telemetry.SetPaired(&b.Telemetry.AiRuntimeTaskScheduledTrue, &b.Telemetry.AiRuntimeTaskScheduledFalse, airScheduled)
+		b.Telemetry.SetPaired(&b.Telemetry.AiRuntimeTaskMultitaskTrue, &b.Telemetry.AiRuntimeTaskMultitaskFalse, airMultitask)
 	}
 
 	// Record whether the removed terraform engine was still requested (the command
