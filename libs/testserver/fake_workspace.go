@@ -207,6 +207,9 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
+	// dbfs is the DBFS namespace, created on first use (see dbfs.go).
+	dbfs *fakeDbfs
+
 	// snapshots records immutable-snapshot content paths. Breaking the glass on a
 	// recorded path flips it dirty for good, as in the real API.
 	snapshots map[string]*snapshotRecord
