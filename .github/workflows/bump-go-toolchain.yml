@@ -135,3 +135,4 @@ jobs:
         uses: ./.github/actions/report-failure
         with:
           label: bump-go-toolchain-failure
+          assignees: simonfaltum,andrewnester,anton-107,denik,janniklasrose,pietern,shreyas-goenka

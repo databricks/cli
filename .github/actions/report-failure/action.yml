@@ -9,6 +9,9 @@ inputs:
   label:
     description: Label that identifies the failure-tracking issue for this workflow.
     required: true
+  assignees:
+    description: Comma-separated GitHub users to assign to a newly opened issue.
+    required: true
 
 runs:
   using: 'composite'
@@ -19,6 +22,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
         GH_REPO: ${{ github.repository }}
         LABEL: ${{ inputs.label }}
+        ASSIGNEES: ${{ inputs.assignees }}
         WORKFLOW: ${{ github.workflow }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |-
@@ -30,7 +34,10 @@ runs:
         if [ -n "$issue" ]; then
           gh issue comment "$issue" --body "Failed again: $RUN_URL"
         else
+          # Assign individuals: a team mention posted by github-actions does not
+          # notify the team's members.
           gh issue create --label "$LABEL" \
+            --assignee "$ASSIGNEES" \
             --title "$WORKFLOW workflow is failing" \
             --body "@databricks/eng-deco-cli the scheduled \`$WORKFLOW\` workflow failed.
 

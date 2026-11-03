@@ -130,3 +130,4 @@ jobs:
         uses: ./.github/actions/report-failure
         with:
           label: bump-vuln-deps-failure
+          assignees: simonfaltum,andrewnester,anton-107,denik,janniklasrose,pietern,shreyas-goenka
