@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -103,10 +104,12 @@ var (
 	workspaceID  atomic.Int64
 )
 
-// nextTreenodeID starts above common version numbers and counts, which scripts
-// can otherwise mask when registering literal ID replacements.
+// nextTreenodeID returns 16-digit ids, like real workspace object ids. Scripts register them as
+// literal replacements, which apply before the harness's patterns; a short id would also match
+// inside other numbers in the output (timestamps, UUIDs, ports) and cut them up. A 16-digit id
+// starting with 4 practically never occurs inside those, and never looks like a timestamp.
 func nextTreenodeID() int64 {
-	return 1000 + workspaceID.Add(1)
+	return 4_000_000_000_000_000 + workspaceID.Add(1)
 }
 
 // IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
@@ -207,6 +210,9 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
+	// dbfs is the DBFS namespace, created on first use (see dbfs.go).
+	dbfs *fakeDbfs
+
 	// snapshots records immutable-snapshot content paths. Breaking the glass on a
 	// recorded path flips it dirty for good, as in the real API.
 	snapshots map[string]*snapshotRecord
@@ -218,6 +224,7 @@ type FakeWorkspace struct {
 	Pipelines             map[string]pipelines.GetPipelineResponse
 	PipelineUpdates       map[string]bool
 	Monitors              map[string]catalog.MonitorInfo
+	DataQualityMonitors   map[string]dataquality.Monitor
 	Apps                  map[string]apps.App
 	Schemas               map[string]catalog.SchemaInfo
 	Grants                map[string][]catalog.PrivilegeAssignment
@@ -520,6 +527,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Pipelines:             map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:       map[string]bool{},
 		Monitors:              map[string]catalog.MonitorInfo{},
+		DataQualityMonitors:   map[string]dataquality.Monitor{},
 		Apps:                  map[string]apps.App{},
 		Catalogs:              map[string]catalog.CatalogInfo{},
 		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},

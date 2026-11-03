@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -127,7 +128,10 @@ func TestSupportedResources(t *testing.T) {
 func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
-		"external_locations": true,
+		// A monitor is addressed by the UUID of the object it monitors, which has
+		// no Catalog Explorer URL.
+		"data_quality_monitors": true,
+		"external_locations":    true,
 		// A materialization set has no standalone workspace page; its members
 		// surface under their own features.
 		"materialization_sets": true,
@@ -239,6 +243,11 @@ func TestResourcesBindSupport(t *testing.T) {
 		QualityMonitors: map[string]*resources.QualityMonitor{
 			"my_quality_monitor": {
 				CreateMonitor: catalog.CreateMonitor{},
+			},
+		},
+		DataQualityMonitors: map[string]*resources.DataQualityMonitor{
+			"my_data_quality_monitor": {
+				Monitor: dataquality.Monitor{},
 			},
 		},
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
@@ -425,6 +434,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDataQualityAPI().EXPECT().GetMonitor(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAiGatewayAPI().EXPECT().GetModelService(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAiGatewayAPI().EXPECT().GetMcpService(mock.Anything, mock.Anything).Return(nil, nil)
@@ -449,6 +459,11 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSecretsUcAPI().EXPECT().GetSecret(mock.Anything, mock.Anything).Return(&catalog.Secret{FullName: "0"}, nil)
 
+	// Resources whose ID has a structure that "0" does not satisfy.
+	bindIDs := map[string]string{
+		"data_quality_monitor": "table,0",
+	}
+
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
 		if len(group.Resources) == 0 && !unbindableResources[group.Description.SingularName] {
@@ -460,7 +475,11 @@ func TestResourcesBindSupport(t *testing.T) {
 			assert.NoError(t, err)
 
 			// bind operation requires Exists to return true
-			exists, err := r.Exists(ctx, m.WorkspaceClient, "0")
+			id := "0"
+			if v, ok := bindIDs[resource.ResourceDescription().SingularName]; ok {
+				id = v
+			}
+			exists, err := r.Exists(ctx, m.WorkspaceClient, id)
 			assert.NoError(t, err)
 			assert.True(t, exists)
 		}
