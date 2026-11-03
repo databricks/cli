@@ -19,12 +19,12 @@ class CronSchedule:
 
     quartz_cron_expression: VariableOr[str]
     """
-    [Public Preview] The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).
+    The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).
     """
 
     timezone_id: VariableOr[str]
     """
-    [Public Preview] A Java timezone id. The schedule for a job will be resolved with respect to this timezone.
+    A Java timezone id. The schedule for a job will be resolved with respect to this timezone.
     See `Java TimeZone <http://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html>`_ for details.
     The timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.
     """
@@ -42,12 +42,12 @@ class CronScheduleDict(TypedDict, total=False):
 
     quartz_cron_expression: VariableOr[str]
     """
-    [Public Preview] The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).
+    The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).
     """
 
     timezone_id: VariableOr[str]
     """
-    [Public Preview] A Java timezone id. The schedule for a job will be resolved with respect to this timezone.
+    A Java timezone id. The schedule for a job will be resolved with respect to this timezone.
     See `Java TimeZone <http://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html>`_ for details.
     The timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.
     """

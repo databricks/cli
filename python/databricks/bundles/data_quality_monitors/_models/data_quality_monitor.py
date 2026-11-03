@@ -32,7 +32,7 @@ class DataQualityMonitor(Resource):
 
     object_id: VariableOr[str]
     """
-    [Public Preview] The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.
+    The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.
     
     Find the `schema_id` from either:
     1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.
@@ -45,17 +45,17 @@ class DataQualityMonitor(Resource):
 
     object_type: VariableOr[str]
     """
-    [Public Preview] The type of the monitored object. Can be one of the following: `schema` or `table`.
+    The type of the monitored object. Can be one of the following: `schema` or `table`.
     """
 
     anomaly_detection_config: VariableOrOptional[AnomalyDetectionConfig] = None
     """
-    [Public Preview] Anomaly Detection Configuration, applicable to `schema` object types.
+    Anomaly Detection Configuration, applicable to `schema` object types.
     """
 
     data_profiling_config: VariableOrOptional[DataProfilingConfig] = None
     """
-    [Public Preview] Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`
+    Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`
     must be present.
     """
 
@@ -77,7 +77,7 @@ class DataQualityMonitorDict(TypedDict, total=False):
 
     object_id: VariableOr[str]
     """
-    [Public Preview] The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.
+    The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.
     
     Find the `schema_id` from either:
     1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.
@@ -90,17 +90,17 @@ class DataQualityMonitorDict(TypedDict, total=False):
 
     object_type: VariableOr[str]
     """
-    [Public Preview] The type of the monitored object. Can be one of the following: `schema` or `table`.
+    The type of the monitored object. Can be one of the following: `schema` or `table`.
     """
 
     anomaly_detection_config: VariableOrOptional[AnomalyDetectionConfigParam]
     """
-    [Public Preview] Anomaly Detection Configuration, applicable to `schema` object types.
+    Anomaly Detection Configuration, applicable to `schema` object types.
     """
 
     data_profiling_config: VariableOrOptional[DataProfilingConfigParam]
     """
-    [Public Preview] Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`
+    Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`
     must be present.
     """
 

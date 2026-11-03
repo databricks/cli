@@ -23,27 +23,27 @@ class DataProfilingCustomMetric:
 
     definition: VariableOr[str]
     """
-    [Public Preview] Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).
+    Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).
     """
 
     name: VariableOr[str]
     """
-    [Public Preview] Name of the metric in the output tables.
+    Name of the metric in the output tables.
     """
 
     output_data_type: VariableOr[str]
     """
-    [Public Preview] The output type of the custom metric.
+    The output type of the custom metric.
     """
 
     type: VariableOr[DataProfilingCustomMetricType]
     """
-    [Public Preview] The type of the custom metric.
+    The type of the custom metric.
     """
 
     input_columns: VariableOrList[str] = field(default_factory=list)
     """
-    [Public Preview] A list of column names in the input table the metric should be computed for.
+    A list of column names in the input table the metric should be computed for.
     Can use ``":table"`` to indicate that the metric needs information from multiple columns.
     """
 
@@ -60,27 +60,27 @@ class DataProfilingCustomMetricDict(TypedDict, total=False):
 
     definition: VariableOr[str]
     """
-    [Public Preview] Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).
+    Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).
     """
 
     name: VariableOr[str]
     """
-    [Public Preview] Name of the metric in the output tables.
+    Name of the metric in the output tables.
     """
 
     output_data_type: VariableOr[str]
     """
-    [Public Preview] The output type of the custom metric.
+    The output type of the custom metric.
     """
 
     type: VariableOr[DataProfilingCustomMetricTypeParam]
     """
-    [Public Preview] The type of the custom metric.
+    The type of the custom metric.
     """
 
     input_columns: VariableOrList[str]
     """
-    [Public Preview] A list of column names in the input table the metric should be computed for.
+    A list of column names in the input table the metric should be computed for.
     Can use ``":table"`` to indicate that the metric needs information from multiple columns.
     """
 

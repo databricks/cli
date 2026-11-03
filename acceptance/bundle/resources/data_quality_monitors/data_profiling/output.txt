@@ -1,4 +1,8 @@
 
+=== Development mode drops the schedule (its pause_status is read-only)
+>>> [CLI] bundle validate -o json -t dev
+null
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created data_quality_monitors.table_monitor

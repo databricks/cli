@@ -30,9 +30,7 @@ class AnomalyDetectionConfig:
 
     notification_settings: VariableOrOptional[NotificationSettings] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to
+    Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to
     `schema` monitors only. This is the same schema alert you manage from **Manage alerts** in the
     Data Quality Monitoring UI, so a change made in either place shows in both.
     
@@ -65,9 +63,7 @@ class AnomalyDetectionConfigDict(TypedDict, total=False):
 
     notification_settings: VariableOrOptional[NotificationSettingsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to
+    Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to
     `schema` monitors only. This is the same schema alert you manage from **Manage alerts** in the
     Data Quality Monitoring UI, so a change made in either place shows in both.
     

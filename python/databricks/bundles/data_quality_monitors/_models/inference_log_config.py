@@ -31,32 +31,32 @@ class InferenceLogConfig:
 
     model_id_column: VariableOr[str]
     """
-    [Public Preview] Column for the model identifier.
+    Column for the model identifier.
     """
 
     prediction_column: VariableOr[str]
     """
-    [Public Preview] Column for the prediction.
+    Column for the prediction.
     """
 
     problem_type: VariableOr[InferenceProblemType]
     """
-    [Public Preview] Problem type the model aims to solve.
+    Problem type the model aims to solve.
     """
 
     timestamp_column: VariableOr[str]
     """
-    [Public Preview] Column for the timestamp.
+    Column for the timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularity] = field(default_factory=list)
     """
-    [Public Preview] List of granularities to use when aggregating data into time windows based on their timestamp.
+    List of granularities to use when aggregating data into time windows based on their timestamp.
     """
 
     label_column: VariableOrOptional[str] = None
     """
-    [Public Preview] Column for the label.
+    Column for the label.
     """
 
     @classmethod
@@ -72,32 +72,32 @@ class InferenceLogConfigDict(TypedDict, total=False):
 
     model_id_column: VariableOr[str]
     """
-    [Public Preview] Column for the model identifier.
+    Column for the model identifier.
     """
 
     prediction_column: VariableOr[str]
     """
-    [Public Preview] Column for the prediction.
+    Column for the prediction.
     """
 
     problem_type: VariableOr[InferenceProblemTypeParam]
     """
-    [Public Preview] Problem type the model aims to solve.
+    Problem type the model aims to solve.
     """
 
     timestamp_column: VariableOr[str]
     """
-    [Public Preview] Column for the timestamp.
+    Column for the timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularityParam]
     """
-    [Public Preview] List of granularities to use when aggregating data into time windows based on their timestamp.
+    List of granularities to use when aggregating data into time windows based on their timestamp.
     """
 
     label_column: VariableOrOptional[str]
     """
-    [Public Preview] Column for the label.
+    Column for the label.
     """
 
 

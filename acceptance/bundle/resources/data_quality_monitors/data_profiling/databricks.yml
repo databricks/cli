@@ -13,3 +13,9 @@ resources:
         schedule:
           quartz_cron_expression: 0 0 12 * * ?
           timezone_id: UTC
+
+targets:
+  default:
+    default: true
+  dev:
+    mode: development

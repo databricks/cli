@@ -23,12 +23,12 @@ class TimeSeriesConfig:
 
     timestamp_column: VariableOr[str]
     """
-    [Public Preview] Column for the timestamp.
+    Column for the timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularity] = field(default_factory=list)
     """
-    [Public Preview] List of granularities to use when aggregating data into time windows based on their timestamp.
+    List of granularities to use when aggregating data into time windows based on their timestamp.
     """
 
     @classmethod
@@ -44,12 +44,12 @@ class TimeSeriesConfigDict(TypedDict, total=False):
 
     timestamp_column: VariableOr[str]
     """
-    [Public Preview] Column for the timestamp.
+    Column for the timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularityParam]
     """
-    [Public Preview] List of granularities to use when aggregating data into time windows based on their timestamp.
+    List of granularities to use when aggregating data into time windows based on their timestamp.
     """
 
 

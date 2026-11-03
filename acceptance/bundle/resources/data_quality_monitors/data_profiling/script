@@ -1,3 +1,6 @@
+title "Development mode drops the schedule (its pause_status is read-only)"
+trace $CLI bundle validate -o json -t dev | jq '.resources.data_quality_monitors.table_monitor.data_profiling_config.schedule'
+
 trace $CLI bundle deploy
 trace print_requests.py //data-quality
 

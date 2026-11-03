@@ -47,18 +47,18 @@ class DataProfilingConfig:
 
     output_schema_id: VariableOr[str]
     """
-    [Public Preview] ID of the schema where output tables are created.
+    ID of the schema where output tables are created.
     """
 
     assets_dir: VariableOrOptional[str] = None
     """
-    [Public Preview] Field for specifying the absolute path to a custom directory to store data-monitoring
+    Field for specifying the absolute path to a custom directory to store data-monitoring
     assets. Normally prepopulated to a default user location via UI and Python APIs.
     """
 
     baseline_table_name: VariableOrOptional[str] = None
     """
-    [Public Preview] Baseline table name.
+    Baseline table name.
     Baseline data is used to compute drift from the data in the monitored `table_name`.
     The baseline table and the monitored table shall have the same schema.
     """
@@ -67,32 +67,32 @@ class DataProfilingConfig:
         default_factory=list
     )
     """
-    [Public Preview] Custom metrics.
+    Custom metrics.
     """
 
     inference_log: VariableOrOptional[InferenceLogConfig] = None
     """
-    [Public Preview] `Analysis Configuration` for monitoring inference log tables.
+    `Analysis Configuration` for monitoring inference log tables.
     """
 
     notification_settings: VariableOrOptional[NotificationSettings] = None
     """
-    [Public Preview] Field for specifying notification settings.
+    Field for specifying notification settings.
     """
 
     schedule: VariableOrOptional[CronSchedule] = None
     """
-    [Public Preview] The cron schedule.
+    The cron schedule.
     """
 
     skip_builtin_dashboard: VariableOrOptional[bool] = None
     """
-    [Public Preview] Whether to skip creating a default dashboard summarizing data quality metrics.
+    Whether to skip creating a default dashboard summarizing data quality metrics.
     """
 
     slicing_exprs: VariableOrList[str] = field(default_factory=list)
     """
-    [Public Preview] List of column expressions to slice data with for targeted analysis. The data is grouped by
+    List of column expressions to slice data with for targeted analysis. The data is grouped by
     each expression independently, resulting in a separate slice for each predicate and its
     complements. For example `slicing_exprs=[“col_1”, “col_2 > 10”]` will generate the following
     slices: two slices for `col_2 > 10` (True and False), and one slice per unique value in
@@ -102,17 +102,17 @@ class DataProfilingConfig:
 
     snapshot: VariableOrOptional[SnapshotConfig] = None
     """
-    [Public Preview] `Analysis Configuration` for monitoring snapshot tables.
+    `Analysis Configuration` for monitoring snapshot tables.
     """
 
     time_series: VariableOrOptional[TimeSeriesConfig] = None
     """
-    [Public Preview] `Analysis Configuration` for monitoring time series tables.
+    `Analysis Configuration` for monitoring time series tables.
     """
 
     warehouse_id: VariableOrOptional[str] = None
     """
-    [Public Preview] Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
+    Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
     warehouse will be used.
     """
 
@@ -129,50 +129,50 @@ class DataProfilingConfigDict(TypedDict, total=False):
 
     output_schema_id: VariableOr[str]
     """
-    [Public Preview] ID of the schema where output tables are created.
+    ID of the schema where output tables are created.
     """
 
     assets_dir: VariableOrOptional[str]
     """
-    [Public Preview] Field for specifying the absolute path to a custom directory to store data-monitoring
+    Field for specifying the absolute path to a custom directory to store data-monitoring
     assets. Normally prepopulated to a default user location via UI and Python APIs.
     """
 
     baseline_table_name: VariableOrOptional[str]
     """
-    [Public Preview] Baseline table name.
+    Baseline table name.
     Baseline data is used to compute drift from the data in the monitored `table_name`.
     The baseline table and the monitored table shall have the same schema.
     """
 
     custom_metrics: VariableOrList[DataProfilingCustomMetricParam]
     """
-    [Public Preview] Custom metrics.
+    Custom metrics.
     """
 
     inference_log: VariableOrOptional[InferenceLogConfigParam]
     """
-    [Public Preview] `Analysis Configuration` for monitoring inference log tables.
+    `Analysis Configuration` for monitoring inference log tables.
     """
 
     notification_settings: VariableOrOptional[NotificationSettingsParam]
     """
-    [Public Preview] Field for specifying notification settings.
+    Field for specifying notification settings.
     """
 
     schedule: VariableOrOptional[CronScheduleParam]
     """
-    [Public Preview] The cron schedule.
+    The cron schedule.
     """
 
     skip_builtin_dashboard: VariableOrOptional[bool]
     """
-    [Public Preview] Whether to skip creating a default dashboard summarizing data quality metrics.
+    Whether to skip creating a default dashboard summarizing data quality metrics.
     """
 
     slicing_exprs: VariableOrList[str]
     """
-    [Public Preview] List of column expressions to slice data with for targeted analysis. The data is grouped by
+    List of column expressions to slice data with for targeted analysis. The data is grouped by
     each expression independently, resulting in a separate slice for each predicate and its
     complements. For example `slicing_exprs=[“col_1”, “col_2 > 10”]` will generate the following
     slices: two slices for `col_2 > 10` (True and False), and one slice per unique value in
@@ -182,17 +182,17 @@ class DataProfilingConfigDict(TypedDict, total=False):
 
     snapshot: VariableOrOptional[SnapshotConfigParam]
     """
-    [Public Preview] `Analysis Configuration` for monitoring snapshot tables.
+    `Analysis Configuration` for monitoring snapshot tables.
     """
 
     time_series: VariableOrOptional[TimeSeriesConfigParam]
     """
-    [Public Preview] `Analysis Configuration` for monitoring time series tables.
+    `Analysis Configuration` for monitoring time series tables.
     """
 
     warehouse_id: VariableOrOptional[str]
     """
-    [Public Preview] Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
+    Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
     warehouse will be used.
     """
 
