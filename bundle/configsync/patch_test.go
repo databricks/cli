@@ -437,3 +437,31 @@ func TestBuildNestedMaps(t *testing.T) {
 	}
 	assert.Equal(t, expected, result)
 }
+
+func TestApplyChangeScalarParents(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"string", "parent: text\n", "parent.key", ""},
+		{"boolean", "parent: false\n", "parent.key", ""},
+		{"nonzero index", "parent: null\n", "parent[1].key", ""},
+		{"append", "parent: null\n", "parent[*]", "parent: [value]"},
+		{"nested sequence", "parent: ~\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			if tc.want == "" {
+				assert.ErrorContains(t, err, "scalar can not be a container")
+				return
+			}
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+		})
+	}
+}

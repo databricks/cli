@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
@@ -115,6 +117,16 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 				Value: fieldChange.Change.Value,
 			}})
 
+			if patchErr != nil {
+				patch, err := nullParentPatch(content, fieldPathCandidate, path, fieldChange.Change.Value)
+				if err != nil {
+					return nil, err
+				}
+				if len(patch) > 0 {
+					modifiedContent, patchErr = patcher.Apply(content, patch)
+				}
+			}
+
 			// Collect parent path errors for later retry
 			if patchErr != nil && isParentPathError(patchErr) {
 				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
@@ -172,6 +184,44 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 	}
 
 	return content, nil
+}
+
+// nullParentPatch replaces a null ancestor with the containers needed for an add.
+func nullParentPatch(content []byte, fieldPath string, path yamlpatch.Path, value any) (yamlpatch.Patch, error) {
+	config, err := yamlloader.LoadYAML("", bytes.NewReader(content))
+	if err != nil {
+		return nil, err
+	}
+	node, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil, err
+	}
+	for ; node.Parent() != nil; node = node.Parent() {
+		key, isKey := node.StringKey()
+		index, isIndex := node.Index()
+		switch {
+		case isKey:
+			value = map[string]any{key: value}
+		case node.BracketStar(), isIndex && index == 0:
+			value = []any{value}
+		default:
+			// Only the first element can be added to an empty sequence.
+			return nil, nil
+		}
+
+		parent := node.Parent()
+		v, ok := preResolvedValueAt(config, parent.String())
+		if !ok {
+			continue
+		}
+		if v.Kind() != dyn.KindNil {
+			return nil, nil
+		}
+		// yamlpatch includes the document node as an empty first component.
+		parentPath := path[:parent.Len()+1]
+		return yamlpatch.Patch{{Type: yamlpatch.OperationReplace, Path: parentPath, Value: value}}, nil
+	}
+	return nil, nil
 }
 
 // isParentPathError checks if error indicates missing parent path.
