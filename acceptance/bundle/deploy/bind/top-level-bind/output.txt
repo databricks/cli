@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle validate
+Warning: unknown field: bind
+  in databricks.yml:4:1
+
+Name: test-bind-top-level
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-top-level/default
+
+Found 1 warning

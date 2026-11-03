@@ -1,0 +1,3 @@
+# A bind block at the root level (outside a target) is not recognized as a
+# config field, so it surfaces as an "unknown field" warning and is ignored.
+trace $CLI bundle validate

@@ -132,6 +132,9 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 
 	counts := plan.CountActions()
 	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+	if counts.Bind > 0 {
+		summary += fmt.Sprintf(", %d bound", counts.Bind)
+	}
 	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
 	// deploy from a --plan file, where --select was applied at plan time and
 	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.
@@ -355,7 +358,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, b.BindConfig())
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return nil

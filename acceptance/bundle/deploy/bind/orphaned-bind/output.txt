@@ -1,0 +1,7 @@
+
+>>> musterr [CLI] bundle plan
+Error: bind block references undefined resource "resources.jobs.bar"; define it in the resources section or remove the bind block
+  at targets.default.bind.jobs.bar
+
+Error: bind validation failed
+

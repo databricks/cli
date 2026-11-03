@@ -161,7 +161,11 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+//
+// bindConfig carries the target's declarative bind blocks; resources listed there
+// that are not yet in state are planned as Bind / BindAndUpdate instead of Create.
+// Pass an empty Bind when there is nothing to bind (e.g. destroy).
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, bindConfig config.Bind) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -180,6 +184,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	plan.Serial = b.StateDB.GetSerial()
 
 	b.Plan = plan
+
+	// Validate bind blocks against the full plan and state before walking the graph,
+	// then index them by resource key so the per-resource planning below can select
+	// Bind / BindAndUpdate for resources that are being bound for the first time.
+	bindIDByKey := map[string]string{}
+	if !bindConfig.IsEmpty() {
+		if !b.validateBindConfig(ctx, configRoot, bindConfig) {
+			return nil, errors.New("bind validation failed")
+		}
+		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+			bindIDByKey["resources."+resourceType+"."+resourceName] = bindID
+		})
+	}
 
 	g, err := makeGraph(plan)
 	if err != nil {
@@ -275,6 +292,14 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.
 		if !hasEntry || dbentry.ID == "" {
+			// A resource that is not in state but carries a bind block is imported
+			// rather than created: read the remote resource under the bound ID and
+			// plan a Bind / BindAndUpdate instead of a Create.
+			if bindID, ok := bindIDByKey[resourceKey]; ok {
+				entry.BindID = bindID
+				b.handleBindPlan(ctx, resourceKey, entry, adapter)
+				return !logdiag.HasError(ctx)
+			}
 			entry.Action = deployplan.Create
 			return true
 		}
@@ -381,6 +406,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
 		b.RemoteStateCache.Store(resourceKey, remoteState)
+
+		// An active bind block guards its resource against recreation for as long as
+		// it is defined, not just during the first bind. Once the resource is in
+		// state, a config change that would recreate or re-ID it still surfaces as an
+		// error so the bind block behaves as a persistent guard (see handleBindPlan).
+		if _, bound := bindIDByKey[resourceKey]; bound && (action == deployplan.Recreate || action == deployplan.UpdateWithID) {
+			logdiag.LogError(ctx, buildBindConflictError("cannot bind "+resourceKey, action, entry.Changes, resourceKey))
+			return false
+		}
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {

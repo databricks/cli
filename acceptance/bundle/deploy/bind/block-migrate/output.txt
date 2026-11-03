@@ -1,0 +1,3 @@
+
+>>> musterr [CLI] bundle deployment migrate
+Error: cannot run 'bundle deployment migrate' when bind blocks are defined in the target configuration; bind blocks are only supported with the direct deployment engine

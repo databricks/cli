@@ -1,0 +1,15 @@
+# Create a pipeline whose storage matches the config, so the first deploy binds
+# it cleanly (no recreate).
+NEW_PIPELINE_ID=$($CLI pipelines create --json '{"name": "test-pipeline", "storage": "/old/storage/path", "allow_duplicate_names": true, "libraries": [{"notebook": {"path": "/Workspace/test"}}]}' | jq -r .pipeline_id)
+add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID
+
+# Update the databricks.yml with the actual pipeline ID
+update_file.py databricks.yml 'PLACEHOLDER_PIPELINE_ID' "$NEW_PIPELINE_ID"
+
+# Deploy to bind the resource into state
+trace $CLI bundle deploy --auto-approve
+
+# Change storage (immutable) while the bind block is still defined. The bind
+# block must keep guarding against recreate even after the resource is in state.
+update_file.py databricks.yml '/old/storage/path' '/new/storage/path'
+trace musterr $CLI bundle plan

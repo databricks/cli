@@ -1,0 +1,37 @@
+
+>>> [CLI] bundle plan
+bind_and_update clusters.test_cluster (id: [CLUSTER_ID])
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Bound and updated clusters.test_cluster
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
+
+>>> print_requests.py //clusters/resize //clusters/edit
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/resize",
+  "body": {
+    "cluster_id": "[CLUSTER_ID]",
+    "num_workers": 3
+  }
+}
+
+=== Cluster should have new num_workers
+
+>>> [CLI] clusters get [CLUSTER_ID]
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 3
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

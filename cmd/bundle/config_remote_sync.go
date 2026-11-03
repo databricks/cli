@@ -90,7 +90,7 @@ Examples:
 				// ProcessBundleRet has already opened the direct state for reading.
 				deployBundle := &b.DeploymentBundle
 
-				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
+				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, nil)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to detect changes: %w", err)

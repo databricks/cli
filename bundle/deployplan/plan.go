@@ -49,6 +49,9 @@ type ActionCounts struct {
 	Change    int
 	Delete    int
 	Unchanged int
+	// Bind counts bind and bind_and_update actions; a bind_and_update also
+	// counts as a change, since it applies config to the adopted resource.
+	Bind int
 }
 
 // CountActions tallies the plan's actions by category. Order is irrelevant to a
@@ -74,6 +77,11 @@ func (p *Plan) CountActions() ActionCounts {
 			// A recreate counts as both a delete and a create.
 			c.Delete++
 			c.Create++
+		case Bind:
+			c.Bind++
+		case BindAndUpdate:
+			c.Bind++
+			c.Change++
 		case Skip, Undefined:
 			c.Unchanged++
 		}
@@ -120,6 +128,7 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 
 type PlanEntry struct {
 	ID        string           `json:"id,omitempty"`
+	BindID    string           `json:"bind_id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
 	// Gone is set on Delete entries when planning confirmed the resource no longer

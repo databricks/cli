@@ -1,0 +1,18 @@
+bundle:
+  name: test-bind-recreate-in-state
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline
+      storage: /old/storage/path
+      libraries:
+        - notebook:
+            path: ./nb.sql
+
+targets:
+  default:
+    bind:
+      pipelines:
+        foo:
+          id: "PLACEHOLDER_PIPELINE_ID"

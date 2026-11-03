@@ -1,0 +1,18 @@
+# Deploy foo to create it in state
+trace $CLI bundle deploy --auto-approve
+
+# Get foo's job ID from state
+JOB_ID=$(read_id.py foo)
+
+# Switch to a config that keeps foo AND adds bar with a bind block
+# pointing to foo's ID. This is a conflict: foo is still managed in
+# state and bar tries to bind the same resource ID.
+cp databricks.yml databricks.yml.bak
+cp databricks_with_bind.yml databricks.yml
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$JOB_ID"
+
+trace musterr $CLI bundle plan
+
+# Cleanup
+cp databricks.yml.bak databricks.yml
+trace $CLI bundle destroy --auto-approve

@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create a cluster out-of-band, then bring it to RUNNING so that a num_workers
+# change is planned as a resize rather than an edit.
+CLUSTER_ID=$($CLI clusters create --json "{\"cluster_name\": \"test-cluster-$UNIQUE_NAME\", \"spark_version\": \"$DEFAULT_SPARK_VERSION\", \"node_type_id\": \"$NODE_TYPE_ID\", \"instance_pool_id\": \"$TEST_INSTANCE_POOL_ID\", \"num_workers\": 2, \"autotermination_minutes\": 60}" | jq -r .cluster_id)
+add_repl.py "$CLUSTER_ID" CLUSTER_ID
+update_file.py databricks.yml 'PLACEHOLDER_CLUSTER_ID' "$CLUSTER_ID"
+
+# Transition PENDING -> RUNNING (ClustersGet promotes the state).
+$CLI clusters get "$CLUSTER_ID" > /dev/null
+
+# Plan: config differs only in num_workers, so the bound running cluster is
+# planned as bind_and_update backed by a resize.
+trace $CLI bundle plan
+
+# Deploy: bind_and_update must go through the resize API, not clusters/edit.
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //clusters/resize //clusters/edit
+
+title "Cluster should have new num_workers\n"
+trace $CLI clusters get "$CLUSTER_ID" | jq '{cluster_name,num_workers}'
+
+# Cleanup
+trace $CLI bundle destroy --auto-approve
+rm -f out.requests.txt

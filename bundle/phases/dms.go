@@ -63,6 +63,10 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 		return bundledeployments.OperationActionTypeOperationActionTypeResize, nil
 	case deployplan.Delete:
 		return bundledeployments.OperationActionTypeOperationActionTypeDelete, nil
+	case deployplan.Bind:
+		return bundledeployments.OperationActionTypeOperationActionTypeBind, nil
+	case deployplan.BindAndUpdate:
+		return bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate, nil
 	default:
 		return "", fmt.Errorf("cannot record operation: unsupported action %q", a)
 	}
