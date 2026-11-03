@@ -123,6 +123,39 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 	return Response{}
 }
 
+func (s *FakeWorkspace) ExperimentSetTag(req Request) Response {
+	defer s.LockUnlock()()
+
+	var setReq ml.SetExperimentTag
+	if err := json.Unmarshal(req.Body, &setReq); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+			StatusCode: http.StatusBadRequest,
+		}
+	}
+
+	experiment, exists := s.Experiments[setReq.ExperimentId]
+	if !exists {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body:       map[string]string{"message": fmt.Sprintf("Experiment %s not found", setReq.ExperimentId)},
+		}
+	}
+
+	for i := range experiment.Experiment.Tags {
+		if experiment.Experiment.Tags[i].Key == setReq.Key {
+			experiment.Experiment.Tags[i].Value = setReq.Value
+			s.Experiments[setReq.ExperimentId] = experiment
+			return Response{}
+		}
+	}
+	experiment.Experiment.Tags = append(experiment.Experiment.Tags, ml.ExperimentTag{
+		Key: setReq.Key, Value: setReq.Value,
+	})
+	s.Experiments[setReq.ExperimentId] = experiment
+	return Response{}
+}
+
 func (s *FakeWorkspace) ExperimentDelete(req Request) Response {
 	var deleteReq ml.DeleteExperiment
 	if err := json.Unmarshal(req.Body, &deleteReq); err != nil {

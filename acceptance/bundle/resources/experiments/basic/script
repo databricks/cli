@@ -29,9 +29,11 @@ trace $CLI bundle deploy -qq
 experiment_id=$(read_id.py my_experiment)
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
 
-title "adding a new tag should be a no-op"
+title "adding a new tag updates the existing experiment"
+existing_experiment_id=$experiment_id
 trace envsubst < templates/two_tag.tmpl > databricks.yml
 trace $CLI bundle plan > out.plan.txt
 trace $CLI bundle deploy -qq
 experiment_id=$(read_id.py my_experiment)
+test "$experiment_id" = "$existing_experiment_id"
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'

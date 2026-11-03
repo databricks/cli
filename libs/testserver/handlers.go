@@ -1355,6 +1355,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ExperimentUpdate(req)
 	})
 
+	server.Handle("POST", "/api/2.0/mlflow/experiments/set-experiment-tag", func(req Request) any {
+		return req.Workspace.ExperimentSetTag(req)
+	})
+
 	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
 		return req.Workspace.ExperimentDelete(req)
 	})
