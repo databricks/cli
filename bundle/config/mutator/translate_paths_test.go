@@ -8,6 +8,9 @@ import (
 	"runtime"
 	"testing"
 
+	bundleenv "github.com/databricks/cli/bundle/env"
+	libsenv "github.com/databricks/cli/libs/env"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -821,7 +824,7 @@ func TestTranslatePathEditableProjectFolder(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "project", "pyproject.toml"))
 	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
 
-	translate := func(dependencies ...string) (*bundle.Bundle, diag.Diagnostics) {
+	translate := func(ctx context.Context, dependencies ...string) (*bundle.Bundle, diag.Diagnostics) {
 		b := &bundle.Bundle{
 			SyncRootPath:   dir,
 			BundleRootPath: dir,
@@ -842,10 +845,15 @@ func TestTranslatePathEditableProjectFolder(t *testing.T) {
 			},
 		}
 		bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(dir, "fake.yml")}})
-		return b, bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+		return b, bundle.ApplySeq(ctx, b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	}
 
-	b, diags := translate("-e ./project", "-e ./project[test]", "-e .", "-e .[test]", "-r ./requirements.txt")
+	// Without pipeline testing, a folder after -e stays an error, as it was before the feature.
+	_, diags := translate(t.Context(), "-e ./project")
+	assert.ErrorContains(t, diags.Error(), "is a directory")
+
+	ctx := libsenv.Set(t.Context(), bundleenv.ExperimentalPipelineTestingVariable, "true")
+	b, diags := translate(ctx, "-e ./project", "-e ./project[test]", "-e .", "-e .[test]", "-r ./requirements.txt")
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{
 		"-e /bundle/project",
@@ -856,7 +864,7 @@ func TestTranslatePathEditableProjectFolder(t *testing.T) {
 	}, b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies)
 
 	// -r takes a file, so a folder after it is still an error.
-	_, diags = translate("-r ./project")
+	_, diags = translate(ctx, "-r ./project")
 	assert.ErrorContains(t, diags.Error(), "project")
 }
 

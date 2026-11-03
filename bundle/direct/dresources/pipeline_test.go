@@ -4,6 +4,9 @@ import (
 	"reflect"
 	"testing"
 
+	bundleenv "github.com/databricks/cli/bundle/env"
+	libsenv "github.com/databricks/cli/libs/env"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/auth"
@@ -104,7 +107,14 @@ func TestPipelineReadReturnsTesting(t *testing.T) {
 	require.NoError(t, err)
 	r := (&ResourcePipeline{}).New(w)
 
+	// Without pipeline testing, the SDK reads the pipeline, as before the feature.
 	remote, err := r.DoRead(t.Context(), "p1")
+	require.NoError(t, err)
+	assert.Equal(t, "orders", remote.Name)
+	assert.Nil(t, remote.Testing)
+
+	ctx := libsenv.Set(t.Context(), bundleenv.ExperimentalPipelineTestingVariable, "true")
+	remote, err = r.DoRead(ctx, "p1")
 	require.NoError(t, err)
 	assert.Equal(t, "p1", remote.PipelineId)
 	assert.Equal(t, "orders", remote.Name)

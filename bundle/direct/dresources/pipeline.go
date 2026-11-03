@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -120,6 +121,13 @@ type pipelineTestingResponse struct {
 // DoRead sends the same request as GetByPipelineId, but raw, so that it can also read spec.testing,
 // which GetPipelineResponse does not have yet. Switch back to GetByPipelineId once it does.
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
+	if !env.ExperimentalPipelineTesting(ctx) {
+		resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return makePipelineRemote(resp), nil
+	}
 	var raw json.RawMessage
 	if err := r.doRaw(ctx, http.MethodGet, "/api/2.0/pipelines/"+id, nil, &raw); err != nil {
 		return nil, err

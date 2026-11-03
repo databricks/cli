@@ -36,6 +36,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInAuthConfig(),
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
+		validate.PipelineTestingEnabled(),
 		validate.Scripts(),
 		mutator.ValidateSecretValueIsVariable(),
 

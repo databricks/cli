@@ -1,0 +1,10 @@
+
+>>> musterr [CLI] bundle validate
+Error: the testing property of pipelines is experimental. Set DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true to enable it
+  at resources.pipelines.orders.testing
+  in databricks.yml:9:9
+
+Name: pipeline-testing-disabled
+Target: default
+
+Found 1 error

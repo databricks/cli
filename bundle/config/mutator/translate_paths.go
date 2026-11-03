@@ -16,6 +16,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -250,10 +251,10 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 }
 
 // translatePipFlagPath translates the local path after a pip flag of an environment dependency,
-// and keeps the flag in front of it. After -e, the path can also be a project folder, with
-// optional extras such as ./project[test].
+// and keeps the flag in front of it. With pipeline testing enabled, the path after -e can also be
+// a project folder, with optional extras such as ./project[test].
 func (t *translateContext) translatePipFlagPath(ctx context.Context, flag, literal, localFullPath, localRelPath string) (string, error) {
-	if flag == "-e" {
+	if flag == "-e" && env.ExperimentalPipelineTesting(ctx) {
 		folder, extras := localRelPath, ""
 		if i := strings.LastIndex(localRelPath, "["); i > 0 && strings.HasSuffix(localRelPath, "]") {
 			folder, extras = localRelPath[:i], localRelPath[i:]
