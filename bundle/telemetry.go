@@ -43,11 +43,13 @@ type Telemetry struct {
 	DMSCompatOnlySelfUndeclared bool
 	DMSCompatNot                bool
 
-	DirectMigrateError       bool
-	DirectMigrateCommitError bool
-	DirectMigrateWarnings    bool
-	DirectMigratedViaConfig  bool
-	DirectMigratedViaEnv     bool
+	DirectMigrateError           bool
+	DirectMigrateWarnings        bool
+	DirectMigratePlanError       bool
+	DirectMigrateRecreatePlanned bool
+	DirectMigratedViaConfig      bool
+	DirectMigratedViaEnv         bool
+	DirectMigratedViaDefault     bool
 
 	EngineTerraformConfig bool
 	EngineTerraformEnv    bool
@@ -99,11 +101,17 @@ type Telemetry struct {
 	SqlWarehouseLifecycleStartedTrue  bool
 	SqlWarehouseLifecycleStartedFalse bool
 
-	DirectDryMigrateSuccessTrue  bool
-	DirectDryMigrateSuccessFalse bool
+	DeploymentHistoryEnabledTrue  bool
+	DeploymentHistoryEnabledFalse bool
 
-	DirectDryMigrateWarningsTrue  bool
-	DirectDryMigrateWarningsFalse bool
+	ImmutableSnapshotUsedTrue  bool
+	ImmutableSnapshotUsedFalse bool
+
+	AiRuntimeTaskScheduledTrue  bool
+	AiRuntimeTaskScheduledFalse bool
+
+	AiRuntimeTaskMultitaskTrue  bool
+	AiRuntimeTaskMultitaskFalse bool
 }
 
 // SetPaired sets exactly one bool of a True/False pair from a measured value,
