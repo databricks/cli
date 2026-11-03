@@ -1,3 +1,5 @@
-# A bind block at the root level (outside a target) is not recognized as a
-# config field, so it surfaces as an "unknown field" warning and is ignored.
-trace $CLI bundle validate
+# A bind block at the root level (outside a target) is a misplacement. It must be
+# rejected: ignoring it as an unknown field would create the resource instead of
+# binding the existing one.
+trace musterr $CLI bundle validate
+trace musterr $CLI bundle plan

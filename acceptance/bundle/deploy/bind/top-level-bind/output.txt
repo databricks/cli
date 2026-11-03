@@ -1,12 +1,14 @@
 
->>> [CLI] bundle validate
-Warning: unknown field: bind
-  in databricks.yml:4:1
+>>> musterr [CLI] bundle validate
+Error: bind blocks are only supported under targets.<target>.bind, not at the root of the configuration
+  at bind
+  in databricks.yml:5:3
 
-Name: test-bind-top-level
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-top-level/default
 
-Found 1 warning
+Found 1 error
+
+>>> musterr [CLI] bundle plan
+Error: bind blocks are only supported under targets.<target>.bind, not at the root of the configuration
+  at bind
+  in databricks.yml:5:3
+
