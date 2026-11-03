@@ -566,7 +566,8 @@ to read the results later. To stop the update, run 'pipelines stop'.
 
 --junit-xml writes one entry per test with its outcome and duration. An
 incomplete run, a run without tests, or a timeout adds a failing entry that
-names the cause.`,
+names the cause. With workspace.sync_mode immutable, test names keep the path
+of the deployed snapshot, which changes with each deployment.`,
 	}
 
 	var pipelineID string
