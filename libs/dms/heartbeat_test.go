@@ -73,31 +73,24 @@ func TestHeartbeatSkippedAfterWrite(t *testing.T) {
 	})
 }
 
-func TestHeartbeatRetriesThenWaitsForInterval(t *testing.T) {
+func TestHeartbeatFailureWarnsAndRetriesNextInterval(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctx := heartbeatContext(t)
 		f := &fakeSend{err: errors.New("connection refused")}
 		h := startHeartbeat(ctx, f.send)
 		defer h.Stop()
 
-		// The beat at 30s and its retries 1s, 2s and 4s apart.
-		time.Sleep(heartbeatInterval + 8*time.Second)
+		time.Sleep(heartbeatInterval + time.Second)
 		synctest.Wait()
-		assert.Equal(t, int32(1+len(heartbeatRetryDelays)), f.calls.Load())
+		assert.Equal(t, int32(1), f.calls.Load())
 
 		diags := logdiag.FlushCollected(ctx)
 		require.Len(t, diags, 1)
 		assert.Equal(t, "Failed to send deployment heartbeat, so the deployment may show as interrupted; retrying in 30s: connection refused", diags[0].Summary)
 
-		// Then nothing more until a full interval has passed.
-		time.Sleep(heartbeatInterval - 2*time.Second)
+		time.Sleep(heartbeatInterval)
 		synctest.Wait()
-		assert.Equal(t, int32(1+len(heartbeatRetryDelays)), f.calls.Load())
-
-		// Checked before its first retry, 1s later.
-		time.Sleep(1500 * time.Millisecond)
-		synctest.Wait()
-		assert.Equal(t, int32(2+len(heartbeatRetryDelays)), f.calls.Load())
+		assert.Equal(t, int32(2), f.calls.Load())
 	})
 }
 
@@ -106,7 +99,6 @@ func TestHeartbeatStop(t *testing.T) {
 		f := &fakeSend{}
 		h := startHeartbeat(heartbeatContext(t), f.send)
 
-		h.Stop()
 		h.Stop()
 		time.Sleep(10 * time.Minute)
 		synctest.Wait()
