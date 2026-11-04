@@ -1,5 +1,7 @@
 resources.materialization_sets.*.id	string	INPUT
 resources.materialization_sets.*.lifecycle	resources.Lifecycle	INPUT
+resources.materialization_sets.*.lifecycle.bind	*resources.Bind	INPUT
+resources.materialization_sets.*.lifecycle.bind.id	string	INPUT
 resources.materialization_sets.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.materialization_sets.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.materialization_sets.*.lifecycle.depends_on[*].resource	string	INPUT

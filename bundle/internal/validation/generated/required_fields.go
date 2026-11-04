@@ -82,6 +82,7 @@ var RequiredFields = map[string][]string{
 	"resources.data_quality_monitors.*.data_profiling_config.inference_log":     {"granularities", "model_id_column", "prediction_column", "problem_type", "timestamp_column"},
 	"resources.data_quality_monitors.*.data_profiling_config.schedule":          {"quartz_cron_expression", "timezone_id"},
 	"resources.data_quality_monitors.*.data_profiling_config.time_series":       {"granularities", "timestamp_column"},
+	"resources.data_quality_monitors.*.lifecycle.bind":                          {"id"},
 	"resources.data_quality_monitors.*.lifecycle.depends_on[*]":                 {"resource"},
 
 	"resources.database_catalogs.*":                         {"database_instance_name", "database_name", "name"},
@@ -314,6 +315,7 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*]":                                        {"id"},
 	"resources.jobs.*.webhook_notifications.on_success[*]":                                                           {"id"},
 
+	"resources.materialization_sets.*.lifecycle.bind":                                {"id"},
 	"resources.materialization_sets.*.lifecycle.depends_on[*]":                       {"resource"},
 	"resources.materialization_sets.*.materialized_features[*]":                      {"feature_name"},
 	"resources.materialization_sets.*.materialized_features[*].offline_store_config": {"catalog_name", "schema_name", "table_name_prefix"},
