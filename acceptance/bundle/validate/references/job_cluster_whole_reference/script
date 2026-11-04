@@ -1,0 +1,4 @@
+# The new_cluster of viaref is a reference to the whole new_cluster of another job.
+# The defaults (e.g. workload_type.clients.notebooks) are not written into the reference; the referenced new_cluster gets them.
+trace $CLI bundle validate
+trace $CLI bundle plan -o json | jq '.plan."resources.jobs.viaref".new_state.value.job_clusters[0].new_cluster.workload_type'
