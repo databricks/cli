@@ -119,9 +119,9 @@ jobs_url: [DATABRICKS_URL]/jobs
 Root keys: jobs_url path workspace
 Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace:{[DATABRICKS_HOST] [DATABRICKS_URL]  }]
 
-=== Rerender and init with inputs
+=== Rerender and init with edited inputs
 
->>> [CLI] bundle debug render-template-schema ./urls --profile workspace_custom_host --input-file input.path.json
+>>> [CLI] bundle debug render-template-schema ./urls --profile workspace_custom_host --input-file input.edited.json
 {
   "welcome_message": "Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]",
   "success_message": "Open [CUSTOM_HOST]/pipelines?tab=all&w=[WORKSPACE_ID]",
@@ -137,7 +137,7 @@ Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace
   }
 }
 
->>> [CLI] bundle init ./urls --profile workspace_custom_host --config-file input.path.json
+>>> [CLI] bundle init ./urls --profile workspace_custom_host --config-file input.edited.json
 Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
 Open [CUSTOM_HOST]/pipelines?tab=all&w=[WORKSPACE_ID]
 workspace_host: [CUSTOM_HOST]
@@ -145,9 +145,9 @@ Hostname: [CUSTOM_HOSTNAME]
 URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 URL "/jobs": [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 URL "/pipelines?tab=all": [CUSTOM_HOST]/pipelines?tab=all&w=[WORKSPACE_ID]
-jobs_url: [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
+jobs_url: https://example.test/my-jobs
 Root keys: jobs_url path workspace
-Root data: map[jobs_url:[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID] path:/pipelines?tab=all workspace:{[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
+Root data: map[jobs_url:https://example.test/my-jobs path:/pipelines?tab=all workspace:{[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
 
 === Invalid URL paths
 

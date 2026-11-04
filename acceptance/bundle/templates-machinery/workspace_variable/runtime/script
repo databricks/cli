@@ -7,10 +7,11 @@ for profile in workspace_classic workspace_classic_id workspace_custom_host no_w
 done
 
 # Render the schema again with the current inputs, then run init with the same
-# inputs and profile.
-title "Rerender and init with inputs\n"
-trace $CLI bundle debug render-template-schema ./urls --profile workspace_custom_host --input-file input.path.json | schema_fields
-trace $CLI bundle init ./urls --profile workspace_custom_host --config-file input.path.json
+# inputs and profile. The input has an edited jobs_url: the schema still shows
+# its rendered default, and init keeps the edited value.
+title "Rerender and init with edited inputs\n"
+trace $CLI bundle debug render-template-schema ./urls --profile workspace_custom_host --input-file input.edited.json | schema_fields
+trace $CLI bundle init ./urls --profile workspace_custom_host --config-file input.edited.json
 cat urls.txt
 rm urls.txt
 
