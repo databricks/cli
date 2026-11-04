@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/diag"
@@ -30,26 +31,62 @@ func (m *setDefault) Name() string {
 
 func (m *setDefault) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPattern(v, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// A default cannot be written into a pure reference to a whole block
-			// (e.g. "${resources.jobs.base.schedule}"), so leave it to the referenced value.
-			if s, ok := v.AsString(); ok && dynvar.IsPureVariableReference(s) {
-				return v, nil
-			}
-			_, err := dyn.GetByPath(v, m.key)
-			switch {
-			case dyn.IsNoSuchKeyError(err):
-				return dyn.SetByPath(v, m.key, dyn.V(m.value))
-			default:
-				return v, err
-			}
-		})
+		return m.apply(v, dyn.EmptyPath, m.pattern)
 	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	return nil
+}
+
+// setDefaultPathError prefixes an error with the full path of the value it was
+// raised on, because apply visits sub-values and dyn errors only carry the path
+// relative to the value they were raised on.
+type setDefaultPathError struct {
+	path dyn.Path
+	err  error
+}
+
+func (e setDefaultPathError) Error() string {
+	return fmt.Sprintf("%s: %s", e.path, e.err)
+}
+
+// Unwrap lets wildcard visits and callers still classify the underlying dyn error.
+func (e setDefaultPathError) Unwrap() error {
+	return e.err
+}
+
+// apply walks the pattern one component at a time so that a pure reference
+// anywhere along the way is skipped, not only where the pattern ends.
+func (m *setDefault) apply(v dyn.Value, prefix dyn.Path, pattern dyn.Pattern) (dyn.Value, error) {
+	// A default cannot be written into a pure reference to a whole block
+	// (e.g. "${resources.jobs.base.schedule}"), so leave it to the referenced value.
+	if s, ok := v.AsString(); ok && dynvar.IsPureVariableReference(s) {
+		return v, nil
+	}
+
+	if len(pattern) == 0 {
+		_, err := dyn.GetByPath(v, m.key)
+		switch {
+		case dyn.IsNoSuchKeyError(err):
+			return dyn.SetByPath(v, m.key, dyn.V(m.value))
+		default:
+			return v, err
+		}
+	}
+
+	nv, err := dyn.MapByPattern(v, pattern[:1], func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		return m.apply(v, prefix.Append(p...), pattern[1:])
+	})
+	if err == nil || len(prefix) == 0 {
+		return nv, err
+	}
+	// Errors from deeper levels already carry their full path.
+	if _, ok := errors.AsType[setDefaultPathError](err); ok {
+		return nv, err
+	}
+	return nv, setDefaultPathError{path: prefix, err: err}
 }
 
 func SetDefault(ctx context.Context, b *Bundle, pattern string, value any) {
