@@ -1,0 +1,1 @@
+* `bundle deploy --plan --force` now fails instead of staying on a snapshot that was modified in the workspace after the plan was created; run `bundle plan --force` again. ([#7336](https://github.com/databricks/cli/pull/7336))
