@@ -34,10 +34,11 @@ var firstStepPrefetch = map[string]struct {
 	cacheKey string
 	ctor     pagedConstructor
 }{
-	ResourceTypeVolume:     {cacheKeyCatalogs, ListCatalogs},
-	ResourceTypeUCFunction: {cacheKeyCatalogs, ListCatalogs},
-	ResourceTypeDatabase:   {cacheKeyDatabaseInstances, ListDatabaseInstances},
-	ResourceTypePostgres:   {cacheKeyPostgresProjects, ListPostgresProjects},
+	ResourceTypeVolume:       {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeUCFunction:   {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeModelService: {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeDatabase:     {cacheKeyDatabaseInstances, ListDatabaseInstances},
+	ResourceTypePostgres:     {cacheKeyPostgresProjects, ListPostgresProjects},
 }
 
 // PrefetchResources kicks off a background goroutine for every resource type
