@@ -1,5 +1,6 @@
 # Goldens record only the set bits, so a field appended to the schema changes
-# none of them. The schema itself is a scratch file for the decoder.
+# none of them (../full records every line). The schema itself is a scratch
+# file for the decoder.
 $CLI bundle bitmap schema > schema.txt
 trace $CLI bundle bitmap bitmap-text > bitmap-text.txt
 grep '^1 ' bitmap-text.txt > out.bitmap.txt
