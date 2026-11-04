@@ -1,1 +1,1 @@
-* Add the `default-bare` template to `databricks bundle init` and the `--init-bare` flag to `databricks bundle generate`, which creates that bare bundle in the current directory when there is no `databricks.yml` yet ([#7355](https://github.com/databricks/cli/pull/7355)).
+* Add the `default-bare` template to `databricks bundle init` and the `--init-bare` flag to `databricks bundle generate`, which creates that bare bundle in the current directory when there is no `databricks.yml` yet. ([#7355](https://github.com/databricks/cli/pull/7355))
