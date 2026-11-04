@@ -3,6 +3,9 @@ variables.*
 variables.*.type
 variables.*.default
 variables.*.description
+variables.*.sensitive
+variables.*.sensitive=true
+variables.*.sensitive=false
 variables.*.value
 variables.*.lookup
 variables.*.lookup.alert
