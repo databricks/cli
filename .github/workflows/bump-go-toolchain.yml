@@ -130,8 +130,9 @@ jobs:
           git push origin "HEAD:$BRANCH"
 
       # A failed scheduled run is otherwise only visible in the Actions tab.
+      # Manual runs are watched by whoever started them.
       - name: Report failure
-        if: failure()
+        if: failure() && github.event_name == 'schedule'
         uses: ./.github/actions/report-failure
         with:
           label: bump-go-toolchain-failure

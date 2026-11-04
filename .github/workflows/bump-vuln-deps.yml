@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Compute and show the bump without creating a pull request or failure issue"
+        description: "Compute and show the bump without creating a pull request"
         type: boolean
         default: false
 
@@ -145,8 +145,9 @@ jobs:
           git push origin "HEAD:$BRANCH"
 
       # A failed scheduled run is otherwise only visible in the Actions tab.
+      # Manual runs are watched by whoever started them.
       - name: Report failure
-        if: failure() && !inputs.dry_run
+        if: failure() && github.event_name == 'schedule'
         uses: ./.github/actions/report-failure
         with:
           label: bump-vuln-deps-failure

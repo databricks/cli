@@ -2,7 +2,8 @@ name: 'Report failure'
 description: >-
   Track failures of a scheduled workflow in a single open issue: open it on the
   first failure and comment on it for every subsequent one until someone closes
-  it. Run this as the last step with "if: failure()".
+  it. Run this as the last step with
+  "if: failure() && github.event_name == 'schedule'".
   Requires the calling job to have "permissions: issues: write".
 
 inputs:
