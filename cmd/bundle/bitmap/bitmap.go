@@ -1,7 +1,6 @@
 package bitmap
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -121,14 +120,11 @@ func newBitmapCommand() *cobra.Command {
 // loadBits loads the bundle and computes its bitmap against the embedded schema.
 func loadBits(cmd *cobra.Command) ([]bool, []string, error) {
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{Validate: true})
-	if err != nil && !errors.Is(err, root.ErrAlreadyPrinted) {
+	if err != nil {
 		return nil, nil, err
 	}
-	if b == nil {
-		return nil, nil, errors.New("failed to load bundle")
-	}
 	schema := bundlebitmap.EmbeddedSchema()
-	bits, err := bundlebitmap.Bits(b.Config, b.Telemetry, schema)
+	bits, err := bundlebitmap.Bits(b.UserConfig, b.Telemetry, schema)
 	if err != nil {
 		return nil, nil, err
 	}

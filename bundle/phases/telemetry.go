@@ -259,8 +259,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
 	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.RecordsHistory())
 	b.Metrics.SetBoolValue(metrics.ImmutableSnapshotUsed, len(b.Config.Resources.Snapshots) > 0)
-	b.Telemetry.SetPaired(&b.Telemetry.DeploymentHistoryEnabledTrue, &b.Telemetry.DeploymentHistoryEnabledFalse, b.DeploymentBundle.StateDB.RecordsHistory())
-	b.Telemetry.SetPaired(&b.Telemetry.ImmutableSnapshotUsedTrue, &b.Telemetry.ImmutableSnapshotUsedFalse, len(b.Config.Resources.Snapshots) > 0)
+	b.Telemetry.DeploymentHistoryEnabled.Set(b.DeploymentBundle.StateDB.RecordsHistory())
+	b.Telemetry.ImmutableSnapshotUsed.Set(len(b.Config.Resources.Snapshots) > 0)
 	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   metrics.SnapshotUploadDuration,
@@ -340,7 +340,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	for _, app := range b.Config.Resources.Apps {
 		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
 			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
-			b.Telemetry.SetPaired(&b.Telemetry.AppLifecycleStartedTrue, &b.Telemetry.AppLifecycleStartedFalse, *app.Lifecycle.Started)
+			b.Telemetry.AppLifecycleStarted.Set(*app.Lifecycle.Started)
 			break
 		}
 	}
@@ -348,7 +348,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	for _, cluster := range b.Config.Resources.Clusters {
 		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
 			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
-			b.Telemetry.SetPaired(&b.Telemetry.ClusterLifecycleStartedTrue, &b.Telemetry.ClusterLifecycleStartedFalse, *cluster.Lifecycle.Started)
+			b.Telemetry.ClusterLifecycleStarted.Set(*cluster.Lifecycle.Started)
 			break
 		}
 	}
@@ -356,7 +356,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	for _, warehouse := range b.Config.Resources.SqlWarehouses {
 		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
 			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
-			b.Telemetry.SetPaired(&b.Telemetry.SqlWarehouseLifecycleStartedTrue, &b.Telemetry.SqlWarehouseLifecycleStartedFalse, *warehouse.Lifecycle.Started)
+			b.Telemetry.SqlWarehouseLifecycleStarted.Set(*warehouse.Lifecycle.Started)
 			break
 		}
 	}
@@ -372,8 +372,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
 		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskScheduled, airScheduled)
 		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
-		b.Telemetry.SetPaired(&b.Telemetry.AiRuntimeTaskScheduledTrue, &b.Telemetry.AiRuntimeTaskScheduledFalse, airScheduled)
-		b.Telemetry.SetPaired(&b.Telemetry.AiRuntimeTaskMultitaskTrue, &b.Telemetry.AiRuntimeTaskMultitaskFalse, airMultitask)
+		b.Telemetry.AiRuntimeTaskScheduled.Set(airScheduled)
+		b.Telemetry.AiRuntimeTaskMultitask.Set(airMultitask)
 	}
 
 	// Record whether the removed terraform engine was still requested (the command
