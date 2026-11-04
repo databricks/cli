@@ -15,6 +15,7 @@ Usage:
 Flags:
       --auto-approve          Skip interactive approvals that might be required for deployment.
   -c, --cluster-id string     Override cluster in the deployment with the given cluster ID.
+      --exclude strings       Deploy all resources except the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.
       --fail-on-active-runs   Fail if there are running jobs or pipelines in the deployment.
       --force                 Force-override Git branch validation.
       --force-lock            Force acquisition of deployment lock.
