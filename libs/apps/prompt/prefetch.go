@@ -26,6 +26,7 @@ const (
 	cacheKeyCatalogs          = "_catalogs"
 	cacheKeyDatabaseInstances = "_database_instances"
 	cacheKeyPostgresProjects  = "_postgres_projects"
+	cacheKeySystemAIModels    = "_system_ai_model_services"
 )
 
 // firstStepPrefetch maps multi-step resource types to the cache key and
@@ -36,7 +37,7 @@ var firstStepPrefetch = map[string]struct {
 }{
 	ResourceTypeVolume:       {cacheKeyCatalogs, ListCatalogs},
 	ResourceTypeUCFunction:   {cacheKeyCatalogs, ListCatalogs},
-	ResourceTypeModelService: {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeModelService: {cacheKeySystemAIModels, listSystemAIModelServices},
 	ResourceTypeDatabase:     {cacheKeyDatabaseInstances, ListDatabaseInstances},
 	ResourceTypePostgres:     {cacheKeyPostgresProjects, ListPostgresProjects},
 }

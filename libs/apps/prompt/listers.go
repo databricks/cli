@@ -155,8 +155,7 @@ func ListFunctionsInSchema(ctx context.Context, catalogName, schemaName string) 
 	return capResults(out), nil
 }
 
-// ListModelServicesInSchema returns AI Gateway model services within a catalog.schema as selectable items.
-// IDs are the full catalog.schema.name, without the API's model-services/ prefix.
+// ListModelServicesInSchema returns model services in catalog.schema, with IDs as catalog.schema.name.
 func ListModelServicesInSchema(ctx context.Context, catalogName, schemaName string) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {

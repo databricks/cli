@@ -529,29 +529,29 @@ func TestPrintSuccessNotInPlace(t *testing.T) {
 	assert.Contains(t, got, "npm run dev")
 }
 
-func TestSystemAIModelServiceItems(t *testing.T) {
+func TestListSystemAIModelServices(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	m.GetMockAiGatewayAPI().EXPECT().
 		ListModelServicesAll(ctx, catalog.ListModelServicesRequest{Parent: "schemas/system.ai"}).
 		Return([]catalog.ModelService{{Name: "model-services/system.ai.chat"}}, nil)
 
-	items, err := systemAIModelServiceItems(ctx)
+	f, err := listSystemAIModelServices(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, []ListItem{
 		{ID: "system.ai.chat", Label: "system.ai.chat"},
 		{ID: browseCatalogsID, Label: "Browse other catalogs..."},
-	}, items)
+	}, f.Items)
 }
 
-func TestSystemAIModelServiceItemsWithoutAccess(t *testing.T) {
+func TestListSystemAIModelServicesWithoutAccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	m.GetMockAiGatewayAPI().EXPECT().
 		ListModelServicesAll(ctx, catalog.ListModelServicesRequest{Parent: "schemas/system.ai"}).
 		Return(nil, apierr.ErrPermissionDenied)
 
-	items, err := systemAIModelServiceItems(ctx)
+	f, err := listSystemAIModelServices(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, []ListItem{{ID: browseCatalogsID, Label: "Browse other catalogs..."}}, items)
+	assert.Equal(t, []ListItem{{ID: browseCatalogsID, Label: "Browse other catalogs..."}}, f.Items)
 }

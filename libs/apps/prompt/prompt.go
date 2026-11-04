@@ -855,9 +855,8 @@ func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool
 
 const browseCatalogsID = "__browse_catalogs__"
 
-// systemAIModelServiceItems lists the system.ai model services followed by a "Browse other catalogs..."
-// entry. Without access to system.ai only the browse entry is returned.
-func systemAIModelServiceItems(ctx context.Context) ([]ListItem, error) {
+// listSystemAIModelServices lists system.ai model services plus the browse entry; no access yields only the latter.
+func listSystemAIModelServices(ctx context.Context) (*PagedFetcher, error) {
 	items, err := ListModelServicesInSchema(ctx, "system", "ai")
 	if errors.Is(err, apierr.ErrPermissionDenied) || errors.Is(err, apierr.ErrNotFound) {
 		items, err = nil, nil
@@ -865,25 +864,18 @@ func systemAIModelServiceItems(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(items, ListItem{ID: browseCatalogsID, Label: "Browse other catalogs..."}), nil
+	return &PagedFetcher{Items: append(items, ListItem{ID: browseCatalogsID, Label: "Browse other catalogs..."})}, nil
 }
 
-// PromptForModelService shows the system.ai model services first, because finding the system catalog
-// means paging through every catalog in large workspaces. "Browse other catalogs..." falls back to the
-// catalog -> schema -> model service picker.
+// PromptForModelService opens on system.ai, since paging to the system catalog is slow in large workspaces.
 func PromptForModelService(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	var items []ListItem
-	err := RunWithSpinnerCtx(ctx, "Fetching model services...", func() error {
-		var fetchErr error
-		items, fetchErr = systemAIModelServiceItems(ctx)
-		return fetchErr
-	})
+	f, err := getFetcherByKey(ctx, cacheKeySystemAIModels, "Fetching model services...", listSystemAIModelServices)
 	if err != nil {
 		return nil, err
 	}
 	value := browseCatalogsID
-	if len(items) > 1 {
-		value, err = PromptFromList(ctx, resourceTitle("Select Model Service", r), "", items, required)
+	if len(f.Items) > 1 {
+		value, err = PromptFromList(ctx, resourceTitle("Select Model Service", r), "", f.Items, required)
 		if err != nil {
 			return nil, err
 		}
