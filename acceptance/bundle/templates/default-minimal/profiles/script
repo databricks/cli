@@ -1,0 +1,33 @@
+# The test server is reachable as both 127.0.0.1 and localhost. The second
+# stands in for a host shared by several workspaces.
+CUSTOM_HOST=${DATABRICKS_HOST/127.0.0.1/localhost}
+add_repl "$CUSTOM_HOST" CUSTOM_HOST
+WORKSPACE_ID=$(curl -s "$DATABRICKS_HOST/.well-known/databricks-config" | jq -r .workspace_id)
+
+# The classic profile has no workspace_id. The SDK resolves the ID from host
+# metadata, but the generated host stays without ?w= so that it matches the
+# profile in strict mode too.
+cat > .databrickscfg <<EOT
+[classic]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+
+[custom_host]
+host = $CUSTOM_HOST
+workspace_id = $WORKSPACE_ID
+token = $DATABRICKS_TOKEN
+EOT
+export DATABRICKS_CONFIG_FILE=$PWD/.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+for profile in classic custom_host; do
+  title "Profile $profile\n"
+  trace $CLI bundle init default-minimal --config-file ./input.json --profile $profile
+  cd my_default_minimal
+  trace grep 'host:' databricks.yml
+  trace DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=1 $CLI bundle validate -t dev
+  trace $CLI bundle deploy -t dev
+  cd ..
+  rm -r my_default_minimal
+done

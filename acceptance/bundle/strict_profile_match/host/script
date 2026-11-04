@@ -1,4 +1,4 @@
-for target in classic classic_with_workspace_id custom_host custom_host_workspace_id_field; do
+for target in classic classic_with_workspace_id custom_host custom_host_workspace_id_field classic_with_w custom_host_with_w; do
   title "Target $target matches one profile"
   trace errcode $CLI bundle run -t $target show_auth
 done

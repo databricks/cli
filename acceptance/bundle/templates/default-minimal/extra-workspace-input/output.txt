@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle init default-minimal --config-file ./input.json
+Welcome to the minimal Declarative Automation Bundle template!
+
+This template creates a minimal project structure without sample code, ideal for advanced users.
+(For getting started with Python or SQL code, use the default-python or default-sql templates instead.)
+
+Your workspace at [DATABRICKS_URL] is used for initialization.
+(See https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile.)
+
+✨ Your new project has been created in the 'my_default_minimal' directory!
+
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> grep host: my_default_minimal/databricks.yml
+      host: "[DATABRICKS_URL]"
+      host: "[DATABRICKS_URL]"

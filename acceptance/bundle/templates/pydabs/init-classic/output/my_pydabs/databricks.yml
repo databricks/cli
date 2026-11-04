@@ -34,7 +34,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: [DATABRICKS_URL]
+      host: "[DATABRICKS_URL]"
     variables:
       catalog: hive_metastore
       schema: ${workspace.current_user.short_name}
@@ -43,7 +43,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: [DATABRICKS_URL]
+      host: "[DATABRICKS_URL]"
       # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     variables:
