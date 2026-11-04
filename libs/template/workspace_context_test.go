@@ -83,3 +83,18 @@ func TestPromptForValuesWithWorkspace(t *testing.T) {
 		})
 	}
 }
+
+// Acceptance tests can't use an adb-<id> hostname, because the test server is reachable only
+// on localhost.
+func TestWorkspaceURLKeepsIDOnHostnameWithID(t *testing.T) {
+	ws := workspaceContext{host: "https://adb-111.4.azuredatabricks.net", workspaceID: "111", urlWorkspaceID: "111"}
+
+	// Strict profile matching reads the ID from the query, not from the hostname.
+	host, err := ws.URL()
+	require.NoError(t, err)
+	assert.Equal(t, "https://adb-111.4.azuredatabricks.net?w=111", host)
+
+	jobs, err := ws.URL("/jobs")
+	require.NoError(t, err)
+	assert.Equal(t, "https://adb-111.4.azuredatabricks.net/jobs?w=111", jobs)
+}

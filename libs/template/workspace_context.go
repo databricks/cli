@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/cli/libs/workspaceurls"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -45,9 +44,10 @@ type workspaceContext struct {
 	host        string
 	workspaceID string
 
-	// urlWorkspaceID is the workspace ID that URL adds as ?w=. It is empty when the user didn't
-	// set the ID. A classic profile has no workspace_id, so a host with ?w= wouldn't match it
-	// under DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH.
+	// urlWorkspaceID is the workspace ID that URL adds as ?w=. It is empty unless the user set the
+	// ID. Strict profile matching (DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH) compares the ID in the
+	// host with the profile's workspace_id, and a profile without workspace_id matches only a host
+	// without an ID.
 	urlWorkspaceID string
 }
 
@@ -109,9 +109,16 @@ func (c workspaceContext) URL(path ...string) (string, error) {
 	if len(path) > 1 {
 		return "", fmt.Errorf("URL accepts at most one path, got %d", len(path))
 	}
-	base, err := workspaceurls.WorkspaceBaseURL(c.host, c.urlWorkspaceID)
+	base, err := url.Parse(c.host)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse workspace host %q: %w", c.host, err)
+	}
+	// Unlike workspaceurls.WorkspaceBaseURL, this adds ?w= also when the hostname has the ID
+	// (adb-<id>), because strict profile matching reads the ID only from the query.
+	if c.urlWorkspaceID != "" {
+		query := base.Query()
+		query.Set("w", c.urlWorkspaceID)
+		base.RawQuery = query.Encode()
 	}
 	if len(path) == 0 {
 		return base.String(), nil
