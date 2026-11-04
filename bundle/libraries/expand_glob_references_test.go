@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -63,7 +64,7 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
+	bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
@@ -148,7 +149,7 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
+	bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
@@ -223,7 +224,7 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
+	bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
@@ -276,8 +277,8 @@ func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
 		},
 	}
 
-	loc := dyn.Location{File: filepath.Join(dir, "resource.yml"), Line: 10, Column: 5}
-	bundletest.SetLocation(b, ".", []dyn.Location{loc})
+	loc := diag.Location{File: filepath.Join(dir, "resource.yml"), Line: 10, Column: 5}
+	bundletest.SetLocation(b, ".", []diag.Location{loc})
 
 	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)

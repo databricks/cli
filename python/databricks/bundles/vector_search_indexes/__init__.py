@@ -4,6 +4,9 @@ __all__ = [
     "DeltaSyncVectorIndexSpecRequest",
     "DeltaSyncVectorIndexSpecRequestDict",
     "DeltaSyncVectorIndexSpecRequestParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "DirectAccessVectorIndexSpec",
     "DirectAccessVectorIndexSpecDict",
     "DirectAccessVectorIndexSpecParam",
@@ -37,6 +40,11 @@ from databricks.bundles.vector_search_indexes._models.delta_sync_vector_index_sp
     DeltaSyncVectorIndexSpecRequest,
     DeltaSyncVectorIndexSpecRequestDict,
     DeltaSyncVectorIndexSpecRequestParam,
+)
+from databricks.bundles.vector_search_indexes._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.vector_search_indexes._models.direct_access_vector_index_spec import (
     DirectAccessVectorIndexSpec,

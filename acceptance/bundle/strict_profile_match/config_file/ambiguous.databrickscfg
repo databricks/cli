@@ -1,0 +1,5 @@
+[DEFAULT]
+host = $CLASSIC_HOST
+
+[workspace_classic]
+host = $CLASSIC_HOST

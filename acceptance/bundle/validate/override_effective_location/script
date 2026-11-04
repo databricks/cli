@@ -1,0 +1,8 @@
+title "engine overridden in target"
+errcode trace $CLI bundle validate -t bad_engine
+
+title "trigger_pause_status overridden in development target"
+errcode trace $CLI bundle validate -t dev_trigger
+
+title "name_prefix overridden in development target"
+errcode trace $CLI bundle validate -t dev_prefix

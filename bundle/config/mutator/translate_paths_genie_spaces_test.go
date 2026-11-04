@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +37,7 @@ func TestTranslatePathsGenieSpaces_FilePathRelativeSubDirectory(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.genie_spaces", []dyn.Location{{
+	bundletest.SetLocation(b, "resources.genie_spaces", []diag.Location{{
 		File: filepath.Join(dir, "resources", "genie_space.yml"),
 	}})
 

@@ -1,0 +1,15 @@
+bundle:
+  name: strict-profile-match
+
+include:
+  - scripts.yml
+
+targets:
+  no_host:
+    default: true
+  no_host_with_profile:
+    workspace:
+      profile: workspace_custom_host
+  no_host_with_workspace_id:
+    workspace:
+      workspace_id: "$WORKSPACE_ID"

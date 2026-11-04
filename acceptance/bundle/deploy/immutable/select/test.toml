@@ -1,0 +1,4 @@
+# The test reads metadata.json with "workspace export /Workspace/...". On Windows the script
+# runs under MSYS2, which rewrites leading-slash arguments to Windows paths before the CLI sees
+# them. Setting this environment variable disables that conversion.
+Env.MSYS_NO_PATHCONV = "1"

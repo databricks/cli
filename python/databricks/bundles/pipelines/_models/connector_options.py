@@ -42,6 +42,10 @@ from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
     MetaMarketingOptionsParam,
 )
+from databricks.bundles.pipelines._models.one_drive_options import (
+    OneDriveOptions,
+    OneDriveOptionsParam,
+)
 from databricks.bundles.pipelines._models.outlook_options import (
     OutlookOptions,
     OutlookOptionsParam,
@@ -147,6 +151,13 @@ class ConnectorOptions:
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
+    onedrive_options: VariableOrOptional[OneDriveOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
+    """
+
     outlook_options: VariableOrOptional[OutlookOptions] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -180,9 +191,7 @@ class ConnectorOptions:
 
     smartsheet_options: VariableOrOptional[SmartsheetOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Smartsheet specific options for ingestion
+    [Public Preview] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptions] = None
@@ -274,6 +283,13 @@ class ConnectorOptionsDict(TypedDict, total=False):
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
+    onedrive_options: VariableOrOptional[OneDriveOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
+    """
+
     outlook_options: VariableOrOptional[OutlookOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
@@ -307,9 +323,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     smartsheet_options: VariableOrOptional[SmartsheetOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Smartsheet specific options for ingestion
+    [Public Preview] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptionsParam]

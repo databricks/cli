@@ -1,5 +1,7 @@
 package dyn
 
+import "errors"
+
 // WalkReadOnly walks the configuration tree in readonly mode and calls the given function on each node.
 // The callback may return ErrSkip to skip traversal of a subtree.
 // If the callback returns another error, the walk is aborted, and the error is returned.
@@ -12,7 +14,7 @@ func WalkReadOnly(v Value, fn func(p Path, v Value) error) error {
 // such that it can be passed to the callback function.
 func walkReadOnly(v Value, p Path, fn func(p Path, v Value) error) error {
 	if err := fn(p, v); err != nil {
-		if err == ErrSkip {
+		if errors.Is(err, ErrSkip) {
 			return nil
 		}
 		return err

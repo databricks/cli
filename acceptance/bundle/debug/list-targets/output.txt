@@ -1,5 +1,8 @@
 
 >>> [CLI] bundle debug list-targets
+custom_host_explicit_id https://custom.test workspace_id:5678
+custom_host_explicit_id_over_query https://custom.test workspace_id:5678
+custom_host_query_id https://custom.test workspace_id:1234
 dev (default) development https://dev.example.com
 prod production https://prod.example.com
 staging
@@ -10,6 +13,21 @@ with_vars ${var.target_mode} ${var.target_host}
 >>> [CLI] bundle debug list-targets --output json
 {
   "targets": [
+    {
+      "name": "custom_host_explicit_id",
+      "host": "https://custom.test",
+      "workspace_id": "5678"
+    },
+    {
+      "name": "custom_host_explicit_id_over_query",
+      "host": "https://custom.test",
+      "workspace_id": "5678"
+    },
+    {
+      "name": "custom_host_query_id",
+      "host": "https://custom.test",
+      "workspace_id": "1234"
+    },
     {
       "name": "dev",
       "default": true,

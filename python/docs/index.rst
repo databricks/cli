@@ -16,10 +16,12 @@ See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tool
    databricks.bundles.cluster_policies
    databricks.bundles.clusters
    databricks.bundles.dashboards
+   databricks.bundles.data_quality_monitors
    databricks.bundles.database_catalogs
    databricks.bundles.database_instances
    databricks.bundles.experiments
    databricks.bundles.external_locations
+   databricks.bundles.features
    databricks.bundles.genie_spaces
    databricks.bundles.instance_pools
    databricks.bundles.job_runs

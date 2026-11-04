@@ -1,0 +1,13 @@
+# cache_keys lists the keys in the plaintext token cache.
+cache_keys() {
+    jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+}
+
+# start_login traces the first step in "$@" and saves its output to file $1,
+# for steps whose output was already shown.
+start_login() {
+    local log="$1"
+    shift
+    >&2 printf "\n>>> %s\n" "$*"
+    "$@" &> "$log"
+}

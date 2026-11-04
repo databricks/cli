@@ -5,7 +5,7 @@
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
   "project_id": "factcheck-spec-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": 8796093022208,
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/factcheck-spec-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 1,
@@ -29,7 +29,7 @@
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
   "project_id": "factcheck-spec-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": 8796093022208,
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/factcheck-spec-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 1,
@@ -68,7 +68,7 @@
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
   "project_id": "factcheck-spec-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": 8796093022208,
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/factcheck-spec-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
@@ -106,9 +106,27 @@
 
 === update_mask=spec with a body that now omits the non-default default_endpoint_settings
 >>> [CLI] postgres update-project projects/factcheck-spec-[UNIQUE_NAME] spec --json {"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}
-Error: The request could not be processed. Please try again later and contact Databricks if the problem persists. [TraceId: [TRACE_ID]]
-
-Exit code: 1
+{
+  "name": "projects/factcheck-spec-[UNIQUE_NAME]",
+  "project_id": "factcheck-spec-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
+    "default_branch": "projects/factcheck-spec-[UNIQUE_NAME]/branches/production",
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "300s"
+    },
+    "display_name": "changed2",
+    "enable_pg_native_login": false,
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "project_id": "factcheck-spec-[UNIQUE_NAME]",
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
 
 >>> print_requests.py //postgres/projects --method PATCH
 {
@@ -131,7 +149,7 @@ Exit code: 1
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
   "project_id": "factcheck-spec-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": 8796093022208,
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/factcheck-spec-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,

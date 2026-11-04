@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/spf13/cobra"
@@ -263,7 +264,7 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 // It routes through dyn.V so nested Go maps/slices are converted recursively,
 // then stamps the ordering location.
 func nv(v any, n int) dyn.Value {
-	return dyn.V(v).WithLocations([]dyn.Location{{Line: n}})
+	return dyn.V(v).WithLocations([]diag.Location{{Line: n}})
 }
 
 // localBundlePath renders a bundle-relative path with a leading "./" so bundle

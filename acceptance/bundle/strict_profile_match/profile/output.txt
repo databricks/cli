@@ -1,0 +1,42 @@
+
+=== A workspace.profile that matches the target is accepted
+>>> errcode [CLI] bundle run -t classic_with_matching_profile show_auth
+profile=workspace_classic host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== A workspace.profile that doesn't match the target is rejected
+>>> errcode [CLI] bundle validate -t classic_with_profile
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: profile my-local-profile does not match profile workspace_classic selected for host [DATABRICKS_URL]. Config: host=[DATABRICKS_URL], profile=my-local-profile, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: classic_with_profile
+Workspace:
+  Host: [DATABRICKS_URL]
+
+Found 1 error
+
+Exit code: 1
+
+=== An explicit profile that matches the target is accepted
+>>> errcode [CLI] bundle run -t classic -p workspace_classic show_auth
+profile=workspace_classic host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== An explicit profile that doesn't match the target is rejected
+>>> errcode [CLI] bundle validate -t classic -p workspace_classic_id
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: profile workspace_classic_id does not match profile workspace_classic selected for host [DATABRICKS_URL]. Config: host=[DATABRICKS_URL], profile=workspace_classic_id, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: classic
+Workspace:
+  Host: [DATABRICKS_URL]
+
+Found 1 error
+
+Exit code: 1
+
+=== An explicit profile wins over workspace.profile, as without strict mode
+>>> errcode [CLI] bundle run -t classic_with_profile -p workspace_classic show_auth
+profile=workspace_classic host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== A CLI started from a bundle script uses the selected profile
+>>> errcode [CLI] bundle run -t custom_host nested_validate
+workspace_custom_host

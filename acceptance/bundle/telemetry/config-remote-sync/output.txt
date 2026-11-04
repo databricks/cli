@@ -36,3 +36,6 @@ Resource: resources.jobs.foo
     ]
   }
 }
+
+>>> cat [OUTPUT_DIR]/out.requests.txt
+"[LINEAGE_HASH]"

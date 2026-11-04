@@ -1,0 +1,2 @@
+# Two '<<' keys in target variables are an error.
+errcode trace $CLI bundle validate -t dev

@@ -1,0 +1,18 @@
+# The fake uv is a bash script, so this test cannot run on Windows runners
+# (mirrors acceptance/cmd/psql).
+GOOS.windows = false
+
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+
+[[Server]]
+Pattern = "GET /serverless/serverless-v4/pyproject.toml"
+Response.Body = '''
+[project]
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+
+[tool.uv]
+constraint-dependencies = ["pyarrow<19", "pandas<3"]
+'''

@@ -3,12 +3,13 @@ package dyn
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestValueEqMap(t *testing.T) {
-	loc := []Location{{File: "file", Line: 1, Column: 2}}
+	loc := []diag.Location{{File: "file", Line: 1, Column: 2}}
 	v := NewValue(map[string]Value{"key": V("value")}, loc)
 
 	tests := []struct {
@@ -37,7 +38,7 @@ func TestValueEqMap(t *testing.T) {
 		{
 			name: "different locations",
 			a:    v,
-			b:    v.WithLocations([]Location{{File: "other", Line: 1, Column: 2}}),
+			b:    v.WithLocations([]diag.Location{{File: "other", Line: 1, Column: 2}}),
 			want: false,
 		},
 		{

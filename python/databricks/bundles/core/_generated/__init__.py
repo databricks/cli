@@ -20,6 +20,10 @@ from databricks.bundles.core._generated.dashboards import (
     _DashboardResources,
     dashboard_mutator,
 )
+from databricks.bundles.core._generated.data_quality_monitors import (
+    _DataQualityMonitorResources,
+    data_quality_monitor_mutator,
+)
 from databricks.bundles.core._generated.database_catalogs import (
     _DatabaseCatalogResources,
     database_catalog_mutator,
@@ -35,6 +39,10 @@ from databricks.bundles.core._generated.experiments import (
 from databricks.bundles.core._generated.external_locations import (
     _ExternalLocationResources,
     external_location_mutator,
+)
+from databricks.bundles.core._generated.features import (
+    _FeatureResources,
+    feature_mutator,
 )
 from databricks.bundles.core._generated.genie_spaces import (
     _GenieSpaceResources,
@@ -117,9 +125,11 @@ __all__ = [
     "cluster_mutator",
     "cluster_policy_mutator",
     "dashboard_mutator",
+    "data_quality_monitor_mutator",
     "database_catalog_mutator",
     "database_instance_mutator",
     "external_location_mutator",
+    "feature_mutator",
     "genie_space_mutator",
     "instance_pool_mutator",
     "job_mutator",
@@ -151,10 +161,12 @@ class _GeneratedResources(
     _ClusterPolicyResources,
     _ClusterResources,
     _DashboardResources,
+    _DataQualityMonitorResources,
     _DatabaseCatalogResources,
     _DatabaseInstanceResources,
     _MlflowExperimentResources,
     _ExternalLocationResources,
+    _FeatureResources,
     _GenieSpaceResources,
     _InstancePoolResources,
     _JobRunResources,
@@ -187,10 +199,12 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         cluster_policies,
         clusters,
         dashboards,
+        data_quality_monitors,
         database_catalogs,
         database_instances,
         experiments,
         external_locations,
+        features,
         genie_spaces,
         instance_pools,
         job_runs,
@@ -220,10 +234,12 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         cluster_policies._resource_type(),
         clusters._resource_type(),
         dashboards._resource_type(),
+        data_quality_monitors._resource_type(),
         database_catalogs._resource_type(),
         database_instances._resource_type(),
         experiments._resource_type(),
         external_locations._resource_type(),
+        features._resource_type(),
         genie_spaces._resource_type(),
         instance_pools._resource_type(),
         job_runs._resource_type(),

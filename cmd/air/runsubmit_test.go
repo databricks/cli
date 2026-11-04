@@ -113,6 +113,25 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
 }
 
+func TestBuildSubmitPayloadRTX6000(t *testing.T) {
+	cfg, err := loadRunConfig(writeConfig(t, `
+experiment_name: rtx6000
+command: nvidia-smi
+compute:
+  accelerator_type: GPU_1xRTX6000
+  num_accelerators: 1
+`))
+	require.NoError(t, err)
+
+	p := buildSubmitPayload(cfg, "/d/command.sh", "6", "", snapshotResult{}, nil)
+	require.Len(t, p.Tasks, 1)
+	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
+	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)
+	computeJSON, err := json.Marshal(p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"accelerator_type":"GPU_1xRTX6000","accelerator_count":1}`, string(computeJSON))
+}
+
 func TestSubmitRun(t *testing.T) {
 	for _, tc := range []struct {
 		name                  string

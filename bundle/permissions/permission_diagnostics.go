@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/set"
 )
@@ -59,7 +58,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 			identityType,
 			b.Config.Workspace.CurrentUser.UserName,
 		),
-		Locations: []dyn.Location{b.Config.GetLocation("permissions")},
+		Locations: []diag.Location{b.Config.GetLocation("permissions")},
 		ID:        diag.PermissionNotIncluded,
 	}}
 }

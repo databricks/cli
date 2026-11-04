@@ -12,7 +12,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.schemas._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.schemas._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentParam,

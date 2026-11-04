@@ -1,0 +1,5 @@
+# The sync root is the parent directory, so include/exclude patterns are rewritten
+# relative to it. Only missing/** should be reported as not matching any files.
+cd app
+trace $CLI bundle validate
+trace $CLI bundle validate -o json | jq '.sync'

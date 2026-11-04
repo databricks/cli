@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,7 +57,7 @@ func TestPrepareInputConfigPassthrough(t *testing.T) {
 	adapter, err := NewAdapter(SupportedResources["schemas"], "schemas", nil)
 	require.NoError(t, err)
 
-	input := &resources.Schema{CreateSchema: catalog.CreateSchema{Name: "myschema"}}
+	input := &resources.Schema{Name: "myschema"}
 	sv, err := adapter.PrepareInputConfig(input, "resources.schemas.foo")
 	require.NoError(t, err)
 

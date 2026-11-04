@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -88,12 +89,13 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 				strings.Join(unspecified, ", "),
 			)
 
+			taskNode := dyn.ToStructPath(taskPath)
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
-				Locations: b.Config.GetLocations(taskPath.String()),
-				Paths:     []dyn.Path{taskPath},
+				Locations: b.Config.GetLocationsOf(taskNode),
+				Paths:     []*structpath.PathNode{taskNode},
 			})
 		}
 	}

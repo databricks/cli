@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -15,6 +16,7 @@ type Resources struct {
 	JobRuns   map[string]*resources.JobRun   `json:"job_runs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
+	Features                  map[string]*resources.Feature                  `json:"features,omitempty"`
 	Models                    map[string]*resources.MlflowModel              `json:"models,omitempty"`
 	Experiments               map[string]*resources.MlflowExperiment         `json:"experiments,omitempty"`
 	ModelServingEndpoints     map[string]*resources.ModelServingEndpoint     `json:"model_serving_endpoints,omitempty"`
@@ -23,6 +25,7 @@ type Resources struct {
 	ModelProviderServices     map[string]*resources.ModelProviderService     `json:"model_provider_services,omitempty"`
 	RegisteredModels          map[string]*resources.RegisteredModel          `json:"registered_models,omitempty"`
 	QualityMonitors           map[string]*resources.QualityMonitor           `json:"quality_monitors,omitempty"`
+	DataQualityMonitors       map[string]*resources.DataQualityMonitor       `json:"data_quality_monitors,omitempty"`
 	Catalogs                  map[string]*resources.Catalog                  `json:"catalogs,omitempty"`
 	Schemas                   map[string]*resources.Schema                   `json:"schemas,omitempty"`
 	Volumes                   map[string]*resources.Volume                   `json:"volumes,omitempty"`
@@ -113,12 +116,14 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["pipelines"], r.Pipelines),
 		collectResourceMap(descriptions["models"], r.Models),
 		collectResourceMap(descriptions["experiments"], r.Experiments),
+		collectResourceMap(descriptions["features"], r.Features),
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["model_services"], r.ModelServices),
 		collectResourceMap(descriptions["mcp_services"], r.McpServices),
 		collectResourceMap(descriptions["model_provider_services"], r.ModelProviderServices),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["data_quality_monitors"], r.DataQualityMonitors),
 		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
@@ -150,29 +155,41 @@ func (r *Resources) AllResources() []ResourceGroup {
 	}
 }
 
-// FindResourceByConfigKey searches all resource maps for a resource with the given key.
-func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
+// ResolveKey finds a resource by "key" or "type.key", e.g. "foo" or "jobs.foo", and returns it
+// together with its key. A bare key must match exactly one resource across all types.
+func (r *Resources) ResolveKey(ref string) (ConfigResource, string, error) {
+	groups := r.AllResources()
+
+	if typeName, key, ok := strings.Cut(ref, "."); ok {
+		for _, group := range groups {
+			if group.Description.PluralName != typeName {
+				continue
+			}
+			if res, ok := group.Resources[key]; ok {
+				return res, key, nil
+			}
+			break
+		}
+		return nil, "", fmt.Errorf("no such resource: %s", ref)
+	}
+
 	var found []ConfigResource
-
-	for _, group := range r.AllResources() {
-		if res, ok := group.Resources[key]; ok {
+	var matches []string
+	for _, group := range groups {
+		if res, ok := group.Resources[ref]; ok {
 			found = append(found, res)
+			matches = append(matches, group.Description.PluralName+"."+ref)
 		}
 	}
 
-	if len(found) == 0 {
-		return nil, fmt.Errorf("no such resource: %s", key)
+	switch len(found) {
+	case 0:
+		return nil, "", fmt.Errorf("no such resource: %s", ref)
+	case 1:
+		return found[0], ref, nil
+	default:
+		return nil, "", fmt.Errorf("ambiguous resource: %s (can resolve to %s); use a qualified name to disambiguate", ref, strings.Join(matches, ", "))
 	}
-
-	if len(found) > 1 {
-		keys := make([]string, 0, len(found))
-		for _, r := range found {
-			keys = append(keys, fmt.Sprintf("%s.%s", r.ResourceDescription().PluralName, key))
-		}
-		return nil, fmt.Errorf("ambiguous: %s (can resolve to all of %s)", key, keys)
-	}
-
-	return found[0], nil
 }
 
 func (r *Resources) HasInternalResources() bool {
@@ -187,6 +204,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"pipelines":                    (&resources.Pipeline{}).ResourceDescription(),
 		"models":                       (&resources.MlflowModel{}).ResourceDescription(),
 		"experiments":                  (&resources.MlflowExperiment{}).ResourceDescription(),
+		"features":                     (&resources.Feature{}).ResourceDescription(),
 		"instance_pools":               (&resources.InstancePool{}).ResourceDescription(),
 		"model_serving_endpoints":      (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"model_services":               (&resources.ModelService{}).ResourceDescription(),
@@ -194,6 +212,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"model_provider_services":      (&resources.ModelProviderService{}).ResourceDescription(),
 		"registered_models":            (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":             (&resources.QualityMonitor{}).ResourceDescription(),
+		"data_quality_monitors":        (&resources.DataQualityMonitor{}).ResourceDescription(),
 		"catalogs":                     (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                      (&resources.Schema{}).ResourceDescription(),
 		"external_locations":           (&resources.ExternalLocation{}).ResourceDescription(),

@@ -230,10 +230,8 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `*Public Preview* List permissions.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List permissions.
+	cmd.Short = `List permissions.`
+	cmd.Long = `List permissions.
 
   Lists the privilege assignments for a securable. Does not include inherited
   privileges. Paginated version of Get Permissions API.
@@ -243,8 +241,8 @@ List permissions.
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -311,10 +309,8 @@ func newListEffective() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-effective SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `*Public Preview* List effective permissions.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List effective permissions.
+	cmd.Short = `List effective permissions.`
+	cmd.Long = `List effective permissions.
 
   Lists the effective privilege assignments for a securable. Includes inherited
   privileges. Paginated version of Get Effective Permissions API.
@@ -324,8 +320,8 @@ List effective permissions.
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

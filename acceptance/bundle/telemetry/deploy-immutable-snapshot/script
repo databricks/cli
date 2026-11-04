@@ -1,0 +1,17 @@
+# The snapshot upload duration is reported next to the files.(upload) mutator time. Its value
+# varies, so only assert that it is reported.
+print_snapshot_upload_duration_included() {
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | (.entry // .) | .databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms // [] | any(.key == "snapshot.upload" and .value >= 0)' "$OUT_REQUESTS"
+}
+
+title "First deploy uploads the snapshot\n"
+trace $CLI bundle deploy
+trace print_telemetry_bool_values | grep immutable_snapshot_used
+trace print_snapshot_upload_duration_included
+rm "$OUT_REQUESTS"
+
+title "Second deploy finds the snapshot already uploaded\n"
+trace $CLI bundle deploy
+trace print_telemetry_bool_values | grep immutable_snapshot_used
+trace print_snapshot_upload_duration_included
+rm "$OUT_REQUESTS"

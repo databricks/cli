@@ -55,9 +55,7 @@ func TestExternalLocationResourceDescription(t *testing.T) {
 
 func TestExternalLocationGetName(t *testing.T) {
 	el := &ExternalLocation{
-		CreateExternalLocation: catalog.CreateExternalLocation{
-			Name: "my_location",
-		},
+		Name: "my_location",
 	}
 
 	assert.Equal(t, "my_location", el.GetName())

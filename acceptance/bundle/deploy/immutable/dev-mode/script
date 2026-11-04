@@ -1,0 +1,13 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() {
+    trace $CLI bundle destroy -t dev --auto-approve
+}
+trap cleanup EXIT
+
+# The snapshot path is unique per deployment, so 'mode: development' must accept it.
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t prod
+
+trace $CLI bundle deploy -t dev
+
+trace $CLI jobs get "$(read_id.py -t dev my_job)" | jq '{name: .settings.name, python_file: .settings.tasks[0].spark_python_task.python_file}'

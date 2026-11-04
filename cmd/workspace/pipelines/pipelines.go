@@ -986,8 +986,10 @@ func newStartUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&startUpdateReq.Development, "development", startUpdateReq.Development, `Whether the update is started in the development mode.`)
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
+	// TODO: array: full_refresh_selection_by_path
 	// TODO: map via StringToStringVar: parameters
 	// TODO: array: refresh_selection
+	// TODO: array: refresh_selection_by_path
 	// TODO: array: replace_where_overrides
 	// TODO: array: reset_checkpoint_selection
 	// TODO: complex arg: rewind_spec
@@ -1184,6 +1186,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
 	// TODO: map via StringToStringVar: parameters
+	cmd.Flags().StringVar(&updateReq.ParentPath, "parent-path", updateReq.ParentPath, `Path of the pipeline parent folder in workspace file tree.`)
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
 	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)

@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+include:
+  - override.yml
+
+presets:
+  name_prefix: "base-"
+  jobs_max_concurrent_runs: 7
+  artifacts_dynamic_version: true
+
+resources:
+  jobs:
+    j:
+      name: job

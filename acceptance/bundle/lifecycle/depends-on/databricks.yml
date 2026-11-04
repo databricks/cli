@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    # No references between the jobs: the order comes from lifecycle.depends_on only.
+    a_job:
+      name: a_job
+      lifecycle:
+        depends_on:
+          - resource: z_job
+          - resource: pipelines.z_pipeline
+    z_job:
+      name: z_job
+  pipelines:
+    z_pipeline:
+      name: z_pipeline

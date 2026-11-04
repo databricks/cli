@@ -1,0 +1,9 @@
+experiment_name: rtx6000-submit-smoke
+command: nvidia-smi
+compute:
+  accelerator_type: GPU_1xRTX6000
+  num_accelerators: 1
+environment:
+  version: 6
+  dependencies: []
+max_retries: 0

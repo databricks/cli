@@ -23,6 +23,12 @@ import (
 // that would otherwise be declined for lack of a TTY. Any truthy value enables it.
 const EnvAutoInstallUv = "DATABRICKS_LOCALENV_AUTO_INSTALL_UV"
 
+// EnvUvProjectEnvironment is uv's own setting for where `uv sync` puts the
+// project environment: an absolute path as is, a relative one against the
+// workspace root (or the project root outside a workspace).
+// https://docs.astral.sh/uv/reference/environment/#uv_project_environment
+const EnvUvProjectEnvironment = "UV_PROJECT_ENVIRONMENT"
+
 // uvManager implements PackageManager using the uv tool.
 // https://docs.astral.sh/uv/
 type uvManager struct {
@@ -194,16 +200,16 @@ func isUvResolutionConflict(stderr string) bool {
 	return strings.Contains(s, "no solution found") || strings.Contains(s, "are unsatisfiable")
 }
 
-// venvPython returns the path to the virtualenv's Python interpreter,
+// venvPython returns the path to the Python interpreter of the virtualenv at venv,
 // accounting for the Windows (Scripts/python.exe) vs Unix (bin/python) layout.
-func venvPython(projectDir string) string {
+func venvPython(venv string) string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(projectDir, venvDir, "Scripts", "python.exe")
+		return filepath.Join(venv, "Scripts", "python.exe")
 	}
-	return filepath.Join(projectDir, venvDir, "bin", "python")
+	return filepath.Join(venv, "bin", "python")
 }
 
-// PostProvision seeds pip into the project's virtual environment.
+// PostProvision seeds pip into the virtual environment at venv.
 //
 // VS Code's ms-python.vscode-python-envs extension falls back to
 // `python -m pip list` when its `uv --version` probe fails on the GUI PATH.
@@ -211,15 +217,15 @@ func venvPython(projectDir string) string {
 // pip if it was previously present. Seeding pip after every sync ensures the
 // VS Code integration works correctly regardless of how the environment was
 // activated.
-func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error {
-	args := append([]string{m.bin}, m.pipSeedArgs(venvPython(projectDir))...)
+func (m *uvManager) PostProvision(ctx context.Context, projectDir, venv string) error {
+	args := append([]string{m.bin}, m.pipSeedArgs(venvPython(venv))...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv pip seed")
 	}
 	return nil
 }
 
-// Validate inspects the project's virtual environment: the Python minor version, the
+// Validate inspects the virtual environment at venv: the Python minor version, the
 // databricks-connect and standalone-pyspark distribution versions, and whether
 // databricks-connect actually imports. A missing databricks-connect or pyspark yields
 // an empty version rather than an error (PackageNotFoundError is caught), so the probe
@@ -231,7 +237,7 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error 
 // on top of it. Metadata alone cannot tell a live collision from a stale dist-info that
 // no longer describes the importable module, so the probe also attempts `import
 // databricks.connect`: a live collision raises there, a harmless leftover does not.
-func (m *uvManager) Validate(ctx context.Context, projectDir string) (VenvInfo, error) {
+func (m *uvManager) Validate(ctx context.Context, projectDir, venv string) (VenvInfo, error) {
 	// Each value is printed with a unique prefix so parsing greps for the prefix rather
 	// than relying on line position: any stray line uv or the interpreter writes to
 	// stdout (e.g. a warning) would otherwise shift a positional parse.
@@ -255,7 +261,7 @@ except BaseException as e:
 	// active instead of the .venv we just provisioned. The direct path is exactly
 	// what was installed, so validation observes the real target.
 	out, err := process.Background(ctx,
-		[]string{venvPython(projectDir), "-c", pyCode},
+		[]string{venvPython(venv), "-c", pyCode},
 		process.WithDir(projectDir),
 		process.WithProcessGroup(),
 	)
@@ -298,6 +304,31 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// WorkspaceRoot asks uv for the workspace root of projectDir (`uv workspace
+// dir`, added in uv 0.9.9). Under --dry-run EnsureAvailable has not run, so the
+// binary is discovered here without installing it.
+// https://docs.astral.sh/uv/reference/cli/#uv-workspace-dir
+func (m *uvManager) WorkspaceRoot(ctx context.Context, projectDir string) (string, error) {
+	bin := m.bin
+	if bin == "" {
+		found, err := discoverUv(ctx)
+		if err != nil {
+			return "", err
+		}
+		bin = found
+	}
+	out, err := m.runUvOutput(ctx, append([]string{bin}, m.workspaceDirArgs()...), projectDir)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(out), nil
+}
+
+// workspaceDirArgs returns the argument slice for `uv workspace dir`.
+func (m *uvManager) workspaceDirArgs() []string {
+	return []string{"workspace", "dir"}
 }
 
 // syncArgs returns the argument slice for `uv sync` (without the binary),

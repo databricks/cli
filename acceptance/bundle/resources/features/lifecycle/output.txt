@@ -1,0 +1,40 @@
+
+>>> [CLI] schemas create feat_test_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.feat_test_[UNIQUE_NAME]"
+}
+
+>>> create_table.py main.feat_test_[UNIQUE_NAME].source_table
+Created table main.feat_test_[UNIQUE_NAME].source_table
+Inserted sample data into main.feat_test_[UNIQUE_NAME].source_table
+Table main.feat_test_[UNIQUE_NAME].source_table is now visible (catalog_name=main)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-features-lifecycle-[UNIQUE_NAME]/default/files...
+Created features.feature1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A second plan on an unchanged bundle must report no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Update the description in place, then confirm the plan settles again
+>>> update_file.py databricks.yml DESCRIPTION1 DESCRIPTION2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-features-lifecycle-[UNIQUE_NAME]/default/files...
+Updated features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.feature1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-features-lifecycle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

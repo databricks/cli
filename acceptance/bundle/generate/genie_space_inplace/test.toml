@@ -1,3 +1,6 @@
+RecordRequests = true
+Ignore = [".databricks"]
+
 # Genie spaces are only deployed via the direct deployment engine.
 
 [[Repls]]

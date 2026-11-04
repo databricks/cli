@@ -1,0 +1,31 @@
+# The mock server replaces raw.githubusercontent.com (skills manifest) and
+# api.github.com (latest skills release lookup).
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_CLI_GITHUB_API_URL = "$DATABRICKS_HOST"
+# Use the skills ref and the compat manifest that each test sets, even if the
+# shell sets other values.
+Env.DATABRICKS_SKILLS_REF = ""
+Env.DATABRICKS_FORCE_EMBEDDED_COMPAT = "false"
+Env.DATABRICKS_CACHE_ENABLED = "true"
+RecordRequests = true
+
+Ignore = [
+    "home",
+]
+
+[[Server]]
+Pattern = "GET /{ref}/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-skill": {
+      "version": "1.0.0",
+      "description": "Test skill",
+      "files": ["SKILL.md"],
+      "repo_dir": "skills"
+    }
+  }
+}
+'''

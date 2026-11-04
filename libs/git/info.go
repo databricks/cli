@@ -41,7 +41,7 @@ type response struct {
 	GitInfo *gitInfo `json:"git_info,omitempty"`
 }
 
-// Fetch repository information either by quering .git or by fetching it from API (for dabs-in-workspace case).
+// FetchRepositoryInfo reads Workspace Git metadata or a local .git checkout.
 //   - In case we could not find git repository (including when the path does not exist), all string fields of RepositoryInfo will be "" and err will be nil.
 //   - If there were any errors when trying to determine git root (e.g. API call returned an error or there were permission issues
 //     reading the file system), all strings fields of RepositoryInfo will be "" and err will be non-nil.
@@ -52,7 +52,7 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 	var info RepositoryInfo
 	var err error
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		info, err = FetchRepositoryInfoAPI(ctx, path, w)
+		info, err = fetchRepositoryInfoFromWorkspace(ctx, path, w)
 	} else {
 		info, err = fetchRepositoryInfoDotGit(ctx, path)
 	}
@@ -67,10 +67,18 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 	return info, err
 }
 
-// FetchRepositoryInfoAPI reads the metadata from the workspace API, which is what
-// FetchRepositoryInfo does on a Databricks Runtime. Exported so that
-// `bundle debug fetch-repository-info --workspace-api` can reach this path
-// off-runtime; the product calls it through FetchRepositoryInfo.
+func fetchRepositoryInfoFromWorkspace(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+	info, err := FetchRepositoryInfoAPI(ctx, path, w)
+	if err == nil && info.WorktreeRoot == "" {
+		// Fall back to Git information from .git for unsupported Git folders like worktree folders
+		return fetchRepositoryInfoDotGit(ctx, path)
+	}
+	return info, err
+}
+
+// FetchRepositoryInfoAPI reads Workspace Git metadata, the primary source on a Runtime.
+// It is exported so `bundle debug fetch-repository-info --workspace-api` can use this backend
+// off Runtime; normal commands call FetchRepositoryInfo.
 //
 // A path that does not exist is reported as fs.ErrNotExist; callers that treat
 // that as "no repository here" must normalize it the way FetchRepositoryInfo does.

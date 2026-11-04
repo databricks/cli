@@ -56,7 +56,7 @@ func (m *tfOnlyReferences) Apply(_ context.Context, b *bundle.Bundle) diag.Diagn
 // checkTFOnlyReference checks a single reference string like
 // "resources.jobs.src.always_running" and returns a diagnostic when it refers
 // to a TF-only field, or nil otherwise.
-func checkTFOnlyReference(ref string, loc dyn.Location) *diag.Diagnostic {
+func checkTFOnlyReference(ref string, loc diag.Location) *diag.Diagnostic {
 	p, err := dyn.NewPathFromString(ref)
 	// Need at least resources.<group>.<name>.<field>
 	if err != nil || len(p) < 4 || p[0].Key() != "resources" {
@@ -82,6 +82,6 @@ func checkTFOnlyReference(ref string, loc dyn.Location) *diag.Diagnostic {
 	return &diag.Diagnostic{
 		Severity:  diag.Error,
 		Summary:   fmt.Sprintf("%q: Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine", ref),
-		Locations: []dyn.Location{loc},
+		Locations: []diag.Location{loc},
 	}
 }

@@ -8,6 +8,9 @@ Env.DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT = "30"
 CloudSlow = false
 Cloud = true
 
+# DMS=true half of the split; see the vector_search_* test.toml.
+EnvMatrix.DMS = ["true"]
+
 # See basic/test.toml: the cap makes deploy warn that it stopped waiting.
 [[Repls]]
 Old = 'Warn: [^\n]*Stopped waiting[^\n]*\n'

@@ -66,6 +66,28 @@ func TestUpdateAlreadyUpToDate(t *testing.T) {
 	assert.Empty(t, result.Added)
 }
 
+func TestUpdateSkillsFallbackVersions(t *testing.T) {
+	for _, force := range []bool{false, true} {
+		name := "normal"
+		if force {
+			name = "force"
+		}
+		t.Run(name, func(t *testing.T) {
+			testSkillsFallbackVersions(t, func(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent) error {
+				_, err := UpdateSkills(ctx, src, targetAgents, UpdateOptions{Force: force})
+				return err
+			})
+		})
+	}
+}
+
+func TestUpdateSkillsRefSelection(t *testing.T) {
+	testSkillsRefSelection(t, func(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent) error {
+		_, err := UpdateSkills(ctx, src, targetAgents, UpdateOptions{})
+		return err
+	})
+}
+
 func TestUpdateVersionDiffDetected(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())

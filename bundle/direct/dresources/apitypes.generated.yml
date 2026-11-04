@@ -12,6 +12,8 @@ clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
 
+data_quality_monitors: dataquality.Monitor
+
 database_catalogs: database.DatabaseCatalog
 
 database_instances: database.DatabaseInstance
@@ -19,6 +21,8 @@ database_instances: database.DatabaseInstance
 experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
+
+features: ml.Feature
 
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 

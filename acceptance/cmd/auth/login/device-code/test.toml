@@ -1,0 +1,4 @@
+Env.DATABRICKS_CLI_DEVICE_CODE = "true"
+Ignore = [
+    "home"
+]

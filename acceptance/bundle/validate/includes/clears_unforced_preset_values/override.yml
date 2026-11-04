@@ -1,0 +1,4 @@
+presets:
+  name_prefix: ""
+  jobs_max_concurrent_runs: 0
+  artifacts_dynamic_version: false

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/retry"
 )
 
 const metadataFileName = "metadata.json"
@@ -28,10 +29,11 @@ func (m *upload) Name() string {
 }
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	f := retry.Filer(workspaceFiler)
 
 	metadata, err := json.MarshalIndent(b.Metadata, "", "  ")
 	if err != nil {

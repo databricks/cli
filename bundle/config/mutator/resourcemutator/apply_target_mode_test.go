@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -96,7 +97,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
+					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}}, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {CreateExperiment: ml.CreateExperiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
@@ -144,6 +145,20 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				DataQualityMonitors: map[string]*resources.DataQualityMonitor{
+					"dataQualityMonitor1": {Monitor: dataquality.Monitor{
+						ObjectType:             "schema",
+						ObjectId:               "dataQualityMonitor1",
+						AnomalyDetectionConfig: &dataquality.AnomalyDetectionConfig{},
+					}},
+					"dataQualityMonitor2": {Monitor: dataquality.Monitor{
+						ObjectType: "table",
+						ObjectId:   "dataQualityMonitor2",
+						DataProfilingConfig: &dataquality.DataProfilingConfig{
+							Schedule: &dataquality.CronSchedule{QuartzCronExpression: "0 0 12 * * ?", TimezoneId: "UTC"},
+						},
+					}},
+				},
 				Catalogs: map[string]*resources.Catalog{
 					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
 				},
@@ -155,6 +170,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Volumes: map[string]*resources.Volume{
 					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
+				},
+				Features: map[string]*resources.Feature{
+					"feature1": {Feature: ml.Feature{FullName: "catalog1.schema1.feature1"}},
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
@@ -406,6 +424,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
 	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
+	assert.Nil(t, b.Config.Resources.DataQualityMonitors["dataQualityMonitor2"].DataProfilingConfig.Schedule)
 
 	// Schema 1
 	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)
@@ -491,6 +510,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
+	assert.Equal(t, "catalog1.schema1.feature1", b.Config.Resources.Features["feature1"].FullName)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
@@ -535,6 +555,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	// Name field on these via embedded SDK types, hence the explicit skip.
 	notUserNamed := []string{
 		"Apps",
+		"Features",
 		"SecretScopes",
 		"Secrets",
 		"DatabaseInstances",

@@ -28,3 +28,8 @@ Order = 1
 Old = '/operations/[A-Za-z0-9+/=]+'
 New = '/operations/[OPERATION_ID]'
 Order = 2000
+
+[[Repls]]
+# Backend default that differs per cloud (8 TiB on the testserver and gcp, 32 TiB on aws).
+Old = '"branch_logical_size_limit_bytes": \d+'
+New = '"branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT]'

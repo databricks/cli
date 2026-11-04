@@ -112,9 +112,9 @@ func (m Manager) ValidateExecutable() error {
 	if _, err := exec.LookPath(m.Name); err != nil {
 		if m.Name == "pnpm" {
 			// https://pnpm.io/installation
-			return fmt.Errorf("pnpm is unavailable; use --package-manager npm, install pnpm with corepack enable pnpm or npx get-pnpm, or use --skip-install: %w", err)
+			return fmt.Errorf("pnpm is unavailable; use databricks apps init --package-manager npm, install pnpm with corepack enable pnpm or npx get-pnpm, or use databricks apps init --skip-install: %w", err)
 		}
-		return fmt.Errorf("%s is unavailable; install it and retry, or use --skip-install to scaffold without running setup: %w", m.Name, err)
+		return fmt.Errorf("%s is unavailable; install it and retry, or use databricks apps init --skip-install to scaffold without running setup: %w", m.Name, err)
 	}
 	return nil
 }

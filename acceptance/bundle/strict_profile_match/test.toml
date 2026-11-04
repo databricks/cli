@@ -1,0 +1,2 @@
+# Written by script.prepare.
+Ignore = [".databrickscfg", "scripts.yml"]
