@@ -995,8 +995,9 @@ tasks:
   # embedded bitmap schema (see cmd/bundle/bitmap). The schema is append-only, so
   # update-schema reads the currently embedded schema and only appends. Output is
   # written to a temp file first so the redirect does not truncate schema.txt
-  # before `go run` embeds it at compile time. Also refreshes the schema listing
-  # in acceptance/bundle/bitmap/full, which tracks every schema line.
+  # before `go run` embeds it at compile time. Also refreshes the schema embedded
+  # in the databricks-bundles decoder (python/databricks/bundles/_bitmap) and the
+  # listing in acceptance/bundle/bitmap/full, which tracks every schema line.
   generate-bitmap-schema:
     desc: Regenerate bundle/bitmap/schema.txt and its acceptance listing
     sources:
@@ -1009,9 +1010,11 @@ tasks:
     generates:
       - bundle/bitmap/schema.txt
       - acceptance/bundle/bitmap/full/out.schema.txt
+      - python/databricks/bundles/_bitmap/_schema.py
     cmds:
       - go run . bundle bitmap update-schema > bundle/bitmap/schema.txt.tmp
       - mv bundle/bitmap/schema.txt.tmp bundle/bitmap/schema.txt
+      - go run ./bundle/bitmap/genpython python/databricks/bundles/_bitmap/_schema.py
       - go test ./acceptance -run TestAccept/bundle/bitmap/full -update
 
   # Upstream field documentation comes from the checked-in .codegen/cli.json;
