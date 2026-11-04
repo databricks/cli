@@ -21,19 +21,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml test-schema- test-schema-renamed-
 
 === The plan renames the schema in place instead of recreating it
->>> [CLI] bundle plan
-update schemas.schema1
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
 >>> [CLI] bundle plan --output json
 {
-  "name": {
+  "resources.schemas.schema1": {
     "action": "update_id",
-    "reason": "id_changes",
-    "old": "test-schema-[UNIQUE_NAME]",
-    "new": "test-schema-renamed-[UNIQUE_NAME]",
-    "remote": "test-schema-[UNIQUE_NAME]"
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-[UNIQUE_NAME]"
+      }
+    }
   }
 }
 

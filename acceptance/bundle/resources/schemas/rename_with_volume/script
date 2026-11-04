@@ -21,8 +21,7 @@ title "Rename the schema"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
 title "UC moves the volume with the schema, so the plan re-keys the volume instead of recreating it"
-trace $CLI bundle plan
-trace $CLI bundle plan --output json | nostamp | jq '.plan | map_values(.changes | with_entries(select(.value.action != "skip")))'
+trace $CLI bundle plan --output json | nostamp | jq '.plan | map_values({action, changes: ((.changes // {}) | with_entries(select(.value.action != "skip")))})'
 
 title "Deploy renames the schema and updates the volume at its new path"
 trace $CLI bundle deploy
