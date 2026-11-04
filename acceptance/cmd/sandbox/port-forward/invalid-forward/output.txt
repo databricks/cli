@@ -1,0 +1,3 @@
+Error: invalid -L "8080": expected LOCAL:REMOTE ports, e.g. 8080:10080
+Error: invalid -L "8080:0": expected LOCAL:REMOTE ports, e.g. 8080:10080
+Error: required flag(s) "forward" not set
