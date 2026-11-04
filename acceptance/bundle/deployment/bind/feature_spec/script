@@ -1,0 +1,5 @@
+trace $CLI bundle deployment bind spec1 main.myschema.boundspec --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind spec1
+trace $CLI bundle summary

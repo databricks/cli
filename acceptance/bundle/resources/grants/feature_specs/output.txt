@@ -1,0 +1,70 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> print_requests.py --get //permissions
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-feature-spec-grants-[UNIQUE_NAME]/default/files...
+Created feature_specs.my_feature_spec
+Created feature_specs.my_feature_spec.grants
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //permissions
+
+>>> [CLI] grants get function main.myschema.myspec
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "EXECUTE"
+      ]
+    }
+  ]
+}
+
+=== Every change recreates the feature spec, which drops its grants; the bundle must re-apply them
+>>> update_file.py databricks.yml [age, country] [age]
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-feature-spec-grants-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following feature specs.
+Every change to a feature spec recreates it. A recreated feature spec gets back the grants
+declared in the bundle; any other grants on it are lost:
+  recreate resources.feature_specs.my_feature_spec
+Recreated feature_specs.my_feature_spec
+Updated feature_specs.my_feature_spec.grants
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+
+>>> print_requests.py //feature-engineering //permissions
+
+>>> [CLI] grants get function main.myschema.myspec
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "EXECUTE"
+      ]
+    }
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.feature_specs.my_feature_spec
+
+This action will result in the deletion of the following feature specs.
+Feature Serving endpoints and training code that use them can no longer load them:
+  delete resources.feature_specs.my_feature_spec
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-feature-spec-grants-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //permissions

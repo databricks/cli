@@ -1,0 +1,17 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.myschema.myspec",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "EXECUTE"
+        ],
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}

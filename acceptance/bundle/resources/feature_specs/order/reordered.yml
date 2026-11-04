@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle
+
+resources:
+  feature_specs:
+    spec1:
+      name: main.myschema.myspec
+      features:
+        - feature_lookup:
+            table: main.myschema.user_features
+            lookup_keys: [tenant_id, user_id]
+            feature_names: [age, country]
+            rename_outputs:
+              - {feature: country, output: user_country}
+              - {feature: age, output: user_age}
+            default_values:
+              - {feature: user_country, default_value: US}
+              - {feature: user_age, default_value: "0"}
+        - feature_function:
+            udf: main.myschema.score
+            input_bindings:
+              - {parameter: y, bound_feature: user_country}
+              - {parameter: x, bound_feature: user_age}
+            output: score
+      exclude_columns: [user_country, user_age]
+      extra_pip_requirements:
+        requirements: [scipy, numpy]

@@ -1,0 +1,54 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "plan": {
+    "resources.feature_specs.my_feature_spec": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "features": [
+            {
+              "feature_lookup": {
+                "feature_names": [
+                  "age",
+                  "country"
+                ],
+                "lookup_keys": [
+                  "user_id"
+                ],
+                "table": "main.myschema.user_features"
+              }
+            }
+          ],
+          "name": "main.myschema.myspec"
+        }
+      }
+    },
+    "resources.feature_specs.my_feature_spec.grants": {
+      "depends_on": [
+        {
+          "node": "resources.feature_specs.my_feature_spec",
+          "label": "${resources.feature_specs.my_feature_spec.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "securable_type": "function",
+          "full_name": "",
+          "__embed__": [
+            {
+              "principal": "deco-test-user@databricks.com",
+              "privileges": [
+                "EXECUTE"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.feature_specs.my_feature_spec.id}"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+trace $CLI bundle deploy
+
+title "Delete the feature spec out of band"
+trace $CLI api delete /api/2.0/feature-engineering/feature-specs/main.myschema.myspec
+
+title "Plan should detect the feature spec is gone and re-create it"
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve

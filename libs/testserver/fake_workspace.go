@@ -265,6 +265,8 @@ type FakeWorkspace struct {
 	// Operations belongs to MaterializationSets: the operations its handlers return, keyed by name.
 	Operations map[string]ml.Operation
 
+	FeatureSpecs map[string]ml.FeatureSpec
+
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
@@ -544,6 +546,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Features:              map[string]ml.Feature{},
 		MaterializationSets:   map[string]ml.MaterializationSet{},
 		Operations:            map[string]ml.Operation{},
+		FeatureSpecs:          map[string]ml.FeatureSpec{},
 		Volumes:               map[string]catalog.VolumeInfo{},
 		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},

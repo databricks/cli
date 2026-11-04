@@ -1,0 +1,23 @@
+title "Initial summary before deploy"
+trace $CLI bundle summary -o json | jq .resources.feature_specs.spec1
+
+trace $CLI bundle deploy
+replace_ids.py
+trace print_requests.py //feature-engineering
+
+title "Summary should show the id and the Catalog Explorer url"
+trace $CLI bundle summary -o json | jq ".resources.feature_specs.spec1 | {id, url}"
+
+title "A second plan on an unchanged bundle must report no changes"
+trace $CLI bundle plan
+
+title "Change a field (every field is immutable, so this recreates)"
+trace update_file.py databricks.yml "[age, country]" "[age]"
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //feature-engineering
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //feature-engineering
+
+rm -f out.requests.txt

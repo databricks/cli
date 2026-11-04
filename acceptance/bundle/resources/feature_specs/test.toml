@@ -1,0 +1,4 @@
+# Deployment history has no "feature_specs." resource-key prefix, so the deploy fails before the
+# feature spec is created. See dmsResourceTypes in libs/testserver/bundledeployments.go, which
+# mirrors Universe.
+EnvMatrixExclude.no_feature_spec_dms = ["DMS=true"]

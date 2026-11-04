@@ -1,0 +1,109 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.feature_specs.my_feature_spec": {
+      "action": "recreate",
+      "new_state": {
+        "value": {
+          "features": [
+            {
+              "feature_lookup": {
+                "feature_names": [
+                  "age"
+                ],
+                "lookup_keys": [
+                  "user_id"
+                ],
+                "table": "main.myschema.user_features"
+              }
+            }
+          ],
+          "name": "main.myschema.myspec"
+        }
+      },
+      "remote_state": {
+        "features": [
+          {
+            "feature_lookup": {
+              "feature_names": [
+                "age",
+                "country"
+              ],
+              "lookup_keys": [
+                "user_id"
+              ],
+              "table": "main.myschema.user_features"
+            }
+          }
+        ],
+        "name": "main.myschema.myspec"
+      },
+      "changes": {
+        "features[0].feature_lookup.feature_names": {
+          "action": "recreate",
+          "reason": "spec:immutable",
+          "old": [
+            "age",
+            "country"
+          ],
+          "new": [
+            "age"
+          ],
+          "remote": [
+            "age",
+            "country"
+          ]
+        }
+      }
+    },
+    "resources.feature_specs.my_feature_spec.grants": {
+      "depends_on": [
+        {
+          "node": "resources.feature_specs.my_feature_spec",
+          "label": "${resources.feature_specs.my_feature_spec.id}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "value": {
+          "securable_type": "function",
+          "full_name": "",
+          "__embed__": [
+            {
+              "principal": "deco-test-user@databricks.com",
+              "privileges": [
+                "EXECUTE"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.feature_specs.my_feature_spec.id}"
+        }
+      },
+      "remote_state": {
+        "securable_type": "function",
+        "full_name": "main.myschema.myspec",
+        "__embed__": [
+          {
+            "principal": "deco-test-user@databricks.com",
+            "privileges": [
+              "EXECUTE"
+            ]
+          }
+        ]
+      },
+      "changes": {
+        "full_name": {
+          "action": "update",
+          "old": "main.myschema.myspec",
+          "new": "",
+          "remote": "main.myschema.myspec"
+        }
+      }
+    }
+  }
+}

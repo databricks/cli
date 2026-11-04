@@ -957,6 +957,17 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
 	})
 
+	// Feature Engineering feature specs:
+	server.Handle("POST", "/api/2.0/feature-engineering/feature-specs", func(req Request) any {
+		return req.Workspace.FeatureSpecsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.FeatureSpecs, req.Vars["name"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return req.Workspace.FeatureSpecsDelete(req.Vars["name"])
+	})
+
 	// Model Provider Services (AI Gateway):
 
 	server.Handle("POST", "/api/2.1/unity-catalog/model-provider-services", func(req Request) any {

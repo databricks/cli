@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+resources:
+  feature_specs:
+    spec1:
+      name: main.myschema.myspec
+      features:
+        - feature_lookup:
+            table: main.myschema.user_features
+            lookup_keys: [user_id]
+            feature_names: [age, country]
+        - feature_function:
+            udf: main.myschema.score
+            input_bindings:
+              - parameter: x
+                bound_feature: age
+            output: score
+      extra_pip_requirements:
+        requirements: ["numpy==2.1.0"]

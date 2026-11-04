@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle plan -o json | jq 'del(.features)' > out.plan1.json
+trace print_requests.py --get //permissions
+trace $CLI bundle deploy
+trace print_requests.py //permissions > out.deploy1.requests.json
+trace $CLI grants get function main.myschema.myspec | jq --sort-keys
+
+title "Every change recreates the feature spec, which drops its grants; the bundle must re-apply them"
+trace update_file.py databricks.yml "[age, country]" "[age]"
+trace $CLI bundle plan -o json | jq 'del(.features)' > out.plan2.json
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //feature-engineering //permissions > out.deploy2.requests.json
+trace $CLI grants get function main.myschema.myspec | jq --sort-keys
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //permissions > out.destroy.requests.json

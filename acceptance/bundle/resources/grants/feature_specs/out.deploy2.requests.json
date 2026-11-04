@@ -1,0 +1,41 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/feature-specs/main.myschema.myspec"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/feature-specs",
+  "body": {
+    "features": [
+      {
+        "feature_lookup": {
+          "feature_names": [
+            "age"
+          ],
+          "lookup_keys": [
+            "user_id"
+          ],
+          "table": "main.myschema.user_features"
+        }
+      }
+    ],
+    "name": "main.myschema.myspec"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.myschema.myspec",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "EXECUTE"
+        ],
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}

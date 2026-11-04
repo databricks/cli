@@ -1,0 +1,15 @@
+bundle:
+  name: deploy-feature-spec-grants-$UNIQUE_NAME
+
+resources:
+  feature_specs:
+    my_feature_spec:
+      name: main.myschema.myspec
+      features:
+        - feature_lookup:
+            table: main.myschema.user_features
+            lookup_keys: [user_id]
+            feature_names: [age, country]
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges: ["EXECUTE"]

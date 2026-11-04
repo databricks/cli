@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle deployment bind spec1 main.myschema.boundspec --auto-approve
+Successfully bound feature_spec with an id 'main.myschema.boundspec'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Feature Specs:
+    spec1:
+      Name: main.myschema.boundspec
+      URL:  [DATABRICKS_URL]/explore/data/functions/main/myschema/boundspec?w=[WORKSPACE_ID]
+
+>>> [CLI] bundle deployment unbind spec1
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Feature Specs:
+    spec1:
+      Name: main.myschema.boundspec
+      URL:  (not deployed)

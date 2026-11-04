@@ -1,0 +1,15 @@
+Cloud = false
+
+Ignore = [
+    ".databricks",
+]
+
+# The bind flow issues a GET to confirm the remote feature spec exists before binding.
+[[Server]]
+Pattern = "GET /api/2.0/feature-engineering/feature-specs/{name}"
+Response.Body = '''
+{
+  "name": "main.myschema.boundspec",
+  "features": [{"feature_lookup": {"table": "main.myschema.user_features", "lookup_keys": ["user_id"], "feature_names": ["age"]}}]
+}
+'''

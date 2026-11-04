@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created feature_specs.spec1
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Reorder the lists whose order means nothing: no changes
+>>> cp reordered.yml databricks.yml
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Also reorder the lookup keys, which must follow the table's primary key: recreate
+>>> cp reordered-lookup-keys.yml databricks.yml
+
+>>> [CLI] bundle plan
+recreate feature_specs.spec1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.feature_specs.spec1
+
+This action will result in the deletion of the following feature specs.
+Feature Serving endpoints and training code that use them can no longer load them:
+  delete resources.feature_specs.spec1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

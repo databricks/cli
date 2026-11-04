@@ -1,0 +1,7 @@
+# Feature specs are not deployed to the cloud test workspaces yet; compare the recorded requests
+# locally.
+Cloud = false
+
+# Deployment history has no "feature_specs." resource-key prefix; see dmsResourceTypes in
+# libs/testserver/bundledeployments.go.
+EnvMatrixExclude.no_feature_spec_dms = ["DMS=true"]

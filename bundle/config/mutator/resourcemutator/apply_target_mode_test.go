@@ -181,6 +181,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					}},
 				},
+				FeatureSpecs: map[string]*resources.FeatureSpec{
+					"feature_spec1": {FeatureSpec: ml.FeatureSpec{Name: "catalog1.schema1.feature_spec1"}},
+				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
@@ -518,6 +521,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "catalog1.schema1.feature1", b.Config.Resources.Features["feature1"].FullName)
+	assert.Equal(t, "catalog1.schema1.feature_spec1", b.Config.Resources.FeatureSpecs["feature_spec1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
@@ -563,6 +567,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	notUserNamed := []string{
 		"Apps",
 		"Features",
+		"FeatureSpecs",
 		"SecretScopes",
 		"Secrets",
 		"DatabaseInstances",
