@@ -1,1 +1,1 @@
-* Fix grants of a renamed or recreated catalog, schema, volume or other UC resource staying recorded under the old name, which made the next `bundle plan` propose to apply them again (direct engine). ([#PR](https://github.com/databricks/cli/pull/PR))
+* Fix grants of a renamed or recreated catalog, schema, volume or other UC resource staying recorded under the old name, which made the next `bundle plan` propose to apply them again (direct engine). ([#7345](https://github.com/databricks/cli/pull/7345))
