@@ -1,0 +1,45 @@
+name: 'Report failure'
+description: >-
+  Track failures of a scheduled workflow in a single open issue: open it on the
+  first failure and comment on it for every subsequent one until someone closes
+  it. Run this as the last step with "if: failure()".
+  Requires the calling job to have "permissions: issues: write".
+
+inputs:
+  label:
+    description: Label that identifies the failure-tracking issue for this workflow.
+    required: true
+  assignees:
+    description: Comma-separated GitHub users to assign to a newly opened issue.
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Open or update failure issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        LABEL: ${{ inputs.label }}
+        ASSIGNEES: ${{ inputs.assignees }}
+        WORKFLOW: ${{ github.workflow }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |-
+        set -euo pipefail
+        gh label create "$LABEL" --force \
+          --color B60205 \
+          --description "The $WORKFLOW workflow is failing"
+        issue="$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')"
+        if [ -n "$issue" ]; then
+          gh issue comment "$issue" --body "Failed again: $RUN_URL"
+        else
+          # Assign individuals: a team mention posted by github-actions does not
+          # notify the team's members.
+          gh issue create --label "$LABEL" \
+            --assignee "$ASSIGNEES" \
+            --title "$WORKFLOW workflow is failing" \
+            --body "@databricks/eng-deco-cli the scheduled \`$WORKFLOW\` workflow failed.
+
+        $RUN_URL"
+        fi

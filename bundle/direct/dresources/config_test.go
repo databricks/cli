@@ -28,7 +28,7 @@ func TestConfigFiles(t *testing.T) {
 
 	for _, name := range names {
 		resourceType := strings.TrimSuffix(strings.TrimSuffix(path.Base(name), ymlSuffix), generatedSuffix)
-		assert.Containsf(t, SupportedResources, resourceType, "%s: %q is not a supported resource type", name, resourceType)
+		assert.NotEmptyf(t, configResourceTypes(resourceType), "%s: %q is not a supported resource type or sub-resource", name, resourceType)
 	}
 
 	for _, cfg := range []*Config{MustLoadConfig(), MustLoadGeneratedConfig()} {
@@ -41,6 +41,15 @@ func TestConfigFiles(t *testing.T) {
 func TestGetResourceConfig(t *testing.T) {
 	assert.NotEmpty(t, GetResourceConfig("volumes").RecreateOnChanges)
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
+}
+
+// TestSubResourceConfig checks that grants.yml applies to the grants of every parent.
+func TestSubResourceConfig(t *testing.T) {
+	for resourceType := range SupportedResources {
+		if strings.HasSuffix(resourceType, ".grants") {
+			assert.NotEmptyf(t, GetResourceConfig(resourceType).UpdatableIDFields, "%s: grants.yml does not apply", resourceType)
+		}
+	}
 }
 
 // TestFieldRuleOmittedIsRoot verifies that a FieldRule with no field is a root

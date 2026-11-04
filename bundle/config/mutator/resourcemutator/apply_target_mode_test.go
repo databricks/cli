@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -144,6 +145,20 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				DataQualityMonitors: map[string]*resources.DataQualityMonitor{
+					"dataQualityMonitor1": {Monitor: dataquality.Monitor{
+						ObjectType:             "schema",
+						ObjectId:               "dataQualityMonitor1",
+						AnomalyDetectionConfig: &dataquality.AnomalyDetectionConfig{},
+					}},
+					"dataQualityMonitor2": {Monitor: dataquality.Monitor{
+						ObjectType: "table",
+						ObjectId:   "dataQualityMonitor2",
+						DataProfilingConfig: &dataquality.DataProfilingConfig{
+							Schedule: &dataquality.CronSchedule{QuartzCronExpression: "0 0 12 * * ?", TimezoneId: "UTC"},
+						},
+					}},
+				},
 				Catalogs: map[string]*resources.Catalog{
 					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
 				},
@@ -158,6 +173,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Features: map[string]*resources.Feature{
 					"feature1": {Feature: ml.Feature{FullName: "catalog1.schema1.feature1"}},
+				},
+				MaterializationSets: map[string]*resources.MaterializationSet{
+					"materialization_set1": {MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{FeatureName: "catalog1.schema1.feature1"},
+						},
+					}},
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
@@ -409,6 +431,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
 	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
+	assert.Nil(t, b.Config.Resources.DataQualityMonitors["dataQualityMonitor2"].DataProfilingConfig.Schedule)
 
 	// Schema 1
 	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)

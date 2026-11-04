@@ -1,0 +1,22 @@
+bundle:
+  name: sensitive-variables
+
+variables:
+  target_catalog:
+    default: example_catalog
+  target_schema:
+    default: example_schema
+  api_credential:
+    description: Credential for the external API, passed via BUNDLE_VAR_api_credential. Sensitive because it is used as the value of a secret.
+  api_header:
+    description: A sensitive variable may reference another sensitive variable
+    sensitive: true
+    default: "Bearer ${var.api_credential}"
+
+resources:
+  secrets:
+    example_secret:
+      name: example_secret
+      catalog_name: ${var.target_catalog}
+      schema_name: ${var.target_schema}
+      value: ${var.api_credential}

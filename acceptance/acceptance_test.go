@@ -275,6 +275,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		"KIRO",
 		"OPENCLAW_SHELL",
 		"OPENCODE",
+		"PI_CODING_AGENT",
 		"VSCODE_AGENT",
 		"WINDSURF_AGENT",
 	} {

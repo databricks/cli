@@ -17,6 +17,7 @@ type Resources struct {
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
 	Features                  map[string]*resources.Feature                  `json:"features,omitempty"`
+	MaterializationSets       map[string]*resources.MaterializationSet       `json:"materialization_sets,omitempty"`
 	Models                    map[string]*resources.MlflowModel              `json:"models,omitempty"`
 	Experiments               map[string]*resources.MlflowExperiment         `json:"experiments,omitempty"`
 	ModelServingEndpoints     map[string]*resources.ModelServingEndpoint     `json:"model_serving_endpoints,omitempty"`
@@ -25,6 +26,7 @@ type Resources struct {
 	ModelProviderServices     map[string]*resources.ModelProviderService     `json:"model_provider_services,omitempty"`
 	RegisteredModels          map[string]*resources.RegisteredModel          `json:"registered_models,omitempty"`
 	QualityMonitors           map[string]*resources.QualityMonitor           `json:"quality_monitors,omitempty"`
+	DataQualityMonitors       map[string]*resources.DataQualityMonitor       `json:"data_quality_monitors,omitempty"`
 	Catalogs                  map[string]*resources.Catalog                  `json:"catalogs,omitempty"`
 	Schemas                   map[string]*resources.Schema                   `json:"schemas,omitempty"`
 	Volumes                   map[string]*resources.Volume                   `json:"volumes,omitempty"`
@@ -116,12 +118,14 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["models"], r.Models),
 		collectResourceMap(descriptions["experiments"], r.Experiments),
 		collectResourceMap(descriptions["features"], r.Features),
+		collectResourceMap(descriptions["materialization_sets"], r.MaterializationSets),
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["model_services"], r.ModelServices),
 		collectResourceMap(descriptions["mcp_services"], r.McpServices),
 		collectResourceMap(descriptions["model_provider_services"], r.ModelProviderServices),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["data_quality_monitors"], r.DataQualityMonitors),
 		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
@@ -203,6 +207,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"models":                       (&resources.MlflowModel{}).ResourceDescription(),
 		"experiments":                  (&resources.MlflowExperiment{}).ResourceDescription(),
 		"features":                     (&resources.Feature{}).ResourceDescription(),
+		"materialization_sets":         (&resources.MaterializationSet{}).ResourceDescription(),
 		"instance_pools":               (&resources.InstancePool{}).ResourceDescription(),
 		"model_serving_endpoints":      (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"model_services":               (&resources.ModelService{}).ResourceDescription(),
@@ -210,6 +215,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"model_provider_services":      (&resources.ModelProviderService{}).ResourceDescription(),
 		"registered_models":            (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":             (&resources.QualityMonitor{}).ResourceDescription(),
+		"data_quality_monitors":        (&resources.DataQualityMonitor{}).ResourceDescription(),
 		"catalogs":                     (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                      (&resources.Schema{}).ResourceDescription(),
 		"external_locations":           (&resources.ExternalLocation{}).ResourceDescription(),

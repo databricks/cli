@@ -103,7 +103,9 @@ func newCreateDirectGroupMember() *cobra.Command {
 
 	cmd.Flags().Var(&createDirectGroupMemberJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "create-direct-group-member GROUP_ID PRINCIPAL_ID"
+	cmd.Flags().StringVar(&createDirectGroupMemberReq.DirectGroupMember.Name, "name", createDirectGroupMemberReq.DirectGroupMember.Name, `The resource name of the group membership.`)
+
+	cmd.Use = "create-direct-group-member PARENT PRINCIPAL_ID"
 	cmd.Short = `*Beta* Create a direct group membership.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -115,7 +117,8 @@ Create a direct group membership.
   (holds the roles/group.manager role on it).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
+    PARENT: The parent resource name of the group to add the member to. Format:
+      accounts/{account_id}/groups/{group_id}
     PRINCIPAL_ID: Internal ID of the principal in Databricks.`
 
 	cmd.Annotations = make(map[string]string)
@@ -126,7 +129,7 @@ Create a direct group membership.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only GROUP_ID as positional arguments. Provide 'principal_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'principal_id' in your JSON input")
 			}
 			return nil
 		}
@@ -151,11 +154,7 @@ Create a direct group membership.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &createDirectGroupMemberReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
-
+		createDirectGroupMemberReq.Parent = args[0]
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createDirectGroupMemberReq.DirectGroupMember.PrincipalId)
 			if err != nil {
@@ -204,8 +203,9 @@ func newCreateGroup() *cobra.Command {
 
 	cmd.Flags().StringVar(&createGroupReq.Group.ExternalId, "external-id", createGroupReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
 	cmd.Flags().StringVar(&createGroupReq.Group.GroupName, "group-name", createGroupReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&createGroupReq.Group.Name, "name", createGroupReq.Group.Name, `The resource name of the group.`)
 
-	cmd.Use = "create-group"
+	cmd.Use = "create-group PARENT"
 	cmd.Short = `*Beta* Create a group in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -219,14 +219,18 @@ Create a group in the account.
   When AIM is enabled, supplying an external ID returns an error. To provision
   the identity from your identity provider, resolve it by its external ID with
   ResolveGroup; to read an existing external identity, use the ExternalGroup
-  resource.`
+  resource.
+
+  Arguments:
+    PARENT: The parent resource name of the account in which to create the group.
+      Format: accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -247,6 +251,7 @@ Create a group in the account.
 				}
 			}
 		}
+		createGroupReq.Parent = args[0]
 
 		response, err := a.IamV2.CreateGroup(ctx, createGroupReq)
 		if err != nil {
@@ -390,8 +395,9 @@ func newCreateServicePrincipal() *cobra.Command {
 	cmd.Flags().Var(&createServicePrincipalJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createServicePrincipalReq.ServicePrincipal.ExternalId, "external-id", createServicePrincipalReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&createServicePrincipalReq.ServicePrincipal.Name, "name", createServicePrincipalReq.ServicePrincipal.Name, `The resource name of the service principal.`)
 
-	cmd.Use = "create-service-principal DISPLAY_NAME ACCOUNT_SP_STATUS"
+	cmd.Use = "create-service-principal PARENT DISPLAY_NAME ACCOUNT_SP_STATUS"
 	cmd.Short = `*Beta* Create a service principal in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -408,6 +414,8 @@ Create a service principal in the account.
   ExternalServicePrincipal resource.
 
   Arguments:
+    PARENT: The parent resource name of the account in which to create the service
+      principal. Format: accounts/{account_id}
     DISPLAY_NAME: Display name of the service principal.
     ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
@@ -418,13 +426,13 @@ Create a service principal in the account.
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'account_sp_status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'account_sp_status' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -445,13 +453,14 @@ Create a service principal in the account.
 				}
 			}
 		}
+		createServicePrincipalReq.Parent = args[0]
 		if !cmd.Flags().Changed("json") {
-			createServicePrincipalReq.ServicePrincipal.DisplayName = args[0]
+			createServicePrincipalReq.ServicePrincipal.DisplayName = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createServicePrincipalReq.ServicePrincipal.AccountSpStatus)
+			_, err = fmt.Sscan(args[2], &createServicePrincipalReq.ServicePrincipal.AccountSpStatus)
 			if err != nil {
-				return fmt.Errorf("invalid ACCOUNT_SP_STATUS: %s", args[1])
+				return fmt.Errorf("invalid ACCOUNT_SP_STATUS: %s", args[2])
 			}
 
 		}
@@ -495,8 +504,9 @@ func newCreateUser() *cobra.Command {
 	cmd.Flags().Var(&createUserJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createUserReq.User.ExternalId, "external-id", createUserReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&createUserReq.User.Name, "name", createUserReq.User.Name, `The resource name of the user.`)
 
-	cmd.Use = "create-user USERNAME FULL_NAME ACCOUNT_USER_STATUS"
+	cmd.Use = "create-user PARENT USERNAME FULL_NAME ACCOUNT_USER_STATUS"
 	cmd.Short = `*Beta* Create a user in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -513,6 +523,8 @@ Create a user in the account.
   resource.
 
   Arguments:
+    PARENT: The parent resource name of the account in which to create the user.
+      Format: accounts/{account_id}
     USERNAME: Username/email of the user.
     FULL_NAME:
     ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.
@@ -524,13 +536,13 @@ Create a user in the account.
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -551,20 +563,21 @@ Create a user in the account.
 				}
 			}
 		}
+		createUserReq.Parent = args[0]
 		if !cmd.Flags().Changed("json") {
-			createUserReq.User.Username = args[0]
+			createUserReq.User.Username = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createUserReq.User.FullName)
+			_, err = fmt.Sscan(args[2], &createUserReq.User.FullName)
 			if err != nil {
-				return fmt.Errorf("invalid FULL_NAME: %s", args[1])
+				return fmt.Errorf("invalid FULL_NAME: %s", args[2])
 			}
 
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createUserReq.User.AccountUserStatus)
+			_, err = fmt.Sscan(args[3], &createUserReq.User.AccountUserStatus)
 			if err != nil {
-				return fmt.Errorf("invalid ACCOUNT_USER_STATUS: %s", args[2])
+				return fmt.Errorf("invalid ACCOUNT_USER_STATUS: %s", args[3])
 			}
 
 		}
@@ -609,8 +622,9 @@ func newCreateWorkspaceAssignment() *cobra.Command {
 
 	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
+	cmd.Flags().StringVar(&createWorkspaceAssignmentReq.WorkspaceAssignment.Name, "name", createWorkspaceAssignmentReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
 
-	cmd.Use = "create-workspace-assignment WORKSPACE_ID PRINCIPAL_ID"
+	cmd.Use = "create-workspace-assignment PARENT PRINCIPAL_ID"
 	cmd.Short = `*Beta* Create a workspace assignment.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -623,9 +637,11 @@ Create a workspace assignment.
   granted.
 
   Arguments:
-    WORKSPACE_ID: Required. The workspace ID for which the workspace assignment is being
-      created.
-    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
+    PARENT: The parent resource name of the workspace to assign the principal to.
+      Format: accounts/{account_id}/workspaces/{workspace_id}
+    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks. Set when
+      the assignment is created and cannot be changed afterwards; to assign a
+      different principal, create a new assignment.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -635,7 +651,7 @@ Create a workspace assignment.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only WORKSPACE_ID as positional arguments. Provide 'principal_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'principal_id' in your JSON input")
 			}
 			return nil
 		}
@@ -660,11 +676,7 @@ Create a workspace assignment.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &createWorkspaceAssignmentReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-
+		createWorkspaceAssignmentReq.Parent = args[0]
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createWorkspaceAssignmentReq.WorkspaceAssignment.PrincipalId)
 			if err != nil {
@@ -808,7 +820,7 @@ func newDeleteDirectGroupMember() *cobra.Command {
 
 	var deleteDirectGroupMemberReq iamv2.DeleteDirectGroupMemberRequest
 
-	cmd.Use = "delete-direct-group-member GROUP_ID PRINCIPAL_ID"
+	cmd.Use = "delete-direct-group-member NAME"
 	cmd.Short = `*Beta* Delete a direct group membership.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -820,15 +832,15 @@ Delete a direct group membership.
   (holds the roles/group.manager role on it).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
-    PRINCIPAL_ID: Required. Internal ID of the principal to be unassigned from the group.`
+    NAME: The resource name of the group membership. Format:
+      accounts/{account_id}/groups/{group_id}/direct-members/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -837,15 +849,7 @@ Delete a direct group membership.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &deleteDirectGroupMemberReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &deleteDirectGroupMemberReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		deleteDirectGroupMemberReq.Name = args[0]
 
 		err = a.IamV2.DeleteDirectGroupMember(ctx, deleteDirectGroupMemberReq)
 		if err != nil {
@@ -880,7 +884,7 @@ func newDeleteGroup() *cobra.Command {
 
 	var deleteGroupReq iamv2.DeleteGroupRequest
 
-	cmd.Use = "delete-group GROUP_ID"
+	cmd.Use = "delete-group NAME"
 	cmd.Short = `*Beta* Delete a group in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -892,7 +896,8 @@ Delete a group in the account.
   (holds the roles/group.manager role on it).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.`
+    NAME: The resource name of the group. Format:
+      accounts/{account_id}/groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -908,7 +913,7 @@ Delete a group in the account.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		deleteGroupReq.GroupId = args[0]
+		deleteGroupReq.Name = args[0]
 
 		err = a.IamV2.DeleteGroup(ctx, deleteGroupReq)
 		if err != nil {
@@ -1007,7 +1012,7 @@ func newDeleteServicePrincipal() *cobra.Command {
 
 	var deleteServicePrincipalReq iamv2.DeleteServicePrincipalRequest
 
-	cmd.Use = "delete-service-principal SERVICE_PRINCIPAL_ID"
+	cmd.Use = "delete-service-principal NAME"
 	cmd.Short = `*Beta* Delete a service principal in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1016,7 +1021,8 @@ Delete a service principal in the account.
   Deletes a service principal from the Databricks account by its internal ID.
 
   Arguments:
-    SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.`
+    NAME: The resource name of the service principal. Format:
+      accounts/{account_id}/service-principals/{service_principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1032,7 +1038,7 @@ Delete a service principal in the account.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		deleteServicePrincipalReq.ServicePrincipalId = args[0]
+		deleteServicePrincipalReq.Name = args[0]
 
 		err = a.IamV2.DeleteServicePrincipal(ctx, deleteServicePrincipalReq)
 		if err != nil {
@@ -1067,7 +1073,7 @@ func newDeleteUser() *cobra.Command {
 
 	var deleteUserReq iamv2.DeleteUserRequest
 
-	cmd.Use = "delete-user USER_ID"
+	cmd.Use = "delete-user NAME"
 	cmd.Short = `*Beta* Delete a user in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1076,7 +1082,8 @@ Delete a user in the account.
   Deletes a user from the Databricks account by its internal ID.
 
   Arguments:
-    USER_ID: Required. Internal ID of the user in Databricks.`
+    NAME: The resource name of the user. Format:
+      accounts/{account_id}/users/{user_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1092,7 +1099,7 @@ Delete a user in the account.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		deleteUserReq.UserId = args[0]
+		deleteUserReq.Name = args[0]
 
 		err = a.IamV2.DeleteUser(ctx, deleteUserReq)
 		if err != nil {
@@ -1127,7 +1134,7 @@ func newDeleteWorkspaceAssignment() *cobra.Command {
 
 	var deleteWorkspaceAssignmentReq iamv2.DeleteWorkspaceAssignmentRequest
 
-	cmd.Use = "delete-workspace-assignment WORKSPACE_ID PRINCIPAL_ID"
+	cmd.Use = "delete-workspace-assignment NAME"
 	cmd.Short = `*Beta* Delete a workspace assignment.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1139,16 +1146,15 @@ Delete a workspace assignment.
   of its original entitlements. Retrying is safe.
 
   Arguments:
-    WORKSPACE_ID: The workspace ID where the principal has access.
-    PRINCIPAL_ID: Required. ID of the principal in Databricks to delete workspace assignment
-      for.`
+    NAME: The resource name of the workspace assignment. Format:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1157,15 +1163,7 @@ Delete a workspace assignment.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &deleteWorkspaceAssignmentReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &deleteWorkspaceAssignmentReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		deleteWorkspaceAssignmentReq.Name = args[0]
 
 		err = a.IamV2.DeleteWorkspaceAssignment(ctx, deleteWorkspaceAssignmentReq)
 		if err != nil {
@@ -1274,7 +1272,7 @@ func newGetDirectGroupMember() *cobra.Command {
 
 	var getDirectGroupMemberReq iamv2.GetDirectGroupMemberRequest
 
-	cmd.Use = "get-direct-group-member GROUP_ID PRINCIPAL_ID"
+	cmd.Use = "get-direct-group-member NAME"
 	cmd.Short = `*Beta* Get a direct group member.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1283,16 +1281,15 @@ Get a direct group member.
   Gets a provisioned direct member of a group.
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
-    PRINCIPAL_ID: Required. Internal ID of the principal belonging to the group in
-      Databricks.`
+    NAME: The resource name of the group membership. Format:
+      accounts/{account_id}/groups/{group_id}/direct-members/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1301,15 +1298,7 @@ Get a direct group member.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getDirectGroupMemberReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &getDirectGroupMemberReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		getDirectGroupMemberReq.Name = args[0]
 
 		response, err := a.IamV2.GetDirectGroupMember(ctx, getDirectGroupMemberReq)
 		if err != nil {
@@ -1539,7 +1528,7 @@ func newGetGroup() *cobra.Command {
 
 	var getGroupReq iamv2.GetGroupRequest
 
-	cmd.Use = "get-group GROUP_ID"
+	cmd.Use = "get-group NAME"
 	cmd.Short = `*Beta* Get a group in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1548,7 +1537,8 @@ Get a group in the account.
   Fetches a group from the Databricks account by its internal ID.
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.`
+    NAME: The resource name of the group. Format:
+      accounts/{account_id}/groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1564,7 +1554,7 @@ Get a group in the account.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		getGroupReq.GroupId = args[0]
+		getGroupReq.Name = args[0]
 
 		response, err := a.IamV2.GetGroup(ctx, getGroupReq)
 		if err != nil {
@@ -1661,7 +1651,7 @@ func newGetServicePrincipal() *cobra.Command {
 
 	var getServicePrincipalReq iamv2.GetServicePrincipalRequest
 
-	cmd.Use = "get-service-principal SERVICE_PRINCIPAL_ID"
+	cmd.Use = "get-service-principal NAME"
 	cmd.Short = `*Beta* Get a service principal in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1670,7 +1660,8 @@ Get a service principal in the account.
   Fetches a service principal from the Databricks account by its internal ID.
 
   Arguments:
-    SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.`
+    NAME: The resource name of the service principal. Format:
+      accounts/{account_id}/service-principals/{service_principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1686,7 +1677,7 @@ Get a service principal in the account.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		getServicePrincipalReq.ServicePrincipalId = args[0]
+		getServicePrincipalReq.Name = args[0]
 
 		response, err := a.IamV2.GetServicePrincipal(ctx, getServicePrincipalReq)
 		if err != nil {
@@ -1722,7 +1713,7 @@ func newGetUser() *cobra.Command {
 
 	var getUserReq iamv2.GetUserRequest
 
-	cmd.Use = "get-user USER_ID"
+	cmd.Use = "get-user NAME"
 	cmd.Short = `*Beta* Get a user in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1731,7 +1722,8 @@ Get a user in the account.
   Fetches a user from the Databricks account by its internal ID.
 
   Arguments:
-    USER_ID: Required. Internal ID of the user in Databricks.`
+    NAME: The resource name of the user. Format:
+      accounts/{account_id}/users/{user_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1747,7 +1739,7 @@ Get a user in the account.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		getUserReq.UserId = args[0]
+		getUserReq.Name = args[0]
 
 		response, err := a.IamV2.GetUser(ctx, getUserReq)
 		if err != nil {
@@ -1785,7 +1777,7 @@ func newGetWorkspaceAccessDetail() *cobra.Command {
 
 	cmd.Flags().Var(&getWorkspaceAccessDetailReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`)
 
-	cmd.Use = "get-workspace-access-detail WORKSPACE_ID PRINCIPAL_ID"
+	cmd.Use = "get-workspace-access-detail NAME"
 	cmd.Short = `*Beta* Get workspace access details for a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1799,17 +1791,15 @@ Get workspace access details for a principal.
   what fields are returned (BASIC by default or FULL).
 
   Arguments:
-    WORKSPACE_ID: Required. The workspace ID for which the access details are being
-      requested.
-    PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
-      access details are being requested.`
+    NAME: The resource name of the workspace access detail. Format:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-access-details/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1818,15 +1808,7 @@ Get workspace access details for a principal.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAccessDetailReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &getWorkspaceAccessDetailReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		getWorkspaceAccessDetailReq.Name = args[0]
 
 		response, err := a.IamV2.GetWorkspaceAccessDetail(ctx, getWorkspaceAccessDetailReq)
 		if err != nil {
@@ -1862,7 +1844,7 @@ func newGetWorkspaceAssignment() *cobra.Command {
 
 	var getWorkspaceAssignmentReq iamv2.GetWorkspaceAssignmentRequest
 
-	cmd.Use = "get-workspace-assignment WORKSPACE_ID PRINCIPAL_ID"
+	cmd.Use = "get-workspace-assignment NAME"
 	cmd.Short = `*Beta* Get a workspace assignment for a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1871,16 +1853,15 @@ Get a workspace assignment for a principal.
   Returns the assignment for a principal in a workspace.
 
   Arguments:
-    WORKSPACE_ID: Required. The workspace ID for which the assignment is being requested.
-    PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
-      assignment is being requested.`
+    NAME: The resource name of the workspace assignment. Format:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1889,15 +1870,7 @@ Get a workspace assignment for a principal.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAssignmentReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &getWorkspaceAssignmentReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		getWorkspaceAssignmentReq.Name = args[0]
 
 		response, err := a.IamV2.GetWorkspaceAssignment(ctx, getWorkspaceAssignmentReq)
 		if err != nil {
@@ -2019,7 +1992,7 @@ func newListDirectGroupMembers() *cobra.Command {
 	cmd.Flags().StringVar(&listDirectGroupMembersReq.PageToken, "page-token", listDirectGroupMembersReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-direct-group-members GROUP_ID"
+	cmd.Use = "list-direct-group-members PARENT"
 	cmd.Short = `*Beta* List direct group members.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2029,8 +2002,8 @@ List direct group members.
   (internal or from identity provider).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks whose direct members are
-      being listed.`
+    PARENT: The parent resource name of the group whose direct members to list.
+      Format: accounts/{account_id}/groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2046,10 +2019,7 @@ List direct group members.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &listDirectGroupMembersReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
+		listDirectGroupMembersReq.Parent = args[0]
 
 		response := a.IamV2.ListDirectGroupMembers(ctx, listDirectGroupMembersReq)
 		if listDirectGroupMembersLimit < 0 {
@@ -2102,21 +2072,25 @@ func newListGroups() *cobra.Command {
 	cmd.Flags().StringVar(&listGroupsReq.PageToken, "page-token", listGroupsReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-groups"
+	cmd.Use = "list-groups PARENT"
 	cmd.Short = `*Beta* List groups in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
 List groups in the account.
 
   Lists the groups in the Databricks account, returning one page per call.
-  Supports filtering by group name or external ID.`
+  Supports filtering by group name or external ID.
+
+  Arguments:
+    PARENT: The parent resource name of the account whose groups to list. Format:
+      accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2124,6 +2098,8 @@ List groups in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+
+		listGroupsReq.Parent = args[0]
 
 		response := a.IamV2.ListGroups(ctx, listGroupsReq)
 		if listGroupsLimit < 0 {
@@ -2255,21 +2231,25 @@ func newListServicePrincipals() *cobra.Command {
 	cmd.Flags().StringVar(&listServicePrincipalsReq.PageToken, "page-token", listServicePrincipalsReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-service-principals"
+	cmd.Use = "list-service-principals PARENT"
 	cmd.Short = `*Beta* List service principals in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
 List service principals in the account.
 
   Lists the service principals in the Databricks account, returning one page per
-  call. Supports filtering by application ID or external ID.`
+  call. Supports filtering by application ID or external ID.
+
+  Arguments:
+    PARENT: The parent resource name of the account whose service principals to list.
+      Format: accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2277,6 +2257,8 @@ List service principals in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+
+		listServicePrincipalsReq.Parent = args[0]
 
 		response := a.IamV2.ListServicePrincipals(ctx, listServicePrincipalsReq)
 		if listServicePrincipalsLimit < 0 {
@@ -2318,7 +2300,7 @@ func newListTransitiveParentGroups() *cobra.Command {
 	cmd.Flags().IntVar(&listTransitiveParentGroupsReq.PageSize, "page-size", listTransitiveParentGroupsReq.PageSize, `The maximum number of parent groups to return.`)
 	cmd.Flags().StringVar(&listTransitiveParentGroupsReq.PageToken, "page-token", listTransitiveParentGroupsReq.PageToken, `A page token, received from a previous ListTransitiveParentGroups call.`)
 
-	cmd.Use = "list-transitive-parent-groups PRINCIPAL_ID"
+	cmd.Use = "list-transitive-parent-groups PARENT"
 	cmd.Short = `*Beta* List all transitive parent groups of a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2327,8 +2309,8 @@ List all transitive parent groups of a principal.
   Lists all transitive parent groups of a principal.
 
   Arguments:
-    PRINCIPAL_ID: Required. Internal ID of the principal in Databricks whose transitive
-      parent groups are being listed.`
+    PARENT: The parent resource name of the principal whose transitive parent groups
+      to list. Format: accounts/{account_id}/principals/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2344,10 +2326,7 @@ List all transitive parent groups of a principal.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &listTransitiveParentGroupsReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
+		listTransitiveParentGroupsReq.Parent = args[0]
 
 		response, err := a.IamV2.ListTransitiveParentGroups(ctx, listTransitiveParentGroupsReq)
 		if err != nil {
@@ -2397,21 +2376,25 @@ func newListUsers() *cobra.Command {
 	cmd.Flags().StringVar(&listUsersReq.PageToken, "page-token", listUsersReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-users"
+	cmd.Use = "list-users PARENT"
 	cmd.Short = `*Beta* List users in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
 List users in the account.
 
   Lists the users in the Databricks account, returning one page per call.
-  Supports filtering by username or external ID.`
+  Supports filtering by username or external ID.
+
+  Arguments:
+    PARENT: The parent resource name of the account whose users to list. Format:
+      accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2419,6 +2402,8 @@ List users in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+
+		listUsersReq.Parent = args[0]
 
 		response := a.IamV2.ListUsers(ctx, listUsersReq)
 		if listUsersLimit < 0 {
@@ -2555,7 +2540,7 @@ func newListWorkspaceAssignments() *cobra.Command {
 	cmd.Flags().StringVar(&listWorkspaceAssignmentsReq.PageToken, "page-token", listWorkspaceAssignmentsReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-workspace-assignments WORKSPACE_ID"
+	cmd.Use = "list-workspace-assignments PARENT"
 	cmd.Short = `*Beta* List workspace assignments for a workspace.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2567,8 +2552,8 @@ List workspace assignments for a workspace.
   get that principal's assignment.
 
   Arguments:
-    WORKSPACE_ID: Required. The workspace ID for which the workspace assignments are being
-      fetched.`
+    PARENT: The parent resource name of the workspace whose assignments to list.
+      Format: accounts/{account_id}/workspaces/{workspace_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2584,10 +2569,7 @@ List workspace assignments for a workspace.
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &listWorkspaceAssignmentsReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
+		listWorkspaceAssignmentsReq.Parent = args[0]
 
 		response := a.IamV2.ListWorkspaceAssignments(ctx, listWorkspaceAssignmentsReq)
 		if listWorkspaceAssignmentsLimit < 0 {
@@ -2895,8 +2877,9 @@ func newUpdateGroup() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateGroupReq.Group.ExternalId, "external-id", updateGroupReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
 	cmd.Flags().StringVar(&updateGroupReq.Group.GroupName, "group-name", updateGroupReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&updateGroupReq.Group.Name, "name", updateGroupReq.Group.Name, `The resource name of the group.`)
 
-	cmd.Use = "update-group GROUP_ID UPDATE_MASK"
+	cmd.Use = "update-group NAME UPDATE_MASK"
 	cmd.Short = `*Beta* Update a group in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2914,8 +2897,10 @@ Update a group in the account.
   (holds the roles/group.manager role on it).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.`
+    NAME: The resource name of the group. The format depends on the API that
+      returned it: - Account-scoped: accounts/{account_id}/groups/{group_id} -
+      Workspace-scoped: groups/{group_id}
+    UPDATE_MASK: Required. The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2943,7 +2928,7 @@ Update a group in the account.
 				}
 			}
 		}
-		updateGroupReq.GroupId = args[0]
+		updateGroupReq.Name = args[0]
 		updateGroupReq.UpdateMask = args[1]
 
 		response, err := a.IamV2.UpdateGroup(ctx, updateGroupReq)
@@ -2985,8 +2970,9 @@ func newUpdateServicePrincipal() *cobra.Command {
 	cmd.Flags().Var(&updateServicePrincipalJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateServicePrincipalReq.ServicePrincipal.ExternalId, "external-id", updateServicePrincipalReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateServicePrincipalReq.ServicePrincipal.Name, "name", updateServicePrincipalReq.ServicePrincipal.Name, `The resource name of the service principal.`)
 
-	cmd.Use = "update-service-principal SERVICE_PRINCIPAL_ID UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
+	cmd.Use = "update-service-principal NAME UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
 	cmd.Short = `*Beta* Update a service principal in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2996,16 +2982,19 @@ Update a service principal in the account.
   fields named in the update mask are modified. Returns the updated
   ServicePrincipal resource.
 
-  For locally managed service principals, is_agent must be set to true or false
-  when updated.
+  To change is_agent on a locally managed service principal, set it to true or
+  false. Naming is_agent in the update mask without a value leaves it unchanged.
 
   When AIM is enabled and the service principal is an external identity (its
   external_id is set), only external_id can be updated; its other fields are
   sourced from your identity provider.
 
   Arguments:
-    SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.
+    NAME: The resource name of the service principal. The format depends on the API
+      that returned it: - Account-scoped:
+      accounts/{account_id}/service-principals/{service_principal_id} -
+      Workspace-scoped: service-principals/{service_principal_id}
+    UPDATE_MASK: Required. The list of fields to update.
     DISPLAY_NAME: Display name of the service principal.
     ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
@@ -3018,7 +3007,7 @@ Update a service principal in the account.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only SERVICE_PRINCIPAL_ID, UPDATE_MASK as positional arguments. Provide 'display_name', 'account_sp_status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name', 'account_sp_status' in your JSON input")
 			}
 			return nil
 		}
@@ -3043,7 +3032,7 @@ Update a service principal in the account.
 				}
 			}
 		}
-		updateServicePrincipalReq.ServicePrincipalId = args[0]
+		updateServicePrincipalReq.Name = args[0]
 		updateServicePrincipalReq.UpdateMask = args[1]
 		if !cmd.Flags().Changed("json") {
 			updateServicePrincipalReq.ServicePrincipal.DisplayName = args[2]
@@ -3095,8 +3084,9 @@ func newUpdateUser() *cobra.Command {
 	cmd.Flags().Var(&updateUserJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateUserReq.User.ExternalId, "external-id", updateUserReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateUserReq.User.Name, "name", updateUserReq.User.Name, `The resource name of the user.`)
 
-	cmd.Use = "update-user USER_ID UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
+	cmd.Use = "update-user NAME UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
 	cmd.Short = `*Beta* Update a user in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -3111,8 +3101,10 @@ Update a user in the account.
   identity provider.
 
   Arguments:
-    USER_ID: Required. Internal ID of the user in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.
+    NAME: The resource name of the user. The format depends on the API that returned
+      it: - Account-scoped: accounts/{account_id}/users/{user_id} -
+      Workspace-scoped: users/{user_id}
+    UPDATE_MASK: Required. The list of fields to update.
     USERNAME: Username/email of the user.
     FULL_NAME:
     ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.
@@ -3126,7 +3118,7 @@ Update a user in the account.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only USER_ID, UPDATE_MASK as positional arguments. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
 			}
 			return nil
 		}
@@ -3151,7 +3143,7 @@ Update a user in the account.
 				}
 			}
 		}
-		updateUserReq.UserId = args[0]
+		updateUserReq.Name = args[0]
 		updateUserReq.UpdateMask = args[1]
 		if !cmd.Flags().Changed("json") {
 			updateUserReq.User.Username = args[2]
@@ -3211,8 +3203,9 @@ func newUpdateWorkspaceAssignment() *cobra.Command {
 
 	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
+	cmd.Flags().StringVar(&updateWorkspaceAssignmentReq.WorkspaceAssignment.Name, "name", updateWorkspaceAssignmentReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
 
-	cmd.Use = "update-workspace-assignment WORKSPACE_ID PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"
+	cmd.Use = "update-workspace-assignment NAME UPDATE_MASK PRINCIPAL_ID"
 	cmd.Short = `*Beta* Update a workspace assignment.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -3224,11 +3217,14 @@ Update a workspace assignment.
   assignment afterwards to confirm the final state.
 
   Arguments:
-    WORKSPACE_ID: Required. The workspace ID for which the workspace assignment is being
-      updated.
-    PRINCIPAL_ID: Required. ID of the principal in Databricks.
+    NAME: The resource name of the workspace assignment. The format depends on the
+      API that returned it: - Account-scoped:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}
+      - Workspace-scoped: workspace-assignments/{principal_id}
     UPDATE_MASK: Required. The list of fields to update.
-    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
+    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks. Set when
+      the assignment is created and cannot be changed afterwards; to assign a
+      different principal, create a new assignment.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -3236,13 +3232,13 @@ Update a workspace assignment.
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(3)(cmd, args)
+			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only WORKSPACE_ID, PRINCIPAL_ID, UPDATE_MASK as positional arguments. Provide 'principal_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'principal_id' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(4)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -3263,24 +3259,15 @@ Update a workspace assignment.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateWorkspaceAssignmentReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &updateWorkspaceAssignmentReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
-
-		if args[2] != "" {
-			updateMaskArray := strings.Split(args[2], ",")
+		updateWorkspaceAssignmentReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
 			updateWorkspaceAssignmentReq.UpdateMask = *fieldmask.New(updateMaskArray)
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateWorkspaceAssignmentReq.WorkspaceAssignment.PrincipalId)
+			_, err = fmt.Sscan(args[2], &updateWorkspaceAssignmentReq.WorkspaceAssignment.PrincipalId)
 			if err != nil {
-				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[3])
+				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[2])
 			}
 
 		}

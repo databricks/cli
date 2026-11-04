@@ -1,0 +1,35 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_data_quality_monitor"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "data_quality_monitors": {
+      "my_data_quality_monitor_1": {
+        "anomaly_detection_config": {
+          "excluded_table_full_names": [
+            "main.default.excluded"
+          ]
+        },
+        "object_id": "[UUID] (updated)",
+        "object_type": "schema"
+      },
+      "my_data_quality_monitor_2": {
+        "data_profiling_config": {
+          "assets_dir": "/Workspace/Users/user@example.com/assets",
+          "output_schema_id": "[UUID]"
+        },
+        "object_id": "[UUID] (updated)",
+        "object_type": "table"
+      }
+    }
+  }
+}

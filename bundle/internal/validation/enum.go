@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type EnumPatternInfo struct {
@@ -124,6 +125,14 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 			if bundleTag.Internal() || bundleTag.ReadOnly() {
 				return false
 			}
+		}
+
+		// The platform accepts grant privileges that the SDK's catalog.Privilege
+		// enum does not yet know about, so validating against it rejects values the
+		// platform allows (see https://github.com/databricks/cli/issues/6770). The
+		// JSON schema still advertises the enum; we just don't warn/error on it here.
+		if fieldType == reflect.TypeFor[catalog.Privilege]() {
+			return false
 		}
 
 		// Check if this field type is an enum

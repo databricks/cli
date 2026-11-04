@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"slices"
@@ -15,7 +16,6 @@ const (
 	// Device code login is approved on another device, which acceptance tests
 	// cannot drive, so every device authorization is treated as approved with
 	// a fixed confirmation code that tests can type into the CLI.
-	fakeDeviceUserCode         = "WDJBMJHT"
 	fakeDeviceConfirmationCode = "FTFAQQKY"
 
 	// Like the real server, only allowlisted OAuth clients can use device code
@@ -67,12 +67,19 @@ func (s *FakeOidc) OidcDeviceAuth(req Request) Response {
 	return Response{
 		Body: map[string]any{
 			"device_code":      deviceCode,
-			"user_code":        fakeDeviceUserCode,
+			"user_code":        fakeDeviceUserCode(s.lastDeviceCode),
 			"verification_uri": s.url + "/device/verification",
 			"expires_in":       600,
 			"interval":         0,
 		},
 	}
+}
+
+// fakeDeviceUserCode returns the user code of the nth device authorization.
+// Like the real server, the fake issues a new user code for every login, in an
+// order that tests can rely on: WDJB0001, WDJB0002, and so on.
+func fakeDeviceUserCode(n int) string {
+	return fmt.Sprintf("WDJB%04d", n)
 }
 
 // deviceCodeToken exchanges a device code and confirmation code for a token.
