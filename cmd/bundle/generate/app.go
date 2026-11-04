@@ -6,11 +6,9 @@ import (
 
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
@@ -62,26 +60,11 @@ per target environment.`,
 	cmd.Flags().MarkHidden("bind")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		if !logdiag.IsSetup(ctx) {
-			ctx = logdiag.InitContext(ctx)
-			cmd.SetContext(ctx)
-		}
-
-		// Ensure workspace client is initialized for template materialization
-		if err := ensureWorkspaceClient(cmd); err != nil {
-			return err
-		}
-
-		_, err := ensureGenerateBundle(cmd, nil)
+		b, err := configureBundle(cmd, "bind")
 		if err != nil {
 			return err
 		}
-
-		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		w := b.WorkspaceClient(ctx)
 		cmdio.LogString(ctx, fmt.Sprintf("Loading app '%s' configuration", appName))

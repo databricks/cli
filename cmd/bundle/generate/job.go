@@ -10,11 +10,9 @@ import (
 
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
@@ -69,26 +67,11 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().BoolVar(&downloadSparkPythonFiles, "download-spark-python-files", false, `download workspace files referenced by spark_python_task and rewrite them to a relative path`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		if !logdiag.IsSetup(ctx) {
-			ctx = logdiag.InitContext(ctx)
-			cmd.SetContext(ctx)
-		}
-
-		// Ensure workspace client is initialized for template materialization
-		if err := ensureWorkspaceClient(cmd); err != nil {
-			return err
-		}
-
-		_, err := ensureGenerateBundle(cmd, nil)
+		b, err := configureBundle(cmd, "bind")
 		if err != nil {
 			return err
 		}
-
-		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		w := b.WorkspaceClient(ctx)
 		job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: jobId})

@@ -334,7 +334,8 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
-	// Only initialize logdiag if it hasn't been initialized yet
+	// Commands that load a bundle themselves (bundle generate --init-bare) have
+	// already set up logdiag by the time they fall back to auth-only mode.
 	if !logdiag.IsSetup(ctx) {
 		ctx = logdiag.InitContext(ctx)
 		cmd.SetContext(ctx)

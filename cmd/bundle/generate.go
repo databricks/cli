@@ -20,6 +20,7 @@ Common patterns:
   databricks bundle generate dashboard --existing-path /my-dashboard --key sales_dash
   databricks bundle generate dashboard --resource my_dashboard --watch --force  # Keep local copy in sync. Useful for development.
   databricks bundle generate dashboard --resource my_dashboard --force # Do a one-time sync.
+  databricks bundle generate job --existing-job-id 123 --init-bare  # Start a new bundle from an existing job.
 
 Migration workflows:
 
@@ -34,7 +35,7 @@ Migration workflows:
 
 Use --key to specify the resource name in your bundle configuration.
 Use --bind to automatically bind the generated resource to the existing workspace resource.
-Use --init-bare to automatically initialize a bare bundle skeleton if one doesn't exist.`,
+Use --init-bare to create a bare bundle in the current directory when there is no databricks.yml yet.`,
 	}
 
 	cmd.AddCommand(generate.NewGenerateJobCommand())
@@ -44,7 +45,6 @@ Use --init-bare to automatically initialize a bare bundle skeleton if one doesn'
 	cmd.AddCommand(generate.NewGenerateAppCommand())
 	cmd.AddCommand(generate.NewGenerateGenieSpaceCommand())
 	cmd.PersistentFlags().StringVar(&key, "key", "", `resource key to use for the generated configuration`)
-	cmd.PersistentFlags().BoolVar(&initBare, "init-bare", false, `automatically initialize a bare bundle skeleton if one doesn't exist`)
-
+	cmd.PersistentFlags().BoolVar(&initBare, "init-bare", false, `create a bare bundle in the current directory if there is no databricks.yml yet`)
 	return cmd
 }

@@ -318,23 +318,11 @@ func (g *genieSpace) runForExisting(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (g *genieSpace) RunE(cmd *cobra.Command, args []string) error {
-	// Ensure workspace client is initialized for template materialization
-	if err := ensureWorkspaceClient(cmd); err != nil {
-		return err
-	}
-
-	// For genie_space, --resource and --watch require an existing bundle, so error if --init-bare is used
-	_, err := ensureGenerateBundle(cmd, errors.New("genie_space generate requires an existing bundle (either run in a bundle directory or use a different generator)"))
+	b, err := configureBundle(cmd, "bind", "resource", "watch")
 	if err != nil {
 		return err
 	}
-
 	ctx := cmd.Context()
-
-	b := root.MustConfigureBundle(cmd)
-	if b == nil || logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
-	}
 
 	g.initialize(ctx, b)
 	if logdiag.HasError(ctx) {
