@@ -5,6 +5,8 @@
 
 >>> [CLI] bundle bitmap decode
 
+>>> uv run --isolated --no-project --reinstall-package databricks-bundles --with [DATABRICKS_BUNDLES_WHEEL] -q python -m databricks.bundles._bitmap
+
 >>> [CLI] bundle bitmap update-schema --validate
 
 === decode rejects input that is not an encoded bitmap

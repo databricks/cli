@@ -15,10 +15,16 @@ invariant_deploy LOG.deploy $CLI bundle deploy $(readplanarg plan.json)
 
 invariant_verify_no_drift
 
-# Exercise the bitmap encoder over every invariant config. Output goes to a
-# LOG file (logged, not diffed) so this just checks it runs without panicking.
-$CLI bundle bitmap bitmap &> LOG.bitmap
-cat LOG.bitmap | contains.py '!panic:' '!internal error' > /dev/null
+# Encode the bitmap of every invariant config and check that the databricks-bundles
+# Python decoder agrees with the CLI's. The bitmap does not depend on READPLAN, so
+# one variant is enough. --reinstall-package: the wheel's version does not change
+# with the code, and uv would reuse a cached install.
+if [[ -z "$READPLAN" ]]; then
+    $CLI bundle bitmap bitmap > LOG.bitmap
+    $CLI bundle bitmap decode < LOG.bitmap > LOG.bitmap_decoded
+    uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < LOG.bitmap > LOG.bitmap_decoded_python
+    diff.py LOG.bitmap_decoded LOG.bitmap_decoded_python
+fi
 
 # Field removal: dropping a non-required field (tagged `# CAN_REMOVE` on each of its lines) must be
 # applied as an update that converges -- a field the config stops declaring must be sent as its zero

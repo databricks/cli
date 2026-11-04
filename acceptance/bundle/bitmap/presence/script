@@ -2,15 +2,21 @@
 # schema changes nothing here (../full records the whole schema).
 trace $CLI bundle bitmap bitmap-text > out.bitmap.txt
 
-# The encoded bitmap decodes back to the same fields.
+# The encoded bitmap decodes back to the same fields, with the CLI and with the
+# self-contained decoder in databricks-bundles. --reinstall-package: the wheel's
+# version does not change with the code, and uv would reuse a cached install.
 trace $CLI bundle bitmap bitmap > bitmap.b64
 trace $CLI bundle bitmap decode < bitmap.b64 > decoded.txt
 diff.py out.bitmap.txt decoded.txt
+trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < bitmap.b64 > decoded-python.txt
+diff.py out.bitmap.txt decoded-python.txt
 
 trace $CLI bundle bitmap update-schema --validate
 
 title "decode rejects input that is not an encoded bitmap\n"
 echo not-a-bitmap | trace musterr $CLI bundle bitmap decode
+# The message comes from Python's base64 module and varies by version, so it is logged, not diffed.
+echo not-a-bitmap | trace musterr uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap 2> LOG.decode_python
 
 title "An invalid bundle fails instead of printing a bitmap\n"
 cd invalid
