@@ -343,6 +343,23 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	}
 }
 
+func TestRunAsSupportListsAreComplete(t *testing.T) {
+	supported := config.SupportedResources()
+
+	// Every resource type needs an explicit decision: either it accepts a different
+	// run_as identity (allowList) or it is rejected (runAsUnsupportedResources).
+	for key := range supported {
+		inAllowList := slices.Contains(allowList, key)
+		inUnsupported := slices.Contains(runAsUnsupportedResources, key)
+		assert.NotEqual(t, inAllowList, inUnsupported, "%s must be in exactly one of allowList or runAsUnsupportedResources", key)
+	}
+
+	for _, key := range slices.Concat(allowList, runAsUnsupportedResources) {
+		_, ok := supported[key]
+		assert.True(t, ok, "%s is listed for run_as but is not a supported resource type", key)
+	}
+}
+
 func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 	base := config.Root{
 		Workspace: config.Workspace{
