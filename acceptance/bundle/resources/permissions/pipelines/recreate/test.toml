@@ -5,3 +5,8 @@ Ignore = [
     ".gitignore",
     "databricks.yml",
 ]
+
+# The deployer is added as IS_OWNER: a service principal on AWS and Azure, a user locally and on GCP.
+[[Repls]]
+Old = '"user_name": "\[USERNAME\]"'
+New = '"service_principal_name": "[USERNAME]"'
