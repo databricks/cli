@@ -283,3 +283,99 @@ func TestFilterToSelected_DeletionLeavesDependencies(t *testing.T) {
 	assert.Contains(t, p.Plan, "resources.jobs.gone")
 	assert.NotContains(t, p.Plan, "resources.jobs.lib")
 }
+
+func TestFilterToExcluded_LeavesOtherResourcesAndDeduplicatesSelectors(t *testing.T) {
+	p := planWithDeps()
+	require.NoError(t, p.FilterToExcluded([]string{"jobs.independent", "independent", "jobs.independent"}, nil))
+	assert.NotContains(t, p.Plan, "resources.jobs.independent")
+	assert.Contains(t, p.Plan, "resources.jobs.foo")
+	assert.Contains(t, p.Plan, "resources.jobs.bar")
+	assert.Contains(t, p.Plan, "resources.jobs.baz")
+	assert.Equal(t, 1, p.NotSelected)
+}
+
+func TestFilterToExcluded_RemovesGrantsAndPermissions(t *testing.T) {
+	p := planWithGrants()
+	require.NoError(t, p.FilterToExcluded([]string{"schemas.bronze"}, nil))
+	assert.NotContains(t, p.Plan, "resources.schemas.bronze")
+	assert.NotContains(t, p.Plan, "resources.schemas.bronze.grants")
+	assert.NotContains(t, p.Plan, "resources.schemas.bronze.permissions")
+	assert.Contains(t, p.Plan, "resources.schemas.silver")
+	assert.Contains(t, p.Plan, "resources.schemas.silver.grants")
+	assert.Equal(t, 3, p.NotSelected)
+}
+
+func TestFilterToExcluded_RejectsRequiredDependencyWithoutChangingPlan(t *testing.T) {
+	p := planWithDeps()
+	p.Plan["resources.jobs.foo"].DependsOn[0].Label = "${resources.jobs.bar.id}"
+	err := p.FilterToExcluded([]string{"jobs.bar"}, nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "cannot exclude jobs.bar: jobs.foo depends on it")
+	assert.ErrorContains(t, err, "${resources.jobs.bar.id}")
+	assert.Len(t, p.Plan, 4)
+	assert.Zero(t, p.NotSelected)
+}
+
+func TestFilterToExcluded_RejectsUnknownAndAmbiguousSelectors(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.same"] = &deployplan.PlanEntry{}
+	p.Plan["resources.pipelines.same"] = &deployplan.PlanEntry{}
+	assert.ErrorContains(t, p.FilterToExcluded([]string{"unknown"}, nil), "no such resource: unknown")
+	assert.ErrorContains(t, p.FilterToExcluded([]string{"same"}, nil), "ambiguous resource: same")
+	assert.Len(t, p.Plan, 2)
+}
+
+func TestFilterToExcluded_OmitsSelectedDeletion(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.keep"] = &deployplan.PlanEntry{Action: deployplan.Create}
+	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	require.NoError(t, p.FilterToExcluded([]string{"jobs.gone"}, nil))
+	assert.NotContains(t, p.Plan, "resources.jobs.gone")
+	assert.Equal(t, deployplan.Create, p.Plan["resources.jobs.keep"].Action)
+	assert.Equal(t, 1, p.NotSelected)
+}
+
+func TestFilterToExcluded_RejectsIDChangesNeededByExcludedResource(t *testing.T) {
+	for _, action := range []deployplan.ActionType{deployplan.Delete, deployplan.Recreate, deployplan.UpdateWithID} {
+		t.Run(string(action), func(t *testing.T) {
+			p := deployplan.NewPlanDirect()
+			p.Plan["resources.jobs.bar"] = &deployplan.PlanEntry{Action: action}
+			p.Plan["resources.jobs.foo"] = &deployplan.PlanEntry{Action: deployplan.Update}
+			existingDependencies := map[string][]deployplan.DependsOnEntry{
+				"resources.jobs.foo": {{Node: "resources.jobs.bar", Label: "${resources.jobs.bar.id}"}},
+			}
+
+			err := p.FilterToExcluded([]string{"jobs.foo"}, existingDependencies)
+			require.Error(t, err)
+			assert.ErrorContains(t, err, "deployed jobs.foo still depends on jobs.bar through ${resources.jobs.bar.id}")
+			assert.ErrorContains(t, err, "planned for "+string(action))
+			assert.Len(t, p.Plan, 2)
+			assert.Zero(t, p.NotSelected)
+		})
+	}
+}
+
+func TestFilterToExcluded_AllowsStableDependencyOfExcludedResource(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.bar"] = &deployplan.PlanEntry{Action: deployplan.Update}
+	p.Plan["resources.jobs.foo"] = &deployplan.PlanEntry{Action: deployplan.Update}
+	existingDependencies := map[string][]deployplan.DependsOnEntry{
+		"resources.jobs.foo": {{Node: "resources.jobs.bar"}},
+	}
+
+	require.NoError(t, p.FilterToExcluded([]string{"jobs.foo"}, existingDependencies))
+	assert.NotContains(t, p.Plan, "resources.jobs.foo")
+	assert.Contains(t, p.Plan, "resources.jobs.bar")
+}
+
+func TestFilterToExcluded_AllowsDeletingDependentOfExcludedResource(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.bar"] = &deployplan.PlanEntry{Action: deployplan.Skip}
+	p.Plan["resources.jobs.foo"] = &deployplan.PlanEntry{
+		Action:    deployplan.Delete,
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.bar"}},
+	}
+	require.NoError(t, p.FilterToExcluded([]string{"jobs.bar"}, nil))
+	assert.NotContains(t, p.Plan, "resources.jobs.bar")
+	assert.Equal(t, deployplan.Delete, p.Plan["resources.jobs.foo"].Action)
+}

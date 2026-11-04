@@ -131,8 +131,8 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 	counts := plan.CountActions()
 	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
 	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
-	// deploy from a --plan file, where --select was applied at plan time and
-	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.
+	// deploy from a --plan file, where filtering was applied at plan time and
+	// b.Select and b.Exclude are empty here.
 	if plan.NotSelected > 0 {
 		summary += fmt.Sprintf(", %d not selected", plan.NotSelected)
 	}
@@ -360,6 +360,17 @@ func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 	}
 	if len(b.Select) > 0 {
 		if err := plan.FilterToSelected(ctx, b.Select); err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+	} else if len(b.Exclude) > 0 {
+		existingDependencies := make(map[string][]deployplan.DependsOnEntry)
+		for key := range plan.Plan {
+			if entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(key); ok {
+				existingDependencies[key] = entry.DependsOn
+			}
+		}
+		if err := plan.FilterToExcluded(b.Exclude, existingDependencies); err != nil {
 			logdiag.LogError(ctx, err)
 			return nil
 		}
