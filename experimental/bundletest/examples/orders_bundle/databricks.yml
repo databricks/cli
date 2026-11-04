@@ -12,6 +12,9 @@ bundle:
 variables:
   warehouse_id:
     description: SQL warehouse the transform runs on
+    # A default so ${var.warehouse_id} resolves offline; the local backend never contacts a
+    # warehouse, so the value is only a placeholder (real runs override via BUNDLE_VAR_* or target).
+    default: sql-warehouse-placeholder
 
 resources:
   jobs:
