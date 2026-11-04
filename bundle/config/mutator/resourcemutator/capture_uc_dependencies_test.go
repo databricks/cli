@@ -365,6 +365,7 @@ func TestCaptureUCDependenciesNilResources(t *testing.T) {
 				QualityMonitors:       map[string]*resources.QualityMonitor{"nil": nil, "empty": {}},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{"nil": nil, "empty": {}},
 				VectorSearchIndexes:   map[string]*resources.VectorSearchIndex{"nil": nil, "empty": {}},
+				MaterializationSets:   map[string]*resources.MaterializationSet{"nil": nil, "empty": {}},
 			},
 		},
 	}

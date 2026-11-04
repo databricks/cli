@@ -1,0 +1,79 @@
+export CATALOG_NAME="${MATSET_CATALOG:-main}"
+export SCHEMA_NAME="matset_${UNIQUE_NAME}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+
+# Each phase is its own template rather than a string edit, so the fixture a phase deploys is
+# readable on its own.
+render() {
+    envsubst < "$1" > databricks.yml
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+set_actions() {
+    jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+    $CLI schemas delete "$CATALOG_NAME.$SCHEMA_NAME" --force > /dev/null 2>&1 || true
+}
+
+trap cleanup EXIT
+
+trace $CLI schemas create "$SCHEMA_NAME" "$CATALOG_NAME" -o json | jq '{full_name}'
+trace create_table.py "$TABLE_NAME"
+render databricks.yml.tmpl
+
+title "A batch feature materialized offline creates, and a redeploy plans nothing"
+trace $CLI bundle deploy
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+
+title "Removing the member empties the set, which the update endpoint refuses in favour of the"
+title "delete endpoint. Restoring the member plans nothing, so no refusal wrote."
+render drop-member.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace musterr $CLI bundle deploy --auto-approve
+
+title "Writing no value instead of an empty list is the same declaration, and has to reach the same"
+title "endpoint: the member field emptied whole is one path rather than one per member, and the"
+title "immutable rules match it just as readily."
+render drop-member-null.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace musterr $CLI bundle deploy --auto-approve
+render databricks.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+
+title "Taking the refusal's advice: dropping the set resource rather than its members plans as a"
+title "delete and settles. This is the deploy path's delete, not bundle destroy's."
+render no-set.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace $CLI bundle deploy --auto-approve
+render databricks.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace $CLI bundle deploy
+
+title "Repointing the destination is a recreate, not a silent no-op. The server cannot move a"
+title "materialization in place, so the set is rebuilt at the new location."
+render moved.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace jq -r '.plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.action == "recreate")) | .[] | "\(.value.reason) old=\(.value.old) new=\(.value.new)"' out.plan.json
+
+title "The schedule state is write-once, so pausing the feature is a recreate rather than the"
+title "in-place update the endpoint would refuse"
+render paused.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+
+rm -f out.requests.txt out.plan.json
