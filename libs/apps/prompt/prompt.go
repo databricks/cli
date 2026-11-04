@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -852,9 +853,45 @@ func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool
 	return promptUCResource(ctx, r, required, "UC Function", "Fetching functions...", ListFunctionsInSchema)
 }
 
-// PromptForModelService shows a three-step picker for AI Gateway model services: catalog -> schema -> model service.
+const browseCatalogsID = "__browse_catalogs__"
+
+// systemAIModelServiceItems lists the system.ai model services followed by a "Browse other catalogs..."
+// entry. Without access to system.ai only the browse entry is returned.
+func systemAIModelServiceItems(ctx context.Context) ([]ListItem, error) {
+	items, err := ListModelServicesInSchema(ctx, "system", "ai")
+	if errors.Is(err, apierr.ErrPermissionDenied) || errors.Is(err, apierr.ErrNotFound) {
+		items, err = nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return append(items, ListItem{ID: browseCatalogsID, Label: "Browse other catalogs..."}), nil
+}
+
+// PromptForModelService shows the system.ai model services first, because finding the system catalog
+// means paging through every catalog in large workspaces. "Browse other catalogs..." falls back to the
+// catalog -> schema -> model service picker.
 func PromptForModelService(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptUCResource(ctx, r, required, "Model Service", "Fetching model services...", ListModelServicesInSchema)
+	var items []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching model services...", func() error {
+		var fetchErr error
+		items, fetchErr = systemAIModelServiceItems(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	value := browseCatalogsID
+	if len(items) > 1 {
+		value, err = PromptFromList(ctx, resourceTitle("Select Model Service", r), "", items, required)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if value == browseCatalogsID {
+		return promptUCResource(ctx, r, required, "Model Service", "Fetching model services...", ListModelServicesInSchema)
+	}
+	return singleValueResult(r, value), nil
 }
 
 // PromptForUCConnection shows a picker for UC connections.
