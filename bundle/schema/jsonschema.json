@@ -684,6 +684,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "max_clusters_per_user": {
@@ -1136,6 +1137,7 @@
                         "deprecated": true
                       },
                       "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "lineage_context": {
@@ -1818,6 +1820,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
                       },
                       "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "mcp_service_id": {
@@ -2010,6 +2013,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
                       },
                       "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "model_provider_service_id": {
@@ -2046,6 +2050,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
                       },
                       "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "model_service_id": {
@@ -4232,6 +4237,7 @@
                   "type": "object",
                   "properties": {
                     "alerts": {
+                      "description": "The alert definitions for the bundle, where each key is the name of the alert.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Alert"
                     },
                     "apps": {
@@ -4240,9 +4246,11 @@
                       "markdownDescription": "The app resource defines a [Databricks app](https://docs.databricks.com/api/workspace/apps/create). For information about Databricks Apps, see [link](https://docs.databricks.com/dev-tools/databricks-apps/index.html)."
                     },
                     "catalogs": {
+                      "description": "The catalog definitions for the bundle, where each key is the name of the catalog.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Catalog"
                     },
                     "cluster_policies": {
+                      "description": "The cluster policy definitions for the bundle, where each key is the name of the cluster policy.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ClusterPolicy"
                     },
                     "clusters": {
@@ -4261,9 +4269,11 @@
                       "markdownDescription": "The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor. See [data_quality_monitors](https://docs.databricks.com/dev-tools/bundles/resources.html#data_quality_monitors)."
                     },
                     "database_catalogs": {
+                      "description": "The database catalog definitions for the bundle, where each key is the name of the database catalog.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseCatalog"
                     },
                     "database_instances": {
+                      "description": "The database instance definitions for the bundle, where each key is the name of the database instance.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
                     },
                     "experiments": {
@@ -4272,6 +4282,7 @@
                       "markdownDescription": "The experiment definitions for the bundle, where each key is the name of the experiment. See [experiments](https://docs.databricks.com/dev-tools/bundles/resources.html#experiments)."
                     },
                     "external_locations": {
+                      "description": "The external location definitions for the bundle, where each key is the name of the external location.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
                     },
                     "features": {
@@ -4280,6 +4291,7 @@
                       "markdownDescription": "The feature definitions for the bundle, where each key is the name of the feature."
                     },
                     "genie_spaces": {
+                      "description": "The genie space definitions for the bundle, where each key is the name of the genie space.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                     },
                     "instance_pools": {
@@ -4302,12 +4314,15 @@
                       "markdownDescription": "The materialization set definitions for the bundle, where each key is the name of the materialization set."
                     },
                     "mcp_services": {
+                      "description": "The mcp service definitions for the bundle, where each key is the name of the mcp service.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.McpService"
                     },
                     "model_provider_services": {
+                      "description": "The model provider service definitions for the bundle, where each key is the name of the model provider service.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelProviderService"
                     },
                     "model_services": {
+                      "description": "The model service definitions for the bundle, where each key is the name of the model service.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelService"
                     },
                     "model_serving_endpoints": {
@@ -4388,12 +4403,15 @@
                       "markdownDescription": "The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [sql_warehouses](https://docs.databricks.com/dev-tools/bundles/resources.html#sql_warehouses)."
                     },
                     "synced_database_tables": {
+                      "description": "The synced database table definitions for the bundle, where each key is the name of the synced database table.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
                     },
                     "vector_search_endpoints": {
+                      "description": "The vector search endpoint definitions for the bundle, where each key is the name of the vector search endpoint.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
                     },
                     "vector_search_indexes": {
+                      "description": "The vector search index definitions for the bundle, where each key is the name of the vector search index.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchIndex"
                     },
                     "volumes": {
