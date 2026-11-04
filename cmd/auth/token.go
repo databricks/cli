@@ -199,7 +199,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	// resolve the target through environment variables or interactive profile selection.
 	if args.profileName == "" && args.authArguments.Host == "" && len(args.args) == 0 {
 		var resolvedProfile string
-		resolvedProfile, existingProfile, err = resolveNoArgsToken(ctx, args.profiler, args.authArguments, args.tokenStore, args.mode)
+		resolvedProfile, existingProfile, err = resolveNoArgsToken(ctx, args.profiler, args.authArguments, args.tokenStore, args.mode, args.tokenTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -347,7 +347,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 //
 // Returns the resolved profile name and profile (if any). The host and related
 // fields on authArgs are updated in place when resolved via environment variables.
-func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs *auth.AuthArguments, tokenStore storage.Store, mode storage.StorageMode) (string, *profile.Profile, error) {
+func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs *auth.AuthArguments, tokenStore storage.Store, mode storage.StorageMode, timeout time.Duration) (string, *profile.Profile, error) {
 	// Step 1: Try DATABRICKS_HOST env var (highest priority).
 	if envHost := env.Get(ctx, "DATABRICKS_HOST"); envHost != "" {
 		authArgs.Host = envHost
@@ -410,7 +410,7 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 		// Fall through — setHostAndAccountId will prompt for the host.
 		return "", nil, nil
 	case profilePickerCreateNew:
-		return runInlineLogin(ctx, profiler, tokenStore, mode)
+		return runInlineLogin(ctx, profiler, tokenStore, mode, timeout)
 	default:
 		p, err := loadProfileByName(ctx, selectedName, profiler)
 		if err != nil {
@@ -425,7 +425,7 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 // .databrickscfg, and returns the new profile name and profile. It rejects
 // the names of existing sections so that it cannot log in to an existing
 // profile.
-func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore storage.Store, mode storage.StorageMode) (string, *profile.Profile, error) {
+func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore storage.Store, mode storage.StorageMode, timeout time.Duration) (string, *profile.Profile, error) {
 	takenNames, err := databrickscfg.GetSectionNames(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
 	if err != nil {
 		return "", nil, err
@@ -455,7 +455,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 
 	// Challenge uses the context passed to NewPersistentAuth, so the timeout
 	// must be set before it.
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
