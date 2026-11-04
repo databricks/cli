@@ -1,0 +1,57 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy records version 1"
+trace $CLI bundle deploy
+replace_ids.py
+job_id=$(read_id.py foo)
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-read-failure-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$deployment_id" DEPLOYMENT_ID
+rm -f "$OUT_REQUESTS"
+
+title "A failed deployment read still stamps the deployment id found by the lookup, so the plan shows no change"
+trace fault.py "GET /api/2.0/bundle/deployments/*" 403 0 1 PERMISSION_DENIED
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+
+title "A failed deployment read skips history for the deploy: without the deployment's version, recording it would create a second deployment"
+trace update_file.py databricks.yml 'name: foo' 'name: renamed'
+trace fault.py "GET /api/2.0/bundle/deployments/*" 403 0 1 PERMISSION_DENIED
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+trace $CLI jobs get "$job_id" | jq .settings.deployment
+
+title "The next deploy resumes history on the same deployment"
+trace update_file.py databricks.yml 'name: renamed' 'name: renamed-again'
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+trace $CLI jobs get "$job_id" | jq .settings.deployment
+
+title "A deployment node without a record is a half-created deployment: the deploy registers it again and records history"
+trace update_file.py databricks.yml 'name: renamed-again' 'name: half-created'
+trace fault.py "GET /api/2.0/bundle/deployments/*" 404 0 1 NOT_FOUND
+trace $CLI bundle deploy
+# The fake registers a new node, so the deployment gets a new id.
+new_deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-read-failure-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$new_deployment_id" NEW_DEPLOYMENT_ID
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+
+title "A delete that fails in a run that skips history still fails the deploy and keeps the job in state"
+trace update_file.py databricks.yml 'name: half-created' 'name: half-created
+    bar:
+      name: bar'
+trace $CLI bundle deploy
+bar_id=$(read_id.py bar)
+trace update_file.py databricks.yml 'name: half-created
+    bar:
+      name: bar' 'name: half-created'
+trace fault.py "GET /api/2.0/bundle/deployments/*" 403 0 1 PERMISSION_DENIED
+trace fault.py "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle deploy
+trace $CLI jobs get "$bar_id" | jq .settings.name
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+
+title "A failed deployment read skips history for destroy as well and keeps the record"
+trace fault.py "GET /api/2.0/bundle/deployments/*" 403 0 1 PERMISSION_DENIED
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
