@@ -71,7 +71,7 @@ func TestWorkspaceBaseURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := workspaceBaseURL(tt.host, tt.workspaceID)
+			got, err := WorkspaceBaseURL(tt.host, tt.workspaceID)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got.String())
 		})
@@ -79,7 +79,7 @@ func TestWorkspaceBaseURL(t *testing.T) {
 }
 
 func TestWorkspaceBaseURLInvalidHost(t *testing.T) {
-	_, err := workspaceBaseURL("://invalid", "")
+	_, err := WorkspaceBaseURL("://invalid", "")
 	assert.ErrorContains(t, err, "invalid workspace host")
 }
 

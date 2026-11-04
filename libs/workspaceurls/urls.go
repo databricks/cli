@@ -174,7 +174,7 @@ func ResourceURL(baseURL url.URL, resourceType, id string) string {
 // query parameter (use when the workspace ID is unknown or already encoded in
 // the hostname).
 func BuildResourceURL(host, resourceType, id, workspaceID string) (string, error) {
-	baseURL, err := workspaceBaseURL(host, workspaceID)
+	baseURL, err := WorkspaceBaseURL(host, workspaceID)
 	if err != nil {
 		return "", err
 	}
@@ -193,7 +193,9 @@ func resolveAlias(resourceType string) string {
 	return resourceType
 }
 
-func workspaceBaseURL(host, workspaceID string) (*url.URL, error) {
+// WorkspaceBaseURL parses the workspace host and adds ?w=<workspace-id> unless the
+// workspace ID is empty or already encoded in the hostname.
+func WorkspaceBaseURL(host, workspaceID string) (*url.URL, error) {
 	baseURL, err := url.Parse(host)
 	if err != nil {
 		return nil, fmt.Errorf("invalid workspace host %q: %w", host, err)

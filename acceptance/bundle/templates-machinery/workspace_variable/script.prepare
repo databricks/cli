@@ -1,0 +1,32 @@
+# The test server is reachable as both 127.0.0.1 and localhost. The second
+# stands in for a host shared by several workspaces.
+CUSTOM_HOST=${DATABRICKS_HOST/127.0.0.1/localhost}
+add_repl "$CUSTOM_HOST" CUSTOM_HOST
+add_repl "${CUSTOM_HOST#*://}" CUSTOM_HOSTNAME
+WORKSPACE_ID=$(curl -s "$DATABRICKS_HOST/.well-known/databricks-config" | jq -r .workspace_id)
+
+# workspace_classic has no workspace_id, so the SDK resolves it from host
+# metadata. The "none" sentinel prevents that.
+cat > .databrickscfg <<EOT
+[workspace_classic]
+host = $DATABRICKS_HOST
+
+[workspace_classic_id]
+host = $DATABRICKS_HOST
+workspace_id = $WORKSPACE_ID
+
+[workspace_custom_host]
+host = $CUSTOM_HOST
+workspace_id = $WORKSPACE_ID
+
+[no_workspace_id]
+host = $DATABRICKS_HOST
+workspace_id = none
+EOT
+unset DATABRICKS_HOST
+export DATABRICKS_CONFIG_FILE=$PWD/.databrickscfg
+
+# schema_fields prints the rendered fields of a template schema.
+schema_fields() {
+  jq '{welcome_message, success_message, properties: (.properties // {} | map_values({description, default}))}'
+}
