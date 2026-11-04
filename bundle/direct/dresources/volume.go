@@ -86,7 +86,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
-		Name:    id,
+		Name:    "", // Initialized below
 
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
@@ -99,6 +99,10 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		return "", nil, fmt.Errorf("unexpected id=%#v", id)
 	}
 	nameFromID := items[len(items)-1]
+
+	// The parents come from config: a renamed catalog or schema moves the volume with it,
+	// leaving id stale (see followParentRenames).
+	updateRequest.Name = config.CatalogName + "." + config.SchemaName + "." + nameFromID
 
 	if config.Name != nameFromID {
 		updateRequest.NewName = config.Name

@@ -184,6 +184,10 @@ const (
 	// it and whatever the remote reports is not drift (e.g. cluster libraries without a libraries
 	// section, where job runs install their task libraries cluster-wide).
 	ReasonUnmanaged = "unmanaged"
+	// ReasonParentRenamed: an ID field that references the name of a parent being renamed in
+	// place. The backend moves the resource along with its parent, so it is re-keyed rather
+	// than recreated.
+	ReasonParentRenamed = "parent_renamed"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
