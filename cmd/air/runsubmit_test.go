@@ -409,6 +409,7 @@ func TestSubmitWorkloadValidationOutcome(t *testing.T) {
 		response   any
 		wantError  string
 		wantSubmit bool
+		wantStderr string
 	}{
 		{
 			name: "field error",
@@ -421,6 +422,7 @@ func TestSubmitWorkloadValidationOutcome(t *testing.T) {
 			name:       "service unavailable",
 			response:   testserver.Response{StatusCode: 503, Body: map[string]string{"error_code": "TEMPORARILY_UNAVAILABLE", "message": "try again"}},
 			wantSubmit: true,
+			wantStderr: "Warning: server-side config validation was unavailable; continuing with submission.\n",
 		},
 	}
 
@@ -446,21 +448,61 @@ func TestSubmitWorkloadValidationOutcome(t *testing.T) {
 			cfg, err := loadRunConfig(cfgPath)
 			require.NoError(t, err)
 
-			_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			_, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
 			if tt.wantError != "" {
 				require.ErrorContains(t, err, tt.wantError)
 			} else {
 				require.NoError(t, err)
 			}
+			// Uploads overlap validation, so a rejected config may still have
+			// staged artifacts; only submission is gated on validation.
 			if tt.wantSubmit {
 				assert.Positive(t, uploads.Load())
 				assert.Equal(t, int32(1), submissions.Load())
 			} else {
-				assert.Zero(t, uploads.Load())
 				assert.Zero(t, submissions.Load())
 			}
+			assert.Equal(t, tt.wantStderr, stderr.String())
 		})
 	}
+}
+
+// Validation and artifact staging must run concurrently: the validate handler
+// only answers once an upload has arrived, which can't happen if staging waits
+// for validation.
+func TestSubmitWorkloadValidatesWhileStaging(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	uploadStarted := make(chan struct{})
+	markUploadStarted := sync.OnceFunc(func() { close(uploadStarted) })
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		markUploadStarted()
+		return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, true)
+	})
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		select {
+		case <-uploadStarted:
+			return validateConfigResponse{}
+		case <-time.After(submissionValidationTimeout / 2):
+			return validateConfigResponse{Errors: []configFieldError{{Message: "staging did not overlap validation"}}}
+		}
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	runID, _, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+	assert.Equal(t, int64(777), runID)
 }
 
 func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {

@@ -327,66 +327,38 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 	return snap, err
 }
 
-// submitWorkload runs the submit happy path: ensure the experiment directory,
-// upload the launch artifacts, assemble the Jobs payload, and submit it. It
-// returns the new run_id and its dashboard URL. showProgress enables the stderr
-// staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
-	start := time.Now()
-	var snap snapshotResult
-	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
-
-	// Compute and validate the actual submission path before creating artifacts.
-	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
-	if err != nil {
-		return 0, "", err
-	}
-	containers := submittedContainers(cfg, funcDir)
-	token := effectiveIdempotencyToken(idempotencyKey, cfg)
-
-	// Validate server-side before uploading, so invalid configs leave no artifacts.
-	if err := preflightValidate(ctx, w, cfg, commandPath, containers, token); err != nil {
-		return 0, "", err
-	}
-
-	// Retain the local guard after backend validation so an unavailable endpoint
-	// cannot let a bad key reach upload or submission.
-	if err := validateIdempotencyToken(token); err != nil {
-		return 0, "", err
-	}
-
-	// Resolve the usage policy to its id next, so a bad name fails fast with a
+// stageRun resolves the usage policy, ensures the experiment directory, and
+// uploads the launch artifacts and optional code snapshot.
+func stageRun(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, base, funcDir string, showProgress bool) (usagePolicyID string, snap snapshotResult, err error) {
+	// Resolve the usage policy to its id first, so a bad name fails fast with a
 	// clear (caller-fixable) message before we upload any artifacts. Validation
 	// guarantees name and id are mutually exclusive: a literal id is used as-is, a
 	// name is resolved against the workspace.
-	usagePolicyID := ""
 	if cfg.UsagePolicyID != nil {
 		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
 	}
 	if cfg.UsagePolicyName != nil {
 		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
 		if err != nil {
-			return 0, "", err
+			return "", snap, err
 		}
 	}
-
-	deps, _ := cfg.inlineDependencies()
 
 	experimentDir := ""
 	if cfg.MLflowExperimentDirectory != nil {
 		experimentDir = *cfg.MLflowExperimentDirectory
 	}
 	if err := ensureExperimentDirectory(ctx, w, experimentDir); err != nil {
-		return 0, "", err
+		return "", snap, err
 	}
 
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
-		return 0, "", err
+		return "", snap, err
 	}
 	items, err := buildArtifacts(cfg)
 	if err != nil {
-		return 0, "", err
+		return "", snap, err
 	}
 
 	// Package and upload the code snapshot, if any; the remote code_source_path
@@ -408,9 +380,57 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		snap, stageErr = stageRunArtifacts(ctx, fc, items, stageSnapshot)
 		return stageErr
 	})
+	return usagePolicyID, snap, err
+}
+
+// submitWorkload runs the submit happy path: ensure the experiment directory,
+// upload the launch artifacts, assemble the Jobs payload, and submit it. It
+// returns the new run_id and its dashboard URL. showProgress enables the stderr
+// staging spinner (text mode only).
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
+	start := time.Now()
+	var snap snapshotResult
+	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
+
+	// Compute and validate the actual submission path before creating artifacts.
+	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
 	if err != nil {
 		return 0, "", err
 	}
+	containers := submittedContainers(cfg, funcDir)
+	token := effectiveIdempotencyToken(idempotencyKey, cfg)
+
+	// Validate server-side while the run artifacts stage. The backend check does
+	// not read the uploaded files, so the two can overlap. Submission waits for
+	// both, so an invalid config may leave staged artifacts but is never
+	// submitted. A failure on either side cancels the other.
+	group, groupCtx := errgroup.WithContext(ctx)
+	var validationUnavailable bool
+	group.Go(func() (err error) {
+		validationUnavailable, err = preflightValidate(groupCtx, w, cfg, commandPath, containers, token)
+		return err
+	})
+	var usagePolicyID string
+	group.Go(func() (err error) {
+		usagePolicyID, snap, err = stageRun(groupCtx, w, cfg, configPath, base, funcDir, showProgress)
+		return err
+	})
+	if err := group.Wait(); err != nil {
+		return 0, "", err
+	}
+	// Warn only after staging finishes so the warning doesn't interleave with the
+	// staging spinner.
+	if validationUnavailable && cmdio.HasIO(ctx) {
+		cmdio.LogString(ctx, "Warning: server-side config validation was unavailable; continuing with submission.")
+	}
+
+	// Retain the local guard after backend validation so an unavailable endpoint
+	// cannot let a bad key reach submission.
+	if err := validateIdempotencyToken(token); err != nil {
+		return 0, "", err
+	}
+
+	deps, _ := cfg.inlineDependencies()
 
 	runtimeVersion, _ := cfg.runtimeVersion()
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
