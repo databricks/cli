@@ -45,6 +45,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
+>>> read_state.py volumes volume1.grants id
 volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume'
 
 === Rename the volume: its ID changes, and so does the ID of its grants
@@ -122,6 +123,7 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 }
 
 === The grants are recorded under the new name, so the next plan is a no-op
+>>> read_state.py volumes volume1.grants id
 volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume_renamed'
 
 >>> [CLI] bundle plan

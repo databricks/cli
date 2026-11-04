@@ -13,8 +13,7 @@ trap cleanup EXIT
 title "Deploy a volume with grants"
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
-echo
-read_state.py volumes volume1.grants id
+trace read_state.py volumes volume1.grants id
 
 title "Rename the volume: its ID changes, and so does the ID of its grants"
 trace update_file.py databricks.yml myvolume myvolume_renamed
@@ -26,6 +25,6 @@ trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 trace $CLI grants get volume "$NEW_VOLUME" | jq '.privilege_assignments[] | select(.principal == "deco-test-user@databricks.com")'
 
-title "The grants are recorded under the new name, so the next plan is a no-op\n"
-read_state.py volumes volume1.grants id
+title "The grants are recorded under the new name, so the next plan is a no-op"
+trace read_state.py volumes volume1.grants id
 trace $CLI bundle plan

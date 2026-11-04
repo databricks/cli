@@ -34,6 +34,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
+>>> read_state.py schemas schema1.grants id
 schemas schema1.grants id='schema/main.test-schema-[UNIQUE_NAME]'
 
 === Rename the schema: its ID changes, and so does the ID of its grants
@@ -121,6 +122,7 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 }
 
 === The grants are recorded under the new name, so the next plan is a no-op
+>>> read_state.py schemas schema1.grants id
 schemas schema1.grants id='schema/main.test-schema-renamed-[UNIQUE_NAME]'
 
 >>> [CLI] bundle plan
