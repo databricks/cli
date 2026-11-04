@@ -10,6 +10,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES]
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 >>> [CLI] bundle plan -o json
 {

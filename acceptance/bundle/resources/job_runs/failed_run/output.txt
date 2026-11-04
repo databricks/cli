@@ -11,6 +11,7 @@ run page: [RUN_URL]
 Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
 
 Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 failed
 
 === the failed run is recorded, and not having succeeded is drift
 >>> read_id.py my_run
@@ -65,6 +66,7 @@ run page: [RUN_URL]
 Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
 
 Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 2 failed
 
 === run-now was issued once per deploy, and the recreate left the failed run alone
 >>> print_requests.py --keep //jobs/run-now

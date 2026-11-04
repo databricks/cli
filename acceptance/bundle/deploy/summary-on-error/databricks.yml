@@ -1,0 +1,16 @@
+bundle:
+  name: test-deploy-summary-on-error
+
+resources:
+  jobs:
+    # Chained job_01 <- job_02 <- job_03 via id references, so deploy creates them in a
+    # fixed order (job_01, job_02, job_03). Independent jobs would create in parallel,
+    # making both the faulted create and the error output vary per run.
+    job_01:
+      name: job-01
+    job_02:
+      name: job-02
+      description: needs ${resources.jobs.job_01.id}
+    job_03:
+      name: job-03
+      description: needs ${resources.jobs.job_02.id}
