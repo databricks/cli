@@ -68,9 +68,11 @@ const terraformStateFilename = "terraform.tfstate"
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount   int64
-	TargetCount              int64
-	DeploymentId             uuid.UUID
+	ConfigurationFileCount int64
+	TargetCount            int64
+	DeploymentId           uuid.UUID
+	// BoolValues holds bool keys that are not fields of Telemetry: the dynamic
+	// has_<task_type> keys and the local.cache.* keys written by libs/cache.
 	BoolValues               []protos.BoolMapEntry
 	ExecutionTimes           []protos.IntMapEntry
 	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
@@ -107,10 +109,6 @@ func (m *Metrics) SetBoolValue(key string, value bool) {
 			return
 		}
 	}
-	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
-}
-
-func (m *Metrics) AddBoolValue(key string, value bool) {
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
@@ -232,9 +230,8 @@ type Bundle struct {
 
 	Metrics Metrics
 
-	// Telemetry mirrors the boolean telemetry flags into a typed struct for the
-	// bundle bitmap. It is additive: the Metrics mechanism above still feeds the
-	// telemetry wire unchanged.
+	// Telemetry holds the boolean deploy telemetry flags; they feed both the
+	// deploy event's bool_values and the bundle bitmap.
 	Telemetry Telemetry
 
 	// UserConfig is the configuration as the user wrote it: the loaded files with

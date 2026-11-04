@@ -1008,21 +1008,20 @@ tasks:
   # embedded bitmap schema (see cmd/bundle/bitmap). The schema is append-only, so
   # update-schema reads the currently embedded schema and only appends. Output is
   # written to a temp file first so the redirect does not truncate schema.txt
-  # before `go run` embeds it at compile time. Also refreshes the full bitmap
-  # listing in acceptance/bundle/bitmap/full, which tracks every schema line.
+  # before `go run` embeds it at compile time. Also refreshes the schema listing
+  # in acceptance/bundle/bitmap/full, which tracks every schema line.
   generate-bitmap-schema:
-    desc: Regenerate bundle/bitmap/schema.txt and the full bitmap listing
+    desc: Regenerate bundle/bitmap/schema.txt and its acceptance listing
     sources:
       - bundle/**/*.go
       - exclude: bundle/**/*_test.go
       - acceptance/bundle/bitmap/full/script
-      - acceptance/bundle/bitmap/full/databricks.yml
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/bitmap/schema.txt
-      - acceptance/bundle/bitmap/full/out.bitmap-text.txt
+      - acceptance/bundle/bitmap/full/out.schema.txt
     cmds:
       - go run . bundle bitmap update-schema > bundle/bitmap/schema.txt.tmp
       - mv bundle/bitmap/schema.txt.tmp bundle/bitmap/schema.txt

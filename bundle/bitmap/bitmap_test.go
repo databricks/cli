@@ -54,8 +54,25 @@ func TestWalkSchema(t *testing.T) {
 	// tag, keep their Go field name.
 	assert.Contains(t, schema, "telemetry.SelectUsed")
 	assert.Contains(t, schema, "telemetry.RunAsSet")
-	assert.Contains(t, schema, "telemetry.RunAsSet.True")
-	assert.Contains(t, schema, "telemetry.RunAsSet.False")
+	assert.Contains(t, schema, "telemetry.ArtifactFilesIsSet[*]")
+
+	// Each bool field, whatever its Go shape, is followed by its value entries.
+	for _, p := range []string{
+		"experimental.use_legacy_run_as",                      // bool, omitempty
+		"resources.jobs.*.queue.enabled",                      // bool, no omitempty
+		"presets.pipelines_development",                       // *bool
+		"telemetry.SelectUsed",                                // telemetry bool
+		"telemetry.RunAsSet",                                  // telemetry *bool
+		"telemetry.ArtifactFilesIsSet[*]",                     // telemetry []bool element
+		"resources.jobs.*.tasks[*].disable_auto_optimization", // bool in a list element
+	} {
+		i := slices.Index(schema, p)
+		require.GreaterOrEqual(t, i, 0, p)
+		assert.Equal(t, []string{p + "=true", p + "=false"}, schema[i+1:i+3], p)
+	}
+	// Non-bool fields have no value entries.
+	assert.NotContains(t, schema, "bundle.name=true")
+	assert.NotContains(t, schema, "variables.*.default=true")
 }
 
 func TestEmbeddedSchemaIsCompleteAndUnique(t *testing.T) {
@@ -154,25 +171,110 @@ targets:
 	assert.Equal(t, []string{"bundle", "bundle.name"}, setPaths(schema, bits))
 }
 
+func TestBitsBoolValues(t *testing.T) {
+	schema := EmbeddedSchema()
+	for _, tc := range []struct {
+		name string
+		yaml string
+		want []string
+	}{
+		{
+			"bool true",
+			"resources: {jobs: {j: {tasks: [{disable_auto_optimization: true}]}}}",
+			[]string{
+				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
+				"resources.jobs.*.tasks[*].disable_auto_optimization", "resources.jobs.*.tasks[*].disable_auto_optimization=true",
+			},
+		},
+		{
+			"bool with omitempty, false",
+			"resources: {jobs: {j: {tasks: [{disable_auto_optimization: false}]}}}",
+			[]string{
+				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
+				"resources.jobs.*.tasks[*].disable_auto_optimization", "resources.jobs.*.tasks[*].disable_auto_optimization=false",
+			},
+		},
+		{
+			"bool without omitempty, false",
+			"resources: {jobs: {j: {queue: {enabled: false}}}}",
+			[]string{
+				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.queue",
+				"resources.jobs.*.queue.enabled", "resources.jobs.*.queue.enabled=false",
+			},
+		},
+		{
+			"*bool true",
+			"presets: {pipelines_development: true}",
+			[]string{"presets", "presets.pipelines_development", "presets.pipelines_development=true"},
+		},
+		{
+			"*bool false",
+			"presets: {pipelines_development: false}",
+			[]string{"presets", "presets.pipelines_development", "presets.pipelines_development=false"},
+		},
+		{
+			"omitted",
+			"presets: {name_prefix: dev_}",
+			[]string{"presets", "presets.name_prefix"},
+		},
+		{
+			"unresolved reference has no value bit",
+			`presets: {pipelines_development: "${var.flag}"}`,
+			[]string{"presets", "presets.pipelines_development"},
+		},
+		{
+			"different values under a wildcard set both",
+			"resources: {jobs: {a: {queue: {enabled: true}}, b: {queue: {enabled: false}}}}",
+			[]string{
+				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.queue",
+				"resources.jobs.*.queue.enabled", "resources.jobs.*.queue.enabled=false", "resources.jobs.*.queue.enabled=true",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, diags := config.LoadFromBytes("databricks.yml", []byte(tc.yaml))
+			require.Empty(t, diags)
+			bits, err := Bits(root.Value(), bundle.Telemetry{}, schema)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, setPaths(schema, bits))
+		})
+	}
+}
+
 func TestBitsTelemetry(t *testing.T) {
 	schema := EmbeddedSchema()
+	for _, tc := range []struct {
+		name string
+		tm   bundle.Telemetry
+		want []string
+	}{
+		// Every field of a zero struct is unmeasured; none may count as present.
+		{"zero value", bundle.Telemetry{}, nil},
+		{"bool false", bundle.Telemetry{SelectUsed: false}, nil},
+		{"bool true", bundle.Telemetry{SelectUsed: true}, []string{"telemetry.SelectUsed", "telemetry.SelectUsed=true"}},
+		{"*bool nil", bundle.Telemetry{RunAsSet: nil}, nil},
+		{"*bool false", bundle.Telemetry{RunAsSet: new(false)}, []string{"telemetry.RunAsSet", "telemetry.RunAsSet=false"}},
+		{"*bool true", bundle.Telemetry{RunAsSet: new(true)}, []string{"telemetry.RunAsSet", "telemetry.RunAsSet=true"}},
+		{"[]bool empty", bundle.Telemetry{ArtifactFilesIsSet: []bool{}}, nil},
+		{"[]bool all true", bundle.Telemetry{ArtifactFilesIsSet: []bool{true, true}}, []string{
+			"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet[*]", "telemetry.ArtifactFilesIsSet[*]=true",
+		}},
+		{"[]bool mixed", bundle.Telemetry{ArtifactFilesIsSet: []bool{true, false}}, []string{
+			"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet[*]",
+			"telemetry.ArtifactFilesIsSet[*]=false", "telemetry.ArtifactFilesIsSet[*]=true",
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bits, err := Bits(dyn.NilValue, tc.tm, schema)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, setPaths(schema, bits))
+		})
+	}
+}
 
-	// A zero-valued struct sets no bits: Walk visits every tagless field, and
-	// Bits must not treat that visit as presence.
-	bits, err := Bits(dyn.NilValue, bundle.Telemetry{}, schema)
-	require.NoError(t, err)
-	assert.Empty(t, setPaths(schema, bits))
-
-	var tm bundle.Telemetry
-	tm.SelectUsed = true
-	tm.RunAsSet.Set(false)
-	bits, err = Bits(dyn.NilValue, tm, schema)
-	require.NoError(t, err)
-	assert.Equal(t, []string{
-		"telemetry.RunAsSet",
-		"telemetry.RunAsSet.False",
-		"telemetry.SelectUsed",
-	}, setPaths(schema, bits))
+func TestBitsRejectsUnsupportedTelemetryField(t *testing.T) {
+	_, err := Bits(dyn.NilValue, struct{ Count int }{}, EmbeddedSchema())
+	assert.ErrorContains(t, err, "telemetry field Count has unsupported type int")
 }
 
 func TestParseSchema(t *testing.T) {
@@ -299,4 +401,37 @@ func BenchmarkWalkSchema(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+func TestText(t *testing.T) {
+	schema := []string{
+		"bundle", "bundle.name",
+		"flag", "flag=true", "flag=false",
+		"jobs.*.enabled", "jobs.*.enabled=true", "jobs.*.enabled=false",
+		"ref", "ref=true", "ref=false",
+		"later",
+	}
+	for _, tc := range []struct {
+		name string
+		set  []string
+		want []string
+	}{
+		{"nothing set", nil, nil},
+		{"field", []string{"bundle", "bundle.name"}, []string{"1 bundle", "1 bundle.name"}},
+		{"bool true", []string{"flag", "flag=true"}, []string{"T flag"}},
+		{"bool false", []string{"flag", "flag=false"}, []string{"F flag"}},
+		{"both values under a wildcard", []string{"jobs.*.enabled", "jobs.*.enabled=true", "jobs.*.enabled=false"}, []string{"T jobs.*.enabled", "F jobs.*.enabled"}},
+		{"unresolved reference", []string{"ref"}, []string{"1 ref"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bits := make([]bool, len(schema))
+			for _, p := range tc.set {
+				bits[slices.Index(schema, p)] = true
+			}
+			assert.Equal(t, tc.want, Text(schema, bits))
+		})
+	}
+
+	// A bitmap from an older CLI has fewer bits; the rest of the schema is unset.
+	assert.Equal(t, []string{"1 bundle"}, Text(schema, []bool{true}))
 }
