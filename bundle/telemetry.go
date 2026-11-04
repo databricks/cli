@@ -12,8 +12,12 @@ package bundle
 // matching field here so the same signal reaches the bitmap.
 //
 // Value-bearing flags whose false is a real measurement (distinct from "not
-// measured") are stored as a True/False pair so the presence-only bitmap can
-// represent both outcomes: neither set means "not measured".
+// measured") are stored as a BoolPair so the presence-only bitmap can represent
+// both outcomes.
+//
+// Not mirrored: the has_<task_type> keys, which the bitmap already records as
+// config fields (resources.jobs.*.tasks[*].<type>_task), and the local.cache.*
+// keys, which describe the local user cache rather than the bundle.
 type Telemetry struct {
 	// Single-bit flags: only ever set true when the feature is present, or a
 	// one-hot group where the set member already encodes the outcome.
@@ -54,72 +58,42 @@ type Telemetry struct {
 	EngineTerraformConfig bool
 	EngineTerraformEnv    bool
 
-	// True/False pairs: exactly one is set when the flag is measured, neither
-	// when it is not.
-	SkipArtifactCleanupTrue  bool
-	SkipArtifactCleanupFalse bool
-
-	HasServerlessComputeTrue  bool
-	HasServerlessComputeFalse bool
-
-	HasClassicJobComputeTrue  bool
-	HasClassicJobComputeFalse bool
-
-	HasClassicInteractiveComputeTrue  bool
-	HasClassicInteractiveComputeFalse bool
-
-	ArtifactBuildCommandIsSetTrue  bool
-	ArtifactBuildCommandIsSetFalse bool
-
-	ArtifactFilesIsSetTrue  bool
-	ArtifactFilesIsSetFalse bool
-
-	SourceLinkedSetForNonDevelopmentTrue  bool
-	SourceLinkedSetForNonDevelopmentFalse bool
-
-	PresetsNamePrefixIsSetTrue  bool
-	PresetsNamePrefixIsSetFalse bool
-
-	UseLegacyRunAsTrue  bool
-	UseLegacyRunAsFalse bool
-
-	RunAsSetTrue  bool
-	RunAsSetFalse bool
-
-	PermissionsSectionSetTrue  bool
-	PermissionsSectionSetFalse bool
-
-	PythonWheelWrapperIsSetTrue  bool
-	PythonWheelWrapperIsSetFalse bool
-
-	AppLifecycleStartedTrue  bool
-	AppLifecycleStartedFalse bool
-
-	ClusterLifecycleStartedTrue  bool
-	ClusterLifecycleStartedFalse bool
-
-	SqlWarehouseLifecycleStartedTrue  bool
-	SqlWarehouseLifecycleStartedFalse bool
-
-	DeploymentHistoryEnabledTrue  bool
-	DeploymentHistoryEnabledFalse bool
-
-	ImmutableSnapshotUsedTrue  bool
-	ImmutableSnapshotUsedFalse bool
-
-	AiRuntimeTaskScheduledTrue  bool
-	AiRuntimeTaskScheduledFalse bool
-
-	AiRuntimeTaskMultitaskTrue  bool
-	AiRuntimeTaskMultitaskFalse bool
+	// Measured flags: see BoolPair.
+	SkipArtifactCleanup              BoolPair
+	HasServerlessCompute             BoolPair
+	HasClassicJobCompute             BoolPair
+	HasClassicInteractiveCompute     BoolPair
+	ArtifactBuildCommandIsSet        BoolPair
+	ArtifactFilesIsSet               BoolPair
+	SourceLinkedSetForNonDevelopment BoolPair
+	PresetsNamePrefixIsSet           BoolPair
+	UseLegacyRunAs                   BoolPair
+	RunAsSet                         BoolPair
+	PermissionsSectionSet            BoolPair
+	PythonWheelWrapperIsSet          BoolPair
+	AppLifecycleStarted              BoolPair
+	ClusterLifecycleStarted          BoolPair
+	SqlWarehouseLifecycleStarted     BoolPair
+	DeploymentHistoryEnabled         BoolPair
+	ImmutableSnapshotUsed            BoolPair
+	AiRuntimeTaskScheduled           BoolPair
+	AiRuntimeTaskMultitask           BoolPair
 }
 
-// SetPaired sets exactly one bool of a True/False pair from a measured value,
-// e.g. b.Telemetry.SetPaired(&t.RunAsSetTrue, &t.RunAsSetFalse, value).
-func (t *Telemetry) SetPaired(vTrue, vFalse *bool, value bool) {
+// BoolPair records a measured boolean as two presence bits, so the bitmap can
+// tell a measured false from a flag that was never measured (neither set). Both
+// are set when the flag was measured more than once with different outcomes,
+// e.g. once per artifact.
+type BoolPair struct {
+	True  bool
+	False bool
+}
+
+// Set records one measurement.
+func (p *BoolPair) Set(value bool) {
 	if value {
-		*vTrue = true
+		p.True = true
 	} else {
-		*vFalse = true
+		p.False = true
 	}
 }

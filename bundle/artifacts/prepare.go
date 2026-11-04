@@ -35,10 +35,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.FromErr(err)
 	}
 
-	// For the bitmap, OR the per-artifact flags across all artifacts into a
-	// single measured value each (set once after the loop).
-	var anyArtifact, anyBuildCommand, anyFiles bool
-
 	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		artifact := b.Config.Artifacts[artifactName]
 		if artifact == nil {
@@ -53,9 +49,8 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
 		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
-		anyArtifact = true
-		anyBuildCommand = anyBuildCommand || artifact.BuildCommand != ""
-		anyFiles = anyFiles || len(artifact.Files) != 0
+		b.Telemetry.ArtifactBuildCommandIsSet.Set(artifact.BuildCommand != "")
+		b.Telemetry.ArtifactFilesIsSet.Set(len(artifact.Files) != 0)
 
 		// A `tgz` artifact with `include`/`git` is built by DABs itself in the build
 		// phase (see artifacts.Build). `build` and `git`/`include` are mutually
@@ -115,11 +110,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		if logdiag.HasError(ctx) {
 			break
 		}
-	}
-
-	if anyArtifact {
-		b.Telemetry.SetPaired(&b.Telemetry.ArtifactBuildCommandIsSetTrue, &b.Telemetry.ArtifactBuildCommandIsSetFalse, anyBuildCommand)
-		b.Telemetry.SetPaired(&b.Telemetry.ArtifactFilesIsSetTrue, &b.Telemetry.ArtifactFilesIsSetFalse, anyFiles)
 	}
 
 	return nil

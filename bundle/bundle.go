@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -231,6 +232,12 @@ type Bundle struct {
 	// bundle bitmap. It is additive: the Metrics mechanism above still feeds the
 	// telemetry wire unchanged.
 	Telemetry Telemetry
+
+	// UserConfig is the configuration as the user wrote it: the loaded files with
+	// the selected target merged in, plus resources defined in Python. It is
+	// captured before Initialize fills in defaults, so the bundle bitmap records
+	// what users configure rather than what the CLI derives.
+	UserConfig dyn.Value
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
