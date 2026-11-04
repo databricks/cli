@@ -1,2 +1,2 @@
 
->>> [CLI] bundle bitmap bitmap-text
+>>> [CLI] bundle bitmap schema

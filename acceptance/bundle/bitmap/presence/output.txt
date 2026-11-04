@@ -3,7 +3,14 @@
 
 >>> [CLI] bundle bitmap bitmap
 
+>>> [CLI] bundle bitmap decode
+
 >>> [CLI] bundle bitmap update-schema --validate
+
+=== decode rejects input that is not an encoded bitmap
+
+>>> musterr [CLI] bundle bitmap decode
+Error: base64: illegal base64 data at input byte 3
 
 === An invalid bundle fails instead of printing a bitmap
 

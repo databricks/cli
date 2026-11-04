@@ -9,9 +9,19 @@ variables:
     type: complex
     default:
       key: value
+  flag:
+    default: true
+
+# Known gap: an explicit false on an omitempty bool of a CLI-defined struct (11
+# such fields, all without ForceSendFields) is dropped when the loader syncs typed
+# config back to dyn, so only "experimental" itself is recorded here. SDK bools
+# keep it (see disable_auto_optimization below).
+experimental:
+  use_legacy_run_as: false
 
 presets:
   name_prefix: dev_
+  pipelines_development: false
 
 run_as:
   service_principal_name: sp-1234
@@ -38,8 +48,16 @@ resources:
       tags:
         team: data
         "a.b": c
+      # Unresolved when the bitmap snapshots the config: present, with no value bit.
+      notification_settings:
+        no_alert_for_skipped_runs: ${var.flag}
+      # true here and false in other_job: both value bits are set.
+      queue:
+        enabled: true
       tasks:
         - task_key: a
+          # SDK bool with omitempty: an explicit false is kept via ForceSendFields.
+          disable_auto_optimization: false
           notebook_task:
             notebook_path: ./notebook.py
         - task_key: b
@@ -47,6 +65,10 @@ resources:
             - task_key: a
           notebook_task:
             notebook_path: ./notebook.py
+    other_job:
+      name: Other Job
+      queue:
+        enabled: false
 
 targets:
   dev:

@@ -1,2 +1,2 @@
 # Scratch files of the round-trip check; out.bitmap.txt is the golden.
-Ignore = [".databricks", "schema.txt", "bitmap-text.txt", "bitmap.b64", "decoded.txt"]
+Ignore = [".databricks", "bitmap.b64", "decoded.txt"]

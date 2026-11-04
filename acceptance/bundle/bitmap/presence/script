@@ -1,17 +1,16 @@
-# Goldens record only the set bits, so a field appended to the schema changes
-# none of them (../full records every line). The schema itself is a scratch
-# file for the decoder.
-$CLI bundle bitmap schema > schema.txt
-trace $CLI bundle bitmap bitmap-text > bitmap-text.txt
-grep '^1 ' bitmap-text.txt > out.bitmap.txt
+# One line per set field ("1", or "T"/"F" for a bool), so a field appended to the
+# schema changes nothing here (../full records the whole schema).
+trace $CLI bundle bitmap bitmap-text > out.bitmap.txt
 
-# The encoded bitmap must round-trip through an independent decoder to the same
-# per-field view; any difference shows up as a diff in output.txt.
+# The encoded bitmap decodes back to the same fields.
 trace $CLI bundle bitmap bitmap > bitmap.b64
-decode_bitmap.py schema.txt < bitmap.b64 > decoded.txt
-diff.py bitmap-text.txt decoded.txt
+trace $CLI bundle bitmap decode < bitmap.b64 > decoded.txt
+diff.py out.bitmap.txt decoded.txt
 
 trace $CLI bundle bitmap update-schema --validate
+
+title "decode rejects input that is not an encoded bitmap\n"
+echo not-a-bitmap | trace musterr $CLI bundle bitmap decode
 
 title "An invalid bundle fails instead of printing a bitmap\n"
 cd invalid

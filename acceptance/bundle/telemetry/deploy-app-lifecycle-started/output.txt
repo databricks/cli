@@ -10,19 +10,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "bool_values": [
     {
-      "key": "local.cache.attempt",
-      "value": true
-    },
-    {
-      "key": "local.cache.miss",
-      "value": true
-    },
-    {
-      "key": "experimental.use_legacy_run_as",
-      "value": false
-    },
-    {
-      "key": "run_as_set",
+      "key": "python_wheel_wrapper_is_set",
       "value": false
     },
     {
@@ -30,16 +18,24 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "value": false
     },
     {
-      "key": "python_wheel_wrapper_is_set",
+      "key": "app_lifecycle_started",
+      "value": true
+    },
+    {
+      "key": "deployment_history_enabled",
       "value": false
     },
     {
-      "key": "skip_artifact_cleanup",
+      "key": "immutable_snapshot_used",
       "value": false
     },
     {
       "key": "state_path_is_shared",
       "value": false
+    },
+    {
+      "key": "dms_compat_auto",
+      "value": true
     },
     {
       "key": "permissions_section_set",
@@ -74,8 +70,16 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "value": false
     },
     {
-      "key": "dms_compat_auto",
-      "value": true
+      "key": "skip_artifact_cleanup",
+      "value": false
+    },
+    {
+      "key": "experimental.use_legacy_run_as",
+      "value": false
+    },
+    {
+      "key": "run_as_set",
+      "value": false
     },
     {
       "key": "has_serverless_compute",
@@ -90,15 +94,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "value": false
     },
     {
-      "key": "deployment_history_enabled",
-      "value": false
+      "key": "local.cache.attempt",
+      "value": true
     },
     {
-      "key": "immutable_snapshot_used",
-      "value": false
-    },
-    {
-      "key": "app_lifecycle_started",
+      "key": "local.cache.miss",
       "value": true
     }
   ]

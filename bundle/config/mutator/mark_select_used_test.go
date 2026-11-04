@@ -7,8 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/metrics"
-	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +25,7 @@ func TestMarkSelectUsed_Set(t *testing.T) {
 	b.Select = []string{"my_job"}
 	diags := bundle.Apply(t.Context(), b, mutator.MarkSelectUsed())
 	require.NoError(t, diags.Error())
-	assert.Contains(t, b.Metrics.BoolValues, protos.BoolMapEntry{Key: metrics.SelectUsed, Value: true})
+	assert.True(t, b.Telemetry.SelectUsed)
 }
 
 // TestMarkSelectUsed_Unset checks that the flag is left unset when --select is not
@@ -36,5 +34,5 @@ func TestMarkSelectUsed_Unset(t *testing.T) {
 	b := &bundle.Bundle{}
 	diags := bundle.Apply(t.Context(), b, mutator.MarkSelectUsed())
 	require.NoError(t, diags.Error())
-	assert.Empty(t, b.Metrics.BoolValues)
+	assert.False(t, b.Telemetry.SelectUsed)
 }
