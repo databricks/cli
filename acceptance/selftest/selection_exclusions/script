@@ -1,0 +1,43 @@
+# Use a small Git repo so selection sees the contents of changed test.toml files.
+# File arguments to $SELECTION only exercise path-based selection.
+mkdir -p repo/acceptance/bundle/invariant/{configs,migrate,no_drift}
+for test in migrate no_drift; do
+    cp fixtures/script.txt "repo/acceptance/bundle/invariant/$test/script"
+    cp fixtures/old_matrix.toml "repo/acceptance/bundle/invariant/$test/out.test.toml"
+done
+cp fixtures/base.toml repo/acceptance/bundle/invariant/migrate/test.toml
+cp fixtures/old.yml.tmpl repo/acceptance/bundle/invariant/configs/
+cd repo
+git init -qb main
+git config user.name Tester
+git config user.email tester@example.test
+git add .
+git commit -qm baseline
+git update-ref refs/remotes/origin/main HEAD
+
+selection() {
+    "$SELECTION" -root acceptance
+}
+
+title "A new template excluded from migration selects only its no_drift variant\n"
+cp ../fixtures/new.yml.tmpl acceptance/bundle/invariant/configs/
+cp ../fixtures/excluded.toml acceptance/bundle/invariant/migrate/test.toml
+cp ../fixtures/new_matrix.toml acceptance/bundle/invariant/no_drift/out.test.toml
+git add .
+trace cat acceptance/bundle/invariant/migrate/test.toml
+trace selection
+
+title "Changing the migration script also selects its existing variants\n"
+cp ../fixtures/changed_script.txt acceptance/bundle/invariant/migrate/script
+trace selection
+
+# Make the added template and exclusion part of the baseline for the next change.
+cp ../fixtures/script.txt acceptance/bundle/invariant/migrate/script
+git commit -qm 'Add template and exclusion'
+git update-ref refs/remotes/origin/main HEAD
+
+title "Removing the exclusion selects migration, including the re-enabled variant\n"
+cp ../fixtures/base.toml acceptance/bundle/invariant/migrate/test.toml
+cp ../fixtures/new_matrix.toml acceptance/bundle/invariant/migrate/out.test.toml
+trace cat acceptance/bundle/invariant/migrate/test.toml
+trace selection
