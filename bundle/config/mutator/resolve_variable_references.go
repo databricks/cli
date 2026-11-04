@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 /*
@@ -211,17 +213,24 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 func validateVolumeSchemaReferences(b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-	for _, volume := range b.Config.Resources.Volumes {
+	for _, volumeName := range slices.Sorted(maps.Keys(b.Config.Resources.Volumes)) {
+		volume := b.Config.Resources.Volumes[volumeName]
 		if volume == nil {
 			continue
 		}
-		for _, value := range []string{volume.SchemaName, volume.CatalogName} {
-			_, _ = dynvar.Resolve(dyn.V(value), func(path dyn.Path) (dyn.Value, error) {
+		for _, field := range []struct{ name, value string }{
+			{"schema_name", volume.SchemaName},
+			{"catalog_name", volume.CatalogName},
+		} {
+			fieldPath := structpath.NewPath(nil, "resources", "volumes", volumeName, field.name)
+			_, _ = dynvar.Resolve(dyn.V(field.value), func(path dyn.Path) (dyn.Value, error) {
 				if len(path) > 0 && path[0].Key() == "schemas" {
 					diags = diags.Append(diag.Diagnostic{
-						Severity: diag.Error,
-						Summary:  fmt.Sprintf("reference does not exist: ${%s}", path.String()),
-						Detail:   fmt.Sprintf("did you mean:\n  ${resources.%s}", path.String()),
+						Severity:  diag.Error,
+						Summary:   fmt.Sprintf("volume %q field %q: reference does not exist: ${%s}", volumeName, field.name, path.String()),
+						Detail:    fmt.Sprintf("did you mean:\n  ${resources.%s}", path.String()),
+						Locations: b.Config.GetLocationsOf(fieldPath),
+						Paths:     []*structpath.PathNode{fieldPath},
 					})
 				}
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
