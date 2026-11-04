@@ -72,6 +72,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.data_quality_monitors.html">Data Quality Monitors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
@@ -81,6 +82,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.materialization_sets.html">Materialization Sets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
@@ -308,6 +310,35 @@ ERROR - alert evaluation failed</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertEvaluationState.ERROR">
 <span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ERROR'</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertEvaluationState.ERROR" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.alerts.AlertStatementParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AlertStatementParameter</span></span><a class="headerlink" href="#databricks.bundles.alerts.AlertStatementParameter" title="Link to this definition">¶</a></dt>
+<dd><p>A named parameter bound to the alert query. Only flat, named scalar parameters are
+supported; complex types such as ARRAY, MAP, and STRUCT are not.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.alerts.AlertStatementParameter.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.alerts.AlertStatementParameter.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.alerts.AlertStatementParameter.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.alerts.AlertStatementParameter.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>

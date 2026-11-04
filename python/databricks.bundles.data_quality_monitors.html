@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Data Quality Monitors &#8212; databricks-bundles  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=c058f7c8" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=5fa5b382" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Database Catalogs" href="databricks.bundles.database_catalogs.html" />
+    <link rel="prev" title="Dashboards" href="databricks.bundles.dashboards.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/databricks-logo.svg" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">databricks-bundles: Python support for Declarative Automation Bundles</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=databricks&repo=databricks-bundles&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.core.html">Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.alerts.html">Alerts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.apps.html">Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.catalogs.html">Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data Quality Monitors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.data_quality_monitors">Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.materialization_sets.html">Materialization Sets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_serving_endpoints.html">Model Serving Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.pipelines.html">Pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.quality_monitors.html">Quality Monitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.registered_models.html">Registered Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.schemas.html">Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secret_scopes.html">Secret Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secrets.html">Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.sql_warehouses.html">SQL Warehouses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.synced_database_tables.html">Synced Database Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_endpoints.html">Vector Search Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_indexes.html">Vector Search Indexes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.volumes.html">Volumes</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="databricks.bundles.dashboards.html" title="previous chapter">Dashboards</a></li>
+      <li>Next: <a href="databricks.bundles.database_catalogs.html" title="next chapter">Database Catalogs</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="data-quality-monitors">
+<h1>Data Quality Monitors<a class="headerlink" href="#data-quality-monitors" title="Link to this heading">¶</a></h1>
+<p><strong>Package:</strong> <code class="docutils literal notranslate"><span class="pre">databricks.bundles.data_quality_monitors</span></code></p>
+<section id="module-databricks.bundles.data_quality_monitors">
+<span id="classes"></span><h2>Classes<a class="headerlink" href="#module-databricks.bundles.data_quality_monitors" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AggregationGranularity</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity" title="Link to this definition">¶</a></dt>
+<dd><p>The granularity for aggregating data into time windows based on their timestamp.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_5_MINUTES">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_5_MINUTES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_5_MINUTES'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_5_MINUTES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_30_MINUTES">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_30_MINUTES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_30_MINUTES'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_30_MINUTES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_HOUR">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_1_HOUR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_1_HOUR'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_HOUR" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_DAY">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_1_DAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_1_DAY'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_DAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_WEEK">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_1_WEEK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_1_WEEK'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_WEEK" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_2_WEEKS">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_2_WEEKS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_2_WEEKS'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_2_WEEKS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_3_WEEKS">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_3_WEEKS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_3_WEEKS'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_3_WEEKS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_4_WEEKS">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_4_WEEKS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_4_WEEKS'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_4_WEEKS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_MONTH">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_1_MONTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_1_MONTH'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_MONTH" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_YEAR">
+<span class="sig-name descname"><span class="pre">AGGREGATION_GRANULARITY_1_YEAR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AGGREGATION_GRANULARITY_1_YEAR'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_YEAR" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AnomalyDetectionConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AnomalyDetectionConfig</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Anomaly Detection Configurations.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.notification_settings">
+<span class="sig-name descname"><span class="pre">notification_settings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.NotificationSettings" title="databricks.bundles.data_quality_monitors._models.notification_settings.NotificationSettings"><span class="pre">NotificationSettings</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.notification_settings" title="Link to this definition">¶</a></dt>
+<dd><p>Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to
+<cite>schema</cite> monitors only. This is the same schema alert you manage from <strong>Manage alerts</strong> in the
+Data Quality Monitoring UI, so a change made in either place shows in both.</p>
+<p>Set the recipients in <cite>on_unhealthy_table</cite>; <cite>on_failure</cite> is not supported here. Only
+<cite>destination_ids</cite> and <cite>destination_user_ids</cite> are supported.</p>
+<p>On update, an update mask of <cite>*</cite>, <cite>anomaly_detection_config</cite>, or
+<cite>anomaly_detection_config.notification_settings</cite> replaces the alert’s recipients with the ones
+in the request; omitting the field, or leaving both recipient lists empty, removes the alert.
+Other masks leave the alert unchanged.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.CronSchedule">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CronSchedule</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.CronSchedule" title="Link to this definition">¶</a></dt>
+<dd><p>The data quality monitoring workflow cron schedule.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.CronSchedule.quartz_cron_expression">
+<span class="sig-name descname"><span class="pre">quartz_cron_expression</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.CronSchedule.quartz_cron_expression" title="Link to this definition">¶</a></dt>
+<dd><p>The expression that determines when to run the monitor. See <a class="reference external" href="https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html">examples</a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.CronSchedule.timezone_id">
+<span class="sig-name descname"><span class="pre">timezone_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.CronSchedule.timezone_id" title="Link to this definition">¶</a></dt>
+<dd><p>A Java timezone id. The schedule for a job will be resolved with respect to this timezone.
+See <a class="reference external" href="http://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html">Java TimeZone</a> for details.
+The timezone id (e.g., <code class="docutils literal notranslate"><span class="pre">America/Los_Angeles</span></code>) in which to evaluate the quartz expression.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.CronSchedule.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.CronSchedule.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.CronSchedule.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.CronSchedule.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DataProfilingConfig</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Data Profiling Configurations.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.output_schema_id">
+<span class="sig-name descname"><span class="pre">output_schema_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.output_schema_id" title="Link to this definition">¶</a></dt>
+<dd><p>ID of the schema where output tables are created.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.assets_dir">
+<span class="sig-name descname"><span class="pre">assets_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.assets_dir" title="Link to this definition">¶</a></dt>
+<dd><p>Field for specifying the absolute path to a custom directory to store data-monitoring
+assets. Normally prepopulated to a default user location via UI and Python APIs.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.baseline_table_name">
+<span class="sig-name descname"><span class="pre">baseline_table_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.baseline_table_name" title="Link to this definition">¶</a></dt>
+<dd><p>Baseline table name.
+Baseline data is used to compute drift from the data in the monitored <cite>table_name</cite>.
+The baseline table and the monitored table shall have the same schema.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.custom_metrics">
+<span class="sig-name descname"><span class="pre">custom_metrics</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric" title="databricks.bundles.data_quality_monitors._models.data_profiling_custom_metric.DataProfilingCustomMetric"><span class="pre">DataProfilingCustomMetric</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.custom_metrics" title="Link to this definition">¶</a></dt>
+<dd><p>Custom metrics.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.inference_log">
+<span class="sig-name descname"><span class="pre">inference_log</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig" title="databricks.bundles.data_quality_monitors._models.inference_log_config.InferenceLogConfig"><span class="pre">InferenceLogConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.inference_log" title="Link to this definition">¶</a></dt>
+<dd><p><cite>Analysis Configuration</cite> for monitoring inference log tables.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.notification_settings">
+<span class="sig-name descname"><span class="pre">notification_settings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.NotificationSettings" title="databricks.bundles.data_quality_monitors._models.notification_settings.NotificationSettings"><span class="pre">NotificationSettings</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.notification_settings" title="Link to this definition">¶</a></dt>
+<dd><p>Field for specifying notification settings.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.schedule">
+<span class="sig-name descname"><span class="pre">schedule</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.CronSchedule" title="databricks.bundles.data_quality_monitors._models.cron_schedule.CronSchedule"><span class="pre">CronSchedule</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.schedule" title="Link to this definition">¶</a></dt>
+<dd><p>The cron schedule.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.skip_builtin_dashboard">
+<span class="sig-name descname"><span class="pre">skip_builtin_dashboard</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.skip_builtin_dashboard" title="Link to this definition">¶</a></dt>
+<dd><p>Whether to skip creating a default dashboard summarizing data quality metrics.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.slicing_exprs">
+<span class="sig-name descname"><span class="pre">slicing_exprs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.slicing_exprs" title="Link to this definition">¶</a></dt>
+<dd><p>List of column expressions to slice data with for targeted analysis. The data is grouped by
+each expression independently, resulting in a separate slice for each predicate and its
+complements. For example <cite>slicing_exprs=[“col_1”, “col_2 &gt; 10”]</cite> will generate the following
+slices: two slices for <cite>col_2 &gt; 10</cite> (True and False), and one slice per unique value in
+<cite>col1</cite>. For high-cardinality columns, only the top 100 unique values by frequency will
+generate slices.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.snapshot">
+<span class="sig-name descname"><span class="pre">snapshot</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.SnapshotConfig" title="databricks.bundles.data_quality_monitors._models.snapshot_config.SnapshotConfig"><span class="pre">SnapshotConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.snapshot" title="Link to this definition">¶</a></dt>
+<dd><p><cite>Analysis Configuration</cite> for monitoring snapshot tables.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.time_series">
+<span class="sig-name descname"><span class="pre">time_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.TimeSeriesConfig" title="databricks.bundles.data_quality_monitors._models.time_series_config.TimeSeriesConfig"><span class="pre">TimeSeriesConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.time_series" title="Link to this definition">¶</a></dt>
+<dd><p><cite>Analysis Configuration</cite> for monitoring time series tables.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.warehouse_id">
+<span class="sig-name descname"><span class="pre">warehouse_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.warehouse_id" title="Link to this definition">¶</a></dt>
+<dd><p>Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
+warehouse will be used.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DataProfilingCustomMetric</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric" title="Link to this definition">¶</a></dt>
+<dd><p>Custom metric definition.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.definition">
+<span class="sig-name descname"><span class="pre">definition</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.definition" title="Link to this definition">¶</a></dt>
+<dd><p>Jinja template for a SQL expression that specifies how to compute the metric. See <a class="reference external" href="https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition">create metric definition</a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.name" title="Link to this definition">¶</a></dt>
+<dd><p>Name of the metric in the output tables.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.output_data_type">
+<span class="sig-name descname"><span class="pre">output_data_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.output_data_type" title="Link to this definition">¶</a></dt>
+<dd><p>The output type of the custom metric.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType" title="databricks.bundles.data_quality_monitors._models.data_profiling_custom_metric_type.DataProfilingCustomMetricType"><span class="pre">DataProfilingCustomMetricType</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.type" title="Link to this definition">¶</a></dt>
+<dd><p>The type of the custom metric.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.input_columns">
+<span class="sig-name descname"><span class="pre">input_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.input_columns" title="Link to this definition">¶</a></dt>
+<dd><p>A list of column names in the input table the metric should be computed for.
+Can use <code class="docutils literal notranslate"><span class="pre">&quot;:table&quot;</span></code> to indicate that the metric needs information from multiple columns.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DataProfilingCustomMetricType</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType" title="Link to this definition">¶</a></dt>
+<dd><p>The custom metric type.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE">
+<span class="sig-name descname"><span class="pre">DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED">
+<span class="sig-name descname"><span class="pre">DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT">
+<span class="sig-name descname"><span class="pre">DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DataQualityMonitor</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor" title="Link to this definition">¶</a></dt>
+<dd><p>Monitor for the data quality of unity catalog entities such as schema or table.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor.object_id">
+<span class="sig-name descname"><span class="pre">object_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor.object_id" title="Link to this definition">¶</a></dt>
+<dd><p>The UUID of the request object. It is <cite>schema_id</cite> for <cite>schema</cite>, and <cite>table_id</cite> for <cite>table</cite>.</p>
+<p>Find the <cite>schema_id</cite> from either:
+1. The <a class="reference external" href="https://docs.databricks.com/api/workspace/schemas/get#schema_id">schema_id</a> of the <cite>Schemas</cite> resource.
+2. In <a class="reference external" href="https://docs.databricks.com/aws/en/catalog-explorer/">Catalog Explorer</a> &gt; select the <cite>schema</cite> &gt; go to the <cite>Details</cite> tab &gt; the <cite>Schema ID</cite> field.</p>
+<p>Find the <cite>table_id</cite> from either:
+1. The <a class="reference external" href="https://docs.databricks.com/api/workspace/tables/get#table_id">table_id</a> of the <cite>Tables</cite> resource.
+2. In <a class="reference external" href="https://docs.databricks.com/aws/en/catalog-explorer/">Catalog Explorer</a> &gt; select the <cite>table</cite> &gt; go to the <cite>Details</cite> tab &gt; the <cite>Table ID</cite> field.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor.object_type">
+<span class="sig-name descname"><span class="pre">object_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor.object_type" title="Link to this definition">¶</a></dt>
+<dd><p>The type of the monitored object. Can be one of the following: <cite>schema</cite> or <cite>table</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor.anomaly_detection_config">
+<span class="sig-name descname"><span class="pre">anomaly_detection_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig" title="databricks.bundles.data_quality_monitors._models.anomaly_detection_config.AnomalyDetectionConfig"><span class="pre">AnomalyDetectionConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor.anomaly_detection_config" title="Link to this definition">¶</a></dt>
+<dd><p>Anomaly Detection Configuration, applicable to <cite>schema</cite> object types.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor.data_profiling_config">
+<span class="sig-name descname"><span class="pre">data_profiling_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.DataProfilingConfig" title="databricks.bundles.data_quality_monitors._models.data_profiling_config.DataProfilingConfig"><span class="pre">DataProfilingConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor.data_profiling_config" title="Link to this definition">¶</a></dt>
+<dd><p>Data Profiling Configuration, applicable to <cite>table</cite> object types. Exactly one <cite>Analysis Configuration</cite>
+must be present.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor.lifecycle">
+<span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.Lifecycle" title="databricks.bundles.data_quality_monitors._models.lifecycle.Lifecycle"><span class="pre">Lifecycle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor.lifecycle" title="Link to this definition">¶</a></dt>
+<dd><p>Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DataQualityMonitor.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DataQualityMonitor.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DependsOn">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DependsOn</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DependsOn" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DependsOn.resource">
+<span class="sig-name descname"><span class="pre">resource</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DependsOn.resource" title="Link to this definition">¶</a></dt>
+<dd><p>Key of the resource to depend on, as <cite>foo</cite> or <cite>jobs.foo</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DependsOn.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DependsOn.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.DependsOn.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.DependsOn.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">InferenceLogConfig</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Inference log configuration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.model_id_column">
+<span class="sig-name descname"><span class="pre">model_id_column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.model_id_column" title="Link to this definition">¶</a></dt>
+<dd><p>Column for the model identifier.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.prediction_column">
+<span class="sig-name descname"><span class="pre">prediction_column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.prediction_column" title="Link to this definition">¶</a></dt>
+<dd><p>Column for the prediction.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.problem_type">
+<span class="sig-name descname"><span class="pre">problem_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.InferenceProblemType" title="databricks.bundles.data_quality_monitors._models.inference_problem_type.InferenceProblemType"><span class="pre">InferenceProblemType</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.problem_type" title="Link to this definition">¶</a></dt>
+<dd><p>Problem type the model aims to solve.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.timestamp_column">
+<span class="sig-name descname"><span class="pre">timestamp_column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.timestamp_column" title="Link to this definition">¶</a></dt>
+<dd><p>Column for the timestamp.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.granularities">
+<span class="sig-name descname"><span class="pre">granularities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.AggregationGranularity" title="databricks.bundles.data_quality_monitors._models.aggregation_granularity.AggregationGranularity"><span class="pre">AggregationGranularity</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.granularities" title="Link to this definition">¶</a></dt>
+<dd><p>List of granularities to use when aggregating data into time windows based on their timestamp.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.label_column">
+<span class="sig-name descname"><span class="pre">label_column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.label_column" title="Link to this definition">¶</a></dt>
+<dd><p>Column for the label.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceLogConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceLogConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceProblemType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">InferenceProblemType</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceProblemType" title="Link to this definition">¶</a></dt>
+<dd><p>Inference problem type the model aims to solve.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceProblemType.INFERENCE_PROBLEM_TYPE_CLASSIFICATION">
+<span class="sig-name descname"><span class="pre">INFERENCE_PROBLEM_TYPE_CLASSIFICATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'INFERENCE_PROBLEM_TYPE_CLASSIFICATION'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceProblemType.INFERENCE_PROBLEM_TYPE_CLASSIFICATION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.InferenceProblemType.INFERENCE_PROBLEM_TYPE_REGRESSION">
+<span class="sig-name descname"><span class="pre">INFERENCE_PROBLEM_TYPE_REGRESSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'INFERENCE_PROBLEM_TYPE_REGRESSION'</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.InferenceProblemType.INFERENCE_PROBLEM_TYPE_REGRESSION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.Lifecycle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Lifecycle</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.Lifecycle" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.Lifecycle.depends_on">
+<span class="sig-name descname"><span class="pre">depends_on</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.DependsOn" title="databricks.bundles.data_quality_monitors._models.depends_on.DependsOn"><span class="pre">DependsOn</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.Lifecycle.depends_on" title="Link to this definition">¶</a></dt>
+<dd><p>Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.Lifecycle.prevent_destroy">
+<span class="sig-name descname"><span class="pre">prevent_destroy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.Lifecycle.prevent_destroy" title="Link to this definition">¶</a></dt>
+<dd><p>Lifecycle setting to prevent the resource from being destroyed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.Lifecycle.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.Lifecycle.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.Lifecycle.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.Lifecycle.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationDestination">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NotificationDestination</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationDestination" title="Link to this definition">¶</a></dt>
+<dd><p>Destination of the data quality monitoring notification.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationDestination.destination_ids">
+<span class="sig-name descname"><span class="pre">destination_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationDestination.destination_ids" title="Link to this definition">¶</a></dt>
+<dd><p>The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The
+destinations must already exist in the workspace; a workspace admin creates them. A maximum of
+25 destination IDs is supported.
+Only supported on schema monitors, via <cite>anomaly_detection_config</cite>; rejected on table monitors.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationDestination.destination_user_ids">
+<span class="sig-name descname"><span class="pre">destination_user_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationDestination.destination_user_ids" title="Link to this definition">¶</a></dt>
+<dd><p>The IDs of the workspace users to notify by email. A maximum of 25 user IDs is supported.
+Only supported on schema monitors, via <cite>anomaly_detection_config</cite>; rejected on table monitors.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationDestination.email_addresses">
+<span class="sig-name descname"><span class="pre">email_addresses</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationDestination.email_addresses" title="Link to this definition">¶</a></dt>
+<dd><p>The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationDestination.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationDestination.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationDestination.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationDestination.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationSettings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NotificationSettings</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationSettings" title="Link to this definition">¶</a></dt>
+<dd><p>Settings for sending notifications on the data quality monitoring.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationSettings.on_failure">
+<span class="sig-name descname"><span class="pre">on_failure</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.NotificationDestination" title="databricks.bundles.data_quality_monitors._models.notification_destination.NotificationDestination"><span class="pre">NotificationDestination</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationSettings.on_failure" title="Link to this definition">¶</a></dt>
+<dd><p>Destinations to send notifications on failure/timeout.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationSettings.on_unhealthy_table">
+<span class="sig-name descname"><span class="pre">on_unhealthy_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.NotificationDestination" title="databricks.bundles.data_quality_monitors._models.notification_destination.NotificationDestination"><span class="pre">NotificationDestination</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationSettings.on_unhealthy_table" title="Link to this definition">¶</a></dt>
+<dd><p>Recipients to notify when anomaly detection finds unhealthy tables in the schema. Each
+recipient gets one notification per important unhealthy table. Only supported on schema
+monitors, via <cite>anomaly_detection_config</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationSettings.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationSettings.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationSettings.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationSettings.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.SnapshotConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SnapshotConfig</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.SnapshotConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Snapshot analysis configuration.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.SnapshotConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.SnapshotConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.SnapshotConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.SnapshotConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.TimeSeriesConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TimeSeriesConfig</span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.TimeSeriesConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Time series analysis configuration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.TimeSeriesConfig.timestamp_column">
+<span class="sig-name descname"><span class="pre">timestamp_column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.TimeSeriesConfig.timestamp_column" title="Link to this definition">¶</a></dt>
+<dd><p>Column for the timestamp.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.TimeSeriesConfig.granularities">
+<span class="sig-name descname"><span class="pre">granularities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.data_quality_monitors.AggregationGranularity" title="databricks.bundles.data_quality_monitors._models.aggregation_granularity.AggregationGranularity"><span class="pre">AggregationGranularity</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.TimeSeriesConfig.granularities" title="Link to this definition">¶</a></dt>
+<dd><p>List of granularities to use when aggregating data into time windows based on their timestamp.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.TimeSeriesConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.TimeSeriesConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.TimeSeriesConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.data_quality_monitors.TimeSeriesConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2024, Databricks.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/databricks.bundles.data_quality_monitors.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

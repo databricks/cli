@@ -14,7 +14,7 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="MCP Services" href="databricks.bundles.mcp_services.html" />
+    <link rel="next" title="Materialization Sets" href="databricks.bundles.materialization_sets.html" />
     <link rel="prev" title="Job Runs" href="databricks.bundles.job_runs.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -69,6 +69,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.data_quality_monitors.html">Data Quality Monitors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
@@ -81,6 +82,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.jobs">Classes</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.materialization_sets.html">Materialization Sets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
@@ -104,7 +106,7 @@
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
       <li>Previous: <a href="databricks.bundles.job_runs.html" title="previous chapter">Job Runs</a></li>
-      <li>Next: <a href="databricks.bundles.mcp_services.html" title="next chapter">MCP Services</a></li>
+      <li>Next: <a href="databricks.bundles.materialization_sets.html" title="next chapter">Materialization Sets</a></li>
   </ul></li>
 </ul>
 </div>
@@ -1949,13 +1951,13 @@ In this minimal environment spec, only pip and java dependencies are supported.<
 <span class="sig-name descname"><span class="pre">base_environment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Environment.base_environment" title="Link to this definition">¶</a></dt>
 <dd><p>The base environment this environment is built on top of. A base environment defines the environment version and a
 list of dependencies for serverless compute. The value can be a file path to a custom <cite>env.yaml</cite> file
-(e.g., <cite>/Workspace/path/to/env.yaml</cite>). Support for a Databricks-provided base environment ID
+(e.g., <cite>/Workspace/path/to/env.yaml</cite>).</p>
+<p>Support for a Databricks-provided base environment ID
 (e.g., <cite>workspace-base-environments/databricks_ai_v4</cite>) and workspace base environment ID
-(e.g., <cite>workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7</cite>) is in Beta.
-Either <cite>environment_version</cite> or <cite>base_environment</cite> can be provided.
-For more information about Databricks-provided base environments, see the
-[list workspace base environments](:method:Environments/ListWorkspaceBaseEnvironments) API.
-For more information, see</p>
+(e.g., <cite>workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7</cite>) is in Beta.</p>
+<p>Either <cite>environment_version</cite> or <cite>base_environment</cite> can be provided.</p>
+<p>For more information about Databricks-provided base environments, see the
+[list workspace base environments](:method:Environments/ListWorkspaceBaseEnvironments) API.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1973,7 +1975,7 @@ For more information, see</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Environment.environment_version">
 <span class="sig-name descname"><span class="pre">environment_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Environment.environment_version" title="Link to this definition">¶</a></dt>
-<dd><p>Either <cite>environment_version</cite> or <cite>base_environment</cite> needs to be provided. Environment version used by the environment.
+<dd><p>The environment version used by this environment. Either <cite>environment_version</cite> or <cite>base_environment</cite> must be provided.
 Each version comes with a specific Python version and a set of Python packages.
 The version is a string, consisting of an integer.</p>
 </dd></dl>
@@ -1981,7 +1983,7 @@ The version is a string, consisting of an integer.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Environment.java_dependencies">
 <span class="sig-name descname"><span class="pre">java_dependencies</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.Environment.java_dependencies" title="Link to this definition">¶</a></dt>
-<dd><p>List of java dependencies. Each dependency is a string representing a java library path. For example: <cite>/Volumes/path/to/test.jar</cite>.</p>
+<dd><p>List of Java dependencies. Each dependency is a string representing a Java library path. For example: <cite>/Volumes/path/to/test.jar</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2500,8 +2502,8 @@ See <cite>effective_budget_policy_id</cite> for the budget policy used by this w
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.environments">
 <span class="sig-name descname"><span class="pre">environments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.JobEnvironment" title="databricks.bundles.jobs._models.job_environment.JobEnvironment"><span class="pre">JobEnvironment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.environments" title="Link to this definition">¶</a></dt>
 <dd><p>A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.</p>
-<p>For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.</p>
+<p>For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the <cite>environment_key</cite> is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.</p>
+<p>For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using <cite>environment_key</cite> in the task settings.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2689,6 +2691,111 @@ Read endpoints return only 100 tasks. If more than 100 tasks are available, you 
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCluster.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobClusterServerlessCompute">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobClusterServerlessCompute</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobClusterServerlessCompute" title="Link to this definition">¶</a></dt>
+<dd><p>Serverless compute settings for a job cluster.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobClusterServerlessCompute.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobClusterServerlessCompute.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobClusterServerlessCompute.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobClusterServerlessCompute.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfiguration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobCompletionTriggerConfiguration</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfiguration" title="Link to this definition">¶</a></dt>
+<dd><p>A trigger that starts a run after every upstream job completes with a configured status.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfiguration.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfiguration.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfiguration.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfiguration.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobCompletionTriggerConfigurationIfStatus</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus" title="Link to this definition">¶</a></dt>
+<dd><p>The status that all upstream jobs must have before a job completion trigger fires.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.SUCCESS">
+<span class="sig-name descname"><span class="pre">SUCCESS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SUCCESS'</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.SUCCESS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.FAILED">
+<span class="sig-name descname"><span class="pre">FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FAILED'</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.FAILED" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.DONE">
+<span class="sig-name descname"><span class="pre">DONE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DONE'</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.DONE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobCompletionTriggerConfigurationMonitoredJob</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob" title="Link to this definition">¶</a></dt>
+<dd><p>An upstream job to monitor.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -4849,6 +4956,15 @@ defined in <cite>git_source</cite>. If the value is empty, the task will use <ci
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Subscription">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Subscription</span></span><a class="headerlink" href="#databricks.bundles.jobs.Subscription" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Subscription.attachment">
+<span class="sig-name descname"><span class="pre">attachment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.SubscriptionAttachment" title="databricks.bundles.jobs._models.subscription_attachment.SubscriptionAttachment"><span class="pre">SubscriptionAttachment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Subscription.attachment" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Optional: The configuration for the files attached to the dashboard snapshot notification. It
+controls the underlying data of dashboard widgets that is attached as data files and which
+pages are included in the attached PDF. If not specified, the notification is sent with only
+the default snapshot.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Subscription.custom_subject">
 <span class="sig-name descname"><span class="pre">custom_subject</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Subscription.custom_subject" title="Link to this definition">¶</a></dt>
 <dd><p>Optional: Allows users to specify a custom subject line on the email sent
@@ -4898,6 +5014,20 @@ to subscribers.</p>
 subscribers. <cite>data_attachment</cite> describes the underlying data of dashboard widgets attached
 as data files, and <cite>page_attachment</cite> describes which dashboard pages are included in the
 attached PDF.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachment.data_attachment">
+<span class="sig-name descname"><span class="pre">data_attachment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment" title="databricks.bundles.jobs._models.subscription_attachment_data_attachment.SubscriptionAttachmentDataAttachment"><span class="pre">SubscriptionAttachmentDataAttachment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachment.data_attachment" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Optional: The configuration for the underlying data of dashboard widgets attached as tabular
+data files. If not specified, no tabular data is attached.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachment.page_attachment">
+<span class="sig-name descname"><span class="pre">page_attachment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment" title="databricks.bundles.jobs._models.subscription_attachment_page_attachment.SubscriptionAttachmentPageAttachment"><span class="pre">SubscriptionAttachmentPageAttachment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachment.page_attachment" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Optional: The selection of dashboard pages included in the attached PDF. If not specified,
+only the first page is included.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachment.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
@@ -4928,6 +5058,25 @@ attached PDF.</p>
 <dd><p>The configuration for the tabular data files attached to the dashboard snapshot. <cite>widgets</cite>
 lists the widgets whose data is exported and <cite>file_format</cite> is the output format; each
 referenced widget’s data is exported as a separate file.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.file_format">
+<span class="sig-name descname"><span class="pre">file_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat" title="databricks.bundles.jobs._models.subscription_attachment_data_attachment_file_format.SubscriptionAttachmentDataAttachmentFileFormat"><span class="pre">SubscriptionAttachmentDataAttachmentFileFormat</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.file_format" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The file format of the exported tabular data files.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.include_applied_filters">
+<span class="sig-name descname"><span class="pre">include_applied_filters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.include_applied_filters" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] When true, the dashboard’s applied filter values are included alongside the tabular data as
+an additional attached file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.widgets">
+<span class="sig-name descname"><span class="pre">widgets</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget" title="databricks.bundles.jobs._models.subscription_attachment_data_attachment_widget.SubscriptionAttachmentDataAttachmentWidget"><span class="pre">SubscriptionAttachmentDataAttachmentWidget</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.widgets" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The widgets whose underlying data is exported. At least one widget must be referenced.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
@@ -4980,6 +5129,22 @@ referenced widget’s data is exported as a separate file.</p>
 <dd><p>Identifies a dashboard widget whose data to attach. <cite>page_id</cite> and <cite>widget_id</cite> are
 the URL identifiers from the dashboard’s serialized definition returned by the Get dashboard
 API (<cite>serialized_dashboard</cite>), and together they uniquely identify the widget.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.page_id">
+<span class="sig-name descname"><span class="pre">page_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.page_id" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The URL identifier of the page containing the widget. This is the value of the <cite>name</cite>
+field of the corresponding entry under <cite>pages</cite> in the serialized dashboard definition.
+Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.widget_id">
+<span class="sig-name descname"><span class="pre">widget_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.widget_id" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The URL identifier of the widget. This is the value of the <cite>name</cite> field of the
+corresponding widget under that page’s <cite>layout</cite> in the serialized dashboard definition.
+Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
@@ -5009,6 +5174,23 @@ API (<cite>serialized_dashboard</cite>), and together they uniquely identify the
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionAttachmentPageAttachment</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment" title="Link to this definition">¶</a></dt>
 <dd><p>The selection of dashboard pages included in the attached PDF. <cite>page_selection</cite> chooses
 between all pages, the first page only, or an explicit subset listed in <cite>page_ids</cite>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.page_ids">
+<span class="sig-name descname"><span class="pre">page_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.page_ids" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The identifiers of the pages to include in the PDF. Only specified when <cite>page_selection</cite> is
+<cite>PAGE_SELECTION_SUBSET</cite>. Each value is the identifier of a page in the dashboard’s
+serialized definition returned by the Get dashboard API (<cite>serialized_dashboard</cite>): the value
+of the <cite>name</cite> field of an entry under <cite>pages</cite>.
+Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.page_selection">
+<span class="sig-name descname"><span class="pre">page_selection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection" title="databricks.bundles.jobs._models.subscription_attachment_page_attachment_page_selection.SubscriptionAttachmentPageAttachmentPageSelection"><span class="pre">SubscriptionAttachmentPageAttachmentPageSelection</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.page_selection" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] How the attached pages are selected. When set to <cite>PAGE_SELECTION_SUBSET</cite>, the pages to
+include are listed in <cite>page_ids</cite>.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>

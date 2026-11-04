@@ -66,6 +66,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.data_quality_monitors.html">Data Quality Monitors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
@@ -75,6 +76,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.materialization_sets.html">Materialization Sets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
@@ -194,7 +196,29 @@
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.Function.aggregation_function">aggregation_function (Function attribute)</a>
 </li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_DAY">AGGREGATION_GRANULARITY_1_DAY (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_HOUR">AGGREGATION_GRANULARITY_1_HOUR (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_MONTH">AGGREGATION_GRANULARITY_1_MONTH (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_WEEK">AGGREGATION_GRANULARITY_1_WEEK (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_1_YEAR">AGGREGATION_GRANULARITY_1_YEAR (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_2_WEEKS">AGGREGATION_GRANULARITY_2_WEEKS (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_30_MINUTES">AGGREGATION_GRANULARITY_30_MINUTES (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_3_WEEKS">AGGREGATION_GRANULARITY_3_WEEKS (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_4_WEEKS">AGGREGATION_GRANULARITY_4_WEEKS (AggregationGranularity attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity.AGGREGATION_GRANULARITY_5_MINUTES">AGGREGATION_GRANULARITY_5_MINUTES (AggregationGranularity attribute)</a>
+</li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.AggregationFunction">AggregationFunction (class in databricks.bundles.features)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AggregationGranularity">AggregationGranularity (class in databricks.bundles.data_quality_monitors)</a>
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AmazonBedrockConfigBedrockProvider.AI21LABS">AI21LABS (AmazonBedrockConfigBedrockProvider attribute)</a>
 
@@ -254,6 +278,8 @@
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Notifications.alerts">alerts (Notifications attribute)</a>
 </li>
+      <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertStatementParameter">AlertStatementParameter (class in databricks.bundles.alerts)</a>
+</li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.AlertTask">AlertTask (class in databricks.bundles.jobs)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.AlertTaskSubscriber">AlertTaskSubscriber (class in databricks.bundles.jobs)</a>
@@ -307,6 +333,10 @@
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AmazonBedrockConfigBedrockProvider">AmazonBedrockConfigBedrockProvider (class in databricks.bundles.model_serving_endpoints)</a>
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.UnityCatalogTableNames.annotations_table">annotations_table (UnityCatalogTableNames attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor.anomaly_detection_config">anomaly_detection_config (DataQualityMonitor attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig">AnomalyDetectionConfig (class in databricks.bundles.data_quality_monitors)</a>
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AmazonBedrockConfigBedrockProvider.ANTHROPIC">ANTHROPIC (AmazonBedrockConfigBedrockProvider attribute)</a>
 
@@ -451,6 +481,8 @@
 </li>
         <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Alert.as_dict">(Alert method)</a>
 </li>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertStatementParameter.as_dict">(AlertStatementParameter method)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.AlertTask.as_dict">(AlertTask method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.AlertTaskSubscriber.as_dict">(AlertTaskSubscriber method)</a>
@@ -470,6 +502,8 @@
         <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Subscription.as_dict">(AlertV2Subscription method)</a>
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AmazonBedrockConfig.as_dict">(AmazonBedrockConfig method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.as_dict">(AnomalyDetectionConfig method)</a>
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AnthropicConfig.as_dict">(AnthropicConfig method)</a>
 </li>
@@ -575,7 +609,7 @@
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.CountFunction.as_dict">(CountFunction method)</a>
 </li>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CronSchedule.as_dict">(CronSchedule method)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.as_dict">[1]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CronSchedule.as_dict">(CronSchedule method)</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.CronSchedule.as_dict">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.as_dict">[2]</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronTriggerConfiguration.as_dict">(CronTriggerConfiguration method)</a>
 </li>
@@ -595,6 +629,12 @@
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DatabricksModelServingConfig.as_dict">(DatabricksModelServingConfig method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.as_dict">(DataProfilingConfig method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.as_dict">(DataProfilingCustomMetric method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor.as_dict">(DataQualityMonitor method)</a>
+</li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.DataSource.as_dict">(DataSource method)</a>
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DataStagingOptions.as_dict">(DataStagingOptions method)</a>
@@ -607,7 +647,7 @@
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.DeltaTableSource.as_dict">(DeltaTableSource method)</a>
 </li>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.DependsOn.as_dict">(DependsOn method)</a>, <a href="databricks.bundles.apps.html#databricks.bundles.apps.DependsOn.as_dict">[1]</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.DependsOn.as_dict">[2]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.DependsOn.as_dict">[3]</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependsOn.as_dict">[4]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.DependsOn.as_dict">[5]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.DependsOn.as_dict">[6]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DependsOn.as_dict">[7]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.DependsOn.as_dict">[8]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.DependsOn.as_dict">[9]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.DependsOn.as_dict">[10]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.DependsOn.as_dict">[11]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.DependsOn.as_dict">[12]</a>, <a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.DependsOn.as_dict">[13]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependsOn.as_dict">[14]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.DependsOn.as_dict">[15]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.DependsOn.as_dict">[16]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.DependsOn.as_dict">[17]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DependsOn.as_dict">[18]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.DependsOn.as_dict">[19]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DependsOn.as_dict">[20]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.DependsOn.as_dict">[21]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.DependsOn.as_dict">[22]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.DependsOn.as_dict">[23]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.DependsOn.as_dict">[24]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.DependsOn.as_dict">[25]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.DependsOn.as_dict">[26]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.DependsOn.as_dict">[27]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.DependsOn.as_dict">[28]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DependsOn.as_dict">[29]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.DependsOn.as_dict">[30]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.DependsOn.as_dict">(DependsOn method)</a>, <a href="databricks.bundles.apps.html#databricks.bundles.apps.DependsOn.as_dict">[1]</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.DependsOn.as_dict">[2]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.DependsOn.as_dict">[3]</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependsOn.as_dict">[4]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.DependsOn.as_dict">[5]</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DependsOn.as_dict">[6]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.DependsOn.as_dict">[7]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DependsOn.as_dict">[8]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.DependsOn.as_dict">[9]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.DependsOn.as_dict">[10]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.DependsOn.as_dict">[11]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.DependsOn.as_dict">[12]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.DependsOn.as_dict">[13]</a>, <a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.DependsOn.as_dict">[14]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependsOn.as_dict">[15]</a>, <a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.DependsOn.as_dict">[16]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.DependsOn.as_dict">[17]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.DependsOn.as_dict">[18]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.DependsOn.as_dict">[19]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DependsOn.as_dict">[20]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.DependsOn.as_dict">[21]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DependsOn.as_dict">[22]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.DependsOn.as_dict">[23]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.DependsOn.as_dict">[24]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.DependsOn.as_dict">[25]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.DependsOn.as_dict">[26]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.DependsOn.as_dict">[27]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.DependsOn.as_dict">[28]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.DependsOn.as_dict">[29]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.DependsOn.as_dict">[30]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DependsOn.as_dict">[31]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.DependsOn.as_dict">[32]</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DeploymentSpec.as_dict">(DeploymentSpec method)</a>
 </li>
@@ -689,6 +729,8 @@
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.GoogleCloudVertexAiConfig.as_dict">(GoogleCloudVertexAiConfig method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.as_dict">(InferenceLogConfig method)</a>
+</li>
         <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.InferenceTableConfig.as_dict">(InferenceTableConfig method)</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.InferenceTableConfig.as_dict">[1]</a>
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.IngestionConfig.as_dict">(IngestionConfig method)</a>
@@ -716,6 +758,12 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job.as_dict">(Job method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCluster.as_dict">(JobCluster method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobClusterServerlessCompute.as_dict">(JobClusterServerlessCompute method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfiguration.as_dict">(JobCompletionTriggerConfiguration method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob.as_dict">(JobCompletionTriggerConfigurationMonitoredJob method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobEmailNotifications.as_dict">(JobEmailNotifications method)</a>
 </li>
@@ -753,7 +801,7 @@
 </li>
         <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Library.as_dict">(Library method)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Library.as_dict">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Library.as_dict">[2]</a>
 </li>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.as_dict">(Lifecycle method)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.as_dict">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.as_dict">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.as_dict">[3]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.as_dict">[4]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.as_dict">[5]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.as_dict">[6]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.as_dict">[7]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.as_dict">[8]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.as_dict">[9]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.as_dict">[10]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.as_dict">[11]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.as_dict">[12]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.as_dict">[13]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.as_dict">[14]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.as_dict">[15]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.as_dict">[16]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.as_dict">[17]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.as_dict">[18]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.as_dict">[19]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.as_dict">[20]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.as_dict">[21]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.as_dict">[22]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.as_dict">[23]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.as_dict">[24]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.as_dict">[25]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.as_dict">[26]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.as_dict">(Lifecycle method)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.as_dict">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.as_dict">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.as_dict">[3]</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.Lifecycle.as_dict">[4]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.as_dict">[5]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.as_dict">[6]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.as_dict">[7]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.as_dict">[8]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.as_dict">[9]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.as_dict">[10]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.as_dict">[11]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.as_dict">[12]</a>, <a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.Lifecycle.as_dict">[13]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.as_dict">[14]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.as_dict">[15]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.as_dict">[16]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.as_dict">[17]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.as_dict">[18]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.as_dict">[19]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.as_dict">[20]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.as_dict">[21]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.as_dict">[22]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.as_dict">[23]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.as_dict">[24]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.as_dict">[25]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.as_dict">[26]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.as_dict">[27]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.as_dict">[28]</a>
 </li>
         <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.LifecycleWithStarted.as_dict">(LifecycleWithStarted method)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.LifecycleWithStarted.as_dict">[1]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.LifecycleWithStarted.as_dict">[2]</a>
 </li>
@@ -764,6 +812,8 @@
         <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.LogAnalyticsInfo.as_dict">(LogAnalyticsInfo method)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.LogAnalyticsInfo.as_dict">[1]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.LogAnalyticsInfo.as_dict">[2]</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.MaintenanceWindow.as_dict">(MaintenanceWindow method)</a>
+</li>
+        <li><a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.MaterializationSet.as_dict">(MaterializationSet method)</a>
 </li>
         <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.MavenLibrary.as_dict">(MavenLibrary method)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.MavenLibrary.as_dict">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.MavenLibrary.as_dict">[2]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.MavenLibrary.as_dict">[3]</a>
 </li>
@@ -881,7 +931,11 @@
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.NotebookTask.as_dict">(NotebookTask method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationDestination.as_dict">(NotificationDestination method)</a>
+</li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Notifications.as_dict">(Notifications method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationSettings.as_dict">(NotificationSettings method)</a>
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.OpenAiConfig.as_dict">(OpenAiConfig method)</a>
 </li>
@@ -977,6 +1031,8 @@
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SmartsheetOptions.as_dict">(SmartsheetOptions method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.SnapshotConfig.as_dict">(SnapshotConfig method)</a>
+</li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SourceCatalogConfig.as_dict">(SourceCatalogConfig method)</a>
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SourceConfig.as_dict">(SourceConfig method)</a>
@@ -1055,6 +1111,8 @@
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.TimeseriesColumn.as_dict">(TimeseriesColumn method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.TimeSeriesConfig.as_dict">(TimeSeriesConfig method)</a>
+</li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.TimeWindow.as_dict">(TimeWindow method)</a>
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.TrafficConfig.as_dict">(TrafficConfig method)</a>
@@ -1098,11 +1156,17 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.assets_dir">assets_dir (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.assets_dir">assets_dir (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.assets_dir">(QualityMonitor attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.RunIf.AT_LEAST_ONE_FAILED">AT_LEAST_ONE_FAILED (RunIf attribute)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.RunIf.AT_LEAST_ONE_SUCCESS">AT_LEAST_ONE_SUCCESS (RunIf attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Subscription.attachment">attachment (Subscription attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_AD">AUCTION_AD (TikTokAdsOptionsTikTokDataLevel attribute)</a>
 </li>
@@ -1294,8 +1358,12 @@
         <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigOpenAiProviderDirectConfig.base_url">(ModelProviderServiceConfigOpenAiProviderDirectConfig attribute)</a>
 </li>
       </ul></li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.baseline_table_name">baseline_table_name (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.baseline_table_name">baseline_table_name (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.baseline_table_name">(QualityMonitor attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.BASIC">BASIC (TikTokAdsOptionsTikTokReportType attribute)</a>
 </li>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DockerImage.basic_auth">basic_auth (DockerImage attribute)</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.DockerImage.basic_auth">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DockerImage.basic_auth">[2]</a>
@@ -1684,10 +1752,10 @@
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.CohereConfig.cohere_api_key_plaintext">cohere_api_key_plaintext (CohereConfig attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.ExternalModel.cohere_config">cohere_config (ExternalModel attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.CohereConfig">CohereConfig (class in databricks.bundles.model_serving_endpoints)</a>
 </li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Operand.column">column (AlertV2Operand attribute)</a>
@@ -1880,6 +1948,8 @@
 </li>
       <li><a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Privilege.CREATE_EXTERNAL_VOLUME">CREATE_EXTERNAL_VOLUME (Privilege attribute)</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Privilege.CREATE_EXTERNAL_VOLUME">[1]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Privilege.CREATE_EXTERNAL_VOLUME">[2]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Privilege.CREATE_EXTERNAL_VOLUME">[3]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Privilege.CREATE_EXTERNAL_VOLUME">[4]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Privilege.CREATE_EXTERNAL_VOLUME">[5]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Privilege.CREATE_EXTERNAL_VOLUME">[6]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Privilege.CREATE_EXTERNAL_VOLUME">[7]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Privilege.CREATE_EXTERNAL_VOLUME">[8]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Privilege.CREATE_EXTERNAL_VOLUME">[9]</a>
 </li>
+      <li><a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Privilege.CREATE_FEATURE">CREATE_FEATURE (Privilege attribute)</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Privilege.CREATE_FEATURE">[1]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Privilege.CREATE_FEATURE">[2]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Privilege.CREATE_FEATURE">[3]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Privilege.CREATE_FEATURE">[4]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Privilege.CREATE_FEATURE">[5]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Privilege.CREATE_FEATURE">[6]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Privilege.CREATE_FEATURE">[7]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Privilege.CREATE_FEATURE">[8]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Privilege.CREATE_FEATURE">[9]</a>
+</li>
       <li><a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Privilege.CREATE_FOREIGN_CATALOG">CREATE_FOREIGN_CATALOG (Privilege attribute)</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Privilege.CREATE_FOREIGN_CATALOG">[1]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Privilege.CREATE_FOREIGN_CATALOG">[2]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Privilege.CREATE_FOREIGN_CATALOG">[3]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Privilege.CREATE_FOREIGN_CATALOG">[4]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Privilege.CREATE_FOREIGN_CATALOG">[5]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Privilege.CREATE_FOREIGN_CATALOG">[6]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Privilege.CREATE_FOREIGN_CATALOG">[7]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Privilege.CREATE_FOREIGN_CATALOG">[8]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Privilege.CREATE_FOREIGN_CATALOG">[9]</a>
 </li>
       <li><a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Privilege.CREATE_FOREIGN_SECURABLE">CREATE_FOREIGN_SECURABLE (Privilege attribute)</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Privilege.CREATE_FOREIGN_SECURABLE">[1]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Privilege.CREATE_FOREIGN_SECURABLE">[2]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Privilege.CREATE_FOREIGN_SECURABLE">[3]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Privilege.CREATE_FOREIGN_SECURABLE">[4]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Privilege.CREATE_FOREIGN_SECURABLE">[5]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Privilege.CREATE_FOREIGN_SECURABLE">[6]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Privilege.CREATE_FOREIGN_SECURABLE">[7]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Privilege.CREATE_FOREIGN_SECURABLE">[8]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Privilege.CREATE_FOREIGN_SECURABLE">[9]</a>
@@ -1927,6 +1997,8 @@
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CronSchedule">CronSchedule (class in databricks.bundles.alerts)</a>
 
       <ul>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.CronSchedule">(class in databricks.bundles.data_quality_monitors)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule">(class in databricks.bundles.jobs)</a>
 </li>
       </ul></li>
@@ -1952,8 +2024,12 @@
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetricType.CUSTOM_METRIC_TYPE_DRIFT">CUSTOM_METRIC_TYPE_DRIFT (MonitorMetricType attribute)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.custom_metrics">custom_metrics (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.custom_metrics">custom_metrics (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.custom_metrics">(QualityMonitor attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.ExternalModel.custom_provider_config">custom_provider_config (ExternalModel attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.CustomProviderConfig.custom_provider_url">custom_provider_url (CustomProviderConfig attribute)</a>
@@ -2007,6 +2083,16 @@
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Task.dashboard_task">dashboard_task (Task attribute)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DashboardTask">DashboardTask (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachment.data_attachment">data_attachment (SubscriptionAttachment attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor.data_profiling_config">data_profiling_config (DataQualityMonitor attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE">DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE (DataProfilingCustomMetricType attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED">DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED (DataProfilingCustomMetricType attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType.DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT">DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT (DataProfilingCustomMetricType attribute)</a>
 </li>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Cluster.data_security_mode">data_security_mode (Cluster attribute)</a>
 
@@ -2093,6 +2179,13 @@
 </li>
       </ul></li>
       <li>
+    databricks.bundles.data_quality_monitors
+
+      <ul>
+        <li><a href="databricks.bundles.data_quality_monitors.html#module-databricks.bundles.data_quality_monitors">module</a>
+</li>
+      </ul></li>
+      <li>
     databricks.bundles.database_catalogs
 
       <ul>
@@ -2153,6 +2246,13 @@
 
       <ul>
         <li><a href="databricks.bundles.jobs.html#module-databricks.bundles.jobs">module</a>
+</li>
+      </ul></li>
+      <li>
+    databricks.bundles.materialization_sets
+
+      <ul>
+        <li><a href="databricks.bundles.materialization_sets.html#module-databricks.bundles.materialization_sets">module</a>
 </li>
       </ul></li>
       <li>
@@ -2281,6 +2381,14 @@
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.DeltaTableSource.dataframe_schema">dataframe_schema (DeltaTableSource attribute)</a>
 </li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig">DataProfilingConfig (class in databricks.bundles.data_quality_monitors)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric">DataProfilingCustomMetric (class in databricks.bundles.data_quality_monitors)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetricType">DataProfilingCustomMetricType (class in databricks.bundles.data_quality_monitors)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor">DataQualityMonitor (class in databricks.bundles.data_quality_monitors)</a>
+</li>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DataSecurityMode">DataSecurityMode (class in databricks.bundles.clusters)</a>
 
       <ul>
@@ -2338,6 +2446,8 @@
       <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.ClusterPolicy.definition">definition (ClusterPolicy attribute)</a>
 
       <ul>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.definition">(DataProfilingCustomMetric attribute)</a>
+</li>
         <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetric.definition">(MonitorMetric attribute)</a>
 </li>
       </ul></li>
@@ -2351,6 +2461,8 @@
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.DataSource.delta_table_source">delta_table_source (DataSource attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest">DeltaSyncVectorIndexSpecRequest (class in databricks.bundles.vector_search_indexes)</a>
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.DeltaTableSource">DeltaTableSource (class in databricks.bundles.features)</a>
@@ -2361,8 +2473,6 @@
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.PipelinesEnvironment.dependencies">(PipelinesEnvironment attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependencyMode.DEPENDENCY_MODE_AUTO">DEPENDENCY_MODE_AUTO (DependencyMode attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_AUTO">[1]</a>
 </li>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependencyMode.DEPENDENCY_MODE_CLUSTER_LIBRARIES">DEPENDENCY_MODE_CLUSTER_LIBRARIES (DependencyMode attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_CLUSTER_LIBRARIES">[1]</a>
@@ -2378,7 +2488,7 @@
       <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.JobRunLifecycle.depends_on">depends_on (JobRunLifecycle attribute)</a>
 
       <ul>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.depends_on">(Lifecycle attribute)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.depends_on">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.depends_on">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.depends_on">[3]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.depends_on">[4]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.depends_on">[5]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.depends_on">[6]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.depends_on">[7]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.depends_on">[8]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.depends_on">[9]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.depends_on">[10]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.depends_on">[11]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.depends_on">[12]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.depends_on">[13]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.depends_on">[14]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.depends_on">[15]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.depends_on">[16]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.depends_on">[17]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.depends_on">[18]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.depends_on">[19]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.depends_on">[20]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.depends_on">[21]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.depends_on">[22]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.depends_on">[23]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.depends_on">[24]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.depends_on">[25]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.depends_on">[26]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.depends_on">(Lifecycle attribute)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.depends_on">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.depends_on">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.depends_on">[3]</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.Lifecycle.depends_on">[4]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.depends_on">[5]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.depends_on">[6]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.depends_on">[7]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.depends_on">[8]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.depends_on">[9]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.depends_on">[10]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.depends_on">[11]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.depends_on">[12]</a>, <a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.Lifecycle.depends_on">[13]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.depends_on">[14]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.depends_on">[15]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.depends_on">[16]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.depends_on">[17]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.depends_on">[18]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.depends_on">[19]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.depends_on">[20]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.depends_on">[21]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.depends_on">[22]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.depends_on">[23]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.depends_on">[24]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.depends_on">[25]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.depends_on">[26]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.depends_on">[27]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.depends_on">[28]</a>
 </li>
         <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.LifecycleWithStarted.depends_on">(LifecycleWithStarted attribute)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.LifecycleWithStarted.depends_on">[1]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.LifecycleWithStarted.depends_on">[2]</a>
 </li>
@@ -2398,6 +2508,8 @@
 </li>
         <li><a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.DependsOn">(class in databricks.bundles.dashboards)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DependsOn">(class in databricks.bundles.data_quality_monitors)</a>
+</li>
         <li><a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.DependsOn">(class in databricks.bundles.database_catalogs)</a>
 </li>
         <li><a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DependsOn">(class in databricks.bundles.database_instances)</a>
@@ -2415,6 +2527,8 @@
         <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.DependsOn">(class in databricks.bundles.job_runs)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependsOn">(class in databricks.bundles.jobs)</a>
+</li>
+        <li><a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.DependsOn">(class in databricks.bundles.materialization_sets)</a>
 </li>
         <li><a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.DependsOn">(class in databricks.bundles.mcp_services)</a>
 </li>
@@ -2507,6 +2621,8 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionSubscriber.destination_id">(SubscriptionSubscriber attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationDestination.destination_ids">destination_ids (NotificationDestination attribute)</a>
+</li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.ReportSpec.destination_schema">destination_schema (ReportSpec attribute)</a>
 
       <ul>
@@ -2528,6 +2644,8 @@
       <li><a href="databricks.bundles.model_services.html#databricks.bundles.model_services.ModelServiceConfigDestinationConfigDestinationType.DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL">DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL (ModelServiceConfigDestinationConfigDestinationType attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_services.html#databricks.bundles.model_services.ModelServiceConfigDestinationConfigDestinationType.DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL">DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL (ModelServiceConfigDestinationConfigDestinationType attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationDestination.destination_user_ids">destination_user_ids (NotificationDestination attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_services.html#databricks.bundles.model_services.ModelServiceConfigFallbackConfig.destinations">destinations (ModelServiceConfigFallbackConfig attribute)</a>
 
@@ -2625,6 +2743,8 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DockerImage">(class in databricks.bundles.jobs)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.DONE">DONE (JobCompletionTriggerConfigurationIfStatus attribute)</a>
+</li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.ScalarDataType.DOUBLE">DOUBLE (ScalarDataType attribute)</a>
 </li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2OperandValue.double_value">double_value (AlertV2OperandValue attribute)</a>
@@ -2688,7 +2808,11 @@
       <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Library.egg">egg (Library attribute)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Library.egg">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Library.egg">[2]</a>
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorDestination.email_addresses">email_addresses (MonitorDestination attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationDestination.email_addresses">(NotificationDestination attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job.email_notifications">email_notifications (Job attribute)</a>
 
       <ul>
@@ -2951,6 +3075,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.FAIL_ON_NEW_COLUMNS">FAIL_ON_NEW_COLUMNS (FileIngestionOptionsSchemaEvolutionMode attribute)</a>
 </li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.FAILED">FAILED (JobCompletionTriggerConfigurationIfStatus attribute)</a>
+</li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.ParseMode.FAILFAST">FAILFAST (ParseMode attribute)</a>
 </li>
       <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.ExternalLocation.fallback">fallback (ExternalLocation attribute)</a>
@@ -2982,6 +3108,8 @@
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.TriggerSettings.file_arrival">file_arrival (TriggerSettings attribute)</a>
 </li>
       <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.ExternalLocation.file_event_queue">file_event_queue (ExternalLocation attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.file_format">file_format (SubscriptionAttachmentDataAttachment attribute)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_CSV">FILE_FORMAT_CSV (SubscriptionAttachmentDataAttachmentFileFormat attribute)</a>
 </li>
@@ -3078,6 +3206,8 @@
 </li>
         <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Alert.from_dict">(Alert class method)</a>
 </li>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertStatementParameter.from_dict">(AlertStatementParameter class method)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.AlertTask.from_dict">(AlertTask class method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.AlertTaskSubscriber.from_dict">(AlertTaskSubscriber class method)</a>
@@ -3097,6 +3227,8 @@
         <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Subscription.from_dict">(AlertV2Subscription class method)</a>
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AmazonBedrockConfig.from_dict">(AmazonBedrockConfig class method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.from_dict">(AnomalyDetectionConfig class method)</a>
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AnthropicConfig.from_dict">(AnthropicConfig class method)</a>
 </li>
@@ -3202,7 +3334,7 @@
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.CountFunction.from_dict">(CountFunction class method)</a>
 </li>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CronSchedule.from_dict">(CronSchedule class method)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.from_dict">[1]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CronSchedule.from_dict">(CronSchedule class method)</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.CronSchedule.from_dict">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.from_dict">[2]</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronTriggerConfiguration.from_dict">(CronTriggerConfiguration class method)</a>
 </li>
@@ -3222,6 +3354,12 @@
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DatabricksModelServingConfig.from_dict">(DatabricksModelServingConfig class method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.from_dict">(DataProfilingConfig class method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.from_dict">(DataProfilingCustomMetric class method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor.from_dict">(DataQualityMonitor class method)</a>
+</li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.DataSource.from_dict">(DataSource class method)</a>
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DataStagingOptions.from_dict">(DataStagingOptions class method)</a>
@@ -3234,7 +3372,7 @@
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.DeltaTableSource.from_dict">(DeltaTableSource class method)</a>
 </li>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.DependsOn.from_dict">(DependsOn class method)</a>, <a href="databricks.bundles.apps.html#databricks.bundles.apps.DependsOn.from_dict">[1]</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.DependsOn.from_dict">[2]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.DependsOn.from_dict">[3]</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependsOn.from_dict">[4]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.DependsOn.from_dict">[5]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.DependsOn.from_dict">[6]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DependsOn.from_dict">[7]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.DependsOn.from_dict">[8]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.DependsOn.from_dict">[9]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.DependsOn.from_dict">[10]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.DependsOn.from_dict">[11]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.DependsOn.from_dict">[12]</a>, <a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.DependsOn.from_dict">[13]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependsOn.from_dict">[14]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.DependsOn.from_dict">[15]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.DependsOn.from_dict">[16]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.DependsOn.from_dict">[17]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DependsOn.from_dict">[18]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.DependsOn.from_dict">[19]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DependsOn.from_dict">[20]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.DependsOn.from_dict">[21]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.DependsOn.from_dict">[22]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.DependsOn.from_dict">[23]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.DependsOn.from_dict">[24]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.DependsOn.from_dict">[25]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.DependsOn.from_dict">[26]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.DependsOn.from_dict">[27]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.DependsOn.from_dict">[28]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DependsOn.from_dict">[29]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.DependsOn.from_dict">[30]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.DependsOn.from_dict">(DependsOn class method)</a>, <a href="databricks.bundles.apps.html#databricks.bundles.apps.DependsOn.from_dict">[1]</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.DependsOn.from_dict">[2]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.DependsOn.from_dict">[3]</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependsOn.from_dict">[4]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.DependsOn.from_dict">[5]</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DependsOn.from_dict">[6]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.DependsOn.from_dict">[7]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DependsOn.from_dict">[8]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.DependsOn.from_dict">[9]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.DependsOn.from_dict">[10]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.DependsOn.from_dict">[11]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.DependsOn.from_dict">[12]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.DependsOn.from_dict">[13]</a>, <a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.DependsOn.from_dict">[14]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependsOn.from_dict">[15]</a>, <a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.DependsOn.from_dict">[16]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.DependsOn.from_dict">[17]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.DependsOn.from_dict">[18]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.DependsOn.from_dict">[19]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DependsOn.from_dict">[20]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.DependsOn.from_dict">[21]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DependsOn.from_dict">[22]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.DependsOn.from_dict">[23]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.DependsOn.from_dict">[24]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.DependsOn.from_dict">[25]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.DependsOn.from_dict">[26]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.DependsOn.from_dict">[27]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.DependsOn.from_dict">[28]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.DependsOn.from_dict">[29]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.DependsOn.from_dict">[30]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DependsOn.from_dict">[31]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.DependsOn.from_dict">[32]</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DeploymentSpec.from_dict">(DeploymentSpec class method)</a>
 </li>
@@ -3314,6 +3452,8 @@
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.GoogleCloudVertexAiConfig.from_dict">(GoogleCloudVertexAiConfig class method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.from_dict">(InferenceLogConfig class method)</a>
+</li>
         <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.InferenceTableConfig.from_dict">(InferenceTableConfig class method)</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.InferenceTableConfig.from_dict">[1]</a>
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.IngestionConfig.from_dict">(IngestionConfig class method)</a>
@@ -3341,6 +3481,12 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job.from_dict">(Job class method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCluster.from_dict">(JobCluster class method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobClusterServerlessCompute.from_dict">(JobClusterServerlessCompute class method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfiguration.from_dict">(JobCompletionTriggerConfiguration class method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob.from_dict">(JobCompletionTriggerConfigurationMonitoredJob class method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobEmailNotifications.from_dict">(JobEmailNotifications class method)</a>
 </li>
@@ -3378,7 +3524,7 @@
 </li>
         <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Library.from_dict">(Library class method)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Library.from_dict">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Library.from_dict">[2]</a>
 </li>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.from_dict">(Lifecycle class method)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.from_dict">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.from_dict">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.from_dict">[3]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.from_dict">[4]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.from_dict">[5]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.from_dict">[6]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.from_dict">[7]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.from_dict">[8]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.from_dict">[9]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.from_dict">[10]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.from_dict">[11]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.from_dict">[12]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.from_dict">[13]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.from_dict">[14]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.from_dict">[15]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.from_dict">[16]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.from_dict">[17]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.from_dict">[18]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.from_dict">[19]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.from_dict">[20]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.from_dict">[21]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.from_dict">[22]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.from_dict">[23]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.from_dict">[24]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.from_dict">[25]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.from_dict">[26]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.from_dict">(Lifecycle class method)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.from_dict">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.from_dict">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.from_dict">[3]</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.Lifecycle.from_dict">[4]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.from_dict">[5]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.from_dict">[6]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.from_dict">[7]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.from_dict">[8]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.from_dict">[9]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.from_dict">[10]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.from_dict">[11]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.from_dict">[12]</a>, <a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.Lifecycle.from_dict">[13]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.from_dict">[14]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.from_dict">[15]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.from_dict">[16]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.from_dict">[17]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.from_dict">[18]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.from_dict">[19]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.from_dict">[20]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.from_dict">[21]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.from_dict">[22]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.from_dict">[23]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.from_dict">[24]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.from_dict">[25]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.from_dict">[26]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.from_dict">[27]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.from_dict">[28]</a>
 </li>
         <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.LifecycleWithStarted.from_dict">(LifecycleWithStarted class method)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.LifecycleWithStarted.from_dict">[1]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.LifecycleWithStarted.from_dict">[2]</a>
 </li>
@@ -3387,6 +3533,8 @@
         <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.LogAnalyticsInfo.from_dict">(LogAnalyticsInfo class method)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.LogAnalyticsInfo.from_dict">[1]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.LogAnalyticsInfo.from_dict">[2]</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.MaintenanceWindow.from_dict">(MaintenanceWindow class method)</a>
+</li>
+        <li><a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.MaterializationSet.from_dict">(MaterializationSet class method)</a>
 </li>
         <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.MavenLibrary.from_dict">(MavenLibrary class method)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.MavenLibrary.from_dict">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.MavenLibrary.from_dict">[2]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.MavenLibrary.from_dict">[3]</a>
 </li>
@@ -3504,7 +3652,11 @@
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.NotebookTask.from_dict">(NotebookTask class method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationDestination.from_dict">(NotificationDestination class method)</a>
+</li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Notifications.from_dict">(Notifications class method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationSettings.from_dict">(NotificationSettings class method)</a>
 </li>
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.OpenAiConfig.from_dict">(OpenAiConfig class method)</a>
 </li>
@@ -3600,6 +3752,8 @@
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SmartsheetOptions.from_dict">(SmartsheetOptions class method)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.SnapshotConfig.from_dict">(SnapshotConfig class method)</a>
+</li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SourceCatalogConfig.from_dict">(SourceCatalogConfig class method)</a>
 </li>
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SourceConfig.from_dict">(SourceConfig class method)</a>
@@ -3677,6 +3831,8 @@
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.TikTokAdsOptions.from_dict">(TikTokAdsOptions class method)</a>
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.TimeseriesColumn.from_dict">(TimeseriesColumn class method)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.TimeSeriesConfig.from_dict">(TimeSeriesConfig class method)</a>
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.TimeWindow.from_dict">(TimeWindow class method)</a>
 </li>
@@ -3877,14 +4033,14 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.HardwareAcceleratorType.GPU_1X_A10">(HardwareAcceleratorType attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_1X_H100">GPU_1X_H100 (ComputeSpecAcceleratorType attribute)</a>
 
       <ul>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.HardwareAcceleratorType.GPU_1X_H100">(HardwareAcceleratorType attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_8X_B300">GPU_8X_B300 (ComputeSpecAcceleratorType attribute)</a>
 
       <ul>
@@ -3949,10 +4105,14 @@
         <li><a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume.grants">(Volume attribute)</a>
 </li>
       </ul></li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.granularities">granularities (MonitorInferenceLog attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.granularities">granularities (InferenceLogConfig attribute)</a>
 
       <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.granularities">(MonitorInferenceLog attribute)</a>
+</li>
         <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorTimeSeries.granularities">(MonitorTimeSeries attribute)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.TimeSeriesConfig.granularities">(TimeSeriesConfig attribute)</a>
 </li>
       </ul></li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.ComparisonOperator.GREATER_THAN">GREATER_THAN (ComparisonOperator attribute)</a>
@@ -4059,6 +4219,8 @@
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.PathPattern.include">(PathPattern attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.include_applied_filters">include_applied_filters (SubscriptionAttachmentDataAttachment attribute)</a>
+</li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.TableSpecificConfig.include_columns">include_columns (TableSpecificConfig attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.ConfluenceConnectorOptions.include_confluence_spaces">include_confluence_spaces (ConfluenceConnectorOptions attribute)</a>
@@ -4069,7 +4231,15 @@
 </li>
       <li><a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.IndexSubtype">IndexSubtype (class in databricks.bundles.vector_search_indexes)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.inference_log">inference_log (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.inference_log">inference_log (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.inference_log">(QualityMonitor attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceProblemType.INFERENCE_PROBLEM_TYPE_CLASSIFICATION">INFERENCE_PROBLEM_TYPE_CLASSIFICATION (InferenceProblemType attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceProblemType.INFERENCE_PROBLEM_TYPE_REGRESSION">INFERENCE_PROBLEM_TYPE_REGRESSION (InferenceProblemType attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfig.inference_table">inference_table (ModelProviderServiceConfig attribute)</a>
 
@@ -4083,6 +4253,10 @@
         <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.TelemetryConfig.inference_table_config">(TelemetryConfig attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig">InferenceLogConfig (class in databricks.bundles.data_quality_monitors)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceProblemType">InferenceProblemType (class in databricks.bundles.data_quality_monitors)</a>
+</li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.InferenceTableConfig">InferenceTableConfig (class in databricks.bundles.model_provider_services)</a>
 
       <ul>
@@ -4151,8 +4325,12 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetric.input_columns">input_columns (MonitorMetric attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.input_columns">input_columns (DataProfilingCustomMetric attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetric.input_columns">(MonitorMetric attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.ForEachTask.inputs">inputs (ForEachTask attribute)</a>
 </li>
       <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.AppResourceDatabase.instance_name">instance_name (AppResourceDatabase attribute)</a>
@@ -4269,12 +4447,20 @@
       </ul></li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCluster">JobCluster (class in databricks.bundles.jobs)</a>
 </li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobClusterServerlessCompute">JobClusterServerlessCompute (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfiguration">JobCompletionTriggerConfiguration (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus">JobCompletionTriggerConfigurationIfStatus (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfigurationMonitoredJob">JobCompletionTriggerConfigurationMonitoredJob (class in databricks.bundles.jobs)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobEmailNotifications">JobEmailNotifications (class in databricks.bundles.jobs)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobEnvironment">JobEnvironment (class in databricks.bundles.jobs)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobEnvironmentVariables">JobEnvironmentVariables (class in databricks.bundles.jobs)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobEnvironmentVariablesSpec">JobEnvironmentVariablesSpec (class in databricks.bundles.jobs)</a>
@@ -4366,6 +4552,8 @@
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.PipelineCluster.label">label (PipelineCluster attribute)</a>
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.label_col">label_col (MonitorInferenceLog attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.label_column">label_column (InferenceLogConfig attribute)</a>
 </li>
       <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.ComputeSize.LARGE">LARGE (ComputeSize attribute)</a>
 </li>
@@ -4462,6 +4650,8 @@
 </li>
         <li><a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle">(class in databricks.bundles.dashboards)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.Lifecycle">(class in databricks.bundles.data_quality_monitors)</a>
+</li>
         <li><a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle">(class in databricks.bundles.database_catalogs)</a>
 </li>
         <li><a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle">(class in databricks.bundles.database_instances)</a>
@@ -4477,6 +4667,8 @@
         <li><a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle">(class in databricks.bundles.instance_pools)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle">(class in databricks.bundles.jobs)</a>
+</li>
+        <li><a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.Lifecycle">(class in databricks.bundles.materialization_sets)</a>
 </li>
         <li><a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle">(class in databricks.bundles.mcp_services)</a>
 </li>
@@ -4522,6 +4714,8 @@
 </li>
         <li><a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DatabaseInstance.lifecycle">(DatabaseInstance attribute)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor.lifecycle">(DataQualityMonitor attribute)</a>
+</li>
         <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.ExternalLocation.lifecycle">(ExternalLocation attribute)</a>
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.Feature.lifecycle">(Feature attribute)</a>
@@ -4533,6 +4727,8 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job.lifecycle">(Job attribute)</a>
 </li>
         <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.JobRun.lifecycle">(JobRun attribute)</a>
+</li>
+        <li><a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.MaterializationSet.lifecycle">(MaterializationSet attribute)</a>
 </li>
         <li><a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.McpService.lifecycle">(McpService attribute)</a>
 </li>
@@ -4670,6 +4866,8 @@
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CustomTemplateFormat.MARKDOWN">MARKDOWN (CustomTemplateFormat attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AiGatewayGuardrailPiiBehaviorBehavior.MASK">MASK (AiGatewayGuardrailPiiBehaviorBehavior attribute)</a>
+</li>
+      <li><a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.MaterializationSet">MaterializationSet (class in databricks.bundles.materialization_sets)</a>
 </li>
       <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Library.maven">maven (Library attribute)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Library.maven">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Library.maven">[2]</a>
 </li>
@@ -4821,6 +5019,8 @@
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.model_id_col">model_id_col (MonitorInferenceLog attribute)</a>
 </li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.model_id_column">model_id_column (InferenceLogConfig attribute)</a>
+</li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PowerBiModel.model_name">model_name (PowerBiModel attribute)</a>
 
       <ul>
@@ -4947,6 +5147,8 @@
 </li>
         <li><a href="databricks.bundles.dashboards.html#module-databricks.bundles.dashboards">databricks.bundles.dashboards</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#module-databricks.bundles.data_quality_monitors">databricks.bundles.data_quality_monitors</a>
+</li>
         <li><a href="databricks.bundles.database_catalogs.html#module-databricks.bundles.database_catalogs">databricks.bundles.database_catalogs</a>
 </li>
         <li><a href="databricks.bundles.database_instances.html#module-databricks.bundles.database_instances">databricks.bundles.database_instances</a>
@@ -4964,6 +5166,8 @@
         <li><a href="databricks.bundles.job_runs.html#module-databricks.bundles.job_runs">databricks.bundles.job_runs</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#module-databricks.bundles.jobs">databricks.bundles.jobs</a>
+</li>
+        <li><a href="databricks.bundles.materialization_sets.html#module-databricks.bundles.materialization_sets">databricks.bundles.materialization_sets</a>
 </li>
         <li><a href="databricks.bundles.mcp_services.html#module-databricks.bundles.mcp_services">databricks.bundles.mcp_services</a>
 </li>
@@ -5059,6 +5263,8 @@
 </li>
         <li><a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DatabaseInstanceRef.name">(DatabaseInstanceRef attribute)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.name">(DataProfilingCustomMetric attribute)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DeploymentSpec.name">(DeploymentSpec attribute)</a>
 </li>
         <li><a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.EmbeddingSourceColumn.name">(EmbeddingSourceColumn attribute)</a>
@@ -5126,12 +5332,12 @@
         <li><a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume.name">(Volume attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PythonWheelTask.named_parameters">named_parameters (PythonWheelTask attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigModelTargetConfig.native_api_types">native_api_types (ModelProviderServiceConfigModelTargetConfig attribute)</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.ModelProviderServiceConfigModelTargetConfig.native_api_types">[1]</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.TaskRetryMode.NEVER">NEVER (TaskRetryMode attribute)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCluster.new_cluster">new_cluster (JobCluster attribute)</a>
@@ -5216,12 +5422,18 @@
 </li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Evaluation.notification">notification (AlertV2Evaluation attribute)</a>
 </li>
-      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job.notification_settings">notification_settings (Job attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.AnomalyDetectionConfig.notification_settings">notification_settings (AnomalyDetectionConfig attribute)</a>
 
       <ul>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.notification_settings">(DataProfilingConfig attribute)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job.notification_settings">(Job attribute)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Task.notification_settings">(Task attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationDestination">NotificationDestination (class in databricks.bundles.data_quality_monitors)</a>
+</li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Notifications">Notifications (class in databricks.bundles.pipelines)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Pipeline.notifications">notifications (Pipeline attribute)</a>
@@ -5230,6 +5442,8 @@
         <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.notifications">(QualityMonitor attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationSettings">NotificationSettings (class in databricks.bundles.data_quality_monitors)</a>
+</li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Notification.notify_on_ok">notify_on_ok (AlertV2Notification attribute)</a>
 </li>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.RuntimeEngine.NULL">NULL (RuntimeEngine attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.RuntimeEngine.NULL">[1]</a>
@@ -5249,6 +5463,10 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.AuthenticationMethod.OAUTH">OAUTH (AuthenticationMethod attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor.object_id">object_id (DataQualityMonitor attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataQualityMonitor.object_type">object_type (DataQualityMonitor attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.IngestionPipelineDefinition.objects">objects (IngestionPipelineDefinition attribute)</a>
 </li>
@@ -5282,6 +5500,8 @@
 
       <ul>
         <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorNotifications.on_failure">(MonitorNotifications attribute)</a>
+</li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationSettings.on_failure">(NotificationSettings attribute)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.TaskEmailNotifications.on_failure">(TaskEmailNotifications attribute)</a>
 </li>
@@ -5334,6 +5554,8 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.WebhookNotifications.on_success">(WebhookNotifications attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.NotificationSettings.on_unhealthy_table">on_unhealthy_table (NotificationSettings attribute)</a>
+</li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.EmailNotifications.on_update_failure">on_update_failure (EmailNotifications attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.EmailNotifications.on_update_success">on_update_success (EmailNotifications attribute)</a>
@@ -5378,7 +5600,13 @@
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AiGatewayGuardrails.output">output (AiGatewayGuardrails attribute)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetric.output_data_type">output_data_type (MonitorMetric attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.output_data_type">output_data_type (DataProfilingCustomMetric attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetric.output_data_type">(MonitorMetric attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.output_schema_id">output_schema_id (DataProfilingConfig attribute)</a>
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.output_schema_name">output_schema_name (QualityMonitor attribute)</a>
 </li>
@@ -5403,6 +5631,14 @@
 </li>
       </ul></li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PythonWheelTask.package_name">package_name (PythonWheelTask attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachment.page_attachment">page_attachment (SubscriptionAttachment attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.page_id">page_id (SubscriptionAttachmentDataAttachmentWidget attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.page_ids">page_ids (SubscriptionAttachmentPageAttachment attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.page_selection">page_selection (SubscriptionAttachmentPageAttachment attribute)</a>
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection.PAGE_SELECTION_ALL">PAGE_SELECTION_ALL (SubscriptionAttachmentPageAttachmentPageSelection attribute)</a>
 </li>
@@ -5694,6 +5930,8 @@
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.prediction_col">prediction_col (MonitorInferenceLog attribute)</a>
 </li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.prediction_column">prediction_column (InferenceLogConfig attribute)</a>
+</li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.prediction_proba_col">prediction_proba_col (MonitorInferenceLog attribute)</a>
 </li>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.GcpAvailability.PREEMPTIBLE_GCP">PREEMPTIBLE_GCP (GcpAvailability attribute)</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.GcpAvailability.PREEMPTIBLE_GCP">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.GcpAvailability.PREEMPTIBLE_GCP">[2]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.GcpAvailability.PREEMPTIBLE_GCP">[3]</a>
@@ -5709,7 +5947,7 @@
       <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.JobRunLifecycle.prevent_destroy">prevent_destroy (JobRunLifecycle attribute)</a>
 
       <ul>
-        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.prevent_destroy">(Lifecycle attribute)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.prevent_destroy">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.prevent_destroy">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.prevent_destroy">[3]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.prevent_destroy">[4]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.prevent_destroy">[5]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.prevent_destroy">[6]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.prevent_destroy">[7]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.prevent_destroy">[8]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.prevent_destroy">[9]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.prevent_destroy">[10]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.prevent_destroy">[11]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.prevent_destroy">[12]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.prevent_destroy">[13]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.prevent_destroy">[14]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.prevent_destroy">[15]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.prevent_destroy">[16]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.prevent_destroy">[17]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.prevent_destroy">[18]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.prevent_destroy">[19]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.prevent_destroy">[20]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.prevent_destroy">[21]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.prevent_destroy">[22]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.prevent_destroy">[23]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.prevent_destroy">[24]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.prevent_destroy">[25]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.prevent_destroy">[26]</a>
+        <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Lifecycle.prevent_destroy">(Lifecycle attribute)</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Lifecycle.prevent_destroy">[1]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Lifecycle.prevent_destroy">[2]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.Lifecycle.prevent_destroy">[3]</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.Lifecycle.prevent_destroy">[4]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.Lifecycle.prevent_destroy">[5]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.Lifecycle.prevent_destroy">[6]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.Lifecycle.prevent_destroy">[7]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Lifecycle.prevent_destroy">[8]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.Lifecycle.prevent_destroy">[9]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.Lifecycle.prevent_destroy">[10]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.Lifecycle.prevent_destroy">[11]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Lifecycle.prevent_destroy">[12]</a>, <a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.Lifecycle.prevent_destroy">[13]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Lifecycle.prevent_destroy">[14]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Lifecycle.prevent_destroy">[15]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Lifecycle.prevent_destroy">[16]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.Lifecycle.prevent_destroy">[17]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.Lifecycle.prevent_destroy">[18]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Lifecycle.prevent_destroy">[19]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.Lifecycle.prevent_destroy">[20]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Lifecycle.prevent_destroy">[21]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Lifecycle.prevent_destroy">[22]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.Lifecycle.prevent_destroy">[23]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Lifecycle.prevent_destroy">[24]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.Lifecycle.prevent_destroy">[25]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.Lifecycle.prevent_destroy">[26]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Lifecycle.prevent_destroy">[27]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Lifecycle.prevent_destroy">[28]</a>
 </li>
         <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.LifecycleWithStarted.prevent_destroy">(LifecycleWithStarted attribute)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.LifecycleWithStarted.prevent_destroy">[1]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.LifecycleWithStarted.prevent_destroy">[2]</a>
 </li>
@@ -5782,8 +6020,12 @@
 </li>
       <li><a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.CreateWarehouseRequestWarehouseType.PRO">PRO (CreateWarehouseRequestWarehouseType attribute)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.problem_type">problem_type (MonitorInferenceLog attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.problem_type">problem_type (InferenceLogConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.problem_type">(MonitorInferenceLog attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLogProblemType.PROBLEM_TYPE_CLASSIFICATION">PROBLEM_TYPE_CLASSIFICATION (MonitorInferenceLogProblemType attribute)</a>
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLogProblemType.PROBLEM_TYPE_REGRESSION">PROBLEM_TYPE_REGRESSION (MonitorInferenceLogProblemType attribute)</a>
@@ -5858,7 +6100,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor">QualityMonitor (class in databricks.bundles.quality_monitors)</a>
 </li>
-      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.quartz_cron_expression">quartz_cron_expression (CronSchedule attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.CronSchedule.quartz_cron_expression">quartz_cron_expression (CronSchedule attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.quartz_cron_expression">[1]</a>
 
       <ul>
         <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorCronSchedule.quartz_cron_expression">(MonitorCronSchedule attribute)</a>
@@ -5974,6 +6216,8 @@
         <li><a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.SecretScopePermissionLevel.READ">(SecretScopePermissionLevel attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Privilege.READ_FEATURE">READ_FEATURE (Privilege attribute)</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Privilege.READ_FEATURE">[1]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Privilege.READ_FEATURE">[2]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Privilege.READ_FEATURE">[3]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Privilege.READ_FEATURE">[4]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Privilege.READ_FEATURE">[5]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Privilege.READ_FEATURE">[6]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Privilege.READ_FEATURE">[7]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Privilege.READ_FEATURE">[8]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Privilege.READ_FEATURE">[9]</a>
+</li>
       <li><a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Privilege.READ_FILES">READ_FILES (Privilege attribute)</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Privilege.READ_FILES">[1]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Privilege.READ_FILES">[2]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Privilege.READ_FILES">[3]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Privilege.READ_FILES">[4]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Privilege.READ_FILES">[5]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Privilege.READ_FILES">[6]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Privilege.READ_FILES">[7]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Privilege.READ_FILES">[8]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Privilege.READ_FILES">[9]</a>
 </li>
       <li><a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.Privilege.READ_METADATA">READ_METADATA (Privilege attribute)</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.Privilege.READ_METADATA">[1]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.Privilege.READ_METADATA">[2]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.Privilege.READ_METADATA">[3]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.Privilege.READ_METADATA">[4]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.Privilege.READ_METADATA">[5]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.Privilege.READ_METADATA">[6]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.Privilege.READ_METADATA">[7]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.Privilege.READ_METADATA">[8]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.Privilege.READ_METADATA">[9]</a>
@@ -6028,6 +6272,8 @@
 </li>
       <li><a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.SpotInstancePolicy.RELIABILITY_OPTIMIZED">RELIABILITY_OPTIMIZED (SpotInstancePolicy attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Cluster.remote_disk_throughput">remote_disk_throughput (Cluster attribute)</a>
 
       <ul>
@@ -6036,8 +6282,6 @@
         <li><a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.InstancePool.remote_disk_throughput">(InstancePool attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.AiGatewayRateLimit.renewal_period">renewal_period (AiGatewayRateLimit attribute)</a>
 
       <ul>
@@ -6078,7 +6322,7 @@
 </li>
       <li><a href="databricks.bundles.core.html#databricks.bundles.core.Resource">Resource (class in databricks.bundles.core)</a>
 </li>
-      <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.DependsOn.resource">resource (DependsOn attribute)</a>, <a href="databricks.bundles.apps.html#databricks.bundles.apps.DependsOn.resource">[1]</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.DependsOn.resource">[2]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.DependsOn.resource">[3]</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependsOn.resource">[4]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.DependsOn.resource">[5]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.DependsOn.resource">[6]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DependsOn.resource">[7]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.DependsOn.resource">[8]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.DependsOn.resource">[9]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.DependsOn.resource">[10]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.DependsOn.resource">[11]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.DependsOn.resource">[12]</a>, <a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.DependsOn.resource">[13]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependsOn.resource">[14]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.DependsOn.resource">[15]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.DependsOn.resource">[16]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.DependsOn.resource">[17]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DependsOn.resource">[18]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.DependsOn.resource">[19]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DependsOn.resource">[20]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.DependsOn.resource">[21]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.DependsOn.resource">[22]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.DependsOn.resource">[23]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.DependsOn.resource">[24]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.DependsOn.resource">[25]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.DependsOn.resource">[26]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.DependsOn.resource">[27]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.DependsOn.resource">[28]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DependsOn.resource">[29]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.DependsOn.resource">[30]</a>
+      <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.DependsOn.resource">resource (DependsOn attribute)</a>, <a href="databricks.bundles.apps.html#databricks.bundles.apps.DependsOn.resource">[1]</a>, <a href="databricks.bundles.catalogs.html#databricks.bundles.catalogs.DependsOn.resource">[2]</a>, <a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.DependsOn.resource">[3]</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.DependsOn.resource">[4]</a>, <a href="databricks.bundles.dashboards.html#databricks.bundles.dashboards.DependsOn.resource">[5]</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DependsOn.resource">[6]</a>, <a href="databricks.bundles.database_catalogs.html#databricks.bundles.database_catalogs.DependsOn.resource">[7]</a>, <a href="databricks.bundles.database_instances.html#databricks.bundles.database_instances.DependsOn.resource">[8]</a>, <a href="databricks.bundles.experiments.html#databricks.bundles.experiments.DependsOn.resource">[9]</a>, <a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.DependsOn.resource">[10]</a>, <a href="databricks.bundles.features.html#databricks.bundles.features.DependsOn.resource">[11]</a>, <a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.DependsOn.resource">[12]</a>, <a href="databricks.bundles.instance_pools.html#databricks.bundles.instance_pools.DependsOn.resource">[13]</a>, <a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.DependsOn.resource">[14]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DependsOn.resource">[15]</a>, <a href="databricks.bundles.materialization_sets.html#databricks.bundles.materialization_sets.DependsOn.resource">[16]</a>, <a href="databricks.bundles.mcp_services.html#databricks.bundles.mcp_services.DependsOn.resource">[17]</a>, <a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.DependsOn.resource">[18]</a>, <a href="databricks.bundles.model_services.html#databricks.bundles.model_services.DependsOn.resource">[19]</a>, <a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.DependsOn.resource">[20]</a>, <a href="databricks.bundles.models.html#databricks.bundles.models.DependsOn.resource">[21]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DependsOn.resource">[22]</a>, <a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.DependsOn.resource">[23]</a>, <a href="databricks.bundles.registered_models.html#databricks.bundles.registered_models.DependsOn.resource">[24]</a>, <a href="databricks.bundles.schemas.html#databricks.bundles.schemas.DependsOn.resource">[25]</a>, <a href="databricks.bundles.secret_scopes.html#databricks.bundles.secret_scopes.DependsOn.resource">[26]</a>, <a href="databricks.bundles.secrets.html#databricks.bundles.secrets.DependsOn.resource">[27]</a>, <a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.DependsOn.resource">[28]</a>, <a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.DependsOn.resource">[29]</a>, <a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.DependsOn.resource">[30]</a>, <a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DependsOn.resource">[31]</a>, <a href="databricks.bundles.volumes.html#databricks.bundles.volumes.DependsOn.resource">[32]</a>
 </li>
       <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.AzureQueueStorage.resource_group">resource_group (AzureQueueStorage attribute)</a>
 </li>
@@ -6197,6 +6441,8 @@
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Alert.schedule">schedule (Alert attribute)</a>
 
       <ul>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.schedule">(DataProfilingConfig attribute)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job.schedule">(Job attribute)</a>
 </li>
         <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.schedule">(QualityMonitor attribute)</a>
@@ -6368,12 +6614,20 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.ClusterSpec.single_user_name">(ClusterSpec attribute)</a>
 </li>
       </ul></li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.skip_builtin_dashboard">skip_builtin_dashboard (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.skip_builtin_dashboard">skip_builtin_dashboard (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.skip_builtin_dashboard">(QualityMonitor attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.ExternalLocation.skip_validation">skip_validation (ExternalLocation attribute)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.slicing_exprs">slicing_exprs (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.slicing_exprs">slicing_exprs (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.slicing_exprs">(QualityMonitor attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.SlidingWindow.slide_duration">slide_duration (SlidingWindow attribute)</a>
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.TimeWindow.sliding">sliding (TimeWindow attribute)</a>
@@ -6388,9 +6642,15 @@
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SmartsheetOptions">SmartsheetOptions (class in databricks.bundles.pipelines)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.snapshot">snapshot (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.snapshot">snapshot (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.snapshot">(QualityMonitor attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.synced_database_tables.html#databricks.bundles.synced_database_tables.SyncedTableSchedulingPolicy.SNAPSHOT">SNAPSHOT (SyncedTableSchedulingPolicy attribute)</a>
+</li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.SnapshotConfig">SnapshotConfig (class in databricks.bundles.data_quality_monitors)</a>
 </li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Evaluation.source">source (AlertV2Evaluation attribute)</a>
 </li>
@@ -6676,6 +6936,8 @@
       </ul></li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionSubscriber">SubscriptionSubscriber (class in databricks.bundles.jobs)</a>
 </li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.JobCompletionTriggerConfigurationIfStatus.SUCCESS">SUCCESS (JobCompletionTriggerConfigurationIfStatus attribute)</a>
+</li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Aggregation.SUM">SUM (Aggregation attribute)</a>
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.AggregationFunction.sum">sum (AggregationFunction attribute)</a>
@@ -6818,8 +7080,6 @@
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.TelemetryInferenceTableConfig">TelemetryInferenceTableConfig (class in databricks.bundles.model_serving_endpoints)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigEntraServicePrincipal.tenant_id">tenant_id (ModelProviderServiceConfigEntraServicePrincipal attribute)</a>
 </li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Evaluation.threshold">threshold (AlertV2Evaluation attribute)</a>
@@ -6830,6 +7090,8 @@
         <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.EbsVolumeType.THROUGHPUT_OPTIMIZED_HDD">(EbsVolumeType attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.EbsVolumeType.THROUGHPUT_OPTIMIZED_HDD">[1]</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.EbsVolumeType.THROUGHPUT_OPTIMIZED_HDD">[2]</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DayOfWeek.THURSDAY">THURSDAY (DayOfWeek attribute)</a>, <a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.DayOfWeek.THURSDAY">[1]</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.TikTokAdsOptions">TikTokAdsOptions (class in databricks.bundles.pipelines)</a>
@@ -6838,8 +7100,12 @@
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType">TikTokAdsOptionsTikTokReportType (class in databricks.bundles.pipelines)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.time_series">time_series (QualityMonitor attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.time_series">time_series (DataProfilingConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.QualityMonitor.time_series">(QualityMonitor attribute)</a>
 </li>
+      </ul></li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.AggregationFunction.time_window">time_window (AggregationFunction attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.OperationTimeWindow.time_zone_id">time_zone_id (OperationTimeWindow attribute)</a>
@@ -6856,6 +7122,8 @@
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.TimeseriesColumn">TimeseriesColumn (class in databricks.bundles.features)</a>
 </li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.TimeSeriesConfig">TimeSeriesConfig (class in databricks.bundles.data_quality_monitors)</a>
+</li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.ScalarDataType.TIMESTAMP">TIMESTAMP (ScalarDataType attribute)</a>
 </li>
       <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorInferenceLog.timestamp_col">timestamp_col (MonitorInferenceLog attribute)</a>
@@ -6864,9 +7132,15 @@
         <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorTimeSeries.timestamp_col">(MonitorTimeSeries attribute)</a>
 </li>
       </ul></li>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.InferenceLogConfig.timestamp_column">timestamp_column (InferenceLogConfig attribute)</a>
+
+      <ul>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.TimeSeriesConfig.timestamp_column">(TimeSeriesConfig attribute)</a>
+</li>
+      </ul></li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.TimeWindow">TimeWindow (class in databricks.bundles.features)</a>
 </li>
-      <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CronSchedule.timezone_id">timezone_id (CronSchedule attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.timezone_id">[1]</a>
+      <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.CronSchedule.timezone_id">timezone_id (CronSchedule attribute)</a>, <a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.CronSchedule.timezone_id">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.CronSchedule.timezone_id">[2]</a>
 
       <ul>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.MaintenanceWindow.timezone_id">(MaintenanceWindow attribute)</a>
@@ -6940,9 +7214,11 @@
 </li>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.TumblingWindow">TumblingWindow (class in databricks.bundles.features)</a>
 </li>
-      <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetric.type">type (MonitorMetric attribute)</a>
+      <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingCustomMetric.type">type (DataProfilingCustomMetric attribute)</a>
 
       <ul>
+        <li><a href="databricks.bundles.quality_monitors.html#databricks.bundles.quality_monitors.MonitorMetric.type">(MonitorMetric attribute)</a>
+</li>
         <li><a href="databricks.bundles.core.html#databricks.bundles.core.Variable.type">(Variable attribute)</a>
 </li>
       </ul></li>
@@ -7199,6 +7475,8 @@
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DashboardTask.warehouse_id">(DashboardTask attribute)</a>
 </li>
+        <li><a href="databricks.bundles.data_quality_monitors.html#databricks.bundles.data_quality_monitors.DataProfilingConfig.warehouse_id">(DataProfilingConfig attribute)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.DbtTask.warehouse_id">(DbtTask attribute)</a>
 </li>
         <li><a href="databricks.bundles.genie_spaces.html#databricks.bundles.genie_spaces.GenieSpace.warehouse_id">(GenieSpace attribute)</a>
@@ -7234,6 +7512,12 @@
 </li>
       <li><a href="databricks.bundles.cluster_policies.html#databricks.bundles.cluster_policies.Library.whl">whl (Library attribute)</a>, <a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Library.whl">[1]</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Library.whl">[2]</a>
 </li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.widget_id">widget_id (SubscriptionAttachmentDataAttachmentWidget attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.widgets">widgets (SubscriptionAttachmentDataAttachment attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.features.html#databricks.bundles.features.RollingWindow.window_duration">window_duration (RollingWindow attribute)</a>
 
       <ul>
@@ -7242,8 +7526,6 @@
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.TumblingWindow.window_duration">(TumblingWindow attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Cluster.worker_node_type_flexibility">worker_node_type_flexibility (Cluster attribute)</a>
 
       <ul>

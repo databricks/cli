@@ -69,6 +69,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.data_quality_monitors.html">Data Quality Monitors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
@@ -78,6 +79,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.materialization_sets.html">Materialization Sets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Model Provider Services</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.model_provider_services">Classes</a></li>
@@ -317,9 +319,10 @@ to the upstream provider.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.allow_all_targets">
 <span class="sig-name descname"><span class="pre">allow_all_targets</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.allow_all_targets" title="Link to this definition">¶</a></dt>
-<dd><p>When true, accepts any model exposed by the upstream provider; <cite>targets</cite>
-is not required and does not restrict routability. When false, only
-models listed in <cite>targets</cite> are routable. Defaults to false.</p>
+<dd><p>When true, allows models from the provider’s built-in model catalog in
+addition to explicit <cite>targets</cite>. When false, only models listed in <cite>targets</cite>
+are routable. Defaults to false. CUSTOM providers have no built-in model
+catalog and must leave this false and list their models in <cite>targets</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -437,8 +440,9 @@ routed through a model service use that model service’s rate limits instead.</
 entry must include at least one <cite>native_api_types</cite> value. When
 <cite>allow_all_targets</cite> is false, at least one entry is required and model
 service destinations can reference only listed models. When
-<cite>allow_all_targets</cite> is true, any upstream model is routable; entries in
-this list provide API-type metadata without restricting other models.</p>
+<cite>allow_all_targets</cite> is true, models from the provider’s built-in model
+catalog are also routable. CUSTOM providers must explicitly list their
+models here and cannot enable <cite>allow_all_targets</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1811,6 +1815,16 @@ name.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.Privilege.READ_METADATA">
 <span class="sig-name descname"><span class="pre">READ_METADATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_METADATA'</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.Privilege.READ_METADATA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.Privilege.CREATE_FEATURE">
+<span class="sig-name descname"><span class="pre">CREATE_FEATURE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FEATURE'</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.Privilege.CREATE_FEATURE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.Privilege.READ_FEATURE">
+<span class="sig-name descname"><span class="pre">READ_FEATURE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_FEATURE'</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.Privilege.READ_FEATURE" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
