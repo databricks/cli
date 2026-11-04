@@ -222,6 +222,8 @@ experimental.pydabs.enabled	bool	INPUT
 experimental.python	config.Python	INPUT
 experimental.python.mutators	[]string	INPUT
 experimental.python.mutators[*]	string	INPUT
+experimental.python.resources	[]string	INPUT
+experimental.python.resources[*]	string	INPUT
 experimental.python.venv_path	string	INPUT
 experimental.python_wheel_wrapper	bool	INPUT
 experimental.scripts	map[config.ScriptHook]config.Command	INPUT
@@ -249,6 +251,8 @@ presets.trigger_pause_status	string	INPUT
 python	config.Python	INPUT
 python.mutators	[]string	INPUT
 python.mutators[*]	string	INPUT
+python.resources	[]string	INPUT
+python.resources[*]	string	INPUT
 python.venv_path	string	INPUT
 run_as	*jobs.JobRunAs	INPUT
 run_as.group_name	string	INPUT
