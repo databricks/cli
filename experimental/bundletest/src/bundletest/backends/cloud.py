@@ -178,6 +178,8 @@ class CloudBackend:
             (run.run_duration or 0) / 1000,
             str(run.run_id),
             error="" if succeeded else (run.state.state_message or ""),
+            backend="cloud",
+            resource_name=name,
         )
 
     # --- data plane ---

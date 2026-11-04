@@ -179,8 +179,10 @@ class DuckDBBackend:
         if tasks is None:
             raise KeyError(f"no job named {name!r} in the bundle (known: {sorted(self._jobs)})")
         start = time.perf_counter()
+        current_task: _Task | None = None
         try:
             for task in tasks:
+                current_task = task
                 if task.kind != "sql":
                     raise LocalUnsupported(
                         f"job {name!r} task {task.key!r} is a {task.kind} task; the "
@@ -196,13 +198,26 @@ class DuckDBBackend:
                 self._prepare_namespaces(sql)
                 for statement in _split_statements(sql):
                     self._con.execute(statement)
-            return RunResult("SUCCESS", time.perf_counter() - start)
+            return RunResult(
+                "SUCCESS",
+                time.perf_counter() - start,
+                backend="local",
+                resource_name=name,
+            )
         except LocalUnsupported:
             raise
         except duckdb.Error as e:
             if _MISSING_FUNCTION.search(str(e)):
                 raise LocalUnsupported(f"job {name!r} uses SQL not available locally: {_first_line(e)}") from e
-            return RunResult("FAILED", time.perf_counter() - start, error=_first_line(e))
+            return RunResult(
+                "FAILED",
+                time.perf_counter() - start,
+                error=_first_line(e),
+                backend="local",
+                resource_name=name,
+                task_key=current_task.key if current_task else "",
+                source_path=current_task.sql_file if current_task and current_task.sql_file else "",
+            )
 
     # --- data plane ---
     def execute_sql(self, query: str) -> list[tuple]:
@@ -224,8 +239,7 @@ class DuckDBBackend:
         reason = _unresolved(cfg)
         if reason is not None:
             raise LocalUnsupported(
-                f"resource {kind}.{name} can't be introspected locally: {reason}; "
-                f"use the cloud backend"
+                f"resource {kind}.{name} can't be introspected locally: {reason}; use the cloud backend"
             )
         return cfg
 
