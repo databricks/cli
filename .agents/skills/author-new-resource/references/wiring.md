@@ -11,7 +11,7 @@ Use `<singular>` and `<plural>` for the resource names, `<Type>` for the Go iden
 | Add | Where | Caught by |
 |---|---|---|
 | `type <Type> struct { BaseResource; ID string \`json:"id,omitempty" bundle:"readonly"\`; <sdk>.<Resource> }` with value-receiver `MarshalJSON` and pointer-receiver `UnmarshalJSON` via the SDK `marshal` package | `bundle/config/resources/<singular>.go` (new) | `TestCustomMarshallerIsImplemented` in `bundle/config/resources_test.go` |
-| `Exists(ctx, client, id)` using the service's Get and `apierr.IsMissing` | same file | `TestResourcesBindSupport`: add an instance to its fixture and a mock expectation for the Get call |
+| `Exists(ctx, client, id)` using the service's Get and `apierr.IsMissing` | same file | `TestResourcesBindSupport`: add an instance to its fixture and a mock expectation for the Get call. The test binds with the id `"0"`; a composed id needs an entry in its per-type id map |
 | `ResourceDescription()` with singular, plural and titles | same file | Empty plural panics at startup in `collectResourceMap` |
 | `GetName()`, `InitializeURL(baseURL)`, `GetURL()` | same file | `TestBundleResourcePluralNamesResolveInWorkspaceURLs`: add a URL pattern (row below) or add the plural to that test's no-URL map with a comment saying the UI has no page |
 | Map field `<Plural> map[string]*resources.<Type> \`json:"<plural>,omitempty"\`` | `bundle/config/resources.go`, the `Resources` struct | Everything below keys off it |
@@ -40,7 +40,7 @@ Run in this order after the Go types compile; `./task generate` runs all of them
 | `./task generate-schema` | `bundle/schema/jsonschema.json`, and rewrites `bundle/internal/schema/annotations.yml` adding `PLACEHOLDER` entries | Fill every placeholder for the type (resource-level description, `lifecycle`, each field without an upstream description), then run again. `TestRequiredAnnotationsForNewFields` in `bundle/internal/schema` fails on leftovers |
 | `./task generate-validation` | `bundle/internal/validation/generated/required_fields.go`, `enum_fields.go` | Entries for the type appear |
 | `./task generate-direct` | `bundle/direct/dresources/apitypes.generated.yml`, `configs/<plural>.generated.yml` | The plural has an entry naming the resource type; the generated rules match the proto's `IMMUTABLE`, `OUTPUT_ONLY`, `INPUT_ONLY`. A missing entry means the heuristic found nothing: pin it |
-| `./task pydabs-codegen` | `python/databricks/bundles/<plural>/`, `core/_generated/`, docs, test cases | Only produced for GA and public-preview stages. Regenerate the public API snapshot: `cd python && UPDATE_SNAPSHOTS=1 uv run pytest databricks_tests/core/test_public_api.py` |
+| `./task pydabs-codegen` | `python/databricks/bundles/<plural>/`, `core/_generated/`, docs, test cases | Only produced for GA and public-preview stages. Regenerate the public API snapshot: `cd python && UPDATE_SNAPSHOTS=1 uv run pytest databricks_tests/core/test_public_api.py`. The task deletes the generated packages before it fetches dependencies; if it fails on network access, restore with `git checkout -- python/`, sync the `python/` and `python/codegen/` environments first, and rerun |
 | `./task generate-check` | nothing | Must be clean; CI runs it |
 
 Never edit `jsonschema.json`, `*.generated.yml`, the validation files or the Python packages by
@@ -66,7 +66,7 @@ Each row is a decision, not a default. Write the decision in the PR description.
 | UC dependencies: if config names a catalog or schema by name that may be a bundle resource, rewrite it to `${resources.schemas...}`. If the API takes UUIDs instead of names, there is nothing to capture; document that users reference `${resources.schemas.<key>.schema_id}` explicitly | `capture_uc_dependencies.go` | **Nothing catches it**; add a case to the implicit-deps acceptance test |
 | Approval prompt for deletion or recreation that loses data, is expensive to rebuild, drops child objects, or loses an identity the API minted (a service principal, grants on the old object) | The approval table in `bundle/phases` (older trees: separate lists in `deploy.go` and `destroy.go`), message in `messages.go`. Deploy and destroy both, unless destroy's prompt comes from somewhere else or deletion is harmless while recreation is not; say which in a comment on the entry | **Nothing catches a missing entry**; the resource's `basic` golden shows the prompt |
 | Workspace URL: pattern if the UI has a page | `libs/workspaceurls/urls.go`; `cmd/experimental/workspace_open_test.go` lists; `acceptance/experimental/open/output.txt` | `TestBundleResourcePluralNamesResolveInWorkspaceURLs`; the `workspace_open_test.go` lists are exact and fail until updated |
-| State fixtures | `bundle/statemgmt/state_load_test.go`: one entry per `TestStateToBundle*` fixture | **Nothing enumerates types here**; add the fixture |
+| State fixtures | `bundle/statemgmt/state_load_test.go`: one entry per `TestStateToBundle*` fixture | The tests assert full resource coverage and fail for a type without a fixture |
 | `bundle run`: only if the resource has a run action | `bundle/run/runner.go` | Not applicable to most types |
 
 Automatic through `BaseResource`: `lifecycle.prevent_destroy`, `lifecycle.depends_on`, telemetry,
@@ -82,9 +82,9 @@ See `testing.md` for the content of each. Registration points only:
 | `acceptance/bundle/resources/<plural>/{basic,lifecycle,remote-delete}/` | new directories | Documented requirement, **not enforced**; reviewers check |
 | `acceptance/bundle/deployment/bind/<singular>/` | new directory | same |
 | `acceptance/bundle/invariant/configs/<singular>.yml.tmpl` (+ `-init.sh`, `-cleanup.sh` if needed) | new files | `TestInvariantConfigsCoverage` checks the file exists |
-| The file name under `EnvMatrix.INPUT_CONFIG`, plus `EnvMatrixExclude` for `DMS=true` or cloud when needed, plus exclusions in `invariant/migrate/test.toml` and `invariant/auto-migrate/test.toml` | `acceptance/bundle/invariant/test.toml` and the two subdirectories | **Nothing catches a missing matrix entry**; verify with `go test ./acceptance -run 'TestAccept/bundle/invariant/no_drift' -v -count=1 2>&1 \| grep 'INPUT_CONFIG=<singular>'` |
+| The file name under `EnvMatrix.INPUT_CONFIG`, plus `EnvMatrixExclude` for `DMS=true` or cloud when needed, plus exclusions in `invariant/migrate/test.toml` and `invariant/auto-migrate/test.toml`; `invariant/continue_293` seeds every config with an old CLI that does not know the type, so exclude it there if that leg fails | `acceptance/bundle/invariant/test.toml` and the subdirectories | **Nothing catches a missing matrix entry**; verify with `go test ./acceptance -run 'TestAccept/bundle/invariant/no_drift' -v -count=1 2>&1 \| grep 'INPUT_CONFIG=<singular>'` |
 | `acceptance/bundle/python/<plural>-support/` when PyDABs generates the type | new directory, six files | `test_python_support_coverage` |
-| `.nextchanges/bundles/<plural>.md` | new file | `task check-changelog` once the PR exists; reviewers otherwise |
+| `.nextchanges/bundles/<plural>.md` | new file | `task check-changelog` once the PR exists; reviewers otherwise. The line ends with the PR link, so fill the number in right after opening the PR |
 
 ## 7. Reading the generated rules back
 

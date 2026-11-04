@@ -41,8 +41,10 @@ Update and Delete. Best: a `name` field marked `IDENTIFIER` (AIP-122, AIP-203). 
 the ID, the Create request carries `<resource>_id` and the entity's own ID field is `OUTPUT_ONLY`
 (AIP-133).
 
-**Verify.** In the proto: `rg -n "IDENTIFIER|identifier: true" <proto>`; read the Get request's
-path parameters. The identifier is not visible in `cli.json`.
+**Verify.** In the proto: `rg -n "IDENTIFIER|identifier: true|identifier_field_names" <proto>`;
+identity may be declared on the field or in the file-level resource option
+(`databricks.api.resource` with `identifier_field_names`). Read the Get request's path parameters.
+The identifier is not visible in `cli.json`.
 
 **Verdicts.**
 - One field, returned on GET: **NOTE**. Declare it in `provided_id_fields` (recreate when the user
@@ -121,7 +123,9 @@ list each non-echoed field under `ignore_remote_changes` with `spec:input_only`.
 immutable only in some states must not carry the annotation; document the condition instead.
 
 **Verify.** Compare `IMMUTABLE` in the proto with the Update method's documentation and, if you
-have access, with the server's validation code. After generation, each one appears in
+have access, with the server's validation code. Internal proto comment markers such as
+`(--[Create:REQ Update:IGN]--)` describe create-only behaviour the annotation does not carry; they
+are evidence for an ASK, not a substitute for the annotation. After generation, each one appears in
 `configs/<plural>.generated.yml` under `recreate_on_changes` with `spec:immutable`.
 
 **Verdicts.**
@@ -215,7 +219,8 @@ the wait.
 
 **Check.** Delete returns `NOT_FOUND` for a missing resource unless `allow_missing` is set, and
 either completes synchronously or is an operation with a documented completion signal (AIP-135).
-If Delete is refused while child objects exist, the children must be bundle resources the engine
+The declared error codes are on the RPC's `error_codes` list in the proto; a status enum with a
+pending-delete value is the usual hint that delete is asynchronous or soft. If Delete is refused while child objects exist, the children must be bundle resources the engine
 can order through `lifecycle.depends_on` or references; otherwise `bundle destroy` cannot succeed
 without manual steps. Say which in the PR.
 

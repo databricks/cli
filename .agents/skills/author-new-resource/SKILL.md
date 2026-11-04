@@ -95,9 +95,11 @@ Rules that review enforces on the adapter:
 Check:
 
 ```bash
-go build ./... && go test ./bundle/direct/dresources -run 'TestAll/^<plural>$|TestResourceConfig|TestConfigFiles|TestResourcesYML|TestInputSubset|TestRemoteSuperset|TestNameStableOrOptedOut|TestNoUpdateResourcesCoverAllFields' -v -count=1
-go test ./bundle/config -count=1
+go build ./... && go test ./bundle/config -count=1
 ```
+
+The adapter tests need the generated rules from phase 3 (input-only fields fail `TestAll` until
+then), so they are part of the phase 3 check.
 
 ## Phase 3: generate
 
@@ -107,8 +109,15 @@ Run the generators in the order given in `references/wiring.md` section 3, fill 
 of the wiring reference); anything you had to hand-write in `configs/<plural>.yml` that should have
 been generated is an upstream annotation to request, if phase 0 did not already.
 
-Check: `./task generate-check` is clean, `grep -c PLACEHOLDER bundle/internal/schema/annotations.yml`
-did not grow, `acceptance/bundle/refschema/output/<plural>.txt` exists, and
+Check:
+
+```bash
+go test ./bundle/direct/dresources -run 'TestAll/^<plural>$|TestResourceConfig|TestConfigFiles|TestResourcesYML|TestInputSubset|TestRemoteSuperset|TestNameStableOrOptedOut|TestNoUpdateResourcesCoverAllFields' -v -count=1
+```
+
+plus: `./task generate-check` is clean, `grep -c PLACEHOLDER bundle/internal/schema/annotations.yml`
+did not grow, `acceptance/bundle/refschema/output/<plural>.txt` exists (the first
+`generate-refschema` run reports the new file as unexpected; run it again), and
 `python/databricks/bundles/<plural>/` exists exactly when the resource's launch stage makes it
 eligible (GA or public preview). A preview resource that produced a Python package needs the
 launch-stage override from the readiness reference, then a regeneration that removes the package.

@@ -88,8 +88,8 @@ go test ./acceptance -run 'TestAccept/bundle/resources/<plural>' -v -count=1 2>&
 # the invariant suite actually selected your config
 go test ./acceptance -run 'TestAccept/bundle/invariant/no_drift' -v -count=1 2>&1 | grep 'INPUT_CONFIG=<singular>'
 
-# the DMS leg runs (or is deliberately excluded)
-go test ./acceptance -run 'TestAccept/bundle/resources/<plural>' -v -count=1 2>&1 | grep -c 'DMS=true'
+# the DMS leg runs (or is deliberately excluded); counts passing subtests, not log lines
+go test ./acceptance -run 'TestAccept/bundle/resources/<plural>' -v -count=1 2>&1 | grep -c -- '--- PASS.*DMS=true'
 
 # effective settings after inheritance
 cat acceptance/bundle/resources/<plural>/*/out.test.toml
