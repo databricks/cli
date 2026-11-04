@@ -39,7 +39,7 @@ The following resources will be deleted:
   delete resources.materialization_sets.set1
 
 This action will result in the deletion of the following Feature Views.
-The CLI does not check whether a FeatureSpec still uses a Feature View:
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:
   delete resources.features.failfeat
   delete resources.features.okfeat
 

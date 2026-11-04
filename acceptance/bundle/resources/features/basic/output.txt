@@ -154,9 +154,10 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 
 This action will result in the deletion or recreation of the following Feature Views.
-A Feature View that a materialization set still materializes cannot be recreated: remove its
-members from the set in an earlier deploy. The CLI does not check whether a FeatureSpec still
-uses a Feature View:
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:
   recreate resources.features.feature1
 Error: the deployment requires destructive actions, but the current console does not support prompting.
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
@@ -168,9 +169,10 @@ Files: 1 uploaded, 0 deleted
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 
 This action will result in the deletion or recreation of the following Feature Views.
-A Feature View that a materialization set still materializes cannot be recreated: remove its
-members from the set in an earlier deploy. The CLI does not check whether a FeatureSpec still
-uses a Feature View:
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:
   recreate resources.features.feature1
 Recreated features.feature1
 Files: 0 uploaded, 0 deleted
@@ -221,7 +223,7 @@ The following resources will be deleted:
   delete resources.features.feature1
 
 This action will result in the deletion of the following Feature Views.
-The CLI does not check whether a FeatureSpec still uses a Feature View:
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:
   delete resources.features.feature1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default

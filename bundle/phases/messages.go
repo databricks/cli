@@ -57,9 +57,10 @@ the members whose configuration did not change:`
 
 	deleteOrRecreateFeatureMessage = `
 This action will result in the deletion or recreation of the following Feature Views.
-A Feature View that a materialization set still materializes cannot be recreated: remove its
-members from the set in an earlier deploy. The CLI does not check whether a FeatureSpec still
-uses a Feature View:`
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:`
 )
 
 // DataLossWarning is the warning shown when a non-interactive command is about
@@ -112,5 +113,5 @@ For Direct Access indexes, all upserted vectors are permanently lost:`
 The conversation history attached to them is permanently lost:`
 
 	deleteFeatureMessage = `This action will result in the deletion of the following Feature Views.
-The CLI does not check whether a FeatureSpec still uses a Feature View:`
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:`
 )
