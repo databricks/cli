@@ -37,7 +37,7 @@ Steps 1-4 are the manual equivalent of the bumper (no bumper PR yet, a pinned ve
 **1. Resolve the target versions.**
 Use the SDK version the user gave. If they didn't specify one, look up the latest released version yourself (the newest `vX.Y.Z` tag at `https://github.com/databricks/databricks-sdk-go/tags`) instead of prompting for it.
 If they want "the version the Terraform provider vX.Y.Z uses", read the provider's `go.mod` at that tag: `https://raw.githubusercontent.com/databricks/terraform-provider-databricks/vX.Y.Z/go.mod`.
-The accompanying OpenAPI SHA is pinned inside the SDK at that tag: `https://raw.githubusercontent.com/databricks/databricks-sdk-go/vX.Y.Z/.codegen/_openapi_sha`.
+The accompanying OpenAPI SHA is pinned inside the SDK at that tag: `https://raw.githubusercontent.com/databricks/databricks-sdk-go/vX.Y.Z/.codegen/_last_sha`.
 Always bump the spec SHA together with the SDK; they are expected to move as a pair.
 
 **2. Apply the core bump.**
