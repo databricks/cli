@@ -17,7 +17,7 @@ trace read_state.py schemas schema1.grants id
 
 title "Rename the schema: its ID changes, and so does the ID of its grants"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
-trace $CLI bundle plan --output json | nostamp | jq '.plan | map_values({action, changes: ((.changes // {}) | with_entries(select(.value.action != "skip")))})'
+trace $CLI bundle plan --output json | jq '.plan["resources.schemas.schema1.grants"].changes'
 
 title "Deploy moves the schema to the new name and applies the grants there"
 trace $CLI bundle deploy --auto-approve

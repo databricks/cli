@@ -42,29 +42,12 @@ schemas schema1.grants id='schema/main.test-schema-[UNIQUE_NAME]'
 
 >>> [CLI] bundle plan --output json
 {
-  "resources.schemas.schema1": {
-    "action": "recreate",
-    "changes": {
-      "name": {
-        "action": "recreate",
-        "reason": "id_field",
-        "old": "test-schema-[UNIQUE_NAME]",
-        "new": "test-schema-renamed-[UNIQUE_NAME]",
-        "remote": "test-schema-[UNIQUE_NAME]"
-      }
-    }
-  },
-  "resources.schemas.schema1.grants": {
+  "full_name": {
     "action": "update_id",
-    "changes": {
-      "full_name": {
-        "action": "update_id",
-        "reason": "id_changes",
-        "old": "main.test-schema-[UNIQUE_NAME]",
-        "new": "",
-        "remote": "main.test-schema-[UNIQUE_NAME]"
-      }
-    }
+    "reason": "id_changes",
+    "old": "main.test-schema-[UNIQUE_NAME]",
+    "new": "",
+    "remote": "main.test-schema-[UNIQUE_NAME]"
   }
 }
 

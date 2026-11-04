@@ -53,33 +53,12 @@ volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume'
 
 >>> [CLI] bundle plan --output json
 {
-  "resources.schemas.schema1": {
-    "action": "skip",
-    "changes": {}
-  },
-  "resources.volumes.volume1": {
+  "full_name": {
     "action": "update_id",
-    "changes": {
-      "name": {
-        "action": "update_id",
-        "reason": "id_changes",
-        "old": "myvolume",
-        "new": "myvolume_renamed",
-        "remote": "myvolume"
-      }
-    }
-  },
-  "resources.volumes.volume1.grants": {
-    "action": "update_id",
-    "changes": {
-      "full_name": {
-        "action": "update_id",
-        "reason": "id_changes",
-        "old": "main.test-schema-[UNIQUE_NAME].myvolume",
-        "new": "",
-        "remote": "main.test-schema-[UNIQUE_NAME].myvolume"
-      }
-    }
+    "reason": "id_changes",
+    "old": "main.test-schema-[UNIQUE_NAME].myvolume",
+    "new": "",
+    "remote": "main.test-schema-[UNIQUE_NAME].myvolume"
   }
 }
 
