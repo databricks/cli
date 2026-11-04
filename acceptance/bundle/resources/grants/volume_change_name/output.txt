@@ -51,30 +51,34 @@ volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume'
 === Rename the volume: its ID changes, and so does the ID of its grants
 >>> update_file.py databricks.yml myvolume myvolume_renamed
 
->>> [CLI] bundle plan
-update volumes.volume1
-update volumes.volume1.grants
-
-Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
-
 >>> [CLI] bundle plan --output json
 {
+  "resources.schemas.schema1": {
+    "action": "skip",
+    "changes": {}
+  },
   "resources.volumes.volume1": {
-    "name": {
-      "action": "update_id",
-      "reason": "id_changes",
-      "old": "myvolume",
-      "new": "myvolume_renamed",
-      "remote": "myvolume"
+    "action": "update_id",
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "myvolume",
+        "new": "myvolume_renamed",
+        "remote": "myvolume"
+      }
     }
   },
   "resources.volumes.volume1.grants": {
-    "full_name": {
-      "action": "update_id",
-      "reason": "id_changes",
-      "old": "main.test-schema-[UNIQUE_NAME].myvolume",
-      "new": "",
-      "remote": "main.test-schema-[UNIQUE_NAME].myvolume"
+    "action": "update_id",
+    "changes": {
+      "full_name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "main.test-schema-[UNIQUE_NAME].myvolume",
+        "new": "",
+        "remote": "main.test-schema-[UNIQUE_NAME].myvolume"
+      }
     }
   }
 }

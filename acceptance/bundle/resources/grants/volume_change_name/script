@@ -17,8 +17,7 @@ trace read_state.py volumes volume1.grants id
 
 title "Rename the volume: its ID changes, and so does the ID of its grants"
 trace update_file.py databricks.yml myvolume myvolume_renamed
-trace $CLI bundle plan
-trace $CLI bundle plan --output json | nostamp | jq '.plan | map_values((.changes // {}) | with_entries(select(.value.action != "skip"))) | with_entries(select(.value != {}))'
+trace $CLI bundle plan --output json | nostamp | jq '.plan | map_values({action, changes: ((.changes // {}) | with_entries(select(.value.action != "skip")))})'
 
 title "Deploy renames the volume and applies the grants under the new name"
 trace $CLI bundle deploy
