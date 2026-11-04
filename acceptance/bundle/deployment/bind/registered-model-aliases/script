@@ -5,8 +5,9 @@ MODEL="main.default.$MODEL_NAME"
 
 title "A model created outside the bundle, with versions 1 and 2 registered the way mlflow.register_model does"
 trace $CLI registered-models create --json "{\"name\": \"$MODEL_NAME\", \"catalog_name\": \"main\", \"schema_name\": \"default\"}" | jq '{full_name}'
+# MSYS_NO_PATHCONV=1 is scoped to the api call: set test-wide it breaks print_requests.py on Windows.
 for _ in 1 2; do
-    trace $CLI api post /api/2.0/mlflow/unity-catalog/model-versions/create --json "{\"name\": \"$MODEL\", \"source\": \"dbfs:/tmp/model\"}" | jq '.model_version | {version}'
+    MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.0/mlflow/unity-catalog/model-versions/create --json "{\"name\": \"$MODEL\", \"source\": \"dbfs:/tmp/model\"}" | jq '.model_version | {version}'
 done
 
 cleanup() {

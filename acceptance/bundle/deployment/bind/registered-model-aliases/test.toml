@@ -3,5 +3,3 @@
 # fake server rather than with MLflow.
 Cloud = false
 RecordRequests = true
-
-Env.MSYS_NO_PATHCONV = "1"

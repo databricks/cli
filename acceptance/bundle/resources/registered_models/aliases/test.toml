@@ -8,6 +8,4 @@ RecordRequests = true
 # READPLAN=1 feeds the serialized plan to `bundle deploy --plan`.
 EnvMatrix.READPLAN = ["", "1"]
 
-Env.MSYS_NO_PATHCONV = "1"
-
 Ignore = ["tmp.plan.json"]

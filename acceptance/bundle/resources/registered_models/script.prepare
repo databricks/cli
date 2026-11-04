@@ -6,6 +6,8 @@ alias_fields() {
 
 # register_model_version registers the next version of a model out of band and prints its
 # number, as a training run's mlflow.register_model does. An alias can only point at one.
+# MSYS_NO_PATHCONV=1 stops Git Bash on Windows from rewriting the leading /api path. It is scoped
+# to this call: set test-wide it also breaks the python helpers (see .agents/rules/testing.md).
 register_model_version() {
-    $CLI api post /api/2.0/mlflow/unity-catalog/model-versions/create --json "{\"name\": \"$1\", \"source\": \"dbfs:/tmp/model\"}" | jq -r '.model_version.version'
+    MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/mlflow/unity-catalog/model-versions/create --json "{\"name\": \"$1\", \"source\": \"dbfs:/tmp/model\"}" | jq -r '.model_version.version'
 }
