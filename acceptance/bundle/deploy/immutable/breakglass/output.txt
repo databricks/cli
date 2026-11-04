@@ -62,7 +62,7 @@ true
 
 === Deploying the saved plan with --force fails, since it keeps the modified snapshot
 >>> musterr [CLI] bundle deploy --plan plan.json --force
-Error: the last deployment was modified in the workspace since the plan was created; run 'bundle plan --force' again to move to a new snapshot
+Error: the last deployment was modified in the workspace since the plan was created; create a new plan with 'bundle plan --force' to move to a new snapshot
 
 Files: 0 uploaded, 0 deleted
 
