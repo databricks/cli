@@ -110,25 +110,46 @@ resources:
 }
 
 func TestSetDefaultErrorHasFullPath(t *testing.T) {
-	// Built directly because loading the config would drop a wrong-kind workload_type.
-	v := dyn.V(map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"jobs": dyn.V(map[string]dyn.Value{
-				"job": dyn.V(map[string]dyn.Value{
-					"job_clusters": dyn.V([]dyn.Value{
-						dyn.V(map[string]dyn.Value{
-							"new_cluster": dyn.V(map[string]dyn.Value{
-								"workload_type": dyn.V("not a map"),
+	tests := []struct {
+		name          string
+		workloadType  dyn.Value
+		expectedError string
+	}{
+		{
+			name:          "mismatch_inside_pattern",
+			workloadType:  dyn.V("not a map"),
+			expectedError: `resources.jobs.job.job_clusters[0].new_cluster.workload_type: expected a map to index "clients", found string`,
+		},
+		{
+			name:          "mismatch_at_pattern_end",
+			workloadType:  dyn.V(map[string]dyn.Value{"clients": dyn.V("x")}),
+			expectedError: `resources.jobs.job.job_clusters[0].new_cluster.workload_type.clients: expected a map to index "notebooks", found string`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Built directly because loading the config would drop a wrong-kind workload_type.
+			v := dyn.V(map[string]dyn.Value{
+				"resources": dyn.V(map[string]dyn.Value{
+					"jobs": dyn.V(map[string]dyn.Value{
+						"job": dyn.V(map[string]dyn.Value{
+							"job_clusters": dyn.V([]dyn.Value{
+								dyn.V(map[string]dyn.Value{
+									"new_cluster": dyn.V(map[string]dyn.Value{
+										"workload_type": tc.workloadType,
+									}),
+								}),
 							}),
 						}),
 					}),
 				}),
-			}),
-		}),
-	})
+			})
 
-	pattern := dyn.MustPatternFromString("resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients")
-	m := SetDefaultMutator(pattern, "notebooks", true).(*setDefault)
-	_, err := m.apply(v, dyn.EmptyPath, m.pattern)
-	assert.EqualError(t, err, `resources.jobs.job.job_clusters[0].new_cluster.workload_type: expected a map to index "clients", found string`)
+			pattern := dyn.MustPatternFromString("resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients")
+			m := SetDefaultMutator(pattern, "notebooks", true).(*setDefault)
+			_, err := m.apply(v, dyn.EmptyPath, m.pattern)
+			assert.EqualError(t, err, tc.expectedError)
+		})
+	}
 }

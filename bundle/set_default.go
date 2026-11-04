@@ -66,19 +66,19 @@ func (m *setDefault) apply(v dyn.Value, prefix dyn.Path, pattern dyn.Pattern) (d
 		return v, nil
 	}
 
+	var nv dyn.Value
+	var err error
 	if len(pattern) == 0 {
-		_, err := dyn.GetByPath(v, m.key)
-		switch {
-		case dyn.IsNoSuchKeyError(err):
+		_, err = dyn.GetByPath(v, m.key)
+		if dyn.IsNoSuchKeyError(err) {
 			return dyn.SetByPath(v, m.key, dyn.V(m.value))
-		default:
-			return v, err
 		}
+		nv = v
+	} else {
+		nv, err = dyn.MapByPattern(v, pattern[:1], func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			return m.apply(v, prefix.Append(p...), pattern[1:])
+		})
 	}
-
-	nv, err := dyn.MapByPattern(v, pattern[:1], func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		return m.apply(v, prefix.Append(p...), pattern[1:])
-	})
 	if err == nil || len(prefix) == 0 {
 		return nv, err
 	}
@@ -86,6 +86,7 @@ func (m *setDefault) apply(v dyn.Value, prefix dyn.Path, pattern dyn.Pattern) (d
 	if _, ok := errors.AsType[setDefaultPathError](err); ok {
 		return nv, err
 	}
+	// The error is relative to v, so prefix it with the path of v itself.
 	return nv, setDefaultPathError{path: prefix, err: err}
 }
 
