@@ -1295,6 +1295,20 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "materialization_sets":
+      "description": |-
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
+      "markdown_description": |-
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "materialized_features":
+          "$fields":
+            "cron_schedule":
+              "description": |-
+                Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.
     "mcp_services":
       "description": |-
         PLACEHOLDER
@@ -2335,6 +2349,9 @@ targets:
         "lookup":
           "description": |-
             The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+        "sensitive":
+          "description": |-
+            Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.
         "type":
           "description": |-
             The type of the variable.
@@ -2398,6 +2415,9 @@ variables:
         "warehouse":
           "description": |-
             The name of the warehouse for which to retrieve an ID.
+    "sensitive":
+      "description": |-
+        Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.
     "type":
       "description": |-
         The type of the variable.

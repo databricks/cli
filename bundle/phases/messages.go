@@ -49,6 +49,18 @@ index drops all upserted vectors. Both can be expensive to rebuild:`
 	deleteOrRecreateGenieSpaceMessage = `
 This action will result in the deletion or recreation of the following Genie spaces.
 The conversation history attached to a deleted space is permanently lost:`
+
+	deleteOrRecreateMaterializationSetMessage = `
+This action will result in the deletion or recreation of the following materialization sets.
+Every materialized feature in a recreated set is dropped and recomputed from scratch, including
+the members whose configuration did not change:`
+
+	deleteOrRecreateFeatureMessage = `
+This action will result in the deletion or recreation of the following Feature Views.
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:`
 )
 
 // DataLossWarning is the warning shown when a non-interactive command is about
@@ -99,4 +111,7 @@ For Direct Access indexes, all upserted vectors are permanently lost:`
 
 	deleteGenieSpaceMessage = `This action will result in the deletion of the following Genie spaces.
 The conversation history attached to them is permanently lost:`
+
+	deleteFeatureMessage = `This action will result in the deletion of the following Feature Views.
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:`
 )

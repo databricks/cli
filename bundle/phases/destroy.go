@@ -45,6 +45,7 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteGenieSpaceMessage},
+	{group: "features", message: deleteFeatureMessage},
 }
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include

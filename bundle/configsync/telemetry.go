@@ -49,6 +49,11 @@ type Stats struct {
 	// could not be attributed to a single source location.
 	SkippedChangesCount int64
 
+	// Resources left unchanged because a cluster policy could not be read, by cause.
+	ClusterPolicyNotFoundCount         int64
+	ClusterPolicyPermissionDeniedCount int64
+	ClusterPolicyReadFailedCount       int64
+
 	Restore RestoreStats
 
 	// Identity of the resource state the run actually read. Without these, a
@@ -68,6 +73,21 @@ type Stats struct {
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
+}
+
+// CollectSkippedResources counts resources held back by cluster policy lookups, by
+// reason. Only counts are kept; the resource keys and policy IDs stay in the output.
+func (s *Stats) CollectSkippedResources(skipped []SkippedChange) {
+	for _, skip := range skipped {
+		switch skip.Reason {
+		case SkipReasonClusterPolicyNotFound:
+			s.ClusterPolicyNotFoundCount++
+		case SkipReasonClusterPolicyPermissionDenied:
+			s.ClusterPolicyPermissionDeniedCount++
+		default:
+			s.ClusterPolicyReadFailedCount++
+		}
+	}
 }
 
 // CollectStateStats records which resource state the run read. Only the
@@ -274,28 +294,31 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleConfigRemoteSyncEvent: &protos.BundleConfigRemoteSyncEvent{
-			Save:                   s.Save,
-			Engine:                 string(s.Engine),
-			ChangesTotal:           s.ChangesTotal,
-			AddCount:               s.AddCount,
-			ReplaceCount:           s.ReplaceCount,
-			RemoveCount:            s.RemoveCount,
-			RecreateForcingChanges: s.RecreateForcingChanges,
-			OverwrittenLocalEdits:  s.OverwrittenLocalEdits,
-			ResourceChanges:        resourceChanges,
-			FilesChangedCount:      s.FilesChangedCount,
-			FilesWrittenCount:      s.FilesWrittenCount,
-			SkippedChangesCount:    s.SkippedChangesCount,
-			RefsRetargeted:         s.Restore.Retargeted,
-			RefsFromSiblings:       s.Restore.FromSiblings,
-			StateSerial:            s.StateSerial,
-			StateLineage:           s.StateLineage,
-			StateSource:            s.StateSource,
-			StatesAvailableCount:   s.StatesAvailableCount,
-			StateResourceIDs:       s.StateResourceIDs,
-			SelectedResourceIDs:    s.SelectedResourceIDs,
-			ErrorMessage:           s.ErrorMessage,
-			ErrorCategory:          s.ErrorCategory,
+			Save:                               s.Save,
+			Engine:                             string(s.Engine),
+			ChangesTotal:                       s.ChangesTotal,
+			AddCount:                           s.AddCount,
+			ReplaceCount:                       s.ReplaceCount,
+			RemoveCount:                        s.RemoveCount,
+			RecreateForcingChanges:             s.RecreateForcingChanges,
+			OverwrittenLocalEdits:              s.OverwrittenLocalEdits,
+			ResourceChanges:                    resourceChanges,
+			FilesChangedCount:                  s.FilesChangedCount,
+			FilesWrittenCount:                  s.FilesWrittenCount,
+			SkippedChangesCount:                s.SkippedChangesCount,
+			ClusterPolicyNotFoundCount:         s.ClusterPolicyNotFoundCount,
+			ClusterPolicyPermissionDeniedCount: s.ClusterPolicyPermissionDeniedCount,
+			ClusterPolicyReadFailedCount:       s.ClusterPolicyReadFailedCount,
+			RefsRetargeted:                     s.Restore.Retargeted,
+			RefsFromSiblings:                   s.Restore.FromSiblings,
+			StateSerial:                        s.StateSerial,
+			StateLineage:                       s.StateLineage,
+			StateSource:                        s.StateSource,
+			StatesAvailableCount:               s.StatesAvailableCount,
+			StateResourceIDs:                   s.StateResourceIDs,
+			SelectedResourceIDs:                s.SelectedResourceIDs,
+			ErrorMessage:                       s.ErrorMessage,
+			ErrorCategory:                      s.ErrorCategory,
 		},
 	})
 }

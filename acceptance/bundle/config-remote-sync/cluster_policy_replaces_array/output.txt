@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created jobs.test_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Replace authored scripts with a script from an updated policy
+>>> [CLI] cluster-policies edit --json {
+  "policy_id": "[POLICY_ID]",
+  "name": "test-policy-[UNIQUE_NAME]",
+  "definition": "{\"init_scripts.0.volumes.destination\":{\"type\":\"fixed\",\"value\":\"/Volumes/catalog/schema/volume/policy.sh\"}}"
+}
+
+>>> [CLI] bundle config-remote-sync --save
+No changes detected.
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== Authored scripts are kept without copying the policy script
+>>> [CLI] bundle validate -o json
+true
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted
+
+>>> [CLI] cluster-policies delete [POLICY_ID]

@@ -1,0 +1,5 @@
+# bind and unbind refuse to run while deployment history recording is on.
+EnvMatrix.DMS = [""]
+
+# The case asserts plan actions and skip reasons, not request shapes.
+RecordRequests = false
