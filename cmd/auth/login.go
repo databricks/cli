@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"runtime"
 	"slices"
 	"strconv"
@@ -246,6 +247,17 @@ a new profile is created.
 			}
 		}
 
+		// setHost normalizes the host only after the keyring probe and the
+		// profile name prompt, so reject an invalid host before them. Only trim
+		// it here: an account ID from the query params would make the prompt
+		// suggest ACCOUNT-<id> for a workspace login.
+		if authArguments.Host != "" {
+			if err := normalizeLoginHost(&auth.AuthArguments{Host: authArguments.Host}); err != nil {
+				return err
+			}
+			authArguments.Host = strings.TrimSpace(authArguments.Host)
+		}
+
 		if err := validateDeviceCodeCompletionFlags(cmd); err != nil {
 			return err
 		}
@@ -315,11 +327,6 @@ a new profile is created.
 				if err != nil {
 					return err
 				}
-				// Fail here rather than prompting for the host again after
-				// the profile name.
-				if useDeviceCode && host == "" {
-					return errDeviceCodeNeedsHost
-				}
 				authArguments.Host = host
 			case profilePickerCreateNew:
 				// Reject the names of existing profiles, including those the
@@ -339,13 +346,8 @@ a new profile is created.
 		// only populated by setHostAndAccountId further down, which runs after
 		// the profile-name prompt.
 		if skipWorkspace && profileName == "" && authArguments.Host != "" && authArguments.AccountID == "" {
-			params := auth.ExtractHostQueryParams(authArguments.Host)
-			authArguments.Host = params.Host
-			if authArguments.AccountID == "" {
-				authArguments.AccountID = params.AccountID
-			}
-			if authArguments.WorkspaceID == "" {
-				authArguments.WorkspaceID = params.WorkspaceID
+			if err := normalizeLoginHost(authArguments); err != nil {
+				return err
 			}
 			runHostDiscovery(ctx, authArguments)
 		}
@@ -417,15 +419,8 @@ a new profile is created.
 		// Check the host once it is resolved, before setAccountID prompts for
 		// an account ID for account and unified hosts. A workspace without
 		// device code login enabled is rejected later by deviceCodeLogin.
-		if useDeviceCode {
-			// The host prompt accepts an empty answer. Without this check,
-			// login would resolve the host from DATABRICKS_HOST instead.
-			if authArguments.Host == "" {
-				return errDeviceCodeNeedsHost
-			}
-			if !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
-				return errDeviceCodeWorkspaceOnly
-			}
+		if useDeviceCode && !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
+			return errDeviceCodeWorkspaceOnly
 		}
 		err = setAccountID(ctx, existingProfile, authArguments)
 		if err != nil {
@@ -629,6 +624,62 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	return setAccountID(ctx, existingProfile, authArguments)
 }
 
+var errInvalidHost = errors.New("invalid host")
+
+const exampleHost = "https://<databricks-instance>.cloud.databricks.com"
+
+// normalizeLoginHost strips the trailing slash and the query params from the
+// host and moves the workspace and account ID query params into WorkspaceID and
+// AccountID unless they are set.
+// It fails if the host is not a URL with a hostname, e.g. for "/", "?o=123",
+// "https://" or "https://my workspace.test", because login would then use discovery
+// or DATABRICKS_HOST, connect to a host named "https", or fail later.
+func normalizeLoginHost(authArguments *auth.AuthArguments) error {
+	params, err := parseLoginHost(authArguments.Host)
+	if err != nil {
+		// The host may come from a profile or DATABRICKS_HOST, so say what
+		// shape is expected.
+		return fmt.Errorf("%w. Expected a URL like %s", err, exampleHost)
+	}
+	authArguments.Host = params.Host
+	if authArguments.WorkspaceID == "" {
+		authArguments.WorkspaceID = params.WorkspaceID
+	}
+	if authArguments.AccountID == "" {
+		authArguments.AccountID = params.AccountID
+	}
+	return nil
+}
+
+// parseLoginHost trims host and extracts its query params. It returns
+// errInvalidHost if host is not a URL with a hostname.
+func parseLoginHost(host string) (auth.HostParams, error) {
+	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
+	// URL params from explicit --host override stale profile values.
+	params := auth.ExtractHostQueryParams(strings.TrimSuffix(strings.TrimSpace(host), "/"))
+	if !hasHostname(params.Host) {
+		return auth.HostParams{}, fmt.Errorf("%w %q", errInvalidHost, host)
+	}
+	return params, nil
+}
+
+// hasHostname reports whether host, with or without a scheme, is an http or
+// https URL with a hostname.
+func hasHostname(host string) bool {
+	u, err := url.Parse(host)
+	// url.Parse can't read a host without a scheme, e.g. "localhost:8080", so
+	// check it as an https host. A host with "//" has a scheme, possibly a
+	// malformed one like in "https//x.test", so it is checked as is.
+	if (err != nil || !isHTTPScheme(u.Scheme)) && !strings.Contains(host, "//") {
+		u, err = url.Parse("https://" + host)
+	}
+	return err == nil && isHTTPScheme(u.Scheme) && u.Hostname() != ""
+}
+
+func isHTTPScheme(scheme string) bool {
+	return scheme == "http" || scheme == "https"
+}
+
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
 // Follows the following precedence:
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
@@ -660,17 +711,8 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 		}
 	}
 
-	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
-
-	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
-	// URL params from explicit --host override stale profile values.
-	params := auth.ExtractHostQueryParams(authArguments.Host)
-	authArguments.Host = params.Host
-	if authArguments.WorkspaceID == "" {
-		authArguments.WorkspaceID = params.WorkspaceID
-	}
-	if authArguments.AccountID == "" {
-		authArguments.AccountID = params.AccountID
+	if err := normalizeLoginHost(authArguments); err != nil {
+		return err
 	}
 
 	// Inherit workspace_id from the existing profile AFTER URL param extraction.

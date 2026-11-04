@@ -24,12 +24,9 @@ FILE plain.sql
 === Remove both local files and sync again
 
 >>> [CLI] bundle sync --output text
-Action: DELETE: bom.sql, plain.sql
-Deleted bom.sql
+Action: DELETE: bom, plain.sql
+Deleted bom
 Deleted plain.sql
 Initial Sync Complete
 
-=== BUG: bom remains after sync reports deleting bom.sql
-
 >>> list
-NOTEBOOK bom

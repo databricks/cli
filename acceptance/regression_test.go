@@ -226,8 +226,10 @@ func renderRegressionReport(selected string, columns []regrColumn) string {
 	var b strings.Builder
 	b.WriteString("## Regression test report\n\n")
 	fmt.Fprintf(&b, "%s\n\n", selected)
-	fmt.Fprintf(&b, "%d tests: %s\n\n", len(tests), formatCounts(countByCategory(tests, branch, refs)))
 
+	// The table has a row per test variant, often hundreds, so it is collapsed. The workflow
+	// that posts the report always keeps this first <details> block when it trims the comment.
+	fmt.Fprintf(&b, "<details>\n<summary>%d tests: %s</summary>\n\n", len(tests), formatCounts(countByCategory(tests, branch, refs)))
 	b.WriteString("| test | " + strings.Join(columnTitles(columns), " | ") + " |\n")
 	b.WriteString("|---|" + strings.Repeat("---|", len(columns)) + "\n")
 	for _, test := range tests {
@@ -237,7 +239,7 @@ func renderRegressionReport(selected string, columns []regrColumn) string {
 		}
 		fmt.Fprintf(&b, "| %s | %s |\n", test, strings.Join(marks, " | "))
 	}
-	b.WriteString("\n")
+	b.WriteString("\n</details>\n\n")
 
 	for _, test := range tests {
 		renderDetails(&b, test, columns)
