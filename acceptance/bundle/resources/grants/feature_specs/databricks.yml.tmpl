@@ -4,12 +4,12 @@ bundle:
 resources:
   feature_specs:
     my_feature_spec:
-      name: main.myschema.myspec
+      name: $SCHEMA_FULL_NAME.myspec
       features:
         - feature_lookup:
-            table: main.myschema.user_features
+            table: $SCHEMA_FULL_NAME.user_features
             lookup_keys: [user_id]
             feature_names: [age, country]
       grants:
-        - principal: deco-test-user@databricks.com
+        - principal: account users
           privileges: ["EXECUTE"]

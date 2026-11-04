@@ -126,8 +126,6 @@ EnvMatrixExclude.no_data_quality_monitor_on_cloud = ["CONFIG_Cloud=true", "INPUT
 EnvMatrixExclude.no_feature_dms = ["DMS=true", "INPUT_CONFIG=feature.yml.tmpl"]
 # Same for "feature_specs.".
 EnvMatrixExclude.no_feature_spec_dms = ["DMS=true", "INPUT_CONFIG=feature_spec.yml.tmpl"]
-# The feature spec endpoints are not enabled in the cloud test workspaces yet.
-EnvMatrixExclude.no_feature_spec_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=feature_spec.yml.tmpl"]
 # Fake SQL endpoint for local tests
 
 [[Server]]

@@ -1,5 +1,29 @@
-trace $CLI bundle deployment bind spec1 main.myschema.boundspec --auto-approve
+# Creating a feature spec resolves its lookup tables in Unity Catalog, so the test creates them in
+# a schema of its own. Dropping the schema also drops the feature spec.
+export SCHEMA_FULL_NAME="main.fspec_$UNIQUE_NAME"
+trace $CLI schemas create "fspec_$UNIQUE_NAME" main -o json | jq '{full_name}'
+trace create_feature_spec_fixtures.py "$SCHEMA_FULL_NAME"
+
+cleanup() {
+    $CLI schemas delete "$SCHEMA_FULL_NAME" --force &>> LOG.cleanup || true
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Create the feature spec outside the bundle"
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.0/feature-engineering/feature-specs --json "{
+  \"name\": \"$SCHEMA_FULL_NAME.boundspec\",
+  \"features\": [{\"feature_lookup\": {\"table\": \"$SCHEMA_FULL_NAME.user_features\", \"lookup_keys\": [\"user_id\"], \"feature_names\": [\"age\"]}}]
+}" | jq '{name}'
+
+trace $CLI bundle deployment bind spec1 $SCHEMA_FULL_NAME.boundspec --auto-approve
 trace $CLI bundle summary
+
+title "The bound feature spec matches the config, so there is nothing to change"
+trace $CLI bundle plan
 
 trace $CLI bundle deployment unbind spec1
 trace $CLI bundle summary
+
+MSYS_NO_PATHCONV=1 trace $CLI api delete /api/2.0/feature-engineering/feature-specs/$SCHEMA_FULL_NAME.boundspec

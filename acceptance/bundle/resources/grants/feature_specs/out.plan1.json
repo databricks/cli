@@ -16,11 +16,11 @@
                 "lookup_keys": [
                   "user_id"
                 ],
-                "table": "main.myschema.user_features"
+                "table": "main.fspec_[UNIQUE_NAME].user_features"
               }
             }
           ],
-          "name": "main.myschema.myspec"
+          "name": "main.fspec_[UNIQUE_NAME].myspec"
         }
       }
     },
@@ -38,7 +38,7 @@
           "full_name": "",
           "__embed__": [
             {
-              "principal": "deco-test-user@databricks.com",
+              "principal": "account users",
               "privileges": [
                 "EXECUTE"
               ]

@@ -1,4 +1,11 @@
 
+>>> [CLI] schemas create fspec_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.fspec_[UNIQUE_NAME]"
+}
+
+>>> create_feature_spec_fixtures.py main.fspec_[UNIQUE_NAME]
+
 >>> [CLI] bundle plan -o json
 
 >>> print_requests.py --get //permissions
@@ -12,11 +19,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //permissions
 
->>> [CLI] grants get function main.myschema.myspec
+>>> [CLI] grants get function main.fspec_[UNIQUE_NAME].myspec
 {
   "privilege_assignments": [
     {
-      "principal": "deco-test-user@databricks.com",
+      "principal": "account users",
       "privileges": [
         "EXECUTE"
       ]
@@ -42,11 +49,11 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py //feature-engineering //permissions
 
->>> [CLI] grants get function main.myschema.myspec
+>>> [CLI] grants get function main.fspec_[UNIQUE_NAME].myspec
 {
   "privilege_assignments": [
     {
-      "principal": "deco-test-user@databricks.com",
+      "principal": "account users",
       "privileges": [
         "EXECUTE"
       ]

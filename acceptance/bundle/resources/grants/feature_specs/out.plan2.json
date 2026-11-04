@@ -17,11 +17,11 @@
                 "lookup_keys": [
                   "user_id"
                 ],
-                "table": "main.myschema.user_features"
+                "table": "main.fspec_[UNIQUE_NAME].user_features"
               }
             }
           ],
-          "name": "main.myschema.myspec"
+          "name": "main.fspec_[UNIQUE_NAME].myspec"
         }
       },
       "remote_state": {
@@ -35,11 +35,11 @@
               "lookup_keys": [
                 "user_id"
               ],
-              "table": "main.myschema.user_features"
+              "table": "main.fspec_[UNIQUE_NAME].user_features"
             }
           }
         ],
-        "name": "main.myschema.myspec"
+        "name": "main.fspec_[UNIQUE_NAME].myspec"
       },
       "changes": {
         "features[0].feature_lookup.feature_names": {
@@ -73,7 +73,7 @@
           "full_name": "",
           "__embed__": [
             {
-              "principal": "deco-test-user@databricks.com",
+              "principal": "account users",
               "privileges": [
                 "EXECUTE"
               ]
@@ -86,10 +86,10 @@
       },
       "remote_state": {
         "securable_type": "function",
-        "full_name": "main.myschema.myspec",
+        "full_name": "main.fspec_[UNIQUE_NAME].myspec",
         "__embed__": [
           {
-            "principal": "deco-test-user@databricks.com",
+            "principal": "account users",
             "privileges": [
               "EXECUTE"
             ]
@@ -100,9 +100,9 @@
         "full_name": {
           "action": "update_id",
           "reason": "id_changes",
-          "old": "main.myschema.myspec",
+          "old": "main.fspec_[UNIQUE_NAME].myspec",
           "new": "",
-          "remote": "main.myschema.myspec"
+          "remote": "main.fspec_[UNIQUE_NAME].myspec"
         }
       }
     }

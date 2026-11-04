@@ -1,0 +1,15 @@
+# Creating a feature spec resolves its lookup tables and UDFs in Unity Catalog, so each test creates
+# them in a schema of its own. Dropping the schema also drops any feature spec a failed run leaves.
+feature_spec_cleanup() {
+    $CLI bundle destroy --auto-approve &>> LOG.cleanup || true
+    $CLI schemas delete "$SCHEMA_FULL_NAME" --force &>> LOG.cleanup || true
+}
+
+# Call from the test's script, so the trap belongs to the shell that runs it.
+feature_spec_setup() {
+    export SCHEMA_FULL_NAME="main.fspec_$UNIQUE_NAME"
+    trace $CLI schemas create "fspec_$UNIQUE_NAME" main -o json | jq '{full_name}'
+    trace create_feature_spec_fixtures.py "$SCHEMA_FULL_NAME"
+    trap feature_spec_cleanup EXIT
+    envsubst < databricks.yml.tmpl > databricks.yml
+}

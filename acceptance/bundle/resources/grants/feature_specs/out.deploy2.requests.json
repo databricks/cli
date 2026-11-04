@@ -1,6 +1,6 @@
 {
   "method": "DELETE",
-  "path": "/api/2.0/feature-engineering/feature-specs/main.myschema.myspec"
+  "path": "/api/2.0/feature-engineering/feature-specs/main.fspec_[UNIQUE_NAME].myspec"
 }
 {
   "method": "POST",
@@ -15,23 +15,23 @@
           "lookup_keys": [
             "user_id"
           ],
-          "table": "main.myschema.user_features"
+          "table": "main.fspec_[UNIQUE_NAME].user_features"
         }
       }
     ],
-    "name": "main.myschema.myspec"
+    "name": "main.fspec_[UNIQUE_NAME].myspec"
   }
 }
 {
   "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/permissions/function/main.myschema.myspec",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.fspec_[UNIQUE_NAME].myspec",
   "body": {
     "changes": [
       {
         "add": [
           "EXECUTE"
         ],
-        "principal": "deco-test-user@databricks.com",
+        "principal": "account users",
         "remove": [
           "ALL_PRIVILEGES"
         ]

@@ -1,7 +1,8 @@
-# Feature specs are not deployed to the cloud test workspaces yet; compare the recorded requests
-# locally.
-Cloud = false
-
 # Deployment history has no "feature_specs." resource-key prefix; see dmsResourceTypes in
 # libs/testserver/bundledeployments.go.
 EnvMatrixExclude.no_feature_spec_dms = ["DMS=true"]
+
+# Fake SQL endpoint so create_feature_spec_fixtures.py works against the local test server too.
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'

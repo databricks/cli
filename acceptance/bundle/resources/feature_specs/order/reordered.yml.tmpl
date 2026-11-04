@@ -1,13 +1,13 @@
 bundle:
-  name: test-bundle
+  name: test-feature-specs-order-$UNIQUE_NAME
 
 resources:
   feature_specs:
     spec1:
-      name: main.myschema.myspec
+      name: $SCHEMA_FULL_NAME.myspec
       features:
         - feature_lookup:
-            table: main.myschema.user_features
+            table: $SCHEMA_FULL_NAME.tenant_user_features
             lookup_keys: [tenant_id, user_id]
             feature_names: [age, country]
             rename_outputs:
@@ -17,7 +17,7 @@ resources:
               - {feature: user_country, default_value: US}
               - {feature: user_age, default_value: "0"}
         - feature_function:
-            udf: main.myschema.score
+            udf: $SCHEMA_FULL_NAME.country_score
             input_bindings:
               - {parameter: y, bound_feature: user_country}
               - {parameter: x, bound_feature: user_age}

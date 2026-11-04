@@ -56,5 +56,5 @@ func (s *FakeWorkspace) FeatureSpecsDelete(name string) Response {
 	}
 	delete(s.FeatureSpecs, name)
 	delete(s.Grants, grantsKey("function", name))
-	return Response{}
+	return Response{Body: map[string]any{}}
 }

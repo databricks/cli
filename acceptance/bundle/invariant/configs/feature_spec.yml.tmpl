@@ -4,10 +4,10 @@ bundle:
 resources:
   feature_specs:
     foo:
-      name: main.default.test_feature_spec_$UNIQUE_NAME
+      name: main.fspec_inv_$UNIQUE_NAME.test_feature_spec
       features:
         - feature_lookup:
-            table: main.default.user_features
+            table: main.fspec_inv_$UNIQUE_NAME.user_features
             lookup_keys: [user_id]
             feature_names: [age]
       grants:

@@ -1,4 +1,11 @@
 
+>>> [CLI] schemas create fspec_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.fspec_[UNIQUE_NAME]"
+}
+
+>>> create_feature_spec_fixtures.py main.fspec_[UNIQUE_NAME]
+
 === Initial summary before deploy
 >>> [CLI] bundle summary -o json
 {
@@ -17,7 +24,7 @@
         "lookup_keys": [
           "user_id"
         ],
-        "table": "main.myschema.user_features"
+        "table": "main.fspec_[UNIQUE_NAME].user_features"
       }
     },
     {
@@ -29,7 +36,7 @@
           }
         ],
         "output": "score",
-        "udf": "main.myschema.score"
+        "udf": "main.fspec_[UNIQUE_NAME].score"
       }
     }
   ],
@@ -38,9 +45,9 @@
 }
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-basic-[UNIQUE_NAME]/default/files...
 Created feature_specs.spec1
-Files: 1 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //feature-engineering
@@ -63,7 +70,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
           "lookup_keys": [
             "user_id"
           ],
-          "table": "main.myschema.user_features"
+          "table": "main.fspec_[UNIQUE_NAME].user_features"
         }
       },
       {
@@ -75,7 +82,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
             }
           ],
           "output": "score",
-          "udf": "main.myschema.score"
+          "udf": "main.fspec_[UNIQUE_NAME].score"
         }
       }
     ],
@@ -87,7 +94,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle summary -o json
 {
   "id": "[SPEC1_ID]",
-  "url": "[DATABRICKS_URL]/explore/data/functions/main/myschema/myspec?w=[WORKSPACE_ID]"
+  "url": "[DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/myspec?w=[WORKSPACE_ID]"
 }
 
 === A second plan on an unchanged bundle must report no changes
@@ -103,7 +110,7 @@ recreate feature_specs.spec1
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-basic-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following feature specs.
 Grants on them that are not declared in the bundle are lost:
@@ -135,7 +142,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
           "lookup_keys": [
             "user_id"
           ],
-          "table": "main.myschema.user_features"
+          "table": "main.fspec_[UNIQUE_NAME].user_features"
         }
       },
       {
@@ -147,7 +154,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
             }
           ],
           "output": "score",
-          "udf": "main.myschema.score"
+          "udf": "main.fspec_[UNIQUE_NAME].score"
         }
       }
     ],
@@ -163,7 +170,7 @@ This action will result in the deletion of the following feature specs.
 Feature Serving endpoints and training code that use them can no longer load them:
   delete resources.feature_specs.spec1
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-basic-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
 
