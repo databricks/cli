@@ -35,11 +35,14 @@ def write_docs(output: str):
     docs = Path(output) / "docs"
     bundles = Path(output) / "databricks" / "bundles"
 
-    # core is hand-written; every other package dir gets a generated page.
+    # core is hand-written; every other public package dir gets a generated page.
+    # Private packages (e.g. _bitmap) are not part of the documented API.
     namespaces = sorted(
         p.name
         for p in bundles.iterdir()
-        if p.name != "core" and (p / "__init__.py").exists()
+        if p.name != "core"
+        and not p.name.startswith("_")
+        and (p / "__init__.py").exists()
     )
 
     # Drop stale pages so a removed resource loses its page; keep core.rst.
