@@ -1,1 +1,0 @@
-* `bundle deploy` now asks for confirmation before recreating or deleting a Feature View, and `bundle deploy` and `bundle destroy` warn that FeatureSpecs using a Feature View are not checked. ([#7164](https://github.com/databricks/cli/pull/7164))
