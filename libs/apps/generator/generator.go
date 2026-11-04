@@ -422,6 +422,12 @@ var appResourceSpecs = map[string]appResourceSpec{
 		staticFields: [][2]string{{"securable_type", "TABLE"}},
 		permission:   "SELECT",
 	},
+	"model_service": {
+		yamlKey:      "uc_securable",
+		varFields:    [][2]string{{"name", "securable_full_name"}},
+		staticFields: [][2]string{{"securable_type", "MODEL_SERVICE"}},
+		permission:   "EXECUTE",
+	},
 	// TODO: uncomment when bundles support app as an app resource type.
 	// "app": {
 	// 	yamlKey:    "app",

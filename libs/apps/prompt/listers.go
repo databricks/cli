@@ -130,6 +130,33 @@ func ListVolumesInSchema(ctx context.Context, catalogName, schemaName string) ([
 	return capResults(out), nil
 }
 
+// modelServiceNamePrefix prefixes model service resource names
+// (model-services/{catalog}.{schema}.{name}); apps reference the bare full name.
+const modelServiceNamePrefix = "model-services/"
+
+// ListModelServicesInSchema returns model services within a catalog.schema as selectable items.
+// Item IDs are the full names (catalog.schema.name) used as the app's uc_securable.
+func ListModelServicesInSchema(ctx context.Context, catalogName, schemaName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.AiGateway.ListModelServices(ctx, catalog.ListModelServicesRequest{
+		Parent: "schemas/" + catalogName + "." + schemaName,
+	})
+	services, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, min(len(services), maxListResults))
+	for _, s := range services {
+		fullName := strings.TrimPrefix(s.Name, modelServiceNamePrefix)
+		label := fullName[strings.LastIndex(fullName, ".")+1:]
+		out = append(out, ListItem{ID: fullName, Label: label})
+	}
+	return capResults(out), nil
+}
+
 // ListFunctionsInSchema returns UC functions within a catalog.schema as selectable items.
 func ListFunctionsInSchema(ctx context.Context, catalogName, schemaName string) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)
