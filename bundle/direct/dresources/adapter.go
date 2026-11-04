@@ -70,6 +70,9 @@ type IResource interface {
 	DoDelete(ctx context.Context, id string, state any) error
 
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
+	// It is a last resort for behaviour the rules in configs/<type>.yml cannot express. A new resource
+	// should not need it: when it seems to, the cause is usually a missing proto annotation (IMMUTABLE,
+	// OUTPUT_ONLY, INPUT_ONLY) or an API shape the engine cannot diff, and the fix belongs upstream.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
 
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
@@ -96,6 +99,8 @@ type IResource interface {
 	DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error
 
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation. Returns optionally updated remote state.
+	// State is persisted between DoCreate and this call, so an interrupted wait leaves a tracked resource.
+	// Polling inside DoCreate instead delays that persistence and can orphan the resource.
 	// TODO: wait status should be persisted in the state.
 	WaitAfterCreate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
@@ -109,6 +114,11 @@ type IResource interface {
 	WaitAfterDelete(ctx context.Context, id string) error
 
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
+	// A KeyFunc returns (fieldName, value). fieldName must be a real field of the element: the planner
+	// later resolves paths like tasks[task_key='x'] by looking that field up in state and remote values,
+	// so a key composed from several fields, or named after a field that does not exist, cannot be
+	// resolved and silently disables the rules under that path. If the API gives list elements no
+	// single client-settable identity, that is an API gap to raise upstream, not something to encode here.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
 
