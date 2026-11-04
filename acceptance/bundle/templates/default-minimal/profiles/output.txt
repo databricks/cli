@@ -41,7 +41,7 @@ Welcome to the minimal Declarative Automation Bundle template!
 This template creates a minimal project structure without sample code, ideal for advanced users.
 (For getting started with Python or SQL code, use the default-python or default-sql templates instead.)
 
-Your workspace at [CUSTOM_HOST] is used for initialization.
+Your workspace at [CUSTOM_HOST]?w=[WORKSPACE_ID] is used for initialization.
 (See https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile.)
 
 ✨ Your new project has been created in the 'my_default_minimal' directory!
