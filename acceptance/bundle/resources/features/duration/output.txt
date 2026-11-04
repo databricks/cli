@@ -202,6 +202,13 @@ The following resources will be deleted:
   delete resources.features.slidingfeat
   delete resources.features.tumblingfeat
 
+This action will result in the deletion of the following Feature Views.
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:
+  delete resources.features.rollingfeat
+  delete resources.features.sawtoothfeat
+  delete resources.features.slidingfeat
+  delete resources.features.tumblingfeat
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Destroy: 4 deleted
