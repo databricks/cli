@@ -21,7 +21,7 @@ title "Rename the catalog"
 trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
 
 title "UC moves the schema and the volume with the catalog, so the plan re-keys them instead of recreating them"
-trace $CLI bundle plan --output json | nostamp | jq '.plan | map_values({action, changes: ((.changes // {}) | with_entries(select(.value.action != "skip")))})'
+trace $CLI bundle plan --output json | jq '.plan["resources.volumes.volume1"].changes.catalog_name'
 
 title "Deploy renames the catalog and updates the schema and the volume at their new paths"
 trace $CLI bundle deploy

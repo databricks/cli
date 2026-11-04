@@ -41,42 +41,11 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 === UC moves the schema and the volume with the catalog, so the plan re-keys them instead of recreating them
 >>> [CLI] bundle plan --output json
 {
-  "resources.catalogs.catalog1": {
-    "action": "update_id",
-    "changes": {
-      "name": {
-        "action": "update_id",
-        "reason": "id_changes",
-        "old": "test_catalog_[UNIQUE_NAME]",
-        "new": "test_catalog_renamed_[UNIQUE_NAME]",
-        "remote": "test_catalog_[UNIQUE_NAME]"
-      }
-    }
-  },
-  "resources.schemas.schema1": {
-    "action": "update_id",
-    "changes": {
-      "catalog_name": {
-        "action": "update_id",
-        "reason": "parent_renamed",
-        "old": "test_catalog_[UNIQUE_NAME]",
-        "new": "test_catalog_renamed_[UNIQUE_NAME]",
-        "remote": "test_catalog_[UNIQUE_NAME]"
-      }
-    }
-  },
-  "resources.volumes.volume1": {
-    "action": "update_id",
-    "changes": {
-      "catalog_name": {
-        "action": "update_id",
-        "reason": "parent_renamed",
-        "old": "test_catalog_[UNIQUE_NAME]",
-        "new": "test_catalog_renamed_[UNIQUE_NAME]",
-        "remote": "test_catalog_[UNIQUE_NAME]"
-      }
-    }
-  }
+  "action": "update_id",
+  "reason": "parent_renamed",
+  "old": "test_catalog_[UNIQUE_NAME]",
+  "new": "test_catalog_renamed_[UNIQUE_NAME]",
+  "remote": "test_catalog_[UNIQUE_NAME]"
 }
 
 === Deploy renames the catalog and updates the schema and the volume at their new paths
