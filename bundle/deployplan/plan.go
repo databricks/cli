@@ -340,8 +340,9 @@ func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]stri
 // ResolveSelectors) plus the others that must change with them. The closure follows
 // edges by action, like the apply graph (makeGraph): a deployed resource pulls in its
 // dependencies (forward), a deleted one its dependents (reverse) so they are removed
-// together. A delete selection errors if a live resource (not itself being deleted)
-// still references the resource to be deleted; removing it would break the live resource.
+// together. It errors if any delete in the closure, whether selected or pulled in by
+// either edge direction, is still referenced by a live resource (not itself being
+// deleted); removing it would break the live resource.
 func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	before := len(p.Plan)
 
@@ -350,15 +351,9 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 		return err
 	}
 
-	// Only build reverse edges when at least one selected resource is being deleted,
-	// since non-delete selections only follow forward DependsOn edges.
+	// Reverse edges are built lazily on the first delete visited by the BFS. That
+	// delete may be selected or reached as a dependency of a selected resource.
 	var dependents map[string][]string
-	for _, key := range resolved {
-		if e, ok := p.Plan[key]; ok && e.Action == Delete {
-			dependents = p.reverseEdges()
-			break
-		}
-	}
 
 	queue := make([]string, 0, len(selected))
 	reachable := make(map[string]struct{}, len(selected))
@@ -374,13 +369,16 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	}
 
 	// BFS: deleted nodes pull in their dependents (also being deleted); deployed
-	// nodes pull in their dependencies. Collect errors for live dependents of a
-	// delete selection before returning, so the user sees all conflicts at once.
+	// nodes pull in their dependencies. Collect errors for live dependents of every
+	// delete visited before returning, so the user sees all conflicts at once.
 	var errs []string
 	for len(queue) > 0 {
 		key := queue[0]
 		queue = queue[1:]
 		if p.Plan[key].Action == Delete {
+			if dependents == nil {
+				dependents = p.reverseEdges()
+			}
 			for _, dependent := range dependents[key] {
 				// Sub-nodes (grants/permissions, 4-part key) are not user-facing dependents
 				// and never trigger the live-dependent error. If they are themselves being
@@ -399,6 +397,10 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 					// it broken. Report a user-facing error with both names.
 					deleted := strings.TrimPrefix(key, "resources.")
 					live := strings.TrimPrefix(dependent, "resources.")
+					// Without this, an error about a resource the user never named is confusing.
+					if !slices.Contains(resolved, key) {
+						deleted += " (not selected, but required by the selection)"
+					}
 					errs = append(errs, fmt.Sprintf("cannot delete %s: %s still references it; remove the reference or also remove %s from the config", deleted, live, live))
 				}
 			}
