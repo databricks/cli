@@ -82,7 +82,10 @@ tasks:
       - |
         find databricks/bundles -type d -mindepth 1 -maxdepth 1 \
           ! -path databricks/bundles/core \
+          ! -path databricks/bundles/_bitmap \
           -exec rm -rf {} \;
+      # _bitmap/ is the bundle bitmap decoder; its _schema.py comes from
+      # generate-bitmap-schema in the root Taskfile, not from this codegen.
       # core/ is hand-written except for the generated wiring under _generated/.
       - rm -rf databricks/bundles/core/_generated
       # test_resources.py is hand-written except for the generated TestCase data.
