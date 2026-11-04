@@ -69,7 +69,8 @@ Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
   },
   "resources.volumes.volume1.grants": {
     "full_name": {
-      "action": "update",
+      "action": "update_id",
+      "reason": "id_changes",
       "old": "main.test-schema-[UNIQUE_NAME].myvolume",
       "new": "",
       "remote": "main.test-schema-[UNIQUE_NAME].myvolume"
@@ -121,12 +122,10 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 }
 
 === The grants are recorded under the new name, so the next plan is a no-op
-volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume'
+volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume_renamed'
 
 >>> [CLI] bundle plan
-update volumes.volume1.grants
-
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -58,7 +58,8 @@ Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
   },
   "resources.schemas.schema1.grants": {
     "full_name": {
-      "action": "update",
+      "action": "update_id",
+      "reason": "id_changes",
       "old": "main.test-schema-[UNIQUE_NAME]",
       "new": "",
       "remote": "main.test-schema-[UNIQUE_NAME]"
@@ -120,12 +121,10 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 }
 
 === The grants are recorded under the new name, so the next plan is a no-op
-schemas schema1.grants id='schema/main.test-schema-[UNIQUE_NAME]'
+schemas schema1.grants id='schema/main.test-schema-renamed-[UNIQUE_NAME]'
 
 >>> [CLI] bundle plan
-update schemas.schema1.grants
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
