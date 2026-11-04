@@ -369,9 +369,15 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	}
 
 	// BFS: deleted nodes pull in their dependents (also being deleted); deployed
-	// nodes pull in their dependencies. Collect errors for live dependents of every
+	// nodes pull in their dependencies. Collect conflicts for live dependents of every
 	// delete visited before returning, so the user sees all conflicts at once.
-	var errs []string
+	type conflict struct{ deleted, live string }
+	var conflicts []conflict
+	// Unselected deletes reached through a deployed node's forward edge. Errors for
+	// them are marked as such, since the user never named them. Deletes reached
+	// through the reverse (cascade) edge keep the plain message: there the error is
+	// about the cascade, not about the selection requiring the delete.
+	requiredBySelection := map[string]bool{}
 	for len(queue) > 0 {
 		key := queue[0]
 		queue = queue[1:]
@@ -394,21 +400,30 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 					p.enqueueReachable(reachable, &queue, dependent)
 				} else {
 					// Dependent is live (still in config): deleting key would leave
-					// it broken. Report a user-facing error with both names.
-					deleted := strings.TrimPrefix(key, "resources.")
-					live := strings.TrimPrefix(dependent, "resources.")
-					// Without this, an error about a resource the user never named is confusing.
-					if !slices.Contains(resolved, key) {
-						deleted += " (not selected, but required by the selection)"
-					}
-					errs = append(errs, fmt.Sprintf("cannot delete %s: %s still references it; remove the reference or also remove %s from the config", deleted, live, live))
+					// it broken.
+					conflicts = append(conflicts, conflict{deleted: key, live: dependent})
 				}
 			}
 		} else {
 			for _, dep := range p.Plan[key].DependsOn {
+				if entry, ok := p.Plan[dep.Node]; ok && entry.Action == Delete && !slices.Contains(resolved, dep.Node) {
+					requiredBySelection[dep.Node] = true
+				}
 				p.enqueueReachable(reachable, &queue, dep.Node)
 			}
 		}
+	}
+
+	// Format after the BFS: a delete can be reached through both edge directions,
+	// and the forward route may be found only after the delete was visited.
+	errs := make([]string, 0, len(conflicts))
+	for _, c := range conflicts {
+		deleted := strings.TrimPrefix(c.deleted, "resources.")
+		live := strings.TrimPrefix(c.live, "resources.")
+		if requiredBySelection[c.deleted] {
+			deleted += " (not selected, but required by the selection)"
+		}
+		errs = append(errs, fmt.Sprintf("cannot delete %s: %s still references it; remove the reference or also remove %s from the config", deleted, live, live))
 	}
 	if len(errs) > 0 {
 		slices.Sort(errs)

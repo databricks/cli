@@ -1,1 +1,1 @@
-* Fix `bundle deploy --select` deleting a resource that the selected resource still references when that resource was removed from the config; it now reports the same error as selecting the deleted resource directly. ([#7334](https://github.com/databricks/cli/pull/7334))
+* Fix `bundle deploy --select` deleting a resource that the selected resource still references when that resource was removed from the config; it now reports an error, as it does when selecting the deleted resource directly. ([#7334](https://github.com/databricks/cli/pull/7334))
