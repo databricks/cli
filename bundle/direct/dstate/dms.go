@@ -1,11 +1,15 @@
 package dstate
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
+	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // RecordedState is what the CLI serializes into the DMS operation's state field. It wraps the
@@ -14,6 +18,43 @@ import (
 type RecordedState struct {
 	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+}
+
+// LoadDMSState loads authoritative resources into an already-open read-only checkpoint.
+// The service version must be at least as recent as the file's cached serial.
+func (db *DeploymentState) LoadDMSState(ctx context.Context, deploymentID string, lastVersionID int) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.AssertOpenedForRead()
+
+	if db.Data.Serial > lastVersionID {
+		return fmt.Errorf("inconsistent deployment state: resource state serial (%d) is ahead of deployment history version (%d)", db.Data.Serial, lastVersionID)
+	}
+	if deploymentID != "" {
+		w := cmdctx.WorkspaceClient(ctx)
+		recorded, err := retry.With(ctx, retry.IsTransientRead, func() ([]bundledeployments.Resource, error) {
+			return w.BundleDeployments.ListResourcesAll(ctx, bundledeployments.ListResourcesRequest{
+				Parent: dms.DeploymentName(deploymentID),
+			})
+		})
+		if err != nil {
+			return fmt.Errorf("listing resources from the deployment history service: %w", err)
+		}
+		resources := make([]dms.Resource, len(recorded))
+		for i, res := range recorded {
+			// DMS keys drop the "resources." prefix; add it back for local state.
+			resources[i] = dms.Resource{
+				Key:   dms.StatePrefix + res.ResourceKey,
+				ID:    res.ResourceId,
+				State: res.State,
+			}
+		}
+		if err := db.applyDMSState(resources); err != nil {
+			return err
+		}
+	}
+	db.DeploymentID, db.VersionID = deploymentID, lastVersionID
+	return nil
 }
 
 // applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS

@@ -366,20 +366,17 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		// A migrated-from-Terraform state is already open (seeded in memory above), so skip the disk open.
 		needDirectState := stateDesc.Engine.IsDirect() && needsState
-		var localPath string
 		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
-			_, localPath = b.StateFilenameDirect(ctx)
-			if !stateDesc.IsDMS() {
-				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
+			_, localPath := b.StateFilenameDirect(ctx)
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true)); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 
 		stateMode := dstate.WritingFile
 		switch {
-		case stateDesc.IsDMS():
+		case b.DeploymentBundle.StateDB.IsDeploymentMetadataService():
 			// DMS-only state must keep its service-backed source.
 			stateMode = dstate.WritingDeploymentHistoryOnly
 		case opts.Deploy || opts.PreDeployChecks:
@@ -416,16 +413,23 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-
-			// Stamp the deployment and the version this run records onto every job and pipeline so
-			// the plan carries them. version_id is always known (last recorded + 1); deployment_id
-			// does not exist until a first deploy creates it, so it is left off here and the deploy
-			// phase stamps the created id.
 			lastVersionID, err := parseLastVersionID(dmsDeployment)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+			if !cmdctx.HasWorkspaceClient(ctx) {
+				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+			}
+			if err := b.DeploymentBundle.StateDB.LoadDMSState(ctx, dmsDeploymentID, lastVersionID); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+
+			// Stamp the deployment and the version this run records onto every job and pipeline so
+			// the plan carries them. version_id is always known (last recorded + 1); deployment_id
+			// does not exist until a first deploy creates it, so it is left off here and the deploy
+			// phase stamps the created id.
 			nextVersion := lastVersionID + 1
 			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 			if dmsDeploymentID != "" {
@@ -437,14 +441,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			bundle.ApplySeqContext(ctx, b, muts...)
 			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-			// StateDB.Open builds the DMS client from the workspace client on the context.
-			if !cmdctx.HasWorkspaceClient(ctx) {
-				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
-			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDeploymentHistoryOnly, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
-				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
@@ -684,32 +680,25 @@ func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error
 	return v, nil
 }
 
-// OpenDirectStateForRead opens the direct-engine state database read-only. When the bundle
-// records deployment history the local state file is only a tombstone, so the resources are
-// read from the deployment metadata service instead.
-func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+// OpenDirectStateForRead opens the file checkpoint and loads DMS resources when required.
+func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle) error {
 	_, localPath := b.StateFilenameDirect(ctx)
-	if !stateDesc.IsDMS() {
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true)); err != nil {
+		return err
+	}
+	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		deploymentID, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+		if err != nil {
 			return err
 		}
-		return nil
-	}
-
-	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
-	if err != nil {
-		return err
-	}
-	lastVersionID, err := parseLastVersionID(dmsDeployment)
-	if err != nil {
-		return err
-	}
-	// StateDB.Open builds the DMS client from the workspace client on the context, so ensure one is set.
-	if !cmdctx.HasWorkspaceClient(ctx) {
-		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
-	}
-	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDeploymentHistoryOnly, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
-		return err
+		lastVersionID, err := parseLastVersionID(deployment)
+		if err != nil {
+			return err
+		}
+		if !cmdctx.HasWorkspaceClient(ctx) {
+			ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+		}
+		return b.DeploymentBundle.StateDB.LoadDMSState(ctx, deploymentID, lastVersionID)
 	}
 	return nil
 }

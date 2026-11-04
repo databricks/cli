@@ -24,7 +24,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -82,11 +81,6 @@ func assertNoUnsupportedFeatures(features map[string]struct{}) error {
 // The caller should delete the stale WAL and proceed normally.
 var errStaleWAL = errors.New("stale WAL")
 
-// ErrUnsettingRecording is returned by Open when an operation that does not support deployment
-// history (such as unbind) reaches a recorded state. Callers present an operation-appropriate
-// message via errors.Is.
-var ErrUnsettingRecording = errors.New("this operation is not supported for a deployment that records deployment history")
-
 type DeploymentState struct {
 	Path    string
 	Data    Database
@@ -111,27 +105,14 @@ type DeploymentState struct {
 	// completion after an explicit one does nothing.
 	versionCompleted bool
 
-	// DeploymentID is the recorded deployment's id. Set at Open, or by the first deploy that creates
-	// the deployment, which Open cannot know about.
+	// DeploymentID identifies the history deployment. Set when loading history metadata
+	// or when the first deploy creates it.
 	DeploymentID string
 
 	// VersionID is the service-owned counter for recorded deployments. A copy is stored in
 	// resources.json as Serial to ensure outdated resource state is not read.
-	// Open always takes the authoritative value from the service.
+	// History preparation loads the authoritative value from the service.
 	VersionID int
-}
-
-// OpenDmsArgs identifies the recorded deployment Open reads from. The zero value means the
-// bundle does not record deployment history, or no deployment exists for it yet.
-type OpenDmsArgs struct {
-	// DeploymentID is the deployment's server-minted id.
-	DeploymentID string
-
-	// LastVersionID is the most recent version the service has recorded, zero when it has none.
-	// Open takes the state's version from it: the service owns the number.
-	//
-	// Equivalent to serial for a file based deployment that uses resources.json to track state,
-	LastVersionID int
 }
 
 type Header struct {
@@ -463,6 +444,10 @@ func (db *DeploymentState) GetSerial() int {
 
 // isDeploymentMetadataService is IsDeploymentMetadataService for callers already holding db.mu.
 func (db *DeploymentState) isDeploymentMetadataService() bool {
+	if db.mode == ReadingFile {
+		_, only := db.Data.Features[FeatureDeploymentHistory]
+		return only
+	}
 	return db.mode == WritingDeploymentHistoryOnly
 }
 
@@ -481,8 +466,8 @@ func (db *DeploymentState) RecordsHistory() bool {
 	defer db.mu.Unlock()
 	switch db.mode {
 	case ReadingFile:
-		_, history := db.Data.Features[FeatureDeploymentHistoryShadow]
-		return history
+		_, shadow := db.Data.Features[FeatureDeploymentHistoryShadow]
+		return shadow || db.isDeploymentMetadataService()
 	case WritingDeploymentHistoryOnly, WritingDeploymentHistoryShadow:
 		return true
 	default:
@@ -513,24 +498,10 @@ func (db *DeploymentState) GetOrInitLineage() string {
 // If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 type WithRecovery bool
 
-// Open loads deployment state and enables reads or writes according to mode:
-//   - ReadingFile: reads resources.json; state writes are disabled.
-//   - WritingFile: reads resources.json and opens a WAL for state writes.
-//   - WritingDeploymentHistoryOnly: reads and writes resources through DMS; no WAL is opened.
-//   - WritingDeploymentHistoryShadow: behaves like WritingFile and also records DMS history.
-//     History errors do not fail the deployment.
-//   - WritingDeploymentHistoryShadow: also persists a feature marker that rejects
-//     older clients that do not support history recording.
-//
-// All modes read deployment metadata and feature markers from resources.json.
-// Open rejects modes that conflict with those markers.
-//
-// File modes recover a leftover WAL only when withRecovery is set.
-// DMS modes reject any leftover WAL.
-//
-// DMS reads require a workspace client on ctx. DMS writes and history recording
-// start after a version exists and InitializeOperationBuffer is called.
-func (db *DeploymentState) Open(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
+// Open reads the file checkpoint and optionally recovers its WAL. It never enables writes.
+// DMS-authoritative deployments must call LoadDMSState before planning.
+// Call UpgradeToWrite after approval to enable writes.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -538,7 +509,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, mode Mode, wit
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	err := db.unlockedOpen(ctx, path, mode, withRecovery, dmsDeployment)
+	err := db.unlockedOpen(ctx, path, withRecovery)
 	if err != nil {
 		// A failed open must leave the receiver closed. unlockedOpen assigns
 		// db.Path before every fallible step, so without this the receiver stays
@@ -567,11 +538,10 @@ func (db *DeploymentState) reset() {
 	}
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery) error {
 	db.Path = path
-	db.mode = mode
-	db.DeploymentID = dmsDeployment.DeploymentID
-	db.VersionID = dmsDeployment.LastVersionID
+	db.mode = ReadingFile
+	db.DeploymentID, db.VersionID = "", 0
 
 	// The state file is the source of truth for whether this deployment records history: read it
 	// first.
@@ -607,7 +577,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, err)
 	default: // WAL exists
 		switch {
-		case mode == WritingDeploymentHistoryOnly:
+		case db.isDeploymentMetadataService():
 			// A recorded deployment writes no WAL, so finding one means this state was written by a
 			// deployment that did not record history. Refuse rather than discard it: the file is the
 			// only record of that deploy's writes, and recording is refused below anyway.
@@ -621,71 +591,6 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 		}
 	}
 
-	// Reconcile the config against the state. A brand-new deployment is where recording begins, so
-	// the config bootstraps the marker there. On an existing deployment the state is authoritative:
-	// the config can neither start recording one that was not (its resources would be created a
-	// second time) nor stop recording one that is (the service still holds it).
-	_, recorded := db.Data.Features[FeatureDeploymentHistory]
-	if mode == WritingDeploymentHistoryOnly && recorded && db.Data.Serial > dmsDeployment.LastVersionID {
-		return fmt.Errorf("inconsistent deployment state: resource state serial (%d) is ahead of deployment history version (%d)", db.Data.Serial, dmsDeployment.LastVersionID)
-	}
-	switch {
-	case mode == WritingDeploymentHistoryOnly && !recorded && len(db.Data.State) == 0:
-		if db.Data.Features == nil {
-			db.Data.Features = make(map[string]struct{}, 1)
-		}
-		db.Data.Features[FeatureDeploymentHistory] = struct{}{}
-		recorded = true
-	case mode == WritingDeploymentHistoryOnly && !recorded:
-		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
-
-Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
-	case mode != WritingDeploymentHistoryOnly && recorded:
-		return ErrUnsettingRecording
-	}
-
-	if recorded {
-		// The service is the source of truth for a recorded deployment; the file is a tombstone
-		// carrying only the marker, and applyDMSState loads the resources the service holds.
-		db.DeploymentID = dmsDeployment.DeploymentID
-
-		if dmsDeployment.DeploymentID != "" {
-			w := cmdctx.WorkspaceClient(ctx)
-			recorded, err := retry.With(ctx, retry.IsTransientRead, func() ([]bundledeployments.Resource, error) {
-				return w.BundleDeployments.ListResourcesAll(ctx, bundledeployments.ListResourcesRequest{
-					Parent: dms.DeploymentName(dmsDeployment.DeploymentID),
-				})
-			})
-			if err != nil {
-				return fmt.Errorf("listing resources from the deployment history service: %w", err)
-			}
-			resources := make([]dms.Resource, len(recorded))
-			for i, res := range recorded {
-				// DMS keys drop the "resources." prefix; add it back for local state.
-				resources[i] = dms.Resource{
-					Key:   dms.StatePrefix + res.ResourceKey,
-					ID:    res.ResourceId,
-					State: res.State,
-				}
-			}
-			if err := db.applyDMSState(resources); err != nil {
-				return err
-			}
-		}
-
-		// The service owns the version number; the state file stores a copy.
-		// No deployment yet means no versions, hence zero.
-		db.VersionID = dmsDeployment.LastVersionID
-	}
-
-	switch mode {
-	case ReadingFile:
-		return nil
-	case WritingDeploymentHistoryOnly:
-		return nil
-	case WritingFile, WritingDeploymentHistoryShadow:
-		return db.setupWal()
-	}
 	return nil
 }
 
@@ -955,17 +860,6 @@ func (db *DeploymentState) setupWal() error {
 		CLIVersion:   build.GetInfo().Version,
 		Features:     maps.Clone(db.Data.Features),
 	}
-	switch db.mode {
-	case WritingDeploymentHistoryShadow:
-		if walHead.Features == nil {
-			walHead.Features = make(map[string]struct{})
-		}
-		walHead.Features[FeatureDeploymentHistoryShadow] = struct{}{}
-	case WritingFile:
-		walHead.Features = map[string]struct{}{}
-	default:
-		// Other modes preserve the existing markers.
-	}
 	if err := appendJSONLine(db.walFile, walHead); err != nil {
 		// Remove the WAL created just above: O_EXCL means it is ours, and
 		// without a header it carries nothing to recover. Leaving it makes
@@ -1004,9 +898,7 @@ func (db *DeploymentState) AssertOpenedForReadOrWrite() {
 
 func (db *DeploymentState) AssertOpenedForRead() {
 	db.AssertOpenedForReadOrWrite()
-	// DMS has no separate read-only mode.
-	// Planning reads DMS state while it is already in WritingDeploymentHistoryOnly.
-	if db.mode.isWritable() && db.mode != WritingDeploymentHistoryOnly {
+	if db.mode.isWritable() {
 		panic("internal error: DeploymentState must be opened in read mode")
 	}
 }
