@@ -7,8 +7,7 @@ variables:
   target_schema:
     default: example_schema
   api_credential:
-    description: Credential for the external API, passed via BUNDLE_VAR_api_credential
-    sensitive: true
+    description: Credential for the external API, passed via BUNDLE_VAR_api_credential. Sensitive because it is used as the value of a secret.
   api_header:
     description: A sensitive variable may reference another sensitive variable
     sensitive: true

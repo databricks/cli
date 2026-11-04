@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -23,12 +22,6 @@ func (v *validateSecretValueIsVariable) Name() string {
 
 func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	// Once any variable is marked sensitive, only those are redacted from the output
-	// of `bundle validate -o json` (see dresources.RedactSensitiveConfigValues), so
-	// every secret must then reference a sensitive variable. Without any, every
-	// string variable is redacted and no marker is required.
-	requireSensitive := variable.AnySensitive(b.Config.Variables)
 
 	// Iterate over all secrets in the bundle
 	for key := range b.Config.Resources.Secrets {
@@ -79,35 +72,22 @@ Use bundle variables to pass secret values at deployment time.`, key),
 		// value would be stored in plain text in the config file, defeating the purpose
 		// of using a variable reference.
 		diags = append(diags, v.checkVariableDefault(b, key, valueStr, p, val)...)
-
-		if requireSensitive {
-			diags = append(diags, v.checkVariableSensitive(b, key, valueStr, p, val)...)
-		}
 	}
 
 	return diags
 }
 
-// secretValueVariable returns the variable a pure ${var.<name>} reference points to.
-func secretValueVariable(b *bundle.Bundle, valueStr string) (string, *variable.Variable, bool) {
-	refPath, ok := dynvar.PureReferenceToPath(valueStr)
-	if !ok || len(refPath) < 2 || refPath[0].Key() != "var" {
-		return "", nil, false
-	}
-
-	varName := refPath[1].Key()
-	v, exists := b.Config.Variables[varName]
-	if !exists || v == nil {
-		return "", nil, false
-	}
-	return varName, v, true
-}
-
 // checkVariableDefault emits an error if valueStr is a pure ${var.<name>} reference
 // and the referenced variable has a default value set.
 func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, secretKey, valueStr string, p dyn.Path, val dyn.Value) diag.Diagnostics {
-	varName, variable, ok := secretValueVariable(b, valueStr)
-	if !ok || !variable.HasDefault() {
+	refPath, ok := dynvar.PureReferenceToPath(valueStr)
+	if !ok || len(refPath) < 2 || refPath[0].Key() != "var" {
+		return nil
+	}
+
+	varName := refPath[1].Key()
+	variable, exists := b.Config.Variables[varName]
+	if !exists || variable == nil || !variable.HasDefault() {
 		return nil
 	}
 
@@ -126,24 +106,6 @@ func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, s
 A default value is stored in plain text in the configuration file, which defeats the purpose of using a variable reference for a secret.
 Remove the default value and pass the secret value at deployment time using "--var", the BUNDLE_VAR_%s environment variable, or a variable overrides file.`, varName, secretKey, varName),
 		Locations: locations,
-		Paths:     dyn.ToStructPaths(p),
-	}}
-}
-
-// checkVariableSensitive emits an error if valueStr is a pure ${var.<name>} reference
-// and the referenced variable is not marked sensitive.
-func (v *validateSecretValueIsVariable) checkVariableSensitive(b *bundle.Bundle, secretKey, valueStr string, p dyn.Path, val dyn.Value) diag.Diagnostics {
-	varName, variable, ok := secretValueVariable(b, valueStr)
-	if !ok || variable.Sensitive {
-		return nil
-	}
-
-	return diag.Diagnostics{{
-		Severity: diag.Error,
-		Summary:  "Variable used for secret value must be marked as sensitive",
-		Detail: fmt.Sprintf(`The variable "%s" used for the secret "%s" must be marked as sensitive.
-This bundle marks variables as sensitive, so only those are redacted in the output of "bundle validate -o json". Add "sensitive: true" to the variable definition.`, varName, secretKey),
-		Locations: val.Locations(),
 		Paths:     dyn.ToStructPaths(p),
 	}}
 }

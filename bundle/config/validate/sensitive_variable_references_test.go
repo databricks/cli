@@ -101,3 +101,42 @@ func TestSensitiveVariableReferencesSkipsTargets(t *testing.T) {
 
 	assert.Empty(t, SensitiveVariableReferences().Apply(t.Context(), b))
 }
+
+func TestSensitiveVariableReferencesInfersFromSensitiveResourceField(t *testing.T) {
+	b := sensitiveVariablesBundle()
+	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Set(v, "resources.secrets.s.value", dyn.V("${var.plain}"))
+	})
+
+	assert.Empty(t, SensitiveVariableReferences().Apply(t.Context(), b))
+	assert.True(t, b.Config.Variables["plain"].Sensitive)
+	v, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("variables.plain.sensitive"))
+	require.NoError(t, err)
+	assert.Equal(t, true, v.AsAny())
+}
+
+func TestSensitiveVariableReferencesInferredVariableInNonSensitiveField(t *testing.T) {
+	b := sensitiveVariablesBundle()
+	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
+		v, err := dyn.Set(v, "resources.secrets.s.value", dyn.V("${var.plain}"))
+		if err != nil {
+			return v, err
+		}
+		return dyn.Set(v, "resources.jobs.j.name", dyn.V("${var.plain}"))
+	})
+
+	diags := SensitiveVariableReferences().Apply(t.Context(), b)
+	require.Len(t, diags, 1)
+	assert.Equal(t, `Sensitive variable "plain" is used in a non-sensitive field`, diags[0].Summary)
+	require.Len(t, diags[0].Paths, 1)
+	assert.Equal(t, "resources.jobs.j.name", diags[0].Paths[0].String())
+}
+
+func TestSensitiveVariableReferencesIgnoresUndeclaredVariable(t *testing.T) {
+	b := sensitiveVariablesBundle()
+	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Set(v, "resources.secrets.s.value", dyn.V("${var.undeclared}"))
+	})
+
+	assert.Empty(t, SensitiveVariableReferences().Apply(t.Context(), b))
+}

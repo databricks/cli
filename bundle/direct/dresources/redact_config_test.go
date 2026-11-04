@@ -22,26 +22,11 @@ func TestRedactSensitiveConfigValues(t *testing.T) {
 		expected map[string]*variable.Variable
 	}{
 		{
-			name: "no sensitive variables: every string variable is redacted",
+			name: "sensitive variables are redacted, default included, others are not",
 			root: config.Root{
 				Variables: map[string]*variable.Variable{
 					"catalog": {Default: "main", Value: "main"},
 					"count":   {Default: 1, Value: 1},
-					"secret":  {Value: "top-secret"},
-				},
-				Resources: config.Resources{Secrets: secrets},
-			},
-			expected: map[string]*variable.Variable{
-				"catalog": {Default: "main", Value: "[redacted]"},
-				"count":   {Default: 1, Value: 1},
-				"secret":  {Value: "[redacted]"},
-			},
-		},
-		{
-			name: "sensitive variables: only those are redacted",
-			root: config.Root{
-				Variables: map[string]*variable.Variable{
-					"catalog": {Default: "main", Value: "main"},
 					"secret":  {Sensitive: true, Value: "top-secret"},
 					"header":  {Sensitive: true, Default: "Bearer top-secret", Value: "Bearer top-secret"},
 				},
@@ -49,19 +34,22 @@ func TestRedactSensitiveConfigValues(t *testing.T) {
 			},
 			expected: map[string]*variable.Variable{
 				"catalog": {Default: "main", Value: "main"},
+				"count":   {Default: 1, Value: 1},
 				"secret":  {Sensitive: true, Value: "[redacted]"},
 				"header":  {Sensitive: true, Default: "[redacted]", Value: "[redacted]"},
 			},
 		},
 		{
-			name: "no sensitive fields: nothing is redacted",
+			name: "sensitive variables are redacted without sensitive resource fields",
 			root: config.Root{
 				Variables: map[string]*variable.Variable{
 					"catalog": {Default: "main", Value: "main"},
+					"secret":  {Sensitive: true, Value: "top-secret"},
 				},
 			},
 			expected: map[string]*variable.Variable{
 				"catalog": {Default: "main", Value: "main"},
+				"secret":  {Sensitive: true, Value: "[redacted]"},
 			},
 		},
 	}

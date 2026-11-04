@@ -116,7 +116,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Resolves and sets values for bundle variables in the following order: from environment variables, from variable files and then defaults
 		mutator.SetVariables(),
 
-		// Reads (dynamic): * (strings) (searches for references to variables marked sensitive)
+		// Reads (dynamic): * (strings) (searches for references to variables)
+		// Updates (dynamic): variables.*.sensitive (marks variables used as the value of a sensitive resource field)
 		// Rejects references to sensitive variables outside sensitive resource fields and other sensitive variables.
 		// Runs after SetVariables so values passed via --var, environment or file are checked too, and before
 		// any resolution while references are still visible.

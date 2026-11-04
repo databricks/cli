@@ -3,7 +3,7 @@ bundle:
 
 variables:
   api_credential:
-    sensitive: true
+    description: Sensitive because it is used as the value of a secret
 
 resources:
   secrets:

@@ -1,11 +1,11 @@
 
-=== Only sensitive variables are redacted in validate -o json
+=== A variable used as the value of a secret is sensitive and redacted in validate -o json
 
 >>> [CLI] bundle validate -o json
 {
   "variables": {
     "api_credential": {
-      "description": "Credential for the external API, passed via BUNDLE_VAR_api_credential",
+      "description": "Credential for the external API, passed via BUNDLE_VAR_api_credential. Sensitive because it is used as the value of a secret.",
       "sensitive": true,
       "value": "[redacted]"
     },
@@ -43,15 +43,15 @@ Error: Sensitive variable "api_credential" is used in a non-sensitive field
   at resources.jobs.example_job.tasks[0].notebook_task.base_parameters.token
   in databricks.yml:25:22
 
-The variable "api_credential" is marked as sensitive, so its value must not appear in plain text.
-Sensitive variables can only be used as the value of a sensitive resource field (such as resources.secrets.*.value) or in the definition of another variable that is also marked as sensitive.
+The variable "api_credential" is sensitive, so its value must not appear in plain text.
+A variable is sensitive when it is marked with "sensitive: true" or used as the value of a sensitive resource field (such as resources.secrets.*.value). It can only be used in such a field or in the definition of another sensitive variable.
 
 Error: Sensitive variable "api_credential" is used in a non-sensitive field
   at resources.secrets.example_secret.comment
   in databricks.yml:15:16
 
-The variable "api_credential" is marked as sensitive, so its value must not appear in plain text.
-Sensitive variables can only be used as the value of a sensitive resource field (such as resources.secrets.*.value) or in the definition of another variable that is also marked as sensitive.
+The variable "api_credential" is sensitive, so its value must not appear in plain text.
+A variable is sensitive when it is marked with "sensitive: true" or used as the value of a sensitive resource field (such as resources.secrets.*.value). It can only be used in such a field or in the definition of another sensitive variable.
 
 Name: sensitive-variables
 Target: default
@@ -68,8 +68,8 @@ Error: Sensitive variable "api_credential" is used in a non-sensitive field
   at variables.api_header.default
   in databricks.yml:9:14
 
-The variable "api_credential" is marked as sensitive, so its value must not appear in plain text.
-Sensitive variables can only be used as the value of a sensitive resource field (such as resources.secrets.*.value) or in the definition of another variable that is also marked as sensitive.
+The variable "api_credential" is sensitive, so its value must not appear in plain text.
+A variable is sensitive when it is marked with "sensitive: true" or used as the value of a sensitive resource field (such as resources.secrets.*.value). It can only be used in such a field or in the definition of another sensitive variable.
 
 Name: sensitive-variables
 Target: default
@@ -85,8 +85,8 @@ Found 1 error
 Error: Sensitive variable "api_credential" is used in a non-sensitive field
   at variables.target_schema.value
 
-The variable "api_credential" is marked as sensitive, so its value must not appear in plain text.
-Sensitive variables can only be used as the value of a sensitive resource field (such as resources.secrets.*.value) or in the definition of another variable that is also marked as sensitive.
+The variable "api_credential" is sensitive, so its value must not appear in plain text.
+A variable is sensitive when it is marked with "sensitive: true" or used as the value of a sensitive resource field (such as resources.secrets.*.value). It can only be used in such a field or in the definition of another sensitive variable.
 
 Name: sensitive-variables
 Target: default

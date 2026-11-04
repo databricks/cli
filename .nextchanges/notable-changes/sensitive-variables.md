@@ -1,0 +1,1 @@
+* A variable used as the value of a secret is now sensitive: referencing it from any other field, such as a job parameter or a secret's `comment`, is an error because the value would be deployed in plain text. Mark other secret-holding variables with `sensitive: true` to get the same protection.

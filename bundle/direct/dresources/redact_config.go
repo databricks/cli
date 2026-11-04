@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -12,15 +11,12 @@ import (
 
 // RedactSensitiveConfigValues walks the bundle config and replaces the
 // value of every field declared as sensitive_fields for its resource type with
-// "[redacted]". It also redacts every variable marked sensitive. When no variable
-// is marked but sensitive resource fields are present, it redacts every string
-// variable instead, since variables are the standard mechanism for supplying
-// secret values and their resolved values must not appear in the output of
-// `bundle validate -o json`.
+// "[redacted]". It also redacts every sensitive variable, since variables are the
+// standard mechanism for supplying secret values and their resolved values must
+// not appear in the output of `bundle validate -o json`.
 func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 	fields := getSensitiveFields()
 
-	var hasSensitiveFields bool
 	for resourceType, fieldRules := range fields {
 		resources, err := structaccess.GetByString(root, "resources."+resourceType)
 		if err != nil {
@@ -31,7 +27,6 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 				// The first segment of the path is the resource key, so we need to skip it and check the rest of the path
 				rest := path.SkipPrefix(1)
 				if rest.HasPatternPrefix(fieldRule.Field) {
-					hasSensitiveFields = true
 					_ = structaccess.SetByString(root, "resources."+resourceType+path.String(), sensitiveRedactedMarker)
 				}
 			}
@@ -41,11 +36,7 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 		}
 	}
 
-	if variable.AnySensitive(root.Variables) {
-		redactSensitiveVariables(root)
-	} else if hasSensitiveFields {
-		redactAllVariables(root)
-	}
+	redactSensitiveVariables(root)
 
 	return root, nil
 }
@@ -64,19 +55,6 @@ func redactSensitiveVariables(root *config.Root) {
 			variable.Default = sensitiveRedactedMarker
 		}
 		if variable.Value != nil {
-			variable.Value = sensitiveRedactedMarker
-		}
-	}
-}
-
-// redactAllVariables redacts the value of every string variable: without sensitive
-// markers there is no way to tell which variable carries the secret.
-func redactAllVariables(root *config.Root) {
-	for _, variable := range root.Variables {
-		if variable == nil {
-			continue
-		}
-		if _, ok := variable.Value.(string); ok {
 			variable.Value = sensitiveRedactedMarker
 		}
 	}

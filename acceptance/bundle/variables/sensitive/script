@@ -1,4 +1,4 @@
-title "Only sensitive variables are redacted in validate -o json\n"
+title "A variable used as the value of a secret is sensitive and redacted in validate -o json\n"
 withdir redact trace $CLI bundle validate -o json | contains.py '!dummy-credential' | jq '{variables, resources}'
 
 title "Sensitive variable used in non-sensitive resource fields\n"

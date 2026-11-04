@@ -39,9 +39,10 @@ type Variable struct {
 	// Documentation for this input variable
 	Description string `json:"description,omitempty"`
 
-	// Marks the variable as holding a secret. Its value is redacted in the output of
-	// `bundle validate -o json` and `bundle summary -o json`, and it may only be referenced
-	// from sensitive resource fields (e.g. the value of a UC secret) or from other sensitive
+	// Marks the variable as holding a secret. Set automatically for a variable used as the
+	// value of a sensitive resource field (e.g. the value of a UC secret). Its value is
+	// redacted in the output of `bundle validate -o json` and `bundle summary -o json`, and
+	// it may only be referenced from sensitive resource fields or from other sensitive
 	// variables, so that the secret never ends up in plain text.
 	Sensitive bool `json:"sensitive,omitempty"`
 
@@ -99,15 +100,4 @@ func (v *Variable) IsComplexValued() bool {
 
 func (v *Variable) IsComplex() bool {
 	return v.Type == VariableTypeComplex
-}
-
-// AnySensitive reports whether any variable is marked sensitive. A nil entry is a
-// variable declared without a body that InitializeVariables has not replaced yet.
-func AnySensitive(vars map[string]*Variable) bool {
-	for _, v := range vars {
-		if v != nil && v.Sensitive {
-			return true
-		}
-	}
-	return false
 }

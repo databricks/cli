@@ -139,10 +139,6 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		validate.SingleNodeCluster(),
 
-		// Resources added by Python mutators were not loaded when the initialize phase
-		// checked sensitive variable references, so check them before they are resolved.
-		validate.SensitiveVariableReferences(),
-
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
