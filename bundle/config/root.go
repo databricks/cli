@@ -102,6 +102,18 @@ type Root struct { //nolint:recvcheck // value receivers for read-only accessors
 	Definitions any `json:"definitions,omitempty" bundle:"internal"`
 }
 
+// loadError returns the diagnostics for the error of loading the file at path.
+func loadError(path string, diags diag.Diagnostics, err error) diag.Diagnostics {
+	if le, ok := errors.AsType[*structvar.LocationError](err); ok {
+		return diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   le.Summary,
+			Locations: []diag.Location{le.Loc},
+		}}
+	}
+	return diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+}
+
 // Load loads the bundle configuration file at the specified path.
 func Load(path string) (*Root, diag.Diagnostics) {
 	raw, err := os.ReadFile(path)
@@ -118,20 +130,18 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
 
+	// Report the errors of the YAML first: the rewrite below follows merge keys and aliases.
+	if err := structvar.ValidateYAMLNode(path, node); err != nil {
+		return nil, loadError(path, nil, err)
+	}
+
 	// Rewrite configuration tree where necessary.
-	rewriteShorthands(node)
+	node = rewriteShorthands(node)
 
 	var r Root
 	sv, diags, err := structvar.DecodeYAMLNode(path, node, &r, nil)
 	if err != nil {
-		if le, ok := errors.AsType[*structvar.LocationError](err); ok {
-			return nil, diag.Diagnostics{{
-				Severity:  diag.Error,
-				Summary:   le.Summary,
-				Locations: []diag.Location{le.Loc},
-			}}
-		}
-		return nil, diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+		return nil, loadError(path, diags, err)
 	}
 	r.store(sv)
 	return &r, diags
@@ -360,7 +370,8 @@ func mappingValue(node *yaml.Node, key string) *yaml.Node {
 }
 
 // expandMergeKeys returns a copy of the mapping node with "<<" merge keys replaced
-// by the pairs they merge in, so the pairs can be rewritten individually.
+// by the pairs they merge in and duplicate keys dropped (the last one wins), so the pairs
+// can be rewritten individually.
 func expandMergeKeys(node *yaml.Node) *yaml.Node {
 	var merged, explicit []*yaml.Node
 	for i := 0; i+1 < len(node.Content); i += 2 {
@@ -377,9 +388,6 @@ func expandMergeKeys(node *yaml.Node) *yaml.Node {
 				merged = append(merged, expandMergeKeys(src).Content...)
 			}
 		}
-	}
-	if merged == nil {
-		return node
 	}
 	// Like the YAML decoder, a later merged map takes precedence over an earlier one and
 	// keys set explicitly take precedence over all merged maps.
@@ -421,35 +429,68 @@ func mappingNode(at *yaml.Node, kvs ...any) *yaml.Node {
 	return out
 }
 
-// rewriteShorthands performs lightweight rewriting of the configuration
-// tree where we allow users to write a shorthand and must rewrite to the full form.
-func rewriteShorthands(root *yaml.Node) {
-	targets := mappingValue(root, "targets")
-	if targets == nil || targets.Kind != yaml.MappingNode {
-		return
+// effectiveMapping returns the mapping node an alias or mapping node stands for, with merge
+// keys expanded and duplicate keys dropped, or nil if it is not a mapping. It never changes
+// node: anchors are shared with the rest of the document.
+func effectiveMapping(node *yaml.Node) *yaml.Node {
+	node = dealias(node)
+	if node == nil || node.Kind != yaml.MappingNode {
+		return nil
+	}
+	return expandMergeKeys(node)
+}
+
+// withMappingValue returns a copy of the mapping node with the value of key replaced.
+func withMappingValue(node *yaml.Node, key string, value *yaml.Node) *yaml.Node {
+	out := *node
+	out.Content = append([]*yaml.Node(nil), node.Content...)
+	for i := 0; i+1 < len(out.Content); i += 2 {
+		if out.Content[i].Value == key {
+			out.Content[i+1] = value
+		}
+	}
+	return &out
+}
+
+// rewriteShorthands performs lightweight rewriting of the configuration tree where we
+// allow users to write a shorthand and must rewrite to the full form: the value of a
+// variable in a target. It returns the rewritten tree, sharing what it did not change.
+func rewriteShorthands(root *yaml.Node) *yaml.Node {
+	top := effectiveMapping(root)
+	if top == nil {
+		return root
+	}
+	targets := effectiveMapping(mappingValue(top, "targets"))
+	if targets == nil {
+		return root
 	}
 
 	// For each target, rewrite the variables block.
+	changed := false
 	for i := 1; i < len(targets.Content); i += 2 {
-		variables := mappingValue(targets.Content[i], "variables")
-		if variables == nil || variables.Kind != yaml.MappingNode {
+		target := effectiveMapping(targets.Content[i])
+		if target == nil {
 			continue
 		}
-		*variables = *expandMergeKeys(variables)
-
-		for j := 0; j+1 < len(variables.Content); j += 2 {
-			name := variables.Content[j].Value
-			variable := dealias(variables.Content[j+1])
+		variables := effectiveMapping(mappingValue(target, "variables"))
+		if variables == nil {
+			continue
+		}
+		rewritten := *variables
+		rewritten.Content = append([]*yaml.Node(nil), variables.Content...)
+		for j := 0; j+1 < len(rewritten.Content); j += 2 {
+			name := rewritten.Content[j].Value
+			variable := dealias(rewritten.Content[j+1])
 			switch {
-			case variable.Kind == yaml.ScalarNode && variable.ShortTag() != "!!null":
+			case variable.Kind == yaml.ScalarNode && isShorthandScalar(variable):
 				// Rewrite the variable to a map with a single key called "default".
 				// This conforms to the variable type. Normalization back to the typed
 				// configuration will convert this to a string if necessary.
-				variables.Content[j+1] = mappingNode(variable, "default", variable)
+				rewritten.Content[j+1] = mappingNode(variable, "default", variable)
 
 			case variable.Kind == yaml.MappingNode || variable.Kind == yaml.SequenceNode:
 				// If it's a full variable definition, leave it as is.
-				if variable.Kind == yaml.MappingNode && isFullVariableOverrideDef(mappingKeys(expandMergeKeys(variable))) {
+				if m := effectiveMapping(variable); m != nil && isFullVariableOverrideDef(mappingKeys(m)) {
 					continue
 				}
 
@@ -457,17 +498,34 @@ func rewriteShorthands(root *yaml.Node) {
 				// If it has a type field, it means the shorthand is a value of a complex type.
 				// Type might not be found if the variable overridden in a separate file
 				// and configuration is not merged yet.
-				typeV := mappingValue(mappingValue(mappingValue(root, "variables"), name), "type")
+				typeV := mappingValue(mappingValue(mappingValue(top, "variables"), name), "type")
 				if typeV != nil && typeV.Value == "complex" {
-					variables.Content[j+1] = mappingNode(variable, "type", typeV, "default", variable)
+					rewritten.Content[j+1] = mappingNode(variable, "type", typeV, "default", variable)
 					continue
 				}
 
 				// If it's a shorthand, rewrite it to a full variable definition.
-				variables.Content[j+1] = mappingNode(variable, "default", variable)
+				rewritten.Content[j+1] = mappingNode(variable, "default", variable)
 			default:
 			}
 		}
+		targets = withMappingValue(targets, targets.Content[i-1].Value, withMappingValue(target, "variables", &rewritten))
+		changed = true
+	}
+	if !changed {
+		return root
+	}
+	return withMappingValue(top, "targets", targets)
+}
+
+// isShorthandScalar reports whether the scalar is a string, bool, int or float, the kinds a
+// variable can be set to directly. A null or a timestamp is not a shorthand.
+func isShorthandScalar(n *yaml.Node) bool {
+	switch n.ShortTag() {
+	case "!!str", "!!bool", "!!int", "!!float":
+		return true
+	default:
+		return false
 	}
 }
 
