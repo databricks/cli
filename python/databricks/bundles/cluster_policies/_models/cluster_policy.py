@@ -41,6 +41,9 @@ class ClusterPolicy(Resource):
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     max_clusters_per_user: VariableOrOptional[int] = None
     """
@@ -103,6 +106,9 @@ class ClusterPolicyDict(TypedDict, total=False):
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     max_clusters_per_user: VariableOrOptional[int]
     """
