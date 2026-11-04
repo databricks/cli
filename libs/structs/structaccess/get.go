@@ -327,13 +327,11 @@ func forceSendFields(owner reflect.Value) reflect.Value {
 	if !owner.IsValid() || owner.Kind() != reflect.Struct {
 		return reflect.Value{}
 	}
-	for i := range owner.Type().NumField() {
-		field := owner.Type().Field(i)
-		if field.Name == "ForceSendFields" && !field.Anonymous {
-			return owner.Field(i)
-		}
+	index := GetStructInfo(owner.Type()).ForceSendFieldsIndex
+	if index < 0 {
+		return reflect.Value{}
 	}
-	return reflect.Value{}
+	return owner.Field(index)
 }
 
 // forceSendFieldsContains reports whether a struct forces the named field to be sent.

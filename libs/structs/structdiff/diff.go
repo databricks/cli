@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 type Change struct {
@@ -218,69 +217,35 @@ func equalLeaf(v1, v2 reflect.Value) bool {
 }
 
 func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
-	t := s1.Type()
-	forced1 := getForceSendFields(s1)
-	forced2 := getForceSendFields(s2)
+	info := structaccess.GetStructInfo(s1.Type())
+	forced1 := info.ForceSendFields(s1)
+	forced2 := info.ForceSendFields(s2)
 
-	for i := range t.NumField() {
-		sf := t.Field(i)
-		if !sf.IsExported() || sf.Name == "ForceSendFields" {
-			continue
-		}
+	for _, f := range info.Fields {
+		v1Field := s1.Field(f.Index)
+		v2Field := s2.Field(f.Index)
 
-		// Continue traversing embedded structs. Do not add the key to the path though. An
-		// anonymous field carrying a json name is not one of these: encoding/json serializes it
-		// as a nested object, so it is handled as a named field below.
-		if structaccess.IsFlattenedEmbed(sf) {
-			if err := diffValues(ctx, path, s1.Field(i), s2.Field(i), changes); err != nil {
+		// Continue traversing embedded structs. Do not add the key to the path though.
+		if f.Flattened {
+			if err := diffValues(ctx, path, v1Field, v2Field, changes); err != nil {
 				return err
 			}
 			continue
 		}
 
-		// Only the exact tag json:"-" skips a field; json:"-," names it "-".
-		if structaccess.IsSkippedField(sf) {
-			continue
-		}
-
-		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-
-		// Resolve field name from JSON tag or fall back to Go field name
-		fieldName := jsonTag.Name()
-
-		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
-
-		if fieldName == "" || isEmbed {
-			fieldName = sf.Name
-		}
-
-		v1Field := s1.Field(i)
-		v2Field := s2.Field(i)
-
-		zero1 := v1Field.IsZero()
-		zero2 := v2Field.IsZero()
-
-		if zero1 || zero2 {
-			if jsonTag.OmitEmpty() {
-				if zero1 {
-					if !slices.Contains(forced1, sf.Name) {
-						v1Field = reflect.ValueOf(nil)
-					}
-				}
-				if zero2 {
-					if !slices.Contains(forced2, sf.Name) {
-						v2Field = reflect.ValueOf(nil)
-					}
-				}
+		if f.OmitEmpty {
+			if v1Field.IsZero() && !slices.Contains(forced1, f.StructField.Name) {
+				v1Field = reflect.ValueOf(nil)
+			}
+			if v2Field.IsZero() && !slices.Contains(forced2, f.StructField.Name) {
+				v2Field = reflect.ValueOf(nil)
 			}
 		}
 
 		// EmbeddedSlice: diff at parent path level without adding field name.
-		var node *structpath.PathNode
-		if isEmbed {
-			node = path
-		} else {
-			node = structpath.NewDotString(path, fieldName)
+		node := path
+		if !f.EmbeddedSlice {
+			node = structpath.NewDotString(path, f.Name)
 		}
 
 		if err := diffValues(ctx, node, v1Field, v2Field, changes); err != nil {
@@ -350,27 +315,6 @@ func diffStringMaps(path *structpath.PathNode, m1, m2 map[string]string, changes
 			*changes = append(*changes, Change{Path: node, Old: s1, New: s2})
 		}
 	}
-}
-
-func getForceSendFields(v reflect.Value) []string {
-	if !v.IsValid() || v.Kind() != reflect.Struct {
-		return nil
-	}
-	// Only the struct's own ForceSendFields: one promoted from an embedded struct names that
-	// struct's fields, since the SDK marshaller rejects names its struct does not have.
-	sf, ok := v.Type().FieldByName("ForceSendFields")
-	if !ok || len(sf.Index) != 1 {
-		return nil
-	}
-	fsField := v.Field(sf.Index[0])
-	if fsField.Kind() != reflect.Slice {
-		return nil
-	}
-	result, ok := reflect.TypeAssert[[]string](fsField)
-	if ok {
-		return result
-	}
-	return nil
 }
 
 // findKeyFunc returns the KeyFunc for the given path, or nil if none matches.
