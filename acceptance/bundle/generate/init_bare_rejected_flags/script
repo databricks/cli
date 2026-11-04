@@ -1,0 +1,9 @@
+# There is no databricks.yml here. Without --init-bare generate points at it.
+trace errcode $CLI bundle generate job --existing-job-id 1234
+
+# Flags that need an existing bundle are rejected before anything is written.
+trace errcode $CLI bundle generate job --existing-job-id 1234 --init-bare --bind
+trace errcode $CLI bundle generate dashboard --resource my_dashboard --init-bare
+trace errcode $CLI bundle generate genie-space --resource my_space --watch --init-bare
+
+trace find.py 'databricks.yml' --expect 0

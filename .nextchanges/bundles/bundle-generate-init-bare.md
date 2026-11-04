@@ -1,1 +1,1 @@
-* Add `--init-bare` flag to `databricks bundle generate` for zero-to-import workflows: automatically initialize a bare bundle skeleton when no bundle exists, enabling resource generation without a pre-existing `databricks.yml`.
+* Add the `default-bare` template to `databricks bundle init` and the `--init-bare` flag to `databricks bundle generate`, which creates that bare bundle in the current directory when there is no `databricks.yml` yet.

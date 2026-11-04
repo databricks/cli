@@ -1,0 +1,13 @@
+# The bundle takes its name from the directory it is created in.
+mkdir my_project
+cd my_project
+
+# There is no databricks.yml here; --init-bare creates the bare bundle first.
+trace $CLI bundle generate job --existing-job-id 1234 --key out --init-bare
+
+trace find.py '^(resources|src)/'
+trace cat databricks.yml
+trace cat resources/out.job.yml
+
+cd ..
+rm -r my_project

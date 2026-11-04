@@ -1,0 +1,47 @@
+
+>>> [CLI] bundle generate job --existing-job-id 1234 --key out --init-bare
+No databricks.yml found. Initializing a bare bundle skeleton.
+Welcome to the bare Declarative Automation Bundle template!
+
+This template creates the smallest bundle skeleton, meant for importing existing resources with `databricks bundle generate`.
+
+Your workspace at [DATABRICKS_URL] is used for initialization.
+
+✨ Your bare bundle has been created.
+
+Add generated resources under `resources/` and supporting code under `src/`.
+File successfully saved to src/outnotebook.py
+Job configuration successfully saved to resources/out.job.yml
+
+>>> find.py ^(resources|src)/
+resources/.gitkeep
+resources/out.job.yml
+src/.gitkeep
+src/outnotebook.py
+
+>>> cat databricks.yml
+# This is a Declarative Automation Bundle definition for my_project.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: my_project
+  uuid: [UUID]
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: [DATABRICKS_URL]
+
+>>> cat resources/out.job.yml
+resources:
+  jobs:
+    out:
+      name: gitjob
+      tasks:
+        - task_key: test_task
+          notebook_task:
+            notebook_path: ../src/outnotebook.py
