@@ -1297,16 +1297,18 @@ resources:
                 PLACEHOLDER
     "materialization_sets":
       "description": |-
-        PLACEHOLDER
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
+      "markdown_description": |-
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
       "$fields":
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "materialized_features":
           "$fields":
             "cron_schedule":
               "description": |-
-                PLACEHOLDER
+                Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.
     "mcp_services":
       "description": |-
         PLACEHOLDER

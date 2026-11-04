@@ -1773,6 +1773,7 @@
                     "description": "A group of materialized features created and managed as a single unit.",
                     "properties": {
                       "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "materialization_set_id": {
@@ -4288,7 +4289,9 @@
                       "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)."
                     },
                     "materialization_sets": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MaterializationSet"
+                      "description": "The materialization set definitions for the bundle, where each key is the name of the materialization set.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MaterializationSet",
+                      "markdownDescription": "The materialization set definitions for the bundle, where each key is the name of the materialization set."
                     },
                     "mcp_services": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.McpService"
@@ -14742,7 +14745,7 @@
                       "doNotSuggest": true
                     },
                     "cron_schedule": {
-                      "description": "[Private Preview]",
+                      "description": "[Private Preview] Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "deprecationMessage": "This field is deprecated",

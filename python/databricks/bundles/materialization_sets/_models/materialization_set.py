@@ -31,6 +31,9 @@ class MaterializationSet(Resource):
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     materialization_set_id: VariableOrOptional[str] = None
     """
@@ -70,6 +73,9 @@ class MaterializationSetDict(TypedDict, total=False):
     """"""
 
     lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     materialization_set_id: VariableOrOptional[str]
     """
