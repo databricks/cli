@@ -3,6 +3,9 @@
 // reflecting over config.Root and recorded in schema.txt, which is embedded into
 // the binary. The schema is append-only so that bit positions stay stable across
 // releases: a newer binary can decode an older bitmap and vice versa.
+//
+// The bits describe the configuration as the user wrote it (bundle.UserConfig),
+// not the result of Initialize, so defaults the CLI fills in are not counted.
 package bitmap
 
 import (
@@ -16,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
@@ -26,7 +30,7 @@ import (
 // from a compressed one.
 const magic = "DBTB"
 
-// ContextFullBundle marks a bitmap covering the whole config.Root tree. Other
+// ContextFullBundle marks a bitmap covering the whole user-authored config. Other
 // context values are reserved for narrower bitmaps in the future.
 const ContextFullBundle uint16 = 0
 
@@ -35,7 +39,7 @@ const headerSize = 10
 
 // EmbeddedSchema returns the schema baked into the binary at build time.
 func EmbeddedSchema() []string {
-	return splitLines(schemaBytes)
+	return parseSchema(schemaBytes)
 }
 
 // telemetryPrefix namespaces the internal telemetry struct's fields in the
@@ -121,38 +125,32 @@ func Merge(old, fresh []string) (merged, added []string) {
 	return merged, added
 }
 
-// Bits walks the loaded configuration and the internal telemetry struct and
-// returns a bit per schema entry: true when the field (or any descendant of it)
-// is set. A leaf value sets both its own presence bit and every ancestor-prefix
-// bit. The telemetry struct's paths are namespaced under "telemetry.".
-func Bits(cfg config.Root, telemetry any, schema []string) ([]bool, error) {
+// Bits returns a bit per schema entry: true when that config field or telemetry
+// flag is present. The config is walked as its dyn.Value rather than the typed
+// struct so that presence is exactly what the config holds: an interface-typed
+// field (variables.*.default) or an empty container ({} or []) counts, and a
+// zero value counts only when it is written out. The telemetry struct's paths
+// are namespaced under "telemetry.".
+func Bits(cfg dyn.Value, telemetry any, schema []string) ([]bool, error) {
 	index := make(map[string]int, len(schema))
 	for i, p := range schema {
 		index[p] = i
 	}
 
 	bits := make([]bool, len(schema))
-	setBit := func(prefix string, path *structpath.PathNode) {
-		for _, pattern := range normalizePrefixes(path) {
-			if i, ok := index[prefix+pattern]; ok {
+	markChildren(cfg, "", index, bits)
+
+	// The telemetry struct's fields have no json tags, so Walk does not honor
+	// omitempty and visits every field regardless of value. Gate on the visited
+	// bool value: a flag and its ancestors (a BoolPair) are present when true.
+	err := structwalk.Walk(telemetry, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
+		if set, ok := val.(bool); !ok || !set {
+			return
+		}
+		for p := telemetryPrefix + "." + path.String(); p != telemetryPrefix; p = p[:strings.LastIndexByte(p, '.')] {
+			if i, ok := index[p]; ok {
 				bits[i] = true
 			}
-		}
-	}
-
-	err := structwalk.Walk(cfg, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
-		setBit("", path)
-	})
-	if err != nil {
-		return nil, err
-	}
-	// The telemetry struct's fields have no json tags, so Walk does not honor
-	// omitempty and visits every field regardless of value. Presence in the
-	// struct is meaningless here (all fields always exist), so gate on the
-	// visited bool value: a field maps to a bit only when it is true.
-	err = structwalk.Walk(telemetry, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
-		if set, ok := val.(bool); ok && set {
-			setBit(telemetryPrefix+".", path)
 		}
 	})
 	if err != nil {
@@ -161,35 +159,43 @@ func Bits(cfg config.Root, telemetry any, schema []string) ([]bool, error) {
 	return bits, nil
 }
 
-// normalizePrefixes maps a concrete leaf path to its schema pattern and returns
-// that pattern together with every ancestor prefix, so that setting a leaf also
-// marks intermediate nodes (e.g. "resources.jobs.*") as present.
-func normalizePrefixes(path *structpath.PathNode) []string {
-	segments := path.AsSlice()
-	var result []string
-	var pattern *structpath.PatternNode
-	for _, node := range segments {
-		pattern = appendPattern(pattern, node)
-		result = append(result, pattern.String())
+// markChildren marks every child of v whose schema pattern is known. A map key
+// resolves to the struct field of that name when the schema has one and to the
+// ".*" wildcard otherwise; a sequence element resolves to "[*]".
+func markChildren(v dyn.Value, pattern string, index map[string]int, bits []bool) {
+	if m, ok := v.AsMap(); ok {
+		for _, pair := range m.Pairs() {
+			child := joinField(pattern, pair.Key.MustString())
+			if _, ok := index[child]; !ok {
+				child = joinField(pattern, "*")
+			}
+			mark(pair.Value, child, index, bits)
+		}
 	}
-	return result
+	if s, ok := v.AsSequence(); ok {
+		for _, elem := range s {
+			mark(elem, pattern+"[*]", index, bits)
+		}
+	}
 }
 
-// appendPattern extends a pattern with the wildcard form of a concrete node:
-// a map key or slice index becomes a wildcard, a struct field keeps its name.
-func appendPattern(prev *structpath.PatternNode, node *structpath.PathNode) *structpath.PatternNode {
-	if _, ok := node.Index(); ok {
-		return structpath.NewPatternBracketStar(prev)
+// mark sets the bit for a present (non-null) value and recurses into it. A
+// pattern outside the schema is not descended into: that covers the pruned
+// subtrees and the contents of interface-typed fields, whose own bit is set.
+func mark(v dyn.Value, pattern string, index map[string]int, bits []bool) {
+	i, ok := index[pattern]
+	if !ok || v.Kind() == dyn.KindNil {
+		return
 	}
-	if _, ok := node.BracketString(); ok {
-		return structpath.NewPatternDotStar(prev)
+	bits[i] = true
+	markChildren(v, pattern, index, bits)
+}
+
+func joinField(pattern, key string) string {
+	if pattern == "" {
+		return key
 	}
-	if key, ok := node.DotString(); ok {
-		return structpath.NewPatternDotString(prev, key)
-	}
-	// The walk only produces indices, map keys, and dot-string fields for
-	// config.Root, so any other node kind is unexpected.
-	panic(fmt.Sprintf("bitmap: unexpected path node %q", node.String()))
+	return pattern + "." + key
 }
 
 // Encode packs bits into the wire format (magic, size, context, bitmap),
@@ -240,7 +246,8 @@ func Decode(encoded string) (bits []bool, context uint16, err error) {
 	}
 	n := binary.BigEndian.Uint32(raw[4:])
 	context = binary.BigEndian.Uint16(raw[8:])
-	if len(raw) != headerSize+(int(n)+7)/8 {
+	// Compare in uint64 so a corrupt size near 2^32 cannot overflow int on 32-bit platforms.
+	if uint64(len(raw)-headerSize) != (uint64(n)+7)/8 {
 		return nil, 0, fmt.Errorf("payload size mismatch: %d bits, %d bytes", n, len(raw))
 	}
 	bits = make([]bool, n)
@@ -250,20 +257,10 @@ func Decode(encoded string) (bits []bool, context uint16, err error) {
 	return bits, context, nil
 }
 
-// splitLines splits embedded schema bytes into non-empty lines.
-func splitLines(b []byte) []string {
-	// Strip CR so a CRLF checkout of the embedded schema.txt (Windows) parses to
-	// the same clean field paths as WalkType produces; otherwise Merge's dedup
-	// never matches and the schema doubles.
-	s := strings.ReplaceAll(string(b), "\r\n", "\n")
-	var lines []string
-	for line := range strings.SplitSeq(s, "\n") {
-		// Drop blank lines defensively: a stray one (bad edit, merge artifact)
-		// would otherwise become a real schema entry and shift every following
-		// bit index, silently breaking append-only stability.
-		if line != "" {
-			lines = append(lines, line)
-		}
-	}
-	return lines
+// parseSchema splits schema bytes into field paths. Paths contain no
+// whitespace, so splitting on any whitespace also drops the CR of a CRLF
+// checkout (Windows) and blank lines, neither of which may become an entry that
+// shifts every following bit index.
+func parseSchema(b []byte) []string {
+	return strings.Fields(string(b))
 }

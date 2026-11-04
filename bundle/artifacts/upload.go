@@ -29,7 +29,7 @@ func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	skipArtifactsCleanup := b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.SkipArtifactCleanup)
 	b.Metrics.AddBoolValue("skip_artifact_cleanup", skipArtifactsCleanup)
-	b.Telemetry.SetPaired(&b.Telemetry.SkipArtifactCleanupTrue, &b.Telemetry.SkipArtifactCleanupFalse, skipArtifactsCleanup)
+	b.Telemetry.SkipArtifactCleanup.Set(skipArtifactsCleanup)
 	if skipArtifactsCleanup {
 		log.Info(ctx, "Skip cleaning up artifacts folder")
 	} else {

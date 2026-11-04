@@ -2,16 +2,56 @@ bundle:
   name: test-bundle
 
 variables:
-  myvar:
+  scalar_var:
     description: a variable
     default: abc
+  complex_var:
+    type: complex
+    default:
+      key: value
 
 presets:
   name_prefix: dev_
+
+run_as:
+  service_principal_name: sp-1234
+
+artifacts:
+  # One artifact with a build command and one with files only, so each
+  # per-artifact flag records both outcomes.
+  with_build:
+    type: whl
+    build: "true"
+  with_files:
+    type: whl
+    files:
+      - source: wheels/*.whl
 
 resources:
   jobs:
     my_job:
       name: My Job
+      description: "escaped $${var.scalar_var}"
+      timeout_seconds: 0
+      email_notifications: {}
+      parameters: []
       tags:
         team: data
+        "a.b": c
+      tasks:
+        - task_key: a
+          notebook_task:
+            notebook_path: ./notebook.py
+        - task_key: b
+          depends_on:
+            - task_key: a
+          notebook_task:
+            notebook_path: ./notebook.py
+
+targets:
+  dev:
+    default: true
+    resources:
+      jobs:
+        my_job:
+          max_concurrent_runs: 2

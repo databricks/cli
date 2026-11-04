@@ -25,6 +25,10 @@ import (
 func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
+	// Snapshot the config before any mutator below fills in defaults. Python
+	// resources are added to the snapshot by the Python mutator.
+	b.UserConfig = b.Config.Value()
+
 	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resources.internal_immutable_snapshots (and other internal keys)
 		// Warns and removes any internal resource fields set by the user.
