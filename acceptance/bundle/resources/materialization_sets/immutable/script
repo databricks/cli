@@ -59,4 +59,20 @@ render renamed-member.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 
+title "That recreate needs approval too, and with it the set is rebuilt for the renamed member"
+trace musterr $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+title "Switching the trigger from a manual cron expression to a DERIVED schedule is a recreate as"
+title "well, and the deploy asks for approval before rebuilding the set"
+render derived-trigger.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
 rm -f out.requests.txt out.plan.json
