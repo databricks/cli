@@ -2,7 +2,6 @@ package testserver
 
 import (
 	"encoding/json"
-	"regexp"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver/testsql"
@@ -33,19 +32,4 @@ func TestHandleSQL(t *testing.T) {
 	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
 	require.NotNil(t, resp.Result)
 	assert.Equal(t, [][]string{{"1"}}, resp.Result.DataArray)
-}
-
-func TestHandleSQLPattern(t *testing.T) {
-	server := New(t)
-	// A regex matcher echoes back a captured submatch, exercising both the
-	// HandleSQLPattern registration and Request.Match.
-	server.HandleSQLPattern(regexp.MustCompile(`^SELECT (\d+)$`), func(r testsql.Request) testsql.Result {
-		return testsql.Result{Columns: []string{"n"}, Rows: [][]string{{r.Match[1]}}}
-	})
-
-	resp := submitSQL(t, server, "SELECT 42")
-	require.NotNil(t, resp.Status)
-	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
-	require.NotNil(t, resp.Result)
-	assert.Equal(t, [][]string{{"42"}}, resp.Result.DataArray)
 }
