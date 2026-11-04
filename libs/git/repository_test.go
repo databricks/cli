@@ -231,3 +231,21 @@ func TestRepositoryOriginUrlRemovesUserCreds(t *testing.T) {
 		repo.assertOriginUrl(tc.expected)
 	}
 }
+
+func TestStripURLCredentials(t *testing.T) {
+	cases := []struct {
+		in   string
+		want string
+	}{
+		{"https://user:pass@proxy.example/simple", "https://proxy.example/simple"},
+		{"https://token@proxy.example/simple", "https://proxy.example/simple"},
+		{"https://proxy.example/simple", "https://proxy.example/simple"},
+		{"ssh://git@github.com/databricks/cli.git", "ssh://github.com/databricks/cli.git"},
+		{"git@github.com:databricks/cli.git", "git@github.com:databricks/cli.git"},
+		{"not a url", "not a url"},
+		{"", ""},
+	}
+	for _, tc := range cases {
+		assert.Equal(t, tc.want, StripURLCredentials(tc.in))
+	}
+}
