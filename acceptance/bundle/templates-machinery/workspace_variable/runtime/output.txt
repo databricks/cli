@@ -11,7 +11,7 @@
       "default": "[DATABRICKS_URL]/jobs"
     },
     "path": {
-      "description": "Path to open on [DATABRICKS_HOST]",
+      "description": "Path to open on 127.0.0.1",
       "default": "/jobs?view=list#top"
     }
   }
@@ -21,13 +21,13 @@
 Initializing for [DATABRICKS_URL]
 Open [DATABRICKS_URL]/jobs?view=list#top
 workspace_host: [DATABRICKS_URL]
-Hostname: [DATABRICKS_HOST]
+Hostname: 127.0.0.1
 URL: [DATABRICKS_URL]
 URL "/jobs": [DATABRICKS_URL]/jobs
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list#top
 jobs_url: [DATABRICKS_URL]/jobs
 Root keys: jobs_url path workspace
-Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace:{[DATABRICKS_HOST] [DATABRICKS_URL] [WORKSPACE_ID] }]
+Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace:{127.0.0.1 [DATABRICKS_URL] [WORKSPACE_ID] }]
 
 === Profile workspace_classic_id
 
@@ -41,7 +41,7 @@ Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace
       "default": "[DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]"
     },
     "path": {
-      "description": "Path to open on [DATABRICKS_HOST]",
+      "description": "Path to open on 127.0.0.1",
       "default": "/jobs?view=list#top"
     }
   }
@@ -51,13 +51,13 @@ Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace
 Initializing for [DATABRICKS_URL]?w=[WORKSPACE_ID]
 Open [DATABRICKS_URL]/jobs?view=list&w=[WORKSPACE_ID]#top
 workspace_host: [DATABRICKS_URL]
-Hostname: [DATABRICKS_HOST]
+Hostname: 127.0.0.1
 URL: [DATABRICKS_URL]?w=[WORKSPACE_ID]
 URL "/jobs": [DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list&w=[WORKSPACE_ID]#top
 jobs_url: [DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]
 Root keys: jobs_url path workspace
-Root data: map[jobs_url:[DATABRICKS_URL]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list#top workspace:{[DATABRICKS_HOST] [DATABRICKS_URL] [WORKSPACE_ID] [WORKSPACE_ID]}]
+Root data: map[jobs_url:[DATABRICKS_URL]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list#top workspace:{127.0.0.1 [DATABRICKS_URL] [WORKSPACE_ID] [WORKSPACE_ID]}]
 
 === Profile workspace_custom_host
 
@@ -71,7 +71,7 @@ Root data: map[jobs_url:[DATABRICKS_URL]/jobs?w=[WORKSPACE_ID] path:/jobs?view=l
       "default": "[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]"
     },
     "path": {
-      "description": "Path to open on [CUSTOM_HOSTNAME]",
+      "description": "Path to open on localhost",
       "default": "/jobs?view=list#top"
     }
   }
@@ -81,13 +81,13 @@ Root data: map[jobs_url:[DATABRICKS_URL]/jobs?w=[WORKSPACE_ID] path:/jobs?view=l
 Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
 Open [CUSTOM_HOST]/jobs?view=list&w=[WORKSPACE_ID]#top
 workspace_host: [CUSTOM_HOST]
-Hostname: [CUSTOM_HOSTNAME]
+Hostname: localhost
 URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 URL "/jobs": [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [CUSTOM_HOST]/jobs?view=list&w=[WORKSPACE_ID]#top
 jobs_url: [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 Root keys: jobs_url path workspace
-Root data: map[jobs_url:[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list#top workspace:{[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
+Root data: map[jobs_url:[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list#top workspace:{localhost [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
 
 === Profile no_workspace_id
 
@@ -101,7 +101,7 @@ Root data: map[jobs_url:[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list
       "default": "[DATABRICKS_URL]/jobs"
     },
     "path": {
-      "description": "Path to open on [DATABRICKS_HOST]",
+      "description": "Path to open on 127.0.0.1",
       "default": "/jobs?view=list#top"
     }
   }
@@ -111,13 +111,13 @@ Root data: map[jobs_url:[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list
 Initializing for [DATABRICKS_URL]
 Open [DATABRICKS_URL]/jobs?view=list#top
 workspace_host: [DATABRICKS_URL]
-Hostname: [DATABRICKS_HOST]
+Hostname: 127.0.0.1
 URL: [DATABRICKS_URL]
 URL "/jobs": [DATABRICKS_URL]/jobs
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list#top
 jobs_url: [DATABRICKS_URL]/jobs
 Root keys: jobs_url path workspace
-Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace:{[DATABRICKS_HOST] [DATABRICKS_URL]  }]
+Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace:{127.0.0.1 [DATABRICKS_URL]  }]
 
 === Rerender and init with edited inputs
 
@@ -131,7 +131,7 @@ Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace
       "default": "[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]"
     },
     "path": {
-      "description": "Path to open on [CUSTOM_HOSTNAME]",
+      "description": "Path to open on localhost",
       "default": "/jobs?view=list#top"
     }
   }
@@ -141,13 +141,13 @@ Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace
 Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
 Open [CUSTOM_HOST]/pipelines?tab=all&w=[WORKSPACE_ID]
 workspace_host: [CUSTOM_HOST]
-Hostname: [CUSTOM_HOSTNAME]
+Hostname: localhost
 URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 URL "/jobs": [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 URL "/pipelines?tab=all": [CUSTOM_HOST]/pipelines?tab=all&w=[WORKSPACE_ID]
 jobs_url: https://example.test/my-jobs
 Root keys: jobs_url path workspace
-Root data: map[jobs_url:https://example.test/my-jobs path:/pipelines?tab=all workspace:{[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
+Root data: map[jobs_url:https://example.test/my-jobs path:/pipelines?tab=all workspace:{localhost [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
 
 === Invalid URL paths
 
