@@ -46,10 +46,19 @@ func EmbeddedSchema() []string {
 // schema so they never collide with config.Root paths.
 const telemetryPrefix = "telemetry"
 
+// Every bool field has two value entries after its presence entry, so the
+// bitmap records true and false apart. A present field with neither value bit
+// holds an unresolved variable reference.
+const (
+	trueSuffix  = "=true"
+	falseSuffix = "=false"
+)
+
 // WalkSchema reflects over config.Root and the internal telemetry struct and
 // returns the ordered list of field paths, one per field, with map keys
-// rendered as ".*" and slice elements as "[*]". The telemetry struct's fields
-// are namespaced under "telemetry.". This is the freshly computed schema; the
+// rendered as ".*" and slice elements as "[*]", and a "=true" and "=false"
+// entry after each bool field. The telemetry struct's fields are namespaced
+// under "telemetry.". This is the freshly computed schema; the
 // committed schema.txt is a prefix of it plus any fields since removed.
 //
 // telemetryType is the internal telemetry struct type (bundle.Telemetry),
@@ -70,7 +79,7 @@ func WalkSchema(telemetryType reflect.Type) ([]string, error) {
 // with pruned subtrees removed. prune may be nil.
 func walkTypePaths(t reflect.Type, prefix string, prune func(string) bool) ([]string, error) {
 	var paths []string
-	err := structwalk.WalkType(t, func(path *structpath.PatternNode, _ reflect.Type, _ *reflect.StructField) bool {
+	err := structwalk.WalkType(t, func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
 		if path == nil {
 			return true
 		}
@@ -79,6 +88,12 @@ func walkTypePaths(t reflect.Type, prefix string, prune func(string) bool) ([]st
 			return false
 		}
 		paths = append(paths, prefix+p)
+		if typ.Kind() == reflect.Pointer {
+			typ = typ.Elem()
+		}
+		if typ.Kind() == reflect.Bool {
+			paths = append(paths, prefix+p+trueSuffix, prefix+p+falseSuffix)
+		}
 		return true
 	})
 	if err != nil {
@@ -126,37 +141,56 @@ func Merge(old, fresh []string) (merged, added []string) {
 }
 
 // Bits returns a bit per schema entry: true when that config field or telemetry
-// flag is present. The config is walked as its dyn.Value rather than the typed
-// struct so that presence is exactly what the config holds: an interface-typed
-// field (variables.*.default) or an empty container ({} or []) counts, and a
-// zero value counts only when it is written out. The telemetry struct's paths
-// are namespaced under "telemetry.".
+// flag is present, or for a "=true"/"=false" entry, when the bool holds that
+// value. The config is walked as its dyn.Value rather than the typed struct so
+// that presence is exactly what the config holds: an interface-typed field
+// (variables.*.default) or an empty container ({} or []) counts, and a zero
+// value counts only when it is written out. The telemetry struct's paths are
+// namespaced under "telemetry.".
 func Bits(cfg dyn.Value, telemetry any, schema []string) ([]bool, error) {
-	index := make(map[string]int, len(schema))
-	for i, p := range schema {
-		index[p] = i
+	index := indexSchema(schema)
+
+	tm, err := telemetryValue(telemetry)
+	if err != nil {
+		return nil, err
 	}
 
 	bits := make([]bool, len(schema))
 	markChildren(cfg, "", index, bits)
-
-	// The telemetry struct's fields have no json tags, so Walk does not honor
-	// omitempty and visits every field regardless of value. Gate on the visited
-	// bool value: a flag and its ancestors (a BoolPair) are present when true.
-	err := structwalk.Walk(telemetry, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
-		if set, ok := val.(bool); !ok || !set {
-			return
-		}
-		for p := telemetryPrefix + "." + path.String(); p != telemetryPrefix; p = p[:strings.LastIndexByte(p, '.')] {
-			if i, ok := index[p]; ok {
-				bits[i] = true
-			}
-		}
-	})
-	if err != nil {
-		return nil, err
-	}
+	markChildren(tm, telemetryPrefix, index, bits)
 	return bits, nil
+}
+
+// telemetryValue converts the telemetry struct to a map keyed by Go field name
+// that holds only what was measured: a true bool, the value of a non-nil
+// *bool, and the elements of a non-empty []bool.
+func telemetryValue(telemetry any) (dyn.Value, error) {
+	v := reflect.ValueOf(telemetry)
+	out := dyn.NewMapping()
+	for i := range v.NumField() {
+		name := v.Type().Field(i).Name
+		switch f := v.Field(i).Interface().(type) {
+		case bool:
+			if f {
+				out.SetLoc(name, nil, dyn.V(true))
+			}
+		case *bool:
+			if f != nil {
+				out.SetLoc(name, nil, dyn.V(*f))
+			}
+		case []bool:
+			if len(f) > 0 {
+				elems := make([]dyn.Value, len(f))
+				for j, value := range f {
+					elems[j] = dyn.V(value)
+				}
+				out.SetLoc(name, nil, dyn.V(elems))
+			}
+		default:
+			return dyn.InvalidValue, fmt.Errorf("telemetry field %s has unsupported type %s", name, v.Field(i).Type())
+		}
+	}
+	return dyn.V(out), nil
 }
 
 // markChildren marks every child of v whose schema pattern is known. A map key
@@ -188,6 +222,15 @@ func mark(v dyn.Value, pattern string, index map[string]int, bits []bool) {
 		return
 	}
 	bits[i] = true
+	if value, ok := v.AsBool(); ok {
+		suffix := falseSuffix
+		if value {
+			suffix = trueSuffix
+		}
+		if j, ok := index[pattern+suffix]; ok {
+			bits[j] = true
+		}
+	}
 	markChildren(v, pattern, index, bits)
 }
 
@@ -196,6 +239,49 @@ func joinField(pattern, key string) string {
 		return key
 	}
 	return pattern + "." + key
+}
+
+// Text renders the set bits as "<value> <path>" lines in schema order: "T" or
+// "F" for a bool field holding that value, "1" for any other present field. A
+// bool shown as "1" holds an unresolved variable reference; one shown as both
+// "T" and "F" has both values under a wildcard. Unset fields are omitted. bits
+// may be shorter than schema (a bitmap from an older CLI) but not longer.
+func Text(schema []string, bits []bool) []string {
+	index := indexSchema(schema[:len(bits)])
+	var lines []string
+	for i, p := range schema[:len(bits)] {
+		if !bits[i] {
+			continue
+		}
+		if field, ok := strings.CutSuffix(p, trueSuffix); ok {
+			lines = append(lines, "T "+field)
+			continue
+		}
+		if field, ok := strings.CutSuffix(p, falseSuffix); ok {
+			lines = append(lines, "F "+field)
+			continue
+		}
+		// A bool with a value bit is shown by its value line instead.
+		if isSet(index, bits, p+trueSuffix) || isSet(index, bits, p+falseSuffix) {
+			continue
+		}
+		lines = append(lines, "1 "+p)
+	}
+	return lines
+}
+
+func isSet(index map[string]int, bits []bool, p string) bool {
+	i, ok := index[p]
+	return ok && bits[i]
+}
+
+// indexSchema maps each schema path to its bit position.
+func indexSchema(schema []string) map[string]int {
+	index := make(map[string]int, len(schema))
+	for i, p := range schema {
+		index[p] = i
+	}
+	return index
 }
 
 // Encode packs bits into the wire format (magic, size, context, bitmap),

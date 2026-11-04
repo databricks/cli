@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -47,10 +46,8 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			})
 			continue
 		}
-		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
-		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
-		b.Telemetry.ArtifactBuildCommandIsSet.Set(artifact.BuildCommand != "")
-		b.Telemetry.ArtifactFilesIsSet.Set(len(artifact.Files) != 0)
+		b.Telemetry.ArtifactBuildCommandIsSet = append(b.Telemetry.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
+		b.Telemetry.ArtifactFilesIsSet = append(b.Telemetry.ArtifactFilesIsSet, len(artifact.Files) != 0)
 
 		// A `tgz` artifact with `include`/`git` is built by DABs itself in the build
 		// phase (see artifacts.Build). `build` and `git`/`include` are mutually

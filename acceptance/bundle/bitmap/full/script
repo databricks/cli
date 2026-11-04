@@ -1,5 +1,4 @@
-# Records every schema line with its bit, so a PR that adds a config field
-# shows where the field landed in the append-only schema. Refreshed by
-# 'task generate-bitmap-schema'; acceptance/bundle/bitmap/presence pins the
-# semantics without depending on the schema.
-trace $CLI bundle bitmap bitmap-text > out.bitmap-text.txt
+# Records every schema line, so a PR that adds a config field shows where it
+# landed in the append-only schema. Refreshed by 'task generate-bitmap-schema';
+# ../presence pins the semantics of the bits.
+trace $CLI bundle bitmap schema > out.schema.txt
