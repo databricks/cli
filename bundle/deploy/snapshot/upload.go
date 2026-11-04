@@ -106,7 +106,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	// A plan produced while the snapshot was untouched may keep it in place. Applying it would
 	// leave the deployment on the modified snapshot, which --force promises to move off.
 	if !m.clean && modified && snap.RelativePath() == prev.RelativePath {
-		return diag.Errorf("the last deployment was modified in the workspace since the plan was created; run 'bundle plan --force' again to move to a new snapshot")
+		return diag.Errorf("the last deployment was modified in the workspace since the plan was created; create a new plan with 'bundle plan --force' to move to a new snapshot")
 	}
 	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = snap
 
