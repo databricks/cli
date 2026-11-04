@@ -1,1 +1,0 @@
-* Fix `bundle plan` reporting an update to an app's `config.env` values on every run, which also redeployed the app on every `bundle deploy`. The Apps API returns environment variable names only, so `value` and `value_from` are no longer compared against the remote deployment. ([#7326](https://github.com/databricks/cli/pull/7326))
