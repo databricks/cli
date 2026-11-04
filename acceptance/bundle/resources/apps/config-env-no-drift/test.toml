@@ -1,0 +1,5 @@
+# The Apps API returns deployment env vars with their name only, so config.env value and
+# value_from are classified input-only (ignore_remote_changes) and the fake server models
+# that masking. A real workspace would need the referenced secret to exist, so this runs
+# locally only. See https://github.com/databricks/cli/issues/7301
+RecordRequests = false
