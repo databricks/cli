@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynloc"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
@@ -35,8 +36,9 @@ type Script struct {
 }
 
 type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
-	value dyn.Value
-	depth int
+	value                dyn.Value
+	depth                int
+	pendingTaskOverrides []taskVariableOverride
 
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
@@ -163,9 +165,11 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
 	depth := r.depth
+	pending := r.pendingTaskOverrides
 
 	defer func() {
 		r.depth = depth
+		r.pendingTaskOverrides = pending
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -302,6 +306,12 @@ func (r *Root) Merge(other *Root) error {
 	})
 }
 
+type taskVariableOverride struct {
+	jobName      string
+	variableName string
+	reference    dyn.Value
+}
+
 func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 	path := dyn.NewPath(dyn.Key(name))
 	reference, _ := dyn.GetByPath(rv, path)
@@ -326,6 +336,70 @@ func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 	return dyn.SetByPath(rv, path, out)
 }
 
+func deferTaskVariableOverrides(root, target dyn.Value) (dyn.Value, []taskVariableOverride, error) {
+	var pending []taskVariableOverride
+	_, err := dyn.Map(target, "resources.jobs", dyn.Foreach(func(path dyn.Path, job dyn.Value) (dyn.Value, error) {
+		jobName := path[2].Key()
+		reference := root.Get("resources").Get("jobs").Get(jobName).Get("tasks")
+		override := job.Get("tasks")
+		if reference.Kind() != dyn.KindString || override.Kind() != dyn.KindSequence {
+			return job, nil
+		}
+
+		refPath, ok := dynvar.PureReferenceToPath(reference.MustString())
+		if !ok || len(refPath) != 2 || refPath[0].Key() != "var" {
+			return job, nil
+		}
+
+		variableName := refPath[1].Key()
+		variableType := root.Get("variables").Get(variableName).Get("type")
+		if variableType.Kind() != dyn.KindString || variableType.MustString() != string(variable.VariableTypeComplex) {
+			return job, nil
+		}
+
+		updatedRoot, err := dyn.SetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(jobName), dyn.Key("tasks")), dyn.NewValue(nil, reference.Locations()))
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		root = updatedRoot
+		pending = append(pending, taskVariableOverride{jobName, variableName, reference})
+		return job, nil
+	}))
+	return root, pending, err
+}
+
+// MergeDeferredTaskOverrides merges target task overrides after complex variables are assigned.
+func (r *Root) MergeDeferredTaskOverrides() error {
+	if len(r.pendingTaskOverrides) == 0 {
+		return nil
+	}
+
+	root := r.value
+	for _, pending := range r.pendingTaskOverrides {
+		value := root.Get("variables").Get(pending.variableName).Get("value")
+		if value.Kind() != dyn.KindSequence {
+			return fmt.Errorf("resources.jobs.%s.tasks at %s: variable %s must resolve to a task sequence", pending.jobName, pending.reference.Location(), pending.variableName)
+		}
+
+		base := dyn.NewValue(value.Value(), pending.reference.Locations())
+		override := root.Get("resources").Get("jobs").Get(pending.jobName).Get("tasks")
+		tasks, err := merge.Merge(base, override)
+		if err != nil {
+			return fmt.Errorf("failed to merge resources.jobs.%s.tasks at %s: %w", pending.jobName, pending.reference.Location(), err)
+		}
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(pending.jobName), dyn.Key("tasks")), tasks)
+		if err != nil {
+			return fmt.Errorf("failed to set resources.jobs.%s.tasks: %w", pending.jobName, err)
+		}
+	}
+
+	if err := r.updateWithDynamicValue(root); err != nil {
+		return err
+	}
+	r.pendingTaskOverrides = nil
+	return nil
+}
+
 func (r *Root) MergeTargetOverrides(name string) error {
 	root := r.value
 	target, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
@@ -337,6 +411,11 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	err = validateVariableOverrides(root, target)
 	if err != nil {
 		return err
+	}
+
+	root, pending, err := deferTaskVariableOverrides(root, target)
+	if err != nil {
+		return fmt.Errorf("failed to defer task overrides for target=%s: %w", name, err)
 	}
 
 	// Merge fields that can be merged 1:1.
@@ -447,7 +526,11 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Convert normalized configuration tree to typed configuration.
-	return r.updateWithDynamicValue(root)
+	if err := r.updateWithDynamicValue(root); err != nil {
+		return err
+	}
+	r.pendingTaskOverrides = pending
+	return nil
 }
 
 var allowedVariableDefinitions = []([]string){
