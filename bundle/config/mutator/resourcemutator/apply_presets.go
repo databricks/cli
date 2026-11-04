@@ -48,7 +48,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	prefix := t.NamePrefix
 
 	b.Metrics.AddBoolValue(metrics.PresetsNamePrefixIsSet, prefix != "")
-	b.Telemetry.SetPaired(&b.Telemetry.PresetsNamePrefixIsSetTrue, &b.Telemetry.PresetsNamePrefixIsSetFalse, prefix != "")
+	b.Telemetry.PresetsNamePrefixIsSet.Set(prefix != "")
 
 	tags := toTagArray(t.Tags)
 

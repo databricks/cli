@@ -1,5 +1,2 @@
-Cloud = false
-
-# decoded.txt is a scratch artifact produced by the round-trip check; it must
-# equal out.bitmap-text.txt so there is no need to record it as a golden.
-Ignore = ["decoded.txt", ".databricks", "cache-text", "cache-enc"]
+# Scratch files of the round-trip check; out.bitmap.txt is the golden.
+Ignore = [".databricks", "schema.txt", "bitmap-text.txt", "bitmap.b64", "decoded.txt"]

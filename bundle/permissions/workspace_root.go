@@ -166,7 +166,7 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	b.Metrics.SetBoolValue(metrics.StatePathIsShared, isShared)
 	b.Metrics.SetBoolValue(metrics.PermissionsSectionSet, len(b.Config.Permissions) > 0)
 	b.Telemetry.StatePathIsShared = isShared
-	b.Telemetry.SetPaired(&b.Telemetry.PermissionsSectionSetTrue, &b.Telemetry.PermissionsSectionSetFalse, len(b.Config.Permissions) > 0)
+	b.Telemetry.PermissionsSectionSet.Set(len(b.Config.Permissions) > 0)
 
 	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so the two
 	// home flags are exact complements: an unresolved deployer ("") never equals the

@@ -1,8 +1,15 @@
 
->>> [CLI] bundle bitmap schema
+>>> [CLI] bundle bitmap bitmap-text
 
->>> DATABRICKS_CACHE_DIR=[TEST_TMP_DIR]/cache-text [CLI] bundle bitmap bitmap-text
-
->>> DATABRICKS_CACHE_DIR=[TEST_TMP_DIR]/cache-enc [CLI] bundle bitmap bitmap
+>>> [CLI] bundle bitmap bitmap
 
 >>> [CLI] bundle bitmap update-schema --validate
+
+=== An invalid bundle fails instead of printing a bitmap
+
+>>> musterr [CLI] bundle bitmap bitmap
+Error: Artifact not properly configured
+  in databricks.yml:5:10
+
+please specify artifact properties
+

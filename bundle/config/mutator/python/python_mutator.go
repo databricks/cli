@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -351,6 +352,11 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return mutateDiags
 	}
 
+	// Record the Python resources as written, before their defaults are filled in.
+	if err := addUserResources(b, result.AddedResources); err != nil {
+		return mutateDiags.Extend(diag.FromErr(err))
+	}
+
 	resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources)
 	if logdiag.HasError(ctx) {
 		return mutateDiags
@@ -358,6 +364,26 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources)
 	return mutateDiags
+}
+
+// addUserResources copies resources added by Python into b.UserConfig.
+func addUserResources(b *bundle.Bundle, added resourcemutator.ResourceKeySet) error {
+	for _, key := range added.ToArray() {
+		v, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key(key.Type), dyn.Key(key.Name)))
+		if err != nil {
+			return err
+		}
+		resource := dyn.V(map[string]dyn.Value{
+			"resources": dyn.V(map[string]dyn.Value{
+				key.Type: dyn.V(map[string]dyn.Value{key.Name: v}),
+			}),
+		})
+		b.UserConfig, err = merge.Merge(b.UserConfig, resource)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // createCacheDir returns the directory for input/output files of the Python subprocess, and a cleanup function.

@@ -121,8 +121,13 @@ workspace: { current_user: { userName: test }}`)
 		assert.Equal(t, "pipeline_0", pipeline0.Name)
 	}
 
+	// The added resources are recorded in UserConfig as Python wrote them.
+	userJob0, err := dyn.Get(b.UserConfig, "resources.jobs.job0")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"name": "job_0"}, userJob0.AsAny())
+
 	// output of locations.json should be applied to underlying dyn.Value
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		// location is databricks.yml, because output contains resource as-is
 		jobName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.name"))
 		require.NoError(t, err)
@@ -601,8 +606,10 @@ func loadYaml(name, content string) *bundle.Bundle {
 		panic(diag.Error())
 	}
 
+	// Initialize snapshots the loaded config before the Python mutator runs.
 	return &bundle.Bundle{
-		Config: *v,
+		Config:     *v,
+		UserConfig: v.Value(),
 	}
 }
 

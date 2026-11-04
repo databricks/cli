@@ -18,6 +18,7 @@ import zlib
 
 MAGIC = b"DBTB"
 HEADER_SIZE = 10
+CONTEXT_FULL_BUNDLE = 0
 
 
 def main():
@@ -31,7 +32,9 @@ def main():
 
     if raw[:4] != MAGIC:
         sys.exit(f"bad magic: {raw[:4]!r}")
-    (size,) = struct.unpack(">I", raw[4:8])
+    (size, context) = struct.unpack(">IH", raw[4:HEADER_SIZE])
+    if context != CONTEXT_FULL_BUNDLE:
+        sys.exit(f"unexpected context: {context}")
     if len(raw) != HEADER_SIZE + (size + 7) // 8:
         sys.exit(f"payload size mismatch: {size} bits, {len(raw)} bytes")
     if size != len(schema):
