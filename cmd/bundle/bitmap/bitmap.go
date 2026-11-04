@@ -29,6 +29,7 @@ bundle configuration type and embedded into the CLI binary.`,
 	cmd.AddCommand(newUpdateSchemaCommand())
 	cmd.AddCommand(newBitmapTextCommand())
 	cmd.AddCommand(newBitmapCommand())
+	cmd.AddCommand(newDecodeCommand())
 	return cmd
 }
 
@@ -75,7 +76,8 @@ fields are kept so that bit positions stay stable.`,
 func newBitmapTextCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bitmap-text",
-		Short: "Print the bitmap as '0/1 field_path' lines for the current bundle",
+		Short: textShort + " for the current bundle",
+		Long:  textLong,
 		Args:  root.NoArgs,
 	}
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -83,15 +85,44 @@ func newBitmapTextCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		out := cmd.OutOrStdout()
-		for i, p := range schema {
-			set := 0
-			if bits[i] {
-				set = 1
-			}
-			fmt.Fprintf(out, "%d %s\n", set, p)
+		return printLines(cmd.OutOrStdout(), bundlebitmap.Text(schema, bits))
+	}
+	return cmd
+}
+
+const (
+	textShort = "Print the fields set in the bitmap"
+	textLong  = `Prints one "<value> <field>" line per field set in the bitmap: "T" or "F" for a
+boolean field holding that value, "1" for any other field. Unset fields are
+omitted.`
+)
+
+func newDecodeCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "decode",
+		Short: textShort + " of an encoded bitmap read from stdin",
+		Long:  textLong + "\n\nThe input is the output of 'bundle bitmap bitmap'.",
+		Args:  root.NoArgs,
+	}
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		encoded, err := io.ReadAll(cmd.InOrStdin())
+		if err != nil {
+			return err
 		}
-		return nil
+		bits, context, err := bundlebitmap.Decode(strings.TrimSpace(string(encoded)))
+		if err != nil {
+			return err
+		}
+		if context != bundlebitmap.ContextFullBundle {
+			return fmt.Errorf("unsupported bitmap context %d", context)
+		}
+		// The schema is append-only, so an older bitmap decodes against a prefix of
+		// it; a newer one has bits this binary cannot name.
+		schema := bundlebitmap.EmbeddedSchema()
+		if len(bits) > len(schema) {
+			return fmt.Errorf("bitmap has %d bits but the schema has %d fields; decode it with a newer CLI", len(bits), len(schema))
+		}
+		return printLines(cmd.OutOrStdout(), bundlebitmap.Text(schema, bits))
 	}
 	return cmd
 }

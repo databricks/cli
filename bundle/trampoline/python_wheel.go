@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -77,8 +76,7 @@ func TransformWheelTask() bundle.Mutator {
 
 func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	isEnabled := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
-	b.Metrics.AddBoolValue(metrics.ExperimentalPythonWheelWrapperIsSet, isEnabled)
-	b.Telemetry.PythonWheelWrapperIsSet.Set(isEnabled)
+	b.Telemetry.PythonWheelWrapperIsSet = new(isEnabled)
 	if !isEnabled {
 		return nil
 	}
