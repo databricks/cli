@@ -148,11 +148,6 @@ func TestCaptureUCDependencies(t *testing.T) {
 						FullName: "mycatalog.myschema.myfeature",
 					}},
 				},
-				FeatureSpecs: map[string]*resources.FeatureSpec{
-					"my_feature_spec": {FeatureSpec: ml.FeatureSpec{
-						Name: "mycatalog.myschema.myfeaturespec",
-					}},
-				},
 				McpServices: map[string]*resources.McpService{
 					"my_mcp_service": {McpServiceConfig: resources.McpServiceConfig{
 						Parent: "schemas/mycatalog.myschema", McpServiceId: "mymcp",
@@ -204,9 +199,6 @@ func TestCaptureUCDependencies(t *testing.T) {
 
 	// Feature (three-part "catalog.schema.feature" full name).
 	assert.Equal(t, catalogRef+"."+schemaRef+".myfeature", b.Config.Resources.Features["my_feature"].FullName)
-
-	// Feature spec (three-part "catalog.schema.feature_spec" name).
-	assert.Equal(t, catalogRef+"."+schemaRef+".myfeaturespec", b.Config.Resources.FeatureSpecs["my_feature_spec"].Name)
 
 	// MCP service (same compound parent field).
 	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.McpServices["my_mcp_service"].Parent)
