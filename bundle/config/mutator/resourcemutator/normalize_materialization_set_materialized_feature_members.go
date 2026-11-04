@@ -39,7 +39,7 @@ func sawtoothMaterializedFeatureMembers(entry resources.SawtoothMaterializedFeat
 			Tags:                  entry.Tags,
 			BudgetPolicyId:        entry.BudgetPolicyId,
 			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
+			PipelineScheduleState: entry.PipelineScheduleState, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			OfflineStoreConfig:    entry.OfflineStoreConfig,
 			CronSchedule:          entry.CronSchedule,
 			CronScheduleTrigger:   entry.CronScheduleTrigger,
@@ -51,7 +51,7 @@ func sawtoothMaterializedFeatureMembers(entry resources.SawtoothMaterializedFeat
 			Tags:                  entry.Tags,
 			BudgetPolicyId:        entry.BudgetPolicyId,
 			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
+			PipelineScheduleState: entry.PipelineScheduleState, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			OnlineStoreConfig:     entry.OnlineStoreConfig,
 			CronSchedule:          entry.CronSchedule,
 			CronScheduleTrigger:   entry.CronScheduleTrigger,
@@ -63,7 +63,7 @@ func sawtoothMaterializedFeatureMembers(entry resources.SawtoothMaterializedFeat
 			Tags:                  entry.Tags,
 			BudgetPolicyId:        entry.BudgetPolicyId,
 			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
+			PipelineScheduleState: entry.PipelineScheduleState, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			OnlineStoreConfig:     entry.OnlineStoreConfig,
 			StreamingMode:         entry.StreamingMode,
 		},
@@ -80,7 +80,7 @@ func batchOfflineAndOnlineMaterializedFeatureMembers(entry resources.BatchOfflin
 			Tags:                  entry.Tags,
 			BudgetPolicyId:        entry.BudgetPolicyId,
 			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
+			PipelineScheduleState: entry.PipelineScheduleState, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			OfflineStoreConfig:    entry.OfflineStoreConfig,
 			CronSchedule:          entry.CronSchedule,
 			CronScheduleTrigger:   entry.CronScheduleTrigger,
@@ -92,7 +92,7 @@ func batchOfflineAndOnlineMaterializedFeatureMembers(entry resources.BatchOfflin
 			Tags:                  entry.Tags,
 			BudgetPolicyId:        entry.BudgetPolicyId,
 			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
+			PipelineScheduleState: entry.PipelineScheduleState, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			OnlineStoreConfig:     entry.OnlineStoreConfig,
 			CronSchedule:          entry.CronSchedule,
 			CronScheduleTrigger:   entry.CronScheduleTrigger,

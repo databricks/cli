@@ -137,7 +137,7 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersCarriesSharedField
 		Tags:                  map[string]string{"team": "feature-store"},
 		BudgetPolicyId:        "budget-1",
 		Notifications:         notifications,
-		PipelineScheduleState: ml.MaterializedFeaturePipelineScheduleStatePaused,
+		PipelineScheduleState: ml.MaterializedFeaturePipelineScheduleStatePaused, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 		OfflineStoreConfig:    shorthandOfflineStore(),
 		OnlineStoreConfig:     shorthandOnlineStore(),
 		CronScheduleTrigger:   &ml.CronSchedule{Mode: ml.CronScheduleModeDerived},
@@ -150,7 +150,7 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersCarriesSharedField
 			Tags:                  entry.Tags,
 			BudgetPolicyId:        entry.BudgetPolicyId,
 			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
+			PipelineScheduleState: entry.PipelineScheduleState, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			OfflineStoreConfig:    entry.OfflineStoreConfig,
 			OnlineStoreConfig:     entry.OnlineStoreConfig,
 			// The streaming mode is what tells the two online members apart.
@@ -161,7 +161,7 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersCarriesSharedField
 			Tags:                  entry.Tags,
 			BudgetPolicyId:        entry.BudgetPolicyId,
 			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
+			PipelineScheduleState: entry.PipelineScheduleState, //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			OfflineStoreConfig:    entry.OfflineStoreConfig,
 			OnlineStoreConfig:     entry.OnlineStoreConfig,
 		}}},
@@ -175,7 +175,7 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersCarriesSharedField
 				assert.Equal(t, map[string]string{"team": "feature-store"}, member.Tags)
 				assert.Equal(t, "budget-1", member.BudgetPolicyId)
 				assert.Equal(t, notifications, member.Notifications)
-				assert.Equal(t, ml.MaterializedFeaturePipelineScheduleStatePaused, member.PipelineScheduleState)
+				assert.Equal(t, ml.MaterializedFeaturePipelineScheduleStatePaused, member.PipelineScheduleState) //nolint:staticcheck // SA1019: the service still accepts the deprecated schedule state
 			}
 		})
 	}
