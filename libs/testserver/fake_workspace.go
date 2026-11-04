@@ -249,8 +249,6 @@ type FakeWorkspace struct {
 	ModelProviderServices map[string]catalog.ModelProviderService
 
 	Features              map[string]ml.Feature
-	MaterializationSets   map[string]ml.MaterializationSet
-	Operations            map[string]ml.Operation
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
@@ -259,6 +257,10 @@ type FakeWorkspace struct {
 	// already-deleted index name must reject with "pending deletion". See
 	// VectorSearchIndexDelete.
 	VectorSearchIndexesPendingDeletion map[string]int
+
+	MaterializationSets map[string]ml.MaterializationSet
+	// Operations belongs to MaterializationSets: the operations its handlers return, keyed by name.
+	Operations map[string]ml.Operation
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
