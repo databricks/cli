@@ -15,3 +15,11 @@ Validation OK!
     "notebooks": true
   }
 }
+
+>>> [CLI] bundle plan -o json
+{
+  "clients": {
+    "jobs": false,
+    "notebooks": true
+  }
+}
