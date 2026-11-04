@@ -1,1 +1,1 @@
-* Fix permissions of a recreated pipeline, app, dashboard, model serving endpoint or other resource staying recorded under the old ID, which made every later `bundle plan` propose to apply them again. ([#PR](https://github.com/databricks/cli/pull/PR))
+* Fix permissions of a recreated pipeline, app, dashboard, model serving endpoint or other resource staying recorded under the old ID, which made every later `bundle plan` propose to apply them again. ([#7361](https://github.com/databricks/cli/pull/7361))
