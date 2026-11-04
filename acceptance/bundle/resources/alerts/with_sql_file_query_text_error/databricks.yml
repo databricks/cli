@@ -1,0 +1,11 @@
+bundle:
+  name: alerts-sql-file-query-text
+
+resources:
+  alerts:
+    myalert:
+      warehouse_id: "0123456789012345"
+      display_name: "My alert"
+      file_path: ./query.sql
+      # query_text comes from query.sql, so it cannot also be set here
+      query_text: "select 3"
