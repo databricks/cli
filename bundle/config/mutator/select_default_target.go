@@ -2,6 +2,8 @@ package mutator
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -20,13 +22,12 @@ func (m *selectDefaultTarget) Name() string {
 }
 
 func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// This runs while the configuration is loading.
-	names := targetNames(b)
-	if len(names) == 0 {
+	if len(b.Config.Targets) == 0 {
 		return diag.Errorf("no targets defined")
 	}
 
 	// One target means there's only one default.
+	names := slices.Collect(maps.Keys(b.Config.Targets))
 	if len(names) == 1 {
 		bundle.ApplyContext(ctx, b, SelectTarget(names[0]))
 		return nil
@@ -34,12 +35,8 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 	// Multiple targets means we look for the `default` flag.
 	var defaults []string
-	for _, name := range names {
-		var isDefault bool
-		if err := b.Config.DecodeLoading(&isDefault, "targets", name, "default"); err != nil {
-			return diag.FromErr(err)
-		}
-		if isDefault {
+	for name, env := range b.Config.Targets {
+		if env != nil && env.Default {
 			defaults = append(defaults, name)
 		}
 	}

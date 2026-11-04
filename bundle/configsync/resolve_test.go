@@ -30,7 +30,6 @@ func TestResolveSelectors_NoSelectors(t *testing.T) {
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
-	mutator.FinishLoading(ctx, b)
 
 	result, err := resolveSelectors("resources.jobs.test_job.name", b, OperationReplace)
 	require.NoError(t, err)
@@ -56,7 +55,6 @@ func TestResolveSelectors_NumericIndices(t *testing.T) {
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
-	mutator.FinishLoading(ctx, b)
 
 	result, err := resolveSelectors("resources.jobs.test_job.tasks[0].task_key", b, OperationReplace)
 	require.NoError(t, err)
@@ -90,7 +88,6 @@ func TestResolveSelectors_KeyValueSelector(t *testing.T) {
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
-	mutator.FinishLoading(ctx, b)
 
 	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].notebook_task.notebook_path", b, OperationReplace)
 	require.NoError(t, err)
@@ -121,7 +118,6 @@ func TestResolveSelectors_SelectorNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
-	mutator.FinishLoading(ctx, b)
 
 	_, err = resolveSelectors("resources.jobs.test_job.tasks[task_key='nonexistent'].notebook_task.notebook_path", b, OperationReplace)
 	require.Error(t, err)
@@ -145,7 +141,6 @@ func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
-	mutator.FinishLoading(ctx, b)
 
 	_, err = resolveSelectors("resources.jobs.test_job[task_key='main'].name", b, OperationReplace)
 	require.Error(t, err)
@@ -177,7 +172,6 @@ func TestResolveSelectors_NestedSelectors(t *testing.T) {
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
-	mutator.FinishLoading(ctx, b)
 
 	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].libraries[0].pypi.package", b, OperationReplace)
 	require.NoError(t, err)
@@ -204,7 +198,6 @@ func TestResolveSelectors_WildcardNotSupported(t *testing.T) {
 	require.NoError(t, err)
 
 	mutator.DefaultMutators(ctx, b)
-	mutator.FinishLoading(ctx, b)
 
 	_, err = resolveSelectors("resources.jobs.test_job.tasks.*.task_key", b, OperationReplace)
 	require.Error(t, err)
