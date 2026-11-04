@@ -20,7 +20,9 @@ invariant_verify_no_drift
 # one variant is enough. --reinstall-package: the wheel's version does not change
 # with the code, and uv would reuse a cached install.
 if [[ -z "$READPLAN" ]]; then
-    $CLI bundle bitmap bitmap > LOG.bitmap
+    # stderr carries config warnings, which differ per config: log them, check for panics.
+    $CLI bundle bitmap bitmap > LOG.bitmap 2> LOG.bitmap_err
+    cat LOG.bitmap_err | contains.py '!panic:' '!internal error' > /dev/null
     $CLI bundle bitmap decode < LOG.bitmap > LOG.bitmap_decoded
     uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < LOG.bitmap > LOG.bitmap_decoded_python
     diff.py LOG.bitmap_decoded LOG.bitmap_decoded_python
