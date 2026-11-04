@@ -64,20 +64,22 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 // migrate invariant (schema.yml is excluded there, and schema_tf_compat.yml covers migrate instead).
 var schemaForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
-// DoUpdate updates the schema in place and returns remote state.
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
-	updateRequest := catalog.UpdateSchema{
+func makeUpdateSchema(id, newName string, config *catalog.CreateSchema) catalog.UpdateSchema {
+	return catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		FullName:                     id,
-		NewName:                      "", // We recreate schemas on name change intentionally.
+		NewName:                      newName,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
 		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](append(slices.Clone(schemaForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "NewName", "Owner"),
 	}
+}
 
-	response, err := r.client.Schemas.Update(ctx, updateRequest)
+// DoUpdate updates the schema in place and returns remote state.
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
+	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(id, "", config))
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +89,30 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 	}
 
 	return response, nil
+}
+
+// DoUpdateWithID renames the schema in place when the name changes; the ID is the full name, so it changes too.
+func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (string, *catalog.SchemaInfo, error) {
+	nameFromID, err := getNameFromID(id)
+	if err != nil {
+		return "", nil, err
+	}
+
+	newName := ""
+	if config.Name != nameFromID {
+		newName = config.Name
+	}
+
+	// The catalog comes from config: a renamed catalog moves the schema with it, leaving id
+	// stale (see followParentRenames).
+	fullName := config.CatalogName + "." + nameFromID
+
+	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(fullName, newName, config))
+	if err != nil || response == nil {
+		return "", nil, err
+	}
+
+	return response.FullName, response, nil
 }
 
 func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *catalog.CreateSchema) error {
