@@ -1,0 +1,27 @@
+bundle:
+  cluster_id: null
+
+workspace:
+  root_path: ~
+
+presets:
+  name_prefix:
+  tags:
+    root: null
+
+sync:
+  include: null
+
+permissions: null
+
+variables:
+  scalar:
+    default: null
+  complex:
+    default:
+      key: null
+
+run_as: null
+
+artifacts:
+  whl: null

@@ -1,0 +1,1 @@
+Badness = 'Resource keys must be unique across resource types (see select/ambiguous), but the check runs before target overrides, so a target can add pipelines.foo next to jobs.foo and only commands that look up the key fail.'

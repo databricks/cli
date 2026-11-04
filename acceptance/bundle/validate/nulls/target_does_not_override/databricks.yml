@@ -1,0 +1,65 @@
+bundle:
+  name: test-bundle
+  cluster_id: root-cluster
+  mode: development
+  git:
+    branch: root-branch
+
+workspace:
+  root_path: ~/root
+
+presets:
+  name_prefix: root-${workspace.current_user.short_name}-
+  tags:
+    root: "1"
+
+sync:
+  include:
+    - databricks.yml
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: ${workspace.current_user.userName}
+
+variables:
+  shorthand:
+    default: root
+  scalar:
+    default: root
+  with_lookup:
+    lookup:
+      cluster: some-test-cluster
+
+run_as:
+  user_name: root@example.com
+
+artifacts:
+  whl:
+    type: whl
+    build: build-root
+
+targets:
+  dev:
+    mode: null
+    cluster_id: null
+    git: null
+    run_as: null
+    bundle:
+      cluster_id: null
+    workspace:
+      root_path: null
+    presets:
+      name_prefix: null
+      tags:
+        root: null
+    sync:
+      include: null
+    permissions: null
+    variables:
+      shorthand: null
+      scalar:
+        default: null
+      with_lookup:
+        default: null
+    artifacts:
+      whl: null

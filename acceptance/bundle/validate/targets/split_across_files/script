@@ -1,0 +1,2 @@
+# A target defined in several files is merged like any other section, then applied on top of all files.
+trace $CLI bundle validate -o json -t dev | jq '{workspace: (.workspace | {root_path, file_path, artifact_path}), sync: .sync.include}'

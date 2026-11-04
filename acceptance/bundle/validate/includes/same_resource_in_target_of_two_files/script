@@ -1,0 +1,2 @@
+# The same resource overridden in a target in several files is merged without an error; the last file wins.
+trace $CLI bundle validate -o json -t dev | jq '.resources.jobs.foo | {name, tags}'

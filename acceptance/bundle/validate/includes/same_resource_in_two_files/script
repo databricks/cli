@@ -1,0 +1,2 @@
+# A resource defined in two files is an error; the definitions are merged.
+errcode trace $CLI bundle validate -o json | jq .resources

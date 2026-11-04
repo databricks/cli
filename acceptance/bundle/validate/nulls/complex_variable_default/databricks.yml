@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle
+
+include:
+  - override.yml
+
+variables:
+  from_include:
+    type: complex
+    default:
+      key: root
+      other: root
+  from_target:
+    type: complex
+    default:
+      key: root
+      other: root
+
+targets:
+  dev:
+    variables:
+      from_target:
+        default:
+          key: null

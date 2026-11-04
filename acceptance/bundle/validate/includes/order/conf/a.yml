@@ -1,0 +1,5 @@
+presets:
+  name_prefix: conf-a-
+
+workspace:
+  root_path: /Workspace/conf-a

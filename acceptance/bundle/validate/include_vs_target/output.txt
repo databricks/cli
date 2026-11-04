@@ -1,0 +1,58 @@
+
+>>> [CLI] bundle validate -o json
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: unknown field: experimental
+  at targets.dev
+  in databricks.yml:68:5
+
+Warning: unknown field: scripts
+  at targets.dev
+  in databricks.yml:93:5
+
+
+>>> diff.py output.include.json output.target.json
+--- output.include.json
++++ output.target.json
+@@ -27,5 +27,4 @@
+   },
+   "experimental": {
+-    "python_wheel_wrapper": true,
+     "skip_name_prefix_for_schema": true
+   },
+@@ -60,9 +59,7 @@
+       "default": {
+         "list": [
+-          "root",
+           "override"
+         ],
+         "override": "override",
+-        "root": "root",
+         "shared": "override"
+       },
+@@ -70,9 +67,7 @@
+       "value": {
+         "list": [
+-          "root",
+           "override"
+         ],
+         "override": "override",
+-        "root": "root",
+         "shared": "override"
+       }
+@@ -85,7 +80,4 @@
+   },
+   "scripts": {
+-    "override_script": {
+-      "content": "echo override"
+-    },
+     "root_script": {
+       "content": "echo root"
+@@ -93,6 +85,5 @@
+   },
+   "run_as": {
+-    "service_principal_name": "override-sp",
+-    "user_name": "root@example.com"
++    "service_principal_name": "override-sp"
+   }
+ }

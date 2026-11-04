@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.name
+  in databricks.yml:28:17
+
+Warning: expected a int value, found null
+  at targets.dev.resources.jobs.foo.max_concurrent_runs
+  in databricks.yml:29:32
+
+Warning: expected a bool value, found null
+  at targets.dev.resources.jobs.foo.queue.enabled
+  in databricks.yml:31:22
+
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.tags.root
+  in databricks.yml:33:19
+
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.email_notifications.on_failure[0]
+  in databricks.yml:36:17
+
+{
+  "foo": {
+    "name": "foo",
+    "max_concurrent_runs": 5,
+    "queue": {
+      "enabled": false
+    },
+    "tags": {
+      "root": "1"
+    },
+    "email_notifications": {
+      "on_failure": [
+        "root@example.com"
+      ]
+    },
+    "tasks": [
+      {
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files/root"
+        },
+        "task_key": "t1"
+      }
+    ]
+  },
+  "bar": {
+    "name": "bar"
+  }
+}
