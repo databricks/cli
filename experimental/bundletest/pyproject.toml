@@ -15,7 +15,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+# The cloud backend talks to a real workspace through the Databricks SDK. Kept optional and
+# lazily imported so a local-only install (and its DuckDB backend) never pulls it in.
+cloud = ["databricks-sdk>=0.40"]
+dev = ["pytest>=7.0", "databricks-sdk>=0.40"]
 
 [project.entry-points.pytest11]
 bundletest = "bundletest.pytest_plugin"
