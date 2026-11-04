@@ -1,2 +1,3 @@
 Signal: before
 Signal: after
+Warn: something failed; retrying in 5s
