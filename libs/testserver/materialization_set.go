@@ -65,8 +65,8 @@ func materializationSetMemberKey(member ml.MaterializedFeature) string {
 	return fmt.Sprintf("%s|%s|%t", member.FeatureName, onlineStoreName, member.StreamingMode != nil)
 }
 
-// effectivePipelineScheduleState resolves the create-path default, so a request mixing unset and
-// ACTIVE members is not read as a disagreement.
+// effectivePipelineScheduleState resolves the default the server stores for a member that sets no
+// schedule state.
 func effectivePipelineScheduleState(
 	state ml.MaterializedFeaturePipelineScheduleState,
 ) ml.MaterializedFeaturePipelineScheduleState {
@@ -83,7 +83,7 @@ func populateMaterializationSetMember(member ml.MaterializedFeature, setID strin
 	member.MaterializedFeatureId = nextUUID()
 	member.MaterializationSetId = setID
 	member.IsOnline = member.OnlineStoreConfig != nil
-	member.PipelineScheduleState = effectivePipelineScheduleState(member.PipelineScheduleState) //nolint:staticcheck // SA1019: the service still validates schedule state
+	member.PipelineScheduleState = effectivePipelineScheduleState(member.PipelineScheduleState) //nolint:staticcheck // SA1019: the service still defaults schedule state
 	member.OfflineStoreConfig = nil
 	if member.OnlineStoreConfig != nil {
 		member.OnlineStoreConfig = &ml.OnlineStoreConfig{
@@ -91,25 +91,6 @@ func populateMaterializationSetMember(member ml.MaterializedFeature, setID strin
 		}
 	}
 	return member
-}
-
-// validateBatchPipelineScheduleStates mirrors the create-path rule that every batch member agrees
-// on one effective schedule state. Streaming members never carry one, so they are excluded.
-func validateBatchPipelineScheduleStates(members []ml.MaterializedFeature) *Response {
-	states := map[ml.MaterializedFeaturePipelineScheduleState]bool{}
-	for _, member := range members {
-		if member.StreamingMode != nil {
-			continue
-		}
-		states[effectivePipelineScheduleState(member.PipelineScheduleState)] = true //nolint:staticcheck // SA1019: the service still validates schedule state
-	}
-	if len(states) > 1 {
-		response := materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-			"All materialized features in a BatchCreateMaterializedFeaturesRequest call must "+
-				"have the same pipeline schedule state.")
-		return &response
-	}
-	return nil
 }
 
 // validateSingleCronScheduleMode mirrors the create-path rule that one request carries one cron
@@ -339,9 +320,6 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 	if len(set.MaterializedFeatures) == 0 {
 		return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
 			"A materialization set requires at least one materialized feature.")
-	}
-	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
-		return *bad
 	}
 	if bad := validateSingleCronScheduleMode(set.MaterializedFeatures); bad != nil {
 		return *bad
@@ -679,13 +657,6 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		if isCronScheduleChangeRequested(member.CronScheduleTrigger, stored.CronScheduleTrigger) {
 			return materializedFeatureFieldCannotBeChanged(member.FeatureName,
 				stored.MaterializedFeatureId, "trigger")
-		}
-		// An unset state asks for no change: the server falls back to the stored one before
-		// comparing, so a member the config never declares is not read as a change.
-		if member.PipelineScheduleState != "" && //nolint:staticcheck // SA1019: the service still validates schedule state
-			member.PipelineScheduleState != stored.PipelineScheduleState { //nolint:staticcheck // SA1019: the service still validates schedule state
-			return materializedFeatureFieldCannotBeChanged(member.FeatureName,
-				stored.MaterializedFeatureId, "pipeline_schedule_state")
 		}
 		requestedKeys[materializationSetMemberKey(member)] = true
 		matched = append(matched, stored)

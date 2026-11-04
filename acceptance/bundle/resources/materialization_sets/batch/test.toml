@@ -1,7 +1,6 @@
 # Creates its own schema and deletes it on exit. Override MATSET_CATALOG where `main` is absent.
-# Offline members only, so the integration workspaces need no online store. The pair cascade and
-# the members-disagree refusal are covered by membership and schedule_state, the mixed-trigger
-# refusal by mixed_triggers.
+# Offline members only, so the integration workspaces need no online store. The pair cascade is
+# covered by membership, the mixed-trigger refusal by mixed_triggers.
 Cloud = true
 
 Ignore = [
