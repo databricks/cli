@@ -1,6 +1,6 @@
 trace $CLI bundle init default-bare --config-file ./input.json --output-dir output -o json
 
-cd output/my_bare_bundle
+cd output
 
 # Verify that empty directories are preserved
 [ -d "src" ] || exit 1
@@ -12,4 +12,4 @@ trace $CLI bundle validate -t dev
 mv .gitignore out.gitignore
 rm -r .databricks
 
-cd ../../
+cd ..

@@ -1,5 +1,5 @@
 {
-    "welcome_message": "Welcome to the bare Databricks Asset Bundle template!\n\nThis template creates the smallest bundle skeleton for importing or copying existing resources.\nYou can add more files and targets later as needed.\n\nYour workspace at {{workspace_host}} is used for initialization.",
+    "welcome_message": "Welcome to the bare Declarative Automation Bundle template!\n\nThis template creates the smallest bundle skeleton, meant for importing existing resources with `databricks bundle generate`.\n\nYour workspace at {{workspace_host}} is used for initialization.",
     "properties": {
         "template_name": {
             "//": "This property is always set to 'default-bare'",
