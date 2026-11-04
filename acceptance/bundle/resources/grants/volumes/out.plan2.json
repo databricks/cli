@@ -21,7 +21,7 @@
       "depends_on": [
         {
           "node": "resources.schemas.grants_schema",
-          "label": "${resources.schemas.grants_schema.name}"
+          "label": "depends_on"
         }
       ],
       "action": "skip",

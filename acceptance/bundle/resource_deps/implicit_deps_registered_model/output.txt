@@ -1,21 +1,38 @@
 
->>> [CLI] bundle validate -t dev -o json
+>>> [CLI] bundle plan -t dev -o json
 {
-  "catalogs": {
-    "my_catalog": {
+  "resources.catalogs.my_catalog": {
+    "depends_on": null,
+    "new_state": {
       "name": "mycatalog"
     }
   },
-  "registered_models": {
-    "my_model": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+  "resources.registered_models.my_model": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      },
+      {
+        "node": "resources.schemas.my_schema",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
+      "catalog_name": "mycatalog",
       "name": "dev_[USERNAME]_mymodel",
-      "schema_name": "${resources.schemas.my_schema.name}"
+      "schema_name": "dev_[USERNAME]_myschema"
     }
   },
-  "schemas": {
-    "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+  "resources.schemas.my_schema": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
+      "catalog_name": "mycatalog",
       "name": "dev_[USERNAME]_myschema"
     }
   }

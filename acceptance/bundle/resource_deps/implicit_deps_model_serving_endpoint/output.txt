@@ -1,26 +1,43 @@
 
->>> [CLI] bundle validate -t dev -o json
+>>> [CLI] bundle plan -t dev -o json
 {
-  "catalogs": {
-    "my_catalog": {
+  "resources.catalogs.my_catalog": {
+    "depends_on": null,
+    "new_state": {
       "name": "mycatalog"
     }
   },
-  "model_serving_endpoints": {
-    "my_endpoint": {
+  "resources.model_serving_endpoints.my_endpoint": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      },
+      {
+        "node": "resources.schemas.my_schema",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
       "ai_gateway": {
         "inference_table_config": {
-          "catalog_name": "${resources.catalogs.my_catalog.name}",
+          "catalog_name": "mycatalog",
           "enabled": true,
-          "schema_name": "${resources.schemas.my_schema.name}"
+          "schema_name": "dev_[USERNAME]_myschema"
         }
       },
       "name": "dev_[USERNAME]_my-endpoint"
     }
   },
-  "schemas": {
-    "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+  "resources.schemas.my_schema": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
+      "catalog_name": "mycatalog",
       "name": "dev_[USERNAME]_myschema"
     }
   }

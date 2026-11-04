@@ -16,7 +16,7 @@
       "depends_on": [
         {
           "node": "resources.catalogs.main_catalog",
-          "label": "${resources.catalogs.main_catalog.name}"
+          "label": "depends_on"
         }
       ],
       "action": "create",
@@ -31,11 +31,11 @@
       "depends_on": [
         {
           "node": "resources.catalogs.main_catalog",
-          "label": "${resources.catalogs.main_catalog.name}"
+          "label": "depends_on"
         },
         {
           "node": "resources.schemas.raw_schema",
-          "label": "${resources.schemas.raw_schema.name}"
+          "label": "depends_on"
         }
       ],
       "action": "create",

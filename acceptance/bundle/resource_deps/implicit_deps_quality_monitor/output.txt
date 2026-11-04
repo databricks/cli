@@ -1,24 +1,42 @@
 
->>> [CLI] bundle validate -t dev -o json
+>>> [CLI] bundle plan -t dev -o json
 Warning: required field "assets_dir" is not set
   at resources.quality_monitors.my_monitor
   in databricks.yml:16:7
 
 {
-  "catalogs": {
-    "my_catalog": {
+  "resources.catalogs.my_catalog": {
+    "depends_on": null,
+    "new_state": {
       "name": "mycatalog"
     }
   },
-  "quality_monitors": {
-    "my_monitor": {
-      "output_schema_name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}",
+  "resources.quality_monitors.my_monitor": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      },
+      {
+        "node": "resources.schemas.my_schema",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
+      "assets_dir": "",
+      "output_schema_name": "mycatalog.dev_[USERNAME]_myschema",
       "table_name": "mycatalog.myschema.mytable"
     }
   },
-  "schemas": {
-    "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+  "resources.schemas.my_schema": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
+      "catalog_name": "mycatalog",
       "name": "dev_[USERNAME]_myschema"
     }
   }

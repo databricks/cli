@@ -44,56 +44,44 @@ func bundleWithCatalogs() *bundle.Bundle {
 	}
 }
 
-func TestResolveSchema(t *testing.T) {
+func dependsOnNodes(lc resources.Lifecycle) []string {
+	var nodes []string
+	for _, d := range lc.DependsOn {
+		nodes = append(nodes, d.Resource)
+	}
+	return nodes
+}
+
+func TestDependsOnUC(t *testing.T) {
 	b := bundleWithSchemas()
+	b.Config.Resources.Catalogs = bundleWithCatalogs().Config.Resources.Catalogs
 
 	tests := []struct {
 		name        string
 		catalogName string
 		schemaName  string
-		expected    string
+		expected    []string
 	}{
-		{"match_catalog1_foobar", "catalog1", "foobar", "${resources.schemas.schema1.name}"},
-		{"match_catalog2_foobar", "catalog2", "foobar", "${resources.schemas.schema2.name}"},
-		{"match_catalog1_barfoo", "catalog1", "barfoo", "${resources.schemas.schema3.name}"},
-		{"no_match_wrong_catalog", "catalogX", "foobar", "foobar"},
-		{"no_match_wrong_schema", "catalog1", "schemaX", "schemaX"},
-		{"empty_catalog", "", "foobar", "foobar"},
-		{"empty_schema", "catalog1", "", ""},
-		{"both_empty", "", "", ""},
+		{"schema_and_catalog", "catalog1", "foobar", []string{"schemas.schema1", "catalogs.dev_catalog"}},
+		{"other_catalog", "catalog2", "foobar", []string{"schemas.schema2", "catalogs.prod_catalog"}},
+		{"catalog_only", "catalog1", "schemaX", []string{"catalogs.dev_catalog"}},
+		{"no_match", "catalogX", "foobar", nil},
+		{"empty_catalog", "", "foobar", nil},
+		{"empty_schema", "catalogX", "", nil},
+		{"both_empty", "", "", nil},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, resolveSchema(b, tc.catalogName, tc.schemaName))
-		})
-	}
-}
-
-func TestResolveCatalog(t *testing.T) {
-	b := bundleWithCatalogs()
-
-	tests := []struct {
-		name        string
-		catalogName string
-		expected    string
-	}{
-		{"match_catalog1", "catalog1", "${resources.catalogs.dev_catalog.name}"},
-		{"match_catalog2", "catalog2", "${resources.catalogs.prod_catalog.name}"},
-		{"no_match", "catalogX", "catalogX"},
-		{"empty", "", ""},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, resolveCatalog(b, tc.catalogName))
+			var lc resources.Lifecycle
+			assert.Equal(t, tc.schemaName, dependsOnUC(b, &lc, tc.catalogName, tc.schemaName))
+			assert.Equal(t, tc.expected, dependsOnNodes(lc))
 		})
 	}
 }
 
 // Test that all resource types are wired correctly by defining a catalog, schema,
-// and one of each resource type in a single bundle. Also verifies the ordering fix:
-// schemas must be resolved last since their CatalogName gets mutated.
+// and one of each resource type in a single bundle.
 func TestCaptureUCDependencies(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -165,50 +153,32 @@ func TestCaptureUCDependencies(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	schemaRef := "${resources.schemas.my_schema.name}"
-	catalogRef := "${resources.catalogs.my_catalog.name}"
+	catalogOnly := []string{"catalogs.my_catalog"}
+	both := []string{"schemas.my_schema", "catalogs.my_catalog"}
+	r := b.Config.Resources
 
-	// Schema catalog dependency.
-	assert.Equal(t, catalogRef, b.Config.Resources.Schemas["my_schema"].CatalogName)
+	assert.Equal(t, catalogOnly, dependsOnNodes(r.Schemas["my_schema"].Lifecycle))
+	assert.Equal(t, both, dependsOnNodes(r.Volumes["my_volume"].Lifecycle))
+	assert.Equal(t, both, dependsOnNodes(r.RegisteredModels["my_model"].Lifecycle))
+	assert.Equal(t, both, dependsOnNodes(r.Pipelines["my_pipeline"].Lifecycle))
+	// Compound "catalog.schema" field.
+	assert.Equal(t, both, dependsOnNodes(r.QualityMonitors["my_monitor"].Lifecycle))
+	assert.Equal(t, both, dependsOnNodes(r.ModelServingEndpoints["my_endpoint"].Lifecycle))
+	// Compound "schemas/{catalog}.{schema}" parent field.
+	assert.Equal(t, both, dependsOnNodes(r.ModelServices["my_model_service"].Lifecycle))
+	assert.Equal(t, both, dependsOnNodes(r.McpServices["my_mcp_service"].Lifecycle))
+	assert.Equal(t, both, dependsOnNodes(r.ModelProviderServices["my_mps"].Lifecycle))
+	// Three-part "catalog.schema.index" name.
+	assert.Equal(t, both, dependsOnNodes(r.VectorSearchIndexes["my_index"].Lifecycle))
+	// Three-part "catalog.schema.feature" full name.
+	assert.Equal(t, both, dependsOnNodes(r.Features["my_feature"].Lifecycle))
 
-	// Volume.
-	assert.Equal(t, schemaRef, b.Config.Resources.Volumes["my_volume"].SchemaName)
-	assert.Equal(t, catalogRef, b.Config.Resources.Volumes["my_volume"].CatalogName)
-
-	// Registered model.
-	assert.Equal(t, schemaRef, b.Config.Resources.RegisteredModels["my_model"].SchemaName)
-	assert.Equal(t, catalogRef, b.Config.Resources.RegisteredModels["my_model"].CatalogName)
-
-	// Pipeline.
-	assert.Equal(t, schemaRef, b.Config.Resources.Pipelines["my_pipeline"].Schema)
-	assert.Equal(t, catalogRef, b.Config.Resources.Pipelines["my_pipeline"].Catalog)
-
-	// Quality monitor (compound "catalog.schema" field).
-	assert.Equal(t, catalogRef+"."+schemaRef, b.Config.Resources.QualityMonitors["my_monitor"].OutputSchemaName)
-
-	// Model serving endpoint.
-	itc := b.Config.Resources.ModelServingEndpoints["my_endpoint"].AiGateway.InferenceTableConfig
-	assert.Equal(t, schemaRef, itc.SchemaName)
-	assert.Equal(t, catalogRef, itc.CatalogName)
-
-	// Model service (compound "schemas/{catalog}.{schema}" parent field).
-	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelServices["my_model_service"].Parent)
-
-	// Vector search index (three-part "catalog.schema.index" name).
-	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", b.Config.Resources.VectorSearchIndexes["my_index"].Name)
-
-	// Feature (three-part "catalog.schema.feature" full name).
-	assert.Equal(t, catalogRef+"."+schemaRef+".myfeature", b.Config.Resources.Features["my_feature"].FullName)
-
-	// MCP service (same compound parent field).
-	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.McpServices["my_mcp_service"].Parent)
-
-	// Model provider service (same compound parent field).
-	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelProviderServices["my_mps"].Parent)
+	// Field values stay literal.
+	assert.Equal(t, "myschema", r.Volumes["my_volume"].SchemaName)
+	assert.Equal(t, "mycatalog.myschema.myindex", r.VectorSearchIndexes["my_index"].Name)
 }
 
-// Pipeline schema and target are mutually exclusive; only the populated field
-// should be resolved.
+// Pipeline schema and target are mutually exclusive; either one captures the dependency.
 func TestCaptureUCDependenciesPipelineSchemaTarget(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -227,13 +197,8 @@ func TestCaptureUCDependenciesPipelineSchemaTarget(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	ref := "${resources.schemas.s.name}"
-
-	assert.Equal(t, ref, b.Config.Resources.Pipelines["with_schema"].Schema)
-	assert.Empty(t, b.Config.Resources.Pipelines["with_schema"].Target)
-
-	assert.Equal(t, ref, b.Config.Resources.Pipelines["with_target"].Target)
-	assert.Empty(t, b.Config.Resources.Pipelines["with_target"].Schema)
+	assert.Equal(t, []string{"schemas.s"}, dependsOnNodes(b.Config.Resources.Pipelines["with_schema"].Lifecycle))
+	assert.Equal(t, []string{"schemas.s"}, dependsOnNodes(b.Config.Resources.Pipelines["with_target"].Lifecycle))
 }
 
 func TestCaptureUCDependenciesQualityMonitorEdgeCases(t *testing.T) {
@@ -260,11 +225,12 @@ func TestCaptureUCDependenciesQualityMonitorEdgeCases(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}.other", b.Config.Resources.QualityMonitors["catalog_only"].OutputSchemaName)
-	assert.Equal(t, "other.other", b.Config.Resources.QualityMonitors["no_match"].OutputSchemaName)
-	assert.Empty(t, b.Config.Resources.QualityMonitors["empty"].OutputSchemaName)
-	assert.Equal(t, "nodot", b.Config.Resources.QualityMonitors["no_dot"].OutputSchemaName)
-	assert.Nil(t, b.Config.Resources.QualityMonitors["nil_monitor"])
+	qms := b.Config.Resources.QualityMonitors
+	assert.Equal(t, []string{"catalogs.my_catalog"}, dependsOnNodes(qms["catalog_only"].Lifecycle))
+	assert.Empty(t, dependsOnNodes(qms["no_match"].Lifecycle))
+	assert.Empty(t, dependsOnNodes(qms["empty"].Lifecycle))
+	assert.Empty(t, dependsOnNodes(qms["no_dot"].Lifecycle))
+	assert.Nil(t, qms["nil_monitor"])
 }
 
 func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
@@ -307,18 +273,10 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	schemaRef := "${resources.schemas.my_schema.name}"
-	catalogRef := "${resources.catalogs.my_catalog.name}"
-
-	acc := b.Config.Resources.ModelServingEndpoints["auto_capture"].Config.AutoCaptureConfig
-	assert.Equal(t, schemaRef, acc.SchemaName)
-	assert.Equal(t, catalogRef, acc.CatalogName)
-
-	itc := b.Config.Resources.ModelServingEndpoints["no_match"].AiGateway.InferenceTableConfig
-	assert.Equal(t, "other", itc.CatalogName)
-	assert.Equal(t, "other", itc.SchemaName)
-
-	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nil_endpoint"])
+	mses := b.Config.Resources.ModelServingEndpoints
+	assert.Equal(t, []string{"schemas.my_schema", "catalogs.my_catalog"}, dependsOnNodes(mses["auto_capture"].Lifecycle))
+	assert.Empty(t, dependsOnNodes(mses["no_match"].Lifecycle))
+	assert.Nil(t, mses["nil_endpoint"])
 }
 
 func TestCaptureUCDependenciesVectorSearchIndexEdgeCases(t *testing.T) {
@@ -345,11 +303,12 @@ func TestCaptureUCDependenciesVectorSearchIndexEdgeCases(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}.other.myindex", b.Config.Resources.VectorSearchIndexes["catalog_only"].Name)
-	assert.Equal(t, "other.other.myindex", b.Config.Resources.VectorSearchIndexes["no_match"].Name)
-	assert.Empty(t, b.Config.Resources.VectorSearchIndexes["empty"].Name)
-	assert.Equal(t, "mycatalog.myschema", b.Config.Resources.VectorSearchIndexes["two_part"].Name)
-	assert.Nil(t, b.Config.Resources.VectorSearchIndexes["nil_index"])
+	idxs := b.Config.Resources.VectorSearchIndexes
+	assert.Equal(t, []string{"catalogs.my_catalog"}, dependsOnNodes(idxs["catalog_only"].Lifecycle))
+	assert.Empty(t, dependsOnNodes(idxs["no_match"].Lifecycle))
+	assert.Empty(t, dependsOnNodes(idxs["empty"].Lifecycle))
+	assert.Empty(t, dependsOnNodes(idxs["two_part"].Lifecycle))
+	assert.Nil(t, idxs["nil_index"])
 }
 
 // Nil and empty resources should not panic.
@@ -399,9 +358,7 @@ func TestSplitUCName(t *testing.T) {
 	}
 }
 
-// A vector search index name that already contains a ${resources...} reference is left
-// untouched: a mix of references and literals is not supported. Only a fully literal name
-// with exactly three components has its catalog and schema captured.
+// Only a fully literal three-component vector search index name has its catalog and schema captured.
 func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 	newBundle := func(indexName string) *bundle.Bundle {
 		return &bundle.Bundle{
@@ -424,28 +381,12 @@ func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected string
+		expected []string
 	}{
-		{
-			"all_literal_captured",
-			"catalog1.myschema.myindex",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
-		},
-		{
-			"catalog_reference_with_literal_schema_unsupported",
-			"${resources.catalogs.dev_catalog.name}.myschema.myindex",
-			"${resources.catalogs.dev_catalog.name}.myschema.myindex",
-		},
-		{
-			"fully_referenced_unchanged",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
-		},
-		{
-			"more_than_three_components_skipped",
-			"catalog1.myschema.my.index",
-			"catalog1.myschema.my.index",
-		},
+		{"all_literal_captured", "catalog1.myschema.myindex", []string{"schemas.my_schema", "catalogs.dev_catalog"}},
+		{"catalog_reference_unsupported", "${resources.catalogs.dev_catalog.name}.myschema.myindex", nil},
+		{"fully_referenced_skipped", "${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex", nil},
+		{"more_than_three_components_skipped", "catalog1.myschema.my.index", nil},
 	}
 
 	for _, tc := range tests {
@@ -453,7 +394,8 @@ func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 			b := newBundle(tc.input)
 			d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 			require.Nil(t, d)
-			assert.Equal(t, tc.expected, b.Config.Resources.VectorSearchIndexes["idx"].Name)
+			assert.Equal(t, tc.expected, dependsOnNodes(b.Config.Resources.VectorSearchIndexes["idx"].Lifecycle))
+			assert.Equal(t, tc.input, b.Config.Resources.VectorSearchIndexes["idx"].Name)
 		})
 	}
 }
