@@ -208,7 +208,7 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 // OverrideChangeDesc handles the etag field. The user never sets it directly;
 // we compare the stored etag against the remote one and Skip if they match.
 // This mirrors ResourceDashboard.OverrideChangeDesc.
-func (r *ResourceGenieSpace) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *resources.GenieSpaceConfig) error {
+func (r *ResourceGenieSpace) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _, _ *resources.GenieSpaceConfig) error {
 	switch path.String() {
 	case "etag":
 		// change.New is always nil for etag because it's not present in the
