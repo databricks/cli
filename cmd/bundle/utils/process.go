@@ -405,7 +405,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			var err error
 			dmsDeployment, err = prepareDeploymentHistoryShadow(ctx, b)
 			if err != nil {
-				log.Warnf(ctx, "Could not read deployment history: %s", err)
+				log.Warnf(ctx, "Could not read deployment history, not recording it for this run: %s", err)
 			}
 		}
 
@@ -666,7 +666,9 @@ func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceCl
 		})
 	})
 	if err != nil {
-		return "", nil, err
+		// The id is still returned: the node exists, so the deployment is known even when its record
+		// cannot be read.
+		return deploymentID, nil, err
 	}
 	return deploymentID, deployment, nil
 }
@@ -714,17 +716,32 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	return nil
 }
 
-// prepareDeploymentHistoryShadow reads version metadata, never resource state, from DMS.
+// prepareDeploymentHistoryShadow reads version metadata, never resource state, from DMS. On a read
+// failure it skips history for this run, still stamping the deployment id when the lookup found it.
 func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bundledeployments.Deployment, error) {
-	id, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
-	if err != nil {
-		return nil, err
-	}
-	lastVersion, err := parseLastVersionID(deployment)
-	if err != nil {
-		return nil, err
-	}
 	db := &b.DeploymentBundle.StateDB
+	id, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	// A node without a record is a half-created deployment, which CreateDeployment finalizes, so it
+	// takes the first-deploy path.
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		id, err = "", nil
+	}
+	var lastVersion int
+	if err == nil {
+		lastVersion, err = parseLastVersionID(deployment)
+	}
+	if err != nil {
+		db.SkipHistory()
+		// Without the stamp the plan would update every job and pipeline just to clear it. The
+		// version is left off: this run records none, and the last one is unknown.
+		if id != "" {
+			bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
+				b.Config.Bundle.Deployment.DeploymentID = id
+			})
+			bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(id))
+		}
+		return nil, err
+	}
 	db.DeploymentID, db.VersionID = id, lastVersion
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.DeploymentID = id

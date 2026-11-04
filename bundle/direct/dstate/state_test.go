@@ -89,6 +89,28 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 	}
 }
 
+func TestSkipHistoryKeepsShadowMarker(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
+	db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
+	require.True(t, db.RecordsHistory())
+
+	db.SkipHistory()
+	assert.False(t, db.RecordsHistory())
+	require.NoError(t, db.UpgradeToWrite())
+	mustFinalize(t, &db)
+	// Telemetry reads it after Finalize.
+	assert.False(t, db.RecordsHistory())
+
+	// The skip covers one run: the marker is persisted, and the next Open records history again.
+	require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+	assert.False(t, db.HistorySkipped())
+	assert.True(t, db.RecordsHistory())
+	assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryShadow)
+	mustFinalize(t, &db)
+}
+
 func TestDataForFileSerial(t *testing.T) {
 	tests := []struct {
 		name       string
