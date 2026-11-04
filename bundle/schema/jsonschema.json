@@ -3772,6 +3772,10 @@
                         "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
                       },
+                      "sensitive": {
+                        "description": "Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.",
+                        "$ref": "#/$defs/bool"
+                      },
                       "type": {
                         "description": "The type of the variable.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
@@ -3798,6 +3802,10 @@
                     "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
                     "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID."
+                  },
+                  "sensitive": {
+                    "description": "Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.",
+                    "$ref": "#/$defs/bool"
                   },
                   "type": {
                     "description": "The type of the variable.",

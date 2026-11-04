@@ -6,6 +6,8 @@ sync: {paths: []} # don't need to copy files
 variables:
   secret_value:
     description: The value of the secret
+  python_secret_value:
+    description: The value of the secret added from Python
 
 python:
   resources:

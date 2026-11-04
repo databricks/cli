@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -339,6 +340,14 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	if mutateDiags.HasError() {
+		return mutateDiags
+	}
+
+	// Resources added or updated by Python were not loaded when the initialize phase
+	// checked sensitive variable references. Check them on the full config: normalization
+	// below only merges resources back, so a marker inferred inside it would be lost.
+	bundle.ApplyContext(ctx, b, validate.SensitiveVariableReferences())
+	if logdiag.HasError(ctx) {
 		return mutateDiags
 	}
 
