@@ -156,26 +156,55 @@ and questions about defensive checks.
 
 ## 4. Write the comments
 
-- One to three sentences, plain words. No headings, bullets or severity
-  labels. Don't restate the code or list test cases.
+**Coverage.** Every problem you confirmed gets a comment. There is no target
+count: a small change may need one comment and a large one fifteen or more.
+Never drop a real finding to keep the review short, and never pad a review
+with weak ones to look thorough. A problem row in the worksheet is dropped
+only if re-checking the code shows it is wrong, already handled, or
+documented as intended (in a comment, a test, or the description); say which
+in the Evidence section.
+
+**Each comment must:**
+- Point at the single line where a reader would trip (the error return, the
+  vague comment, the presence check, the copied block).
+- Say what is wrong in terms of behavior, with a concrete input and outcome:
+  "With a plan saved while the snapshot was clean, `deploy --plan --force`
+  stays on the modified snapshot, while `bundle deploy --force` moves to a
+  fresh one". Name the other code involved by file and symbol when the
+  comment depends on it.
+- End with what you want: the change you'd make, or the question the author
+  needs to answer. "Can we reuse `X` from `path`?", "Should this fail
+  instead?". A comment that only describes is not finished.
+
+**Voice:**
+- Short and plain: usually one to three sentences, more only when the
+  consequence needs a second example. No headings, bullets or severity labels
+  inside a comment. Don't restate the code or list test cases.
 - Prefer a question when the author may know something you don't: "We don't
   check X here?", "Can you look at how this differs from Y and whether they
   can be unified?"
-- State the concrete consequence: "This means a hard failure when X is unset."
 - State what you expected when the code contradicts it: "I thought this
   would fall back to Y."
-- Give an out on judgment calls: "or is this not worth it?"
+- Give an out on genuine judgment calls ("or is this not worth it?"), not on
+  bugs.
 - No praise, no verdict, no summary of the change.
 
-Anchor each comment to the single line where a reader would trip.
+**Order.** List inline comments by severity: wrong behavior users can hit
+first, then design and duplication, then tests, then docs and wording. Put
+nits (wording, small naming) together at the end, or in the review body as a
+short list if there are several.
 
-Expect three to eight inline comments. Fewer, deeper comments beat many small
-ones. Every problem row in the worksheet becomes a comment unless you can say
-why it doesn't matter.
-
-Before printing, edit each comment: cut it to three sentences or fewer, remove
-praise and verdicts, and drop any comment that answers its own question. Raise
-each issue once; the review body doesn't repeat inline comments.
+**Before printing:**
+1. Check coverage: every problem row in the worksheet appears either as a
+   comment or under "Not raised" in the Evidence section with the reason.
+2. Re-check each comment against the code once more; fix or drop any that
+   misread it.
+3. Edit each comment: cut what doesn't help the author act, remove praise
+   and verdicts, and drop any comment that answers its own question.
+4. Raise each issue once. When the same problem appears in several places,
+   comment on the first and list the other locations in that comment. The
+   review body doesn't repeat inline comments; use it for cross-cutting asks
+   (missing tests, a design question that spans files).
 
 ## 5. Output
 
@@ -188,10 +217,13 @@ Print, do not post:
 <comment>
 
 ## Review body
-<one or two sentences for cross-cutting asks, or nothing>
+<cross-cutting asks and grouped nits, or nothing>
 
 ## Evidence (not for posting)
 - path/to/file.go:LINE: <what in the code backs each comment>
+
+Not raised:
+- <worksheet row>: <why: wrong on re-check, already handled, or documented as intended>
 
 ## Worksheet (not for posting)
 <the tables from the passes>
