@@ -64,7 +64,7 @@ If any tag doesn't exist, report the error and stop.
 
 ### Step 3: Read current manifest
 
-Read `internal/build/cli-compat.json`. Note the current versions and the list of versioned entries.
+Read `internal/build/cli-compat.json` and `AgentSkillsFallbackVersion` in `internal/build/clicompat.go`. Note the current versions and the list of versioned entries. The newest CLI range uses `"skills": "latest"`; the compiled constant supplies the tested fallback. Keep older released ranges pinned. Routine skills releases need no manifest bump. CLIs before `1.6.0` reject `"latest"` and use a valid cached or embedded manifest without returning a parse error; losing remote AppKit and skills compatibility updates for these CLIs is accepted.
 
 ### Step 4: Determine update type
 
@@ -81,24 +81,24 @@ Ask the user:
 
 ### Step 4a: No breaking changes (update in-place)
 
-Update the **highest versioned entry** to the new appkit and skills versions. Do NOT add new versioned keys. The manifest is range-based: updating the highest entry automatically covers all CLI versions in that range.
+Update the **highest versioned entry** to the new `appkit` version, keeping `"skills": "latest"`. Update `AgentSkillsFallbackVersion` in `internal/build/clicompat.go` to the tested skills version. Do NOT add new versioned keys. The manifest is range-based: updating the highest entry automatically covers all CLI versions in that range.
 
-Write the updated `internal/build/cli-compat.json`.
+Write the updated `internal/build/cli-compat.json` and `internal/build/clicompat.go`.
 
 ### Step 4b: Breaking changes (add new entry)
 
 Ask the user for the **minimum CLI version** that supports the new features.
 
-Add a new entry keyed to that CLI version with the new appkit and skills versions. Keep older entries unchanged so older CLI binaries stay compatible.
+Add a new entry keyed to that CLI version with the new `appkit` and `"skills": "latest"`. Update `AgentSkillsFallbackVersion` in `internal/build/clicompat.go` to the tested skills version. If skills compatibility changed, replace `"latest"` in the affected older ranges with the last compatible release. Preserve unrelated AppKit and skills compatibility boundaries.
 
-Write the updated `internal/build/cli-compat.json`.
+Write the updated `internal/build/cli-compat.json` and `internal/build/clicompat.go`.
 
 ### Step 5: Validate
 
 Run the Go tests to ensure the manifest is well-formed:
 
 ```bash
-go test ./libs/clicompat/... -run TestEmbeddedManifest -v
+go test ./libs/clicompat/... -run 'Test(EmbeddedManifest|ResolveEmbeddedAgentSkillsVersion)' -v
 ```
 
 If validation fails, show the errors and fix them before proceeding.
@@ -107,25 +107,25 @@ If validation fails, show the errors and fix them before proceeding.
 
 ```bash
 # Create a new branch from the current branch (or main)
-git checkout -b bump-cli-compat-appkit-{appkit_version}-skills-{skills_version}
+git checkout -b bump-cli-compat-appkit-{appkit_version}-skills-fallback-{skills_version}
 
 # Stage and commit
-git add internal/build/cli-compat.json
-git commit -s -m "Bump cli-compat to appkit {appkit_version}, skills {skills_version}"
+git add internal/build/cli-compat.json internal/build/clicompat.go
+git commit -s -m "Bump cli-compat to appkit {appkit_version}, skills fallback {skills_version}"
 
 # Push and create PR
 git push -u origin HEAD
 gh pr create \
-  --title "Bump cli-compat to appkit {appkit_version}, skills {skills_version}" \
+  --title "Bump cli-compat to appkit {appkit_version}, skills fallback {skills_version}" \
   --body "$(cat <<'EOF'
 ## Summary
 Bump `cli-compat.json` to use:
 - AppKit `{appkit_version}`
-- Agent Skills `{skills_version}`
+- Agent Skills track latest, with compiled fallback `{skills_version}`
 
 ## Checklist
 - [ ] Evals passed with no regressions
-- [ ] `go test ./libs/clicompat/... -run TestEmbeddedManifest` passes
+- [ ] `go test ./libs/clicompat/... -run 'Test(EmbeddedManifest|ResolveEmbeddedAgentSkillsVersion)'` passes
 EOF
 )"
 ```

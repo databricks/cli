@@ -1,0 +1,17 @@
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_USER_EMAIL="deco-test-user@databricks.com"
+fi
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy with a CAN_MANAGE permission entry"
+trace $CLI bundle deploy
+
+title "Check can_manage_principals sent to the snapshot create API"
+trace print_requests.py //api/2.0/snapshots | jq '.body.multipart_form.can_manage_principals | fromjson'

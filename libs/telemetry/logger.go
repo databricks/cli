@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -16,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/google/uuid"
 )
 
 const (
@@ -98,7 +98,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	for i, log := range l.logs {
 		b, err := json.Marshal(log)
 		if err != nil {
-			return fmt.Errorf("failed to marshal log: %s", err)
+			return fmt.Errorf("failed to marshal log: %w", err)
 		}
 		protoLogs[i] = string(b)
 	}

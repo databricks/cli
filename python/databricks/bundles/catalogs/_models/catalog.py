@@ -7,7 +7,10 @@ from databricks.bundles.catalogs._models.encryption_settings import (
     EncryptionSettings,
     EncryptionSettingsParam,
 )
-from databricks.bundles.catalogs._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.catalogs._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.catalogs._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentParam,

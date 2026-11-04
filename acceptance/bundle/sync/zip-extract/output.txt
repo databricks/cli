@@ -1,0 +1,24 @@
+
+=== Sync extracts the archive into the bundle's file path
+
+>>> [CLI] bundle sync
+Action: PUT: archive.zip
+Uploaded archive.zip
+Initial Sync Complete
+
+>>> list /Workspace/Users/[USERNAME]/.bundle/zip-extract-[UNIQUE_NAME]/default/files
+FILE /inner.txt
+DIRECTORY /pkg
+
+>>> list /Workspace/Users/[USERNAME]/.bundle/zip-extract-[UNIQUE_NAME]/default/files/pkg
+FILE /pkg/a.txt
+
+=== Syncing a changed archive overwrites the extracted files
+
+>>> [CLI] bundle sync
+Action: PUT: archive.zip
+Uploaded archive.zip
+Initial Sync Complete
+
+>>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/zip-extract-[UNIQUE_NAME]/default/files/inner.txt --format AUTO
+v2

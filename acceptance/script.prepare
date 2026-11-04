@@ -128,12 +128,6 @@ print_telemetry_bool_values() {
     jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | grep -Ev '^(engine_terraform_|deployment_history_enabled )' | sort
 }
 
-# Workspace paths uploaded via /workspace/import, one per line. The path is a
-# multipart form field, not part of the URL, so print_requests.py can't filter on it.
-print_workspace_imports() {
-    jq -r 'select(.path? == "/api/2.0/workspace/import") | .body.multipart_form.path | strings' "$OUT_REQUESTS"
-}
-
 sethome() {
     local home="$1"
     mkdir -p "$home"

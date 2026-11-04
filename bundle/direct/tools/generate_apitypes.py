@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Find candidate types from cli.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
+Find candidate types from cli.json that match resource shapes in the refschema output and save them (apitypes.generated.yml).
 
 The types are found based on top level field overlap between bundle schema and API type.
 
@@ -16,10 +16,10 @@ from pathlib import Path
 
 
 def parse_out_fields(path):
-    """Parse out.fields.txt to extract top-level STATE field names per resource."""
+    """Parse the refschema output files to extract top-level STATE field names per resource."""
     resource_fields = {}
 
-    for line in path.read_text().splitlines():
+    for line in "\n".join(f.read_text() for f in sorted(path.glob("*.txt"))).splitlines():
         parts = line.split("\t")
         if len(parts) < 3 or not parts[0].startswith("resources."):
             continue
@@ -67,7 +67,7 @@ def get_schema_fields(schemas):
 def main():
     parser = argparse.ArgumentParser(description="Generate apitypes.yml from the cli.json schema block")
     parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
-    parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
+    parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
     args = parser.parse_args()
 
     resource_fields = parse_out_fields(args.out_fields)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -23,6 +24,11 @@ import (
 
 // TestWorkspaceID is the id of the fake workspace.
 const TestWorkspaceID = 900800700600
+
+// SnapshotRootUUID is the workspace user UUID the snapshot root is under. The real API uses a
+// UUID that is not the deploying identity's user name (an email or a service principal's
+// application ID), so snapshot paths never contain the user name.
+const SnapshotRootUUID = "3f9d2c1b-7a6e-4b5d-8c4f-0e1a2b3c4d5e"
 
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
@@ -86,7 +92,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		if unsupported, ok := autoImportUnsupported(form.Path); ok {
 			return unsupported
 		}
-		resp = w.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
+		resp = w.WorkspaceImportAutoFile(form.Path, form.Content, form.Overwrite)
 	default:
 		return Response{
 			Body:       fmt.Sprintf("internal error: The test server only supports AUTO, RAW, SOURCE and JUPYTER formats, got %q.", form.Format),
@@ -141,7 +147,7 @@ func ParseImportForm(req Request) (ImportForm, error) {
 	mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
 	for {
 		part, err := mr.NextPart()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return form, nil
 		}
 		if err != nil {
@@ -163,6 +169,29 @@ func ParseImportForm(req Request) (ImportForm, error) {
 		case "overwrite":
 			form.Overwrite = string(data) == "true"
 		}
+	}
+}
+
+// snapshotStatus is the body the snapshot inspect and break glass APIs answer with.
+func snapshotStatus(contentPath string, dirty bool) map[string]any {
+	return map[string]any{
+		"status": map[string]any{
+			"snapshot_content_path": contentPath,
+			"dirty":                 dirty,
+			"permissions":           []string{"SNAPSHOT_PERMISSION_CAN_BREAK_GLASS"},
+		},
+	}
+}
+
+// snapshotNotFound is how the snapshot inspect and break glass APIs answer for a path that
+// holds no snapshot.
+func snapshotNotFound(contentPath string) Response {
+	return Response{
+		StatusCode: http.StatusNotFound,
+		Body: map[string]string{
+			"error_code": "RESOURCE_DOES_NOT_EXIST",
+			"message":    "Snapshot not found: " + contentPath,
+		},
 	}
 }
 
@@ -436,6 +465,32 @@ func AddDefaultHandlers(server *Server) {
 		return data
 	})
 
+	// DBFS (dbfs:/ paths):
+	server.Handle("GET", "/api/2.0/dbfs/get-status", func(req Request) any {
+		return req.Workspace.DbfsGetStatus(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/list", func(req Request) any {
+		return req.Workspace.DbfsList(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/mkdirs", func(req Request) any {
+		return req.Workspace.DbfsMkdirs(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/create", func(req Request) any {
+		return req.Workspace.DbfsCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/add-block", func(req Request) any {
+		return req.Workspace.DbfsAddBlock(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/close", func(req Request) any {
+		return req.Workspace.DbfsClose(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/read", func(req Request) any {
+		return req.Workspace.DbfsRead(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/delete", func(req Request) any {
+		return req.Workspace.DbfsDelete(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req Request) any {
 		return TestMetastore
 	})
@@ -550,6 +605,10 @@ func AddDefaultHandlers(server *Server) {
 		return server.fakeOidc.OidcToken(req)
 	})
 
+	server.Handle("POST", "/oidc/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
 	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
 		return map[string]any{
 			"errors":          []string{},
@@ -662,6 +721,24 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
+	})
+
+	// Data Quality Monitors:
+
+	server.Handle("POST", "/api/data-quality/v1/monitors", func(req Request) any {
+		return req.Workspace.DataQualityMonitorCreate(req)
+	})
+
+	server.Handle("GET", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
+	})
+
+	server.Handle("PATCH", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.DataQualityMonitorUpdate(req, req.Vars["object_type"], req.Vars["object_id"])
+	})
+
+	server.Handle("DELETE", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
 	})
 
 	// Apps:
@@ -787,7 +864,7 @@ func AddDefaultHandlers(server *Server) {
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return req.Workspace.RegisteredModelsGet(req, req.Vars["full_name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
@@ -799,7 +876,20 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return req.Workspace.RegisteredModelsDelete(req.Vars["full_name"])
+	})
+
+	server.Handle("PUT", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsSetAlias(req, req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsDeleteAlias(req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	// Model versions of Unity Catalog models are registered through the MLflow registry API.
+	server.Handle("POST", "/api/2.0/mlflow/unity-catalog/model-versions/create", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreateVersion(req)
 	})
 
 	// Model Services (AI Gateway):
@@ -834,6 +924,37 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+	})
+
+	// Feature Engineering features:
+	server.Handle("POST", "/api/2.0/feature-engineering/features", func(req Request) any {
+		return req.Workspace.FeaturesCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+	})
+	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+	})
+
+	// Feature Engineering materialization sets:
+	server.Handle("POST", "/api/2.0/feature-engineering/materialization-sets", func(req Request) any {
+		return req.Workspace.MaterializationSetsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.OperationsGet(req.Vars["operation_id"])
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.MaterializationSets, req.Vars["materialization_set_id"])
+	})
+	server.Handle("PATCH", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsUpdate(req, req.Vars["materialization_set_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
 	})
 
 	// Model Provider Services (AI Gateway):
@@ -892,11 +1013,11 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
 		return map[string]any{
-			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
+			"path": "/Workspace/Users/" + SnapshotRootUUID + "/.snapshots/",
 		}
 	})
 
-	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
+	server.Handle("POST", "/api/2.0/snapshots", func(req Request) any {
 		contentType := req.Headers.Get("Content-Type")
 		mediaType, params, err := mime.ParseMediaType(contentType)
 		if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
@@ -904,10 +1025,11 @@ func AddDefaultHandlers(server *Server) {
 		}
 
 		mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
-		var bundleID, snapshotID string
+		var relativePath string
+		var acl, canManage []map[string]any
 		for {
 			p, err := mr.NextPart()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if err != nil {
@@ -918,22 +1040,84 @@ func AddDefaultHandlers(server *Server) {
 				return Response{StatusCode: http.StatusInternalServerError}
 			}
 			switch p.FormName() {
-			case "bundle_id":
-				bundleID = string(data)
-			case "snapshot_id":
-				snapshotID = string(data)
+			case "relative_path":
+				relativePath = string(data)
+			case "access_control_list":
+				_ = json.Unmarshal(data, &acl)
+			case "can_manage_principals":
+				_ = json.Unmarshal(data, &canManage)
 			}
 		}
 
-		// The real API uses the workspace user UUID (not email) in the snapshot path,
-		// matching service-principal identities used in cloud acceptance tests.
-		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
-		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: snapshotPath})
-		return map[string]any{
-			"snapshot": map[string]any{
-				"path": snapshotPath,
-			},
+		// The server stores content under a fixed "snapshot" subfolder of the caller's
+		// relative_path. The real API uses the workspace user UUID (not email) in the path,
+		// see SnapshotRootUUID.
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", SnapshotRootUUID, relativePath)
+		// Snapshots are immutable, so a relative_path can be created only once. The real API
+		// answers with a 400 that carries the code in the message and sets no error_code.
+		if _, exists := req.Workspace.SnapshotInfo(contentPath); exists {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"message": "RESOURCE_ALREADY_EXISTS: relative_path already exists",
+				},
+			}
 		}
+		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: contentPath})
+		req.Workspace.RecordSnapshot(contentPath, relativePath, acl, canManage)
+		return map[string]any{
+			"name":     "workspaces/snapshotOperations/" + relativePath,
+			"done":     true,
+			"snapshot": map[string]any{"path": contentPath},
+		}
+	})
+
+	// Returns the create-request fields (ACL, can_manage_principals) stored for the snapshot
+	// at the given relative_path. Intended for acceptance test assertions.
+	server.Handle("GET", "/api/2.0/snapshots/info", func(req Request) any {
+		relPath := req.URL.Query().Get("relative_path")
+		// Build the content path the same way the create handler does.
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", SnapshotRootUUID, relPath)
+		rec, ok := req.Workspace.SnapshotInfo(contentPath)
+		if !ok {
+			return Response{
+				StatusCode: http.StatusNotFound,
+				Body: map[string]string{
+					"error_code": "RESOURCE_DOES_NOT_EXIST",
+					"message":    "Snapshot not found: " + relPath,
+				},
+			}
+		}
+		return rec
+	})
+
+	// Reports whether a snapshot's content was modified out of band.
+	server.Handle("GET", "/api/2.0/snapshots:inspect", func(req Request) any {
+		contentPath := req.URL.Query().Get("snapshot_content_path")
+		dirty, ok := req.Workspace.SnapshotDirty(contentPath)
+		// A path that holds no snapshot is not inspectable, so the API reports NOT_FOUND
+		// rather than calling it clean.
+		if !ok {
+			return snapshotNotFound(contentPath)
+		}
+		return snapshotStatus(contentPath, dirty)
+	})
+
+	// Breaks the glass on a snapshot: grants write access to its content and marks it dirty.
+	server.Handle("POST", "/api/2.0/snapshots:breakGlass", func(req Request) any {
+		var request struct {
+			SnapshotContentPath string `json:"snapshot_content_path"`
+		}
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+		if !req.Workspace.BreakGlassSnapshot(request.SnapshotContentPath) {
+			return snapshotNotFound(request.SnapshotContentPath)
+		}
+		return snapshotStatus(request.SnapshotContentPath, true)
 	})
 
 	// SQL Warehouses:
@@ -1047,6 +1231,10 @@ func AddDefaultHandlers(server *Server) {
 	// user, /logs is a best-effort error tail, /ssh hijacks the connection for a
 	// websocket (so it's raw, not a JSON response).
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
+		defer req.Workspace.LockUnlock()()
+		if req.Vars["cluster_id"] == sshTunnelClusterID && req.Workspace.portForwardingToServerlessDisabled() {
+			return Response{StatusCode: 403, Body: sshTunnelFeatureDisabledBody}
+		}
 		return Response{Body: sshTunnelRemoteUser()}
 	})
 
@@ -1064,6 +1252,14 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
+
+	server.Handle("GET", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingGet(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingPatch(req)
+	})
 
 	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {

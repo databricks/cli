@@ -114,7 +114,7 @@ class App(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the space this app belongs to.
+    [Beta] Name of the space this app belongs to.
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestination] = field(
@@ -213,7 +213,7 @@ class AppDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the space this app belongs to.
+    [Beta] Name of the space this app belongs to.
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestinationParam]

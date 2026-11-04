@@ -1,11 +1,15 @@
 package dms
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
@@ -69,15 +73,10 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 }
 
 func TestDrainIsIdempotent(t *testing.T) {
-	// Nothing recorded, so no transport is needed: this is the second drain, which must not
-	// panic on an already closed queue.
-	s := queued()
-	s.done = make(chan struct{})
-	s.stopQueue = sync.OnceFunc(func() { close(s.queue) })
-	go s.run(t.Context())
-
-	require.NoError(t, s.Drain())
-	require.NoError(t, s.Drain())
+	// An idle writer must finish when draining begins.
+	b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{})
+	require.NoError(t, b.Drain(t.Context()))
+	require.NoError(t, b.Drain(t.Context()))
 }
 
 func TestRecordFailureKeepsTheStateTheLastWriteRecorded(t *testing.T) {
@@ -113,4 +112,64 @@ func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
 	require.True(t, ok)
 	assert.JSONEq(t, `{"state":{"name":"v1"}}`, string(update.State))
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
+}
+
+func TestHistoryQueueDoesNotBlockWhenWriterStops(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		const operationCount = 1000
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true, OperationCount: operationCount})
+		synctest.Wait()
+		cancel()
+		<-b.done
+		assert.ErrorIs(t, b.Err(), context.Canceled)
+
+		// Even with no consumer, every staged key fits. Repeated writes coalesce.
+		for range 2 {
+			for i := range operationCount {
+				key := fmt.Sprintf("resources.jobs.job_%d", i)
+				b.RecordOperation(ctx, key, false, "id-1", json.RawMessage(`{"state":{}}`))
+			}
+		}
+		assert.Len(t, b.queue, operationCount)
+		assert.Len(t, b.pending, operationCount)
+	})
+}
+
+func TestHistoryDrainCancelsStalledWriter(t *testing.T) {
+	// A stalled upload must time out and cancel its worker.
+	// synctest runs this function with a fake clock. When the test blocks waiting
+	// for Drain, it advances time to the next timer: the one-second drain deadline.
+	// No real second passes, and time.Since(start) reports exactly one second.
+	synctest.Test(t, func(t *testing.T) {
+		// Track the writer's cancellation separately from Drain's deadline.
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		b := queued()
+		b.bestEffort = true
+		b.cancel = cancel
+		b.drainTimeout = time.Second
+		// No worker runs or closes done. Drain must eventually time out.
+		b.done = make(chan struct{})
+		b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
+
+		// Drain reports its timeout after exactly one fake second.
+		start := time.Now()
+		assert.ErrorIs(t, b.Drain(t.Context()), context.DeadlineExceeded)
+		assert.Equal(t, time.Second, time.Since(start))
+		// Drain must also call cancel(), stopping any upload the writer would be doing.
+		assert.ErrorIs(t, ctx.Err(), context.Canceled)
+	})
+}
+
+func TestBestEffortBufferKeepsRecordingAfterError(t *testing.T) {
+	b := queued()
+	b.bestEffort = true
+	b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(strings.Repeat("x", maxStateSize+1)))
+	b.RecordOperation(t.Context(), "resources.jobs.bar", false, "id-2", json.RawMessage(`{}`))
+	b.RecordFailure("resources.jobs.bar", "id-2", nil, errors.New("apply failed"))
+	assert.ErrorContains(t, b.Err(), "exceeds")
+	assert.Len(t, b.queue, 1)
+	assert.Contains(t, b.pending, "resources.jobs.bar")
 }

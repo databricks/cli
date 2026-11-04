@@ -42,6 +42,10 @@ from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
     MetaMarketingOptionsParam,
 )
+from databricks.bundles.pipelines._models.one_drive_options import (
+    OneDriveOptions,
+    OneDriveOptionsParam,
+)
 from databricks.bundles.pipelines._models.outlook_options import (
     OutlookOptions,
     OutlookOptionsParam,
@@ -145,6 +149,13 @@ class ConnectorOptions:
     :meta private: [EXPERIMENTAL]
     
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
+    """
+
+    onedrive_options: VariableOrOptional[OneDriveOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     outlook_options: VariableOrOptional[OutlookOptions] = None
@@ -270,6 +281,13 @@ class ConnectorOptionsDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
+    """
+
+    onedrive_options: VariableOrOptional[OneDriveOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     outlook_options: VariableOrOptional[OutlookOptionsParam]

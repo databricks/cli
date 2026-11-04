@@ -1,0 +1,60 @@
+
+=== target default
+>>> [CLI] bundle validate -t default -o json
+Warning: experimental.immutable_folder is deprecated, please set workspace.sync_mode to "immutable" instead
+  at experimental.immutable_folder
+  in databricks.yml:5:21
+
+{
+  "sync_mode": null,
+  "file_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files",
+  "artifact_path": "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts",
+  "python_file": "${resources.internal_immutable_snapshots.immutable.full_path}/files/src/main.py"
+}
+
+=== target source_linked_disabled
+>>> [CLI] bundle validate -t source_linked_disabled -o json
+Warning: experimental.immutable_folder is deprecated, please set workspace.sync_mode to "immutable" instead
+  at experimental.immutable_folder
+  in databricks.yml:5:21
+
+Warning: presets.source_linked_deployment is deprecated and ignored because experimental.immutable_folder is set, please remove it
+  at presets.source_linked_deployment
+  in databricks.yml:22:33
+
+{
+  "sync_mode": null,
+  "file_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files",
+  "artifact_path": "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts",
+  "python_file": "${resources.internal_immutable_snapshots.immutable.full_path}/files/src/main.py"
+}
+
+=== target source_linked_enabled
+>>> [CLI] bundle validate -t source_linked_enabled -o json
+Warning: experimental.immutable_folder is deprecated, please set workspace.sync_mode to "immutable" instead
+  at experimental.immutable_folder
+  in databricks.yml:5:21
+
+Warning: presets.source_linked_deployment is deprecated and ignored because experimental.immutable_folder is set, please remove it
+  at presets.source_linked_deployment
+  in databricks.yml:25:33
+
+{
+  "sync_mode": null,
+  "file_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files",
+  "artifact_path": "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts",
+  "python_file": "${resources.internal_immutable_snapshots.immutable.full_path}/files/src/main.py"
+}
+
+=== target with_sync_mode
+>>> [CLI] bundle validate -t with_sync_mode -o json
+Warning: experimental.immutable_folder is deprecated and ignored because workspace.sync_mode is set, please remove it
+  at experimental.immutable_folder
+  in databricks.yml:5:21
+
+{
+  "sync_mode": "overwrite",
+  "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/with_sync_mode/files",
+  "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/with_sync_mode/artifacts",
+  "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/with_sync_mode/files/src/main.py"
+}

@@ -9,3 +9,8 @@ Ignore = [
     "databricks.yml",
     ".databricks",
 ]
+
+# Endpoint and index provisioning takes ~20 min on cloud, so running every test under both DMS variants doubles
+# the cost. Each test runs one variant instead: direct by default, DMS=true for half of
+# them (set in their own test.toml), so both paths stay covered.
+EnvMatrix.DMS = [""]

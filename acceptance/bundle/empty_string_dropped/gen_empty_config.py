@@ -9,7 +9,7 @@ to "". Coverage is therefore scoped to the blocks present in base.yml, which is
 how we avoid mutually-exclusive blocks (aws vs gcp attributes, git_source vs
 none).
 
-A field is settable/eligible when out.fields.txt types it as `string` (this
+A field is settable/eligible when refschema output types it as `string` (this
 skips enums, which are named types) with flag ALL or INPUT, and it is not
 output_only (<resource_type>.generated.yml) or a bundle-framework field.
 
@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-FIELDS = Path("acceptance/bundle/refschema/out.fields.txt")
+FIELDS = Path("acceptance/bundle/refschema/output")
 CONFIGS = Path("bundle/direct/dresources/configs")
 GENERATED_SUFFIX = ".generated.yml"
 TESTDIR = Path("acceptance/bundle/empty_string_dropped")
@@ -35,14 +35,14 @@ FRAMEWORK_FIELDS = {"id", "url", "modified_status"}
 def string_leaf_parents():
     """Map resource type -> {parent_schema_path: {leaf field names}}.
 
-    Schema paths mirror out.fields.txt: dotted segments, list elements marked
+    Schema paths mirror refschema output: dotted segments, list elements marked
     with "[*]" (e.g. "job_clusters[*].new_cluster"). Only string leaves that are
     real object fields are kept: names ending in "[*]" (string-array elements) or
     "*" (map values) are skipped.
     """
     pat = re.compile(r"^resources\.([a-z_]+)\.\*\.(.+)$")
     result = {}
-    for line in FIELDS.read_text().splitlines():
+    for line in "\n".join(f.read_text() for f in sorted(FIELDS.glob("*.txt"))).splitlines():
         parts = line.split("\t")
         if len(parts) < 3:
             continue
@@ -76,7 +76,7 @@ def output_only_fields():
 def fill(node, schema_path, parents, excluded):
     """Recursively set settable string leaves under node to ""; recurse into blocks.
 
-    schema_path uses out.fields.txt syntax (list elements marked "[*]") to look up
+    schema_path uses refschema output syntax (list elements marked "[*]") to look up
     eligible leaves for the current object.
     """
     if isinstance(node, dict):

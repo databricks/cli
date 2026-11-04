@@ -12,6 +12,8 @@ clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
 
+data_quality_monitors: dataquality.Monitor
+
 database_catalogs: database.DatabaseCatalog
 
 database_instances: database.DatabaseInstance
@@ -20,6 +22,8 @@ experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
 
+features: ml.Feature
+
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 
 instance_pools: compute.CreateInstancePool
@@ -27,6 +31,8 @@ instance_pools: compute.CreateInstancePool
 job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings
+
+materialization_sets: ml.MaterializationSet
 
 mcp_services: catalog.CreateMcpServiceRequest
 

@@ -19,7 +19,10 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
+from databricks.bundles.jobs._models.git_source import (
+    GitSource,
+    GitSourceParam,
+)
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -100,6 +103,16 @@ class Job(Resource):
     An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.
     """
 
+    duration_target: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
+    """
+
     email_notifications: VariableOrOptional[JobEmailNotifications] = None
     """
     An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
@@ -121,8 +134,9 @@ class Job(Resource):
     """
     A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.
     
-    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.
+    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the `environment_key` is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
+    
+    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using `environment_key` in the task settings.
     """
 
     git_source: VariableOrOptional[GitSource] = None
@@ -287,6 +301,16 @@ class JobDict(TypedDict, total=False):
     An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.
     """
 
+    duration_target: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
+    """
+
     email_notifications: VariableOrOptional[JobEmailNotificationsParam]
     """
     An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
@@ -306,8 +330,9 @@ class JobDict(TypedDict, total=False):
     """
     A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.
     
-    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.
+    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the `environment_key` is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
+    
+    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using `environment_key` in the task settings.
     """
 
     git_source: VariableOrOptional[GitSourceParam]

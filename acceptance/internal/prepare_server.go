@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -17,6 +18,7 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+	"uuid"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
@@ -26,7 +28,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -98,7 +99,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// Use a unique token for each test. This allows us to maintain
 	// separate state for each test in fake workspaces.
-	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+	tokenSuffix := strings.ReplaceAll(uuid.New().String(), "-", "")
 
 	var token string
 	var testUser iam.User
@@ -376,7 +377,7 @@ func normalizeMultipartBody(req *testserver.Request) (any, bool) {
 	parts := map[string]any{}
 	for {
 		part, err := mr.NextPart()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

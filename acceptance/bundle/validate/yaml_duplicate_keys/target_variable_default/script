@@ -1,0 +1,2 @@
+# With a duplicate default key in a target variable override, the last one wins and it is a full definition.
+trace $CLI bundle validate -t dev -o json | jq .variables.x

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -47,6 +48,12 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		// fields in it.
 		pattern, ok := trie.SearchPath(p)
 		if !ok {
+			return nil
+		}
+
+		// A pure reference (e.g. "${resources.jobs.base.schedule}") has no fields of its own;
+		// the referenced value is checked where it is defined.
+		if s, ok := v.AsString(); ok && dynvar.IsPureVariableReference(s) {
 			return nil
 		}
 

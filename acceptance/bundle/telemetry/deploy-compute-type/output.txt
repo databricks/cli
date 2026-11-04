@@ -33,6 +33,8 @@ has_serverless_compute true
 has_serverless_compute true
 has_spark_python_task true
 has_spark_python_task true
+immutable_snapshot_used false
+immutable_snapshot_used false
 local.cache.attempt true
 local.cache.attempt true
 local.cache.hit true

@@ -12,7 +12,8 @@
     "file_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files",
     "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/resources",
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/state"
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/state",
+    "sync_mode": "immutable"
   },
   "tasks": [
     {

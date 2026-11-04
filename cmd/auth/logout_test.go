@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"maps"
 	"net/http"
 	"net/http/httptest"
@@ -252,6 +253,37 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("my-workspace"))
+	require.NoError(t, err)
+	assert.Empty(t, profiles)
+}
+
+// failingDeleteStore fails every Delete, like a keyring that is unavailable.
+type failingDeleteStore struct {
+	*inMemoryStore
+}
+
+func (failingDeleteStore) Delete(string) error {
+	return errors.New("keyring unavailable")
+}
+
+// A profile that auth login did not create does not use the token store, so
+// an unavailable store does not fail its logout.
+func TestLogoutNonLoginProfileIgnoresTokenStoreError(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	configPath := writeTempConfig(t, logoutTestConfig)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	err := runLogout(ctx, logoutArgs{
+		profileName:    "my-m2m",
+		autoApprove:    true,
+		deleteProfile:  true,
+		profiler:       profile.DefaultProfiler,
+		tokenStore:     failingDeleteStore{&inMemoryStore{Tokens: map[string]*oauth2.Token{}}},
+		configFilePath: configPath,
+	})
+	require.NoError(t, err)
+
+	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("my-m2m"))
 	require.NoError(t, err)
 	assert.Empty(t, profiles)
 }

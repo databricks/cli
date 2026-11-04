@@ -6,8 +6,6 @@ from typing import Literal
 
 class CustomTemplateFormat(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Rendering format for the `custom_summary` and `custom_description` templates.
     """
 

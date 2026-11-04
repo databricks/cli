@@ -693,6 +693,11 @@ const (
 	sshTunnelBootstrapNotebook  = "ssh-server-bootstrap"
 	sshTunnelServerPort         = 7772
 	sshTunnelClusterID          = "1234-567890-serverless"
+
+	// sshTunnelFeatureDisabledBody is the driver proxy's refusal while port forwarding to
+	// serverless compute is disabled: a JSON string, not the usual error object.
+	sshTunnelFeatureDisabledBody = `"FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute ` +
+		"for this workspace, which includes the SSH tunnel used by `databricks ssh connect`\""
 )
 
 // writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
@@ -795,7 +800,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 		installArgs := []string{"pip", "install", "-q", "--python", venvPython(env.venvDir)}
 		installArgs = append(installArgs, newWhlPaths...)
 		if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
-			return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
+			return "", fmt.Errorf("uv pip install failed: %w\n%s", err, out)
 		}
 	}
 
@@ -872,7 +877,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	venvDir := filepath.Join(tmpDir, ".venv")
 	uvArgs := []string{"venv", "-q", "--python", pythonVersion, venvDir}
 	if out, err := exec.Command("uv", uvArgs...).CombinedOutput(); err != nil {
-		return "", fmt.Errorf("uv venv failed: %s\n%s", err, out)
+		return "", fmt.Errorf("uv venv failed: %w\n%s", err, out)
 	}
 
 	// Install wheels from %pip commands
@@ -894,7 +899,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 		installArgs := []string{"pip", "install", "-q", "--python", venvPython(venvDir)}
 		installArgs = append(installArgs, localWhlPaths...)
 		if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
-			return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
+			return "", fmt.Errorf("uv pip install failed: %w\n%s", err, out)
 		}
 	}
 
@@ -984,7 +989,7 @@ func (s *FakeWorkspace) getOrCreateClusterEnv(task jobs.Task) (*clusterEnv, func
 	uvArgs := []string{"venv", "-q", "--python", pythonVersion, venvDir}
 	if out, err := exec.Command("uv", uvArgs...).CombinedOutput(); err != nil {
 		os.RemoveAll(tmpDir)
-		return nil, nil, fmt.Errorf("uv venv failed: %s\n%s", err, out)
+		return nil, nil, fmt.Errorf("uv venv failed: %w\n%s", err, out)
 	}
 
 	env := &clusterEnv{

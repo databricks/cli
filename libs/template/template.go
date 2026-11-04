@@ -37,9 +37,12 @@ const (
 	DbtSql       TemplateName = "dbt-sql"
 	MlopsStacks  TemplateName = "mlops-stacks"
 	Pydabs       TemplateName = "pydabs"
+	AppKitApp    TemplateName = "app-appkit"
 	Custom       TemplateName = "custom"
 	Default      TemplateName = "default"
 )
+
+const appKitDescription = "Databricks App with AppKit (TypeScript)"
 
 var databricksTemplates = []Template{
 	{
@@ -82,7 +85,6 @@ var databricksTemplates = []Template{
 	},
 	{
 		name:        LakeflowIntegrations,
-		hidden:      true,
 		description: "The template for Lakeflow integrations",
 		Reader:      &builtinReader{name: string(LakeflowIntegrations)},
 		Writer:      &writerWithFullTelemetry{name: LakeflowIntegrations},
@@ -123,6 +125,7 @@ func HelpDescriptions() string {
 			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 		}
 	}
+	lines = append(lines, fmt.Sprintf("- %s: %s", AppKitApp, appKitDescription))
 	return strings.Join(lines, "\n")
 }
 
@@ -140,6 +143,7 @@ func options() []cmdio.Tuple {
 		}
 		names = append(names, tuple)
 	}
+	names = append(names, cmdio.Tuple{Name: string(AppKitApp), Id: appKitDescription})
 
 	names = append(names, cmdio.Tuple{
 		Name: "custom...",
@@ -159,6 +163,9 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 
 	if description == customTemplateDescription {
 		return TemplateName(""), ErrCustomSelected
+	}
+	if description == appKitDescription {
+		return AppKitApp, nil
 	}
 
 	for _, template := range databricksTemplates {

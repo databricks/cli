@@ -212,7 +212,7 @@ func TestMapUploadError(t *testing.T) {
 
 	// Other errors pass through unchanged.
 	other := errors.New("boom")
-	if got := mapUploadError(other, p); got != other {
+	if got := mapUploadError(other, p); got != other { //nolint:errorlint // must be the same error, not a wrapper
 		t.Errorf("mapUploadError(other) = %v, want it unchanged", got)
 	}
 }

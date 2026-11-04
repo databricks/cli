@@ -13,7 +13,7 @@ cleanupRemoveDashboard() {
 trap cleanupRemoveDashboard EXIT
 
 trace $CLI bundle deployment bind dashboard1 "${DASHBOARD_ID}" --auto-approve
-trace print_state.py > out.state_after_bind.json
+trace print_state.py --no-dms > out.state_after_bind.json
 ETAG=$(jq '.state["resources.dashboards.dashboard1"].state.etag // .resources[0].instances[0].attributes.etag // "no-etag"' < out.state_after_bind.json)
 echo $ETAG
 add_repl $ETAG ETAG

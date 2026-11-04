@@ -16,7 +16,7 @@ import (
 // the cli-compat version pin, --skills cherry-picks, and --experimental exactly
 // as the agent install path does, since it reuses resolveSkills.
 func DumpSkillsToPath(ctx context.Context, src ManifestSource, destDir string, opts InstallOptions) (int, error) {
-	ref, explicit, err := GetSkillsRef(ctx)
+	ref, explicit, err := getSkillsRef(ctx, true)
 	if err != nil {
 		return 0, err
 	}

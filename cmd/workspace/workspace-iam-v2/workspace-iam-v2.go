@@ -23,18 +23,16 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspace-iam-v2",
-		Short: `*Beta* These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
-		Long: `This command is in Beta and may change without notice.
-
-These APIs are used to manage identities and the workspace access of these
+		Short: `These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
+		Long: `These APIs are used to manage identities and the workspace access of these
   identities in Databricks.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateDirectGroupMemberProxy())
@@ -103,7 +101,9 @@ func newCreateDirectGroupMemberProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createDirectGroupMemberProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "create-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
+	cmd.Flags().StringVar(&createDirectGroupMemberProxyReq.DirectGroupMember.Name, "name", createDirectGroupMemberProxyReq.DirectGroupMember.Name, `The resource name of the group membership.`)
+
+	cmd.Use = "create-direct-group-member-proxy PARENT PRINCIPAL_ID"
 	cmd.Short = `*Beta* Create a direct group membership.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -112,7 +112,8 @@ Create a direct group membership.
   Creates a group membership (assigns a principal to a group).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
+    PARENT: The parent resource name of the group to add the member to. Format:
+      groups/{group_id}
     PRINCIPAL_ID: Internal ID of the principal in Databricks.`
 
 	cmd.Annotations = make(map[string]string)
@@ -123,7 +124,7 @@ Create a direct group membership.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only GROUP_ID as positional arguments. Provide 'principal_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'principal_id' in your JSON input")
 			}
 			return nil
 		}
@@ -148,11 +149,7 @@ Create a direct group membership.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &createDirectGroupMemberProxyReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
-
+		createDirectGroupMemberProxyReq.Parent = args[0]
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createDirectGroupMemberProxyReq.DirectGroupMember.PrincipalId)
 			if err != nil {
@@ -199,8 +196,10 @@ func newCreateGroupProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createGroupProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createGroupProxyReq.Parent, "parent", createGroupProxyReq.Parent, `The resource name of the account to create the group in, accounts/{account_id}.`)
 	cmd.Flags().StringVar(&createGroupProxyReq.Group.ExternalId, "external-id", createGroupProxyReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
 	cmd.Flags().StringVar(&createGroupProxyReq.Group.GroupName, "group-name", createGroupProxyReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&createGroupProxyReq.Group.Name, "name", createGroupProxyReq.Group.Name, `The resource name of the group.`)
 
 	cmd.Use = "create-group-proxy"
 	cmd.Short = `*Beta* Create a group in the account.`
@@ -283,7 +282,9 @@ func newCreateServicePrincipalProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createServicePrincipalProxyReq.Parent, "parent", createServicePrincipalProxyReq.Parent, `The resource name of the account to create the service principal in, accounts/{account_id}.`)
 	cmd.Flags().StringVar(&createServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", createServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&createServicePrincipalProxyReq.ServicePrincipal.Name, "name", createServicePrincipalProxyReq.ServicePrincipal.Name, `The resource name of the service principal.`)
 
 	cmd.Use = "create-service-principal-proxy DISPLAY_NAME ACCOUNT_SP_STATUS"
 	cmd.Short = `*Beta* Create a service principal in the account.`
@@ -388,7 +389,9 @@ func newCreateUserProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createUserProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createUserProxyReq.Parent, "parent", createUserProxyReq.Parent, `The resource name of the account to create the user in, accounts/{account_id}.`)
 	cmd.Flags().StringVar(&createUserProxyReq.User.ExternalId, "external-id", createUserProxyReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&createUserProxyReq.User.Name, "name", createUserProxyReq.User.Name, `The resource name of the user.`)
 
 	cmd.Use = "create-user-proxy USERNAME FULL_NAME ACCOUNT_USER_STATUS"
 	cmd.Short = `*Beta* Create a user in the account.`
@@ -596,8 +599,10 @@ func newCreateWorkspaceAssignmentProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createWorkspaceAssignmentProxyReq.Parent, "parent", createWorkspaceAssignmentProxyReq.Parent, `The resource name of the workspace to assign the principal to, accounts/{account_id}/workspaces/{workspace_id}.`)
 	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
+	cmd.Flags().StringVar(&createWorkspaceAssignmentProxyReq.WorkspaceAssignment.Name, "name", createWorkspaceAssignmentProxyReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
 
 	cmd.Use = "create-workspace-assignment-proxy PRINCIPAL_ID"
 	cmd.Short = `*Beta* Create a workspace assignment for a workspace.`
@@ -612,7 +617,9 @@ Create a workspace assignment for a workspace.
   which entitlements were granted.
 
   Arguments:
-    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
+    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks. Set when
+      the assignment is created and cannot be changed afterwards; to assign a
+      different principal, create a new assignment.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -689,7 +696,7 @@ func newDeleteDirectGroupMemberProxy() *cobra.Command {
 
 	var deleteDirectGroupMemberProxyReq iamv2.DeleteDirectGroupMemberProxyRequest
 
-	cmd.Use = "delete-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
+	cmd.Use = "delete-direct-group-member-proxy NAME"
 	cmd.Short = `*Beta* Delete a direct group membership.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -698,15 +705,15 @@ Delete a direct group membership.
   Deletes a group membership (unassigns a principal from a group).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
-    PRINCIPAL_ID: Required. Internal ID of the principal to be unassigned from the group.`
+    NAME: The resource name of the group membership. Format:
+      groups/{group_id}/direct-members/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -715,15 +722,7 @@ Delete a direct group membership.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &deleteDirectGroupMemberProxyReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &deleteDirectGroupMemberProxyReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		deleteDirectGroupMemberProxyReq.Name = args[0]
 
 		err = w.WorkspaceIamV2.DeleteDirectGroupMemberProxy(ctx, deleteDirectGroupMemberProxyReq)
 		if err != nil {
@@ -758,7 +757,7 @@ func newDeleteGroupProxy() *cobra.Command {
 
 	var deleteGroupProxyReq iamv2.DeleteGroupProxyRequest
 
-	cmd.Use = "delete-group-proxy GROUP_ID"
+	cmd.Use = "delete-group-proxy NAME"
 	cmd.Short = `*Beta* Delete a group in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -768,7 +767,7 @@ Delete a group in the account.
   the calling workspace.
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.`
+    NAME: The resource name of the group. Format: groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -784,7 +783,7 @@ Delete a group in the account.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		deleteGroupProxyReq.GroupId = args[0]
+		deleteGroupProxyReq.Name = args[0]
 
 		err = w.WorkspaceIamV2.DeleteGroupProxy(ctx, deleteGroupProxyReq)
 		if err != nil {
@@ -819,7 +818,7 @@ func newDeleteServicePrincipalProxy() *cobra.Command {
 
 	var deleteServicePrincipalProxyReq iamv2.DeleteServicePrincipalProxyRequest
 
-	cmd.Use = "delete-service-principal-proxy SERVICE_PRINCIPAL_ID"
+	cmd.Use = "delete-service-principal-proxy NAME"
 	cmd.Short = `*Beta* Delete a service principal in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -829,7 +828,8 @@ Delete a service principal in the account.
   that parents the calling workspace.
 
   Arguments:
-    SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.`
+    NAME: The resource name of the service principal. Format:
+      service-principals/{service_principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -845,7 +845,7 @@ Delete a service principal in the account.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		deleteServicePrincipalProxyReq.ServicePrincipalId = args[0]
+		deleteServicePrincipalProxyReq.Name = args[0]
 
 		err = w.WorkspaceIamV2.DeleteServicePrincipalProxy(ctx, deleteServicePrincipalProxyReq)
 		if err != nil {
@@ -880,7 +880,7 @@ func newDeleteUserProxy() *cobra.Command {
 
 	var deleteUserProxyReq iamv2.DeleteUserProxyRequest
 
-	cmd.Use = "delete-user-proxy USER_ID"
+	cmd.Use = "delete-user-proxy NAME"
 	cmd.Short = `*Beta* Delete a user in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -890,7 +890,7 @@ Delete a user in the account.
   calling workspace.
 
   Arguments:
-    USER_ID: Required. Internal ID of the user in Databricks.`
+    NAME: The resource name of the user. Format: users/{user_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -906,7 +906,7 @@ Delete a user in the account.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		deleteUserProxyReq.UserId = args[0]
+		deleteUserProxyReq.Name = args[0]
 
 		err = w.WorkspaceIamV2.DeleteUserProxy(ctx, deleteUserProxyReq)
 		if err != nil {
@@ -1010,7 +1010,7 @@ func newDeleteWorkspaceAssignmentProxy() *cobra.Command {
 
 	var deleteWorkspaceAssignmentProxyReq iamv2.DeleteWorkspaceAssignmentProxyRequest
 
-	cmd.Use = "delete-workspace-assignment-proxy PRINCIPAL_ID"
+	cmd.Use = "delete-workspace-assignment-proxy NAME"
 	cmd.Short = `*Beta* Delete a workspace assignment for a workspace.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1022,8 +1022,8 @@ Delete a workspace assignment for a workspace.
   stays assigned with some of its original entitlements. Retrying is safe.
 
   Arguments:
-    PRINCIPAL_ID: Required. ID of the principal in Databricks to delete workspace assignment
-      for.`
+    NAME: The resource name of the workspace assignment. Format:
+      workspace-assignments/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1039,10 +1039,7 @@ Delete a workspace assignment for a workspace.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &deleteWorkspaceAssignmentProxyReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
+		deleteWorkspaceAssignmentProxyReq.Name = args[0]
 
 		err = w.WorkspaceIamV2.DeleteWorkspaceAssignmentProxy(ctx, deleteWorkspaceAssignmentProxyReq)
 		if err != nil {
@@ -1077,7 +1074,7 @@ func newGetDirectGroupMemberProxy() *cobra.Command {
 
 	var getDirectGroupMemberProxyReq iamv2.GetDirectGroupMemberProxyRequest
 
-	cmd.Use = "get-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
+	cmd.Use = "get-direct-group-member-proxy NAME"
 	cmd.Short = `*Beta* Get a direct group member.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1086,16 +1083,15 @@ Get a direct group member.
   Gets a provisioned direct member of a group.
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
-    PRINCIPAL_ID: Required. Internal ID of the principal belonging to the group in
-      Databricks.`
+    NAME: The resource name of the group membership. Format:
+      groups/{group_id}/direct-members/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1104,15 +1100,7 @@ Get a direct group member.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getDirectGroupMemberProxyReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
-
-		_, err = fmt.Sscan(args[1], &getDirectGroupMemberProxyReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		getDirectGroupMemberProxyReq.Name = args[0]
 
 		response, err := w.WorkspaceIamV2.GetDirectGroupMemberProxy(ctx, getDirectGroupMemberProxyReq)
 		if err != nil {
@@ -1344,7 +1332,7 @@ func newGetGroupProxy() *cobra.Command {
 
 	var getGroupProxyReq iamv2.GetGroupProxyRequest
 
-	cmd.Use = "get-group-proxy GROUP_ID"
+	cmd.Use = "get-group-proxy NAME"
 	cmd.Short = `*Beta* Get a group in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1354,7 +1342,7 @@ Get a group in the account.
   the calling workspace.
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.`
+    NAME: The resource name of the group. Format: groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1370,7 +1358,7 @@ Get a group in the account.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		getGroupProxyReq.GroupId = args[0]
+		getGroupProxyReq.Name = args[0]
 
 		response, err := w.WorkspaceIamV2.GetGroupProxy(ctx, getGroupProxyReq)
 		if err != nil {
@@ -1406,7 +1394,7 @@ func newGetServicePrincipalProxy() *cobra.Command {
 
 	var getServicePrincipalProxyReq iamv2.GetServicePrincipalProxyRequest
 
-	cmd.Use = "get-service-principal-proxy SERVICE_PRINCIPAL_ID"
+	cmd.Use = "get-service-principal-proxy NAME"
 	cmd.Short = `*Beta* Get a service principal in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1416,7 +1404,8 @@ Get a service principal in the account.
   that parents the calling workspace.
 
   Arguments:
-    SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.`
+    NAME: The resource name of the service principal. Format:
+      service-principals/{service_principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1432,7 +1421,7 @@ Get a service principal in the account.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		getServicePrincipalProxyReq.ServicePrincipalId = args[0]
+		getServicePrincipalProxyReq.Name = args[0]
 
 		response, err := w.WorkspaceIamV2.GetServicePrincipalProxy(ctx, getServicePrincipalProxyReq)
 		if err != nil {
@@ -1468,7 +1457,7 @@ func newGetUserProxy() *cobra.Command {
 
 	var getUserProxyReq iamv2.GetUserProxyRequest
 
-	cmd.Use = "get-user-proxy USER_ID"
+	cmd.Use = "get-user-proxy NAME"
 	cmd.Short = `*Beta* Get a user in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1478,7 +1467,7 @@ Get a user in the account.
   calling workspace.
 
   Arguments:
-    USER_ID: Required. Internal ID of the user in Databricks.`
+    NAME: The resource name of the user. Format: users/{user_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1494,7 +1483,7 @@ Get a user in the account.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		getUserProxyReq.UserId = args[0]
+		getUserProxyReq.Name = args[0]
 
 		response, err := w.WorkspaceIamV2.GetUserProxy(ctx, getUserProxyReq)
 		if err != nil {
@@ -1532,7 +1521,7 @@ func newGetWorkspaceAccessDetailLocal() *cobra.Command {
 
 	cmd.Flags().Var(&getWorkspaceAccessDetailLocalReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`)
 
-	cmd.Use = "get-workspace-access-detail-local PRINCIPAL_ID"
+	cmd.Use = "get-workspace-access-detail-local NAME"
 	cmd.Short = `*Beta* Get workspace access details for a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1546,8 +1535,8 @@ Get workspace access details for a principal.
   parameter to control what fields are returned (BASIC by default or FULL).
 
   Arguments:
-    PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
-      access details are being requested.`
+    NAME: The resource name of the workspace access detail. Format:
+      workspace-access-details/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1563,10 +1552,7 @@ Get workspace access details for a principal.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAccessDetailLocalReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
+		getWorkspaceAccessDetailLocalReq.Name = args[0]
 
 		response, err := w.WorkspaceIamV2.GetWorkspaceAccessDetailLocal(ctx, getWorkspaceAccessDetailLocalReq)
 		if err != nil {
@@ -1668,7 +1654,7 @@ func newGetWorkspaceAssignmentProxy() *cobra.Command {
 
 	var getWorkspaceAssignmentProxyReq iamv2.GetWorkspaceAssignmentProxyRequest
 
-	cmd.Use = "get-workspace-assignment-proxy PRINCIPAL_ID"
+	cmd.Use = "get-workspace-assignment-proxy NAME"
 	cmd.Short = `*Beta* Get a workspace assignment for a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1677,8 +1663,8 @@ Get a workspace assignment for a principal.
   Returns the assignment for a principal in the calling workspace.
 
   Arguments:
-    PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
-      assignment is being requested.`
+    NAME: The resource name of the workspace assignment. Format:
+      workspace-assignments/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1694,10 +1680,7 @@ Get a workspace assignment for a principal.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAssignmentProxyReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
+		getWorkspaceAssignmentProxyReq.Name = args[0]
 
 		response, err := w.WorkspaceIamV2.GetWorkspaceAssignmentProxy(ctx, getWorkspaceAssignmentProxyReq)
 		if err != nil {
@@ -1733,7 +1716,7 @@ func newGetWorkspaceIdentityDetail() *cobra.Command {
 
 	var getWorkspaceIdentityDetailReq iamv2.GetWorkspaceIdentityDetailRequest
 
-	cmd.Use = "get-workspace-identity-detail PRINCIPAL_ID"
+	cmd.Use = "get-workspace-identity-detail NAME"
 	cmd.Short = `*Beta* Get workspace identity details for a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1742,8 +1725,8 @@ Get workspace identity details for a principal.
   Returns the identity details for a principal in a workspace.
 
   Arguments:
-    PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
-      identity details are being requested.`
+    NAME: The resource name of the workspace identity detail. Format:
+      principals/{principal_id}/workspace-identity-detail`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1759,10 +1742,7 @@ Get workspace identity details for a principal.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceIdentityDetailReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
+		getWorkspaceIdentityDetailReq.Name = args[0]
 
 		response, err := w.WorkspaceIamV2.GetWorkspaceIdentityDetail(ctx, getWorkspaceIdentityDetailReq)
 		if err != nil {
@@ -1811,7 +1791,7 @@ func newListDirectGroupMembersProxy() *cobra.Command {
 	cmd.Flags().StringVar(&listDirectGroupMembersProxyReq.PageToken, "page-token", listDirectGroupMembersProxyReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-direct-group-members-proxy GROUP_ID"
+	cmd.Use = "list-direct-group-members-proxy PARENT"
 	cmd.Short = `*Beta* List direct group members.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1821,8 +1801,8 @@ List direct group members.
   (internal or from identity provider).
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks whose direct members are
-      being listed.`
+    PARENT: The parent resource name of the group whose direct members to list.
+      Format: groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1838,10 +1818,7 @@ List direct group members.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &listDirectGroupMembersProxyReq.GroupId)
-		if err != nil {
-			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
-		}
+		listDirectGroupMembersProxyReq.Parent = args[0]
 
 		response := w.WorkspaceIamV2.ListDirectGroupMembersProxy(ctx, listDirectGroupMembersProxyReq)
 		if listDirectGroupMembersProxyLimit < 0 {
@@ -1886,6 +1863,7 @@ func newListGroupsProxy() *cobra.Command {
 
 	cmd.Flags().StringVar(&listGroupsProxyReq.Filter, "filter", listGroupsProxyReq.Filter, `Optional.`)
 	cmd.Flags().IntVar(&listGroupsProxyReq.PageSize, "page-size", listGroupsProxyReq.PageSize, `The maximum number of groups to return.`)
+	cmd.Flags().StringVar(&listGroupsProxyReq.Parent, "parent", listGroupsProxyReq.Parent, `The resource name of the account to list groups in, accounts/{account_id}.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listGroupsProxyLimit, "limit", 0, `Maximum number of results to return.`)
@@ -1960,6 +1938,7 @@ func newListServicePrincipalsProxy() *cobra.Command {
 
 	cmd.Flags().StringVar(&listServicePrincipalsProxyReq.Filter, "filter", listServicePrincipalsProxyReq.Filter, `Optional.`)
 	cmd.Flags().IntVar(&listServicePrincipalsProxyReq.PageSize, "page-size", listServicePrincipalsProxyReq.PageSize, `The maximum number of SPs to return.`)
+	cmd.Flags().StringVar(&listServicePrincipalsProxyReq.Parent, "parent", listServicePrincipalsProxyReq.Parent, `The resource name of the account to list service principals in, accounts/{account_id}.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listServicePrincipalsProxyLimit, "limit", 0, `Maximum number of results to return.`)
@@ -2032,7 +2011,7 @@ func newListTransitiveParentGroupsProxy() *cobra.Command {
 	cmd.Flags().IntVar(&listTransitiveParentGroupsProxyReq.PageSize, "page-size", listTransitiveParentGroupsProxyReq.PageSize, `The maximum number of parent groups to return.`)
 	cmd.Flags().StringVar(&listTransitiveParentGroupsProxyReq.PageToken, "page-token", listTransitiveParentGroupsProxyReq.PageToken, `A page token, received from a previous ListTransitiveParentGroups call.`)
 
-	cmd.Use = "list-transitive-parent-groups-proxy PRINCIPAL_ID"
+	cmd.Use = "list-transitive-parent-groups-proxy PARENT"
 	cmd.Short = `*Beta* List all transitive parent groups of a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2041,8 +2020,8 @@ List all transitive parent groups of a principal.
   Lists all transitive parent groups of a principal.
 
   Arguments:
-    PRINCIPAL_ID: Required. Internal ID of the principal in Databricks whose transitive
-      parent groups are being listed.`
+    PARENT: The parent resource name of the principal whose transitive parent groups
+      to list. Format: principals/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2058,10 +2037,7 @@ List all transitive parent groups of a principal.
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &listTransitiveParentGroupsProxyReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
+		listTransitiveParentGroupsProxyReq.Parent = args[0]
 
 		response, err := w.WorkspaceIamV2.ListTransitiveParentGroupsProxy(ctx, listTransitiveParentGroupsProxyReq)
 		if err != nil {
@@ -2103,6 +2079,7 @@ func newListUsersProxy() *cobra.Command {
 
 	cmd.Flags().StringVar(&listUsersProxyReq.Filter, "filter", listUsersProxyReq.Filter, `Optional.`)
 	cmd.Flags().IntVar(&listUsersProxyReq.PageSize, "page-size", listUsersProxyReq.PageSize, `The maximum number of users to return.`)
+	cmd.Flags().StringVar(&listUsersProxyReq.Parent, "parent", listUsersProxyReq.Parent, `The resource name of the account to list users in, accounts/{account_id}.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listUsersProxyLimit, "limit", 0, `Maximum number of results to return.`)
@@ -2252,6 +2229,7 @@ func newListWorkspaceAssignmentsProxy() *cobra.Command {
 	var listWorkspaceAssignmentsProxyLimit int
 
 	cmd.Flags().IntVar(&listWorkspaceAssignmentsProxyReq.PageSize, "page-size", listWorkspaceAssignmentsProxyReq.PageSize, `The maximum number of workspace assignments to return.`)
+	cmd.Flags().StringVar(&listWorkspaceAssignmentsProxyReq.Parent, "parent", listWorkspaceAssignmentsProxyReq.Parent, `The resource name of the workspace to list assignments of, accounts/{account_id}/workspaces/{workspace_id}.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listWorkspaceAssignmentsProxyLimit, "limit", 0, `Maximum number of results to return.`)
@@ -2591,8 +2569,9 @@ func newUpdateGroupProxy() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateGroupProxyReq.Group.ExternalId, "external-id", updateGroupProxyReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
 	cmd.Flags().StringVar(&updateGroupProxyReq.Group.GroupName, "group-name", updateGroupProxyReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&updateGroupProxyReq.Group.Name, "name", updateGroupProxyReq.Group.Name, `The resource name of the group.`)
 
-	cmd.Use = "update-group-proxy GROUP_ID UPDATE_MASK"
+	cmd.Use = "update-group-proxy NAME UPDATE_MASK"
 	cmd.Short = `*Beta* Update a group in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2608,8 +2587,10 @@ Update a group in the account.
   external_id must identify a visible group. Clearing external_id is allowed.
 
   Arguments:
-    GROUP_ID: Required. Internal ID of the group in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.`
+    NAME: The resource name of the group. The format depends on the API that
+      returned it: - Account-scoped: accounts/{account_id}/groups/{group_id} -
+      Workspace-scoped: groups/{group_id}
+    UPDATE_MASK: Required. The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2637,7 +2618,7 @@ Update a group in the account.
 				}
 			}
 		}
-		updateGroupProxyReq.GroupId = args[0]
+		updateGroupProxyReq.Name = args[0]
 		updateGroupProxyReq.UpdateMask = args[1]
 
 		response, err := w.WorkspaceIamV2.UpdateGroupProxy(ctx, updateGroupProxyReq)
@@ -2679,8 +2660,9 @@ func newUpdateServicePrincipalProxy() *cobra.Command {
 	cmd.Flags().Var(&updateServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateServicePrincipalProxyReq.ServicePrincipal.Name, "name", updateServicePrincipalProxyReq.ServicePrincipal.Name, `The resource name of the service principal.`)
 
-	cmd.Use = "update-service-principal-proxy SERVICE_PRINCIPAL_ID UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
+	cmd.Use = "update-service-principal-proxy NAME UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
 	cmd.Short = `*Beta* Update a service principal in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2690,13 +2672,19 @@ Update a service principal in the account.
   the calling workspace. Only the fields named in the update mask are modified.
   Returns the updated ServicePrincipal resource.
 
+  To change is_agent on a locally managed service principal, set it to true or
+  false. Naming is_agent in the update mask without a value leaves it unchanged.
+
   When AIM is enabled and the service principal is an external identity (its
   external_id is set), only external_id can be updated; its other fields are
   sourced from your identity provider.
 
   Arguments:
-    SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.
+    NAME: The resource name of the service principal. The format depends on the API
+      that returned it: - Account-scoped:
+      accounts/{account_id}/service-principals/{service_principal_id} -
+      Workspace-scoped: service-principals/{service_principal_id}
+    UPDATE_MASK: Required. The list of fields to update.
     DISPLAY_NAME: Display name of the service principal.
     ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
@@ -2709,7 +2697,7 @@ Update a service principal in the account.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only SERVICE_PRINCIPAL_ID, UPDATE_MASK as positional arguments. Provide 'display_name', 'account_sp_status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'display_name', 'account_sp_status' in your JSON input")
 			}
 			return nil
 		}
@@ -2734,7 +2722,7 @@ Update a service principal in the account.
 				}
 			}
 		}
-		updateServicePrincipalProxyReq.ServicePrincipalId = args[0]
+		updateServicePrincipalProxyReq.Name = args[0]
 		updateServicePrincipalProxyReq.UpdateMask = args[1]
 		if !cmd.Flags().Changed("json") {
 			updateServicePrincipalProxyReq.ServicePrincipal.DisplayName = args[2]
@@ -2786,8 +2774,9 @@ func newUpdateUserProxy() *cobra.Command {
 	cmd.Flags().Var(&updateUserProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateUserProxyReq.User.ExternalId, "external-id", updateUserProxyReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateUserProxyReq.User.Name, "name", updateUserProxyReq.User.Name, `The resource name of the user.`)
 
-	cmd.Use = "update-user-proxy USER_ID UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
+	cmd.Use = "update-user-proxy NAME UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
 	cmd.Short = `*Beta* Update a user in the account.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2803,8 +2792,10 @@ Update a user in the account.
   identity provider.
 
   Arguments:
-    USER_ID: Required. Internal ID of the user in Databricks.
-    UPDATE_MASK: Optional. The list of fields to update.
+    NAME: The resource name of the user. The format depends on the API that returned
+      it: - Account-scoped: accounts/{account_id}/users/{user_id} -
+      Workspace-scoped: users/{user_id}
+    UPDATE_MASK: Required. The list of fields to update.
     USERNAME: Username/email of the user.
     FULL_NAME:
     ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.
@@ -2818,7 +2809,7 @@ Update a user in the account.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only USER_ID, UPDATE_MASK as positional arguments. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'username', 'full_name', 'account_user_status' in your JSON input")
 			}
 			return nil
 		}
@@ -2843,7 +2834,7 @@ Update a user in the account.
 				}
 			}
 		}
-		updateUserProxyReq.UserId = args[0]
+		updateUserProxyReq.Name = args[0]
 		updateUserProxyReq.UpdateMask = args[1]
 		if !cmd.Flags().Changed("json") {
 			updateUserProxyReq.User.Username = args[2]
@@ -3011,8 +3002,9 @@ func newUpdateWorkspaceAssignmentProxy() *cobra.Command {
 
 	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
+	cmd.Flags().StringVar(&updateWorkspaceAssignmentProxyReq.WorkspaceAssignment.Name, "name", updateWorkspaceAssignmentProxyReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
 
-	cmd.Use = "update-workspace-assignment-proxy PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"
+	cmd.Use = "update-workspace-assignment-proxy NAME UPDATE_MASK PRINCIPAL_ID"
 	cmd.Short = `*Beta* Update a workspace assignment for a workspace.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -3024,9 +3016,14 @@ Update a workspace assignment for a workspace.
   Get the assignment afterwards to confirm the final state.
 
   Arguments:
-    PRINCIPAL_ID: Required. ID of the principal in Databricks.
+    NAME: The resource name of the workspace assignment. The format depends on the
+      API that returned it: - Account-scoped:
+      accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}
+      - Workspace-scoped: workspace-assignments/{principal_id}
     UPDATE_MASK: Required. The list of fields to update.
-    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
+    PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks. Set when
+      the assignment is created and cannot be changed afterwards; to assign a
+      different principal, create a new assignment.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -3036,7 +3033,7 @@ Update a workspace assignment for a workspace.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only PRINCIPAL_ID, UPDATE_MASK as positional arguments. Provide 'principal_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'principal_id' in your JSON input")
 			}
 			return nil
 		}
@@ -3061,11 +3058,7 @@ Update a workspace assignment for a workspace.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateWorkspaceAssignmentProxyReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
-
+		updateWorkspaceAssignmentProxyReq.Name = args[0]
 		if args[1] != "" {
 			updateMaskArray := strings.Split(args[1], ",")
 			updateWorkspaceAssignmentProxyReq.UpdateMask = *fieldmask.New(updateMaskArray)
@@ -3116,9 +3109,10 @@ func newUpdateWorkspaceIdentityDetail() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceIdentityDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateWorkspaceIdentityDetailReq.WorkspaceIdentityDetail.Name, "name", updateWorkspaceIdentityDetailReq.WorkspaceIdentityDetail.Name, `The resource name of the workspace identity detail.`)
 	cmd.Flags().Var(&updateWorkspaceIdentityDetailReq.WorkspaceIdentityDetail.WorkspaceIdentityStatus, "workspace-identity-status", `The activity status of an identity in a Databricks workspace. Supported values: [ACTIVE, INACTIVE]`)
 
-	cmd.Use = "update-workspace-identity-detail PRINCIPAL_ID UPDATE_MASK"
+	cmd.Use = "update-workspace-identity-detail NAME UPDATE_MASK"
 	cmd.Short = `*Beta* Update workspace identity details for a principal.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -3127,7 +3121,8 @@ Update workspace identity details for a principal.
   Updates a workspace identity detail for a principal.
 
   Arguments:
-    PRINCIPAL_ID: Required. ID of the principal in Databricks.
+    NAME: The resource name of the workspace identity detail. Format:
+      principals/{principal_id}/workspace-identity-detail
     UPDATE_MASK: Required. The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
@@ -3156,11 +3151,7 @@ Update workspace identity details for a principal.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateWorkspaceIdentityDetailReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
-		}
-
+		updateWorkspaceIdentityDetailReq.Name = args[0]
 		if args[1] != "" {
 			updateMaskArray := strings.Split(args[1], ",")
 			updateWorkspaceIdentityDetailReq.UpdateMask = *fieldmask.New(updateMaskArray)

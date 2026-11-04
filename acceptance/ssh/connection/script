@@ -1,9 +1,9 @@
 if [ -z "${CLOUD_ENV:-}" ]; then
   # Local runs have no release artifacts and never execute the uploaded
-  # binaries, so stand in empty archives (dev name omits the version).
+  # binaries, so stand in placeholder archives (dev name omits the version).
   mkdir -p releases
-  : >releases/databricks_cli_linux_amd64.zip
-  : >releases/databricks_cli_linux_arm64.zip
+  fake_release releases/databricks_cli_linux_amd64.zip
+  fake_release releases/databricks_cli_linux_arm64.zip
   CLI_RELEASES_DIR="$PWD/releases"
 fi
 

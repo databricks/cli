@@ -32,12 +32,10 @@
     ],
     "remote": [
       {
-        "name": "MY_VAR",
-        "value": "changed_value"
+        "name": "MY_VAR"
       },
       {
-        "name": "NEW_VAR",
-        "value": "new_value"
+        "name": "NEW_VAR"
       }
     ]
   }

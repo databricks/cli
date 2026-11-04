@@ -1,0 +1,2 @@
+# Includes after one that fails to merge do not report their diagnostics.
+errcode trace $CLI bundle validate

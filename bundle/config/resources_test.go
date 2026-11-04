@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -127,7 +128,13 @@ func TestSupportedResources(t *testing.T) {
 func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
-		"external_locations": true,
+		// A monitor is addressed by the UUID of the object it monitors, which has
+		// no Catalog Explorer URL.
+		"data_quality_monitors": true,
+		"external_locations":    true,
+		// A materialization set has no standalone workspace page; its members
+		// surface under their own features.
+		"materialization_sets": true,
 		// A job run does have a workspace URL, but it's addressed by two IDs
 		// (job + run) so it can't be expressed as a single-ID pattern here; it's
 		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
@@ -236,6 +243,11 @@ func TestResourcesBindSupport(t *testing.T) {
 		QualityMonitors: map[string]*resources.QualityMonitor{
 			"my_quality_monitor": {
 				CreateMonitor: catalog.CreateMonitor{},
+			},
+		},
+		DataQualityMonitors: map[string]*resources.DataQualityMonitor{
+			"my_data_quality_monitor": {
+				Monitor: dataquality.Monitor{},
 			},
 		},
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
@@ -361,6 +373,22 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		Features: map[string]*resources.Feature{
+			"my_feature": {
+				Feature: ml.Feature{
+					FullName: "main.myschema.my_feature",
+				},
+			},
+		},
+		MaterializationSets: map[string]*resources.MaterializationSet{
+			"my_materialization_set": {
+				MaterializationSet: ml.MaterializationSet{
+					MaterializedFeatures: []ml.MaterializedFeature{
+						{FeatureName: "main.myschema.my_feature"},
+					},
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -391,6 +419,8 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockFeatureEngineeringAPI().EXPECT().GetFeature(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockFeatureEngineeringAPI().EXPECT().GetMaterializationSet(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
@@ -404,6 +434,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDataQualityAPI().EXPECT().GetMonitor(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAiGatewayAPI().EXPECT().GetModelService(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAiGatewayAPI().EXPECT().GetMcpService(mock.Anything, mock.Anything).Return(nil, nil)
@@ -428,18 +459,27 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSecretsUcAPI().EXPECT().GetSecret(mock.Anything, mock.Anything).Return(&catalog.Secret{FullName: "0"}, nil)
 
+	// Resources whose ID has a structure that "0" does not satisfy.
+	bindIDs := map[string]string{
+		"data_quality_monitor": "table,0",
+	}
+
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
 		if len(group.Resources) == 0 && !unbindableResources[group.Description.SingularName] {
 			t.Fatalf("Expected at least one resource in group %s", group.Description)
 		}
 		for _, resource := range group.Resources {
-			// bind operation requires resource to be returned from FindResourceByConfigKey
-			r, err := supportedResources.FindResourceByConfigKey("my_" + resource.ResourceDescription().SingularName)
+			// bind operation requires resource to be returned from ResolveKey
+			r, _, err := supportedResources.ResolveKey("my_" + resource.ResourceDescription().SingularName)
 			assert.NoError(t, err)
 
 			// bind operation requires Exists to return true
-			exists, err := r.Exists(ctx, m.WorkspaceClient, "0")
+			id := "0"
+			if v, ok := bindIDs[resource.ResourceDescription().SingularName]; ok {
+				id = v
+			}
+			exists, err := r.Exists(ctx, m.WorkspaceClient, id)
 			assert.NoError(t, err)
 			assert.True(t, exists)
 		}
@@ -475,5 +515,40 @@ func TestAllInteralResourcesAreMarkedAsInternal(t *testing.T) {
 		}
 		field.Set(r)
 		assert.True(t, resources.HasInternalResources())
+	}
+}
+
+func TestResolveKey(t *testing.T) {
+	r := &Resources{
+		Jobs:      map[string]*resources.Job{"foo": {}, "thing": {}},
+		Pipelines: map[string]*resources.Pipeline{"bar": {}, "thing": {}},
+	}
+
+	tests := []struct {
+		ref      string
+		wantType string
+		wantKey  string
+		wantErr  string
+	}{
+		{ref: "foo", wantType: "jobs", wantKey: "foo"},
+		{ref: "jobs.foo", wantType: "jobs", wantKey: "foo"},
+		{ref: "pipelines.thing", wantType: "pipelines", wantKey: "thing"},
+		{ref: "missing", wantErr: "no such resource: missing"},
+		{ref: "jobs.bar", wantErr: "no such resource: jobs.bar"},
+		{ref: "nosuchtype.foo", wantErr: "no such resource: nosuchtype.foo"},
+		{ref: "thing", wantErr: "ambiguous resource: thing (can resolve to jobs.thing, pipelines.thing); use a qualified name to disambiguate"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.ref, func(t *testing.T) {
+			res, key, err := r.ResolveKey(tc.ref)
+			if tc.wantErr != "" {
+				assert.EqualError(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantType, res.ResourceDescription().PluralName)
+			assert.Equal(t, tc.wantKey, key)
+		})
 	}
 }

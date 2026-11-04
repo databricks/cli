@@ -62,12 +62,12 @@ To re-bind the resource later, use:
 		}
 		ctx := cmd.Context()
 
-		resource, err := b.Config.Resources.FindResourceByConfigKey(args[0])
+		resource, resourceKey, err := b.Config.Resources.ResolveKey(args[0])
 		if err != nil {
 			return err
 		}
 
-		phases.Unbind(ctx, b, resource.ResourceDescription().PluralName, args[0], stateDesc.Engine)
+		phases.Unbind(ctx, b, resource.ResourceDescription().PluralName, resourceKey, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

@@ -1,5 +1,5 @@
 
-=== Deploy records version 3 and the deployment_history feature, with resources held in DMS
+=== Deploy keeps resource state in the file and enforces best-effort history
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
 Created jobs.foo
@@ -10,31 +10,58 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "state_version": 3,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   },
-  "state": {}
+  "state": {
+    "resources.jobs.foo": {
+      "__id__": "[FOO_ID]",
+      "state": {
+        "deployment": {
+          "deployment_id": "[DEPLOYMENT_ID]",
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "state-features",
+        "queue": {
+          "enabled": true
+        }
+      }
+    }
+  }
 }
 
-=== Reopening version 3 reads resources from DMS and produces a no-op plan
+=== Reopening reads resources from the file and produces a no-op plan
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> print_requests.py --dms //resources --get --oneline
-{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
 
-=== Disabling deployment history is refused by plan and deploy, while destroy keeps using DMS from state
+=== Disabling deployment history allows plan and deploy, and removes the file marker
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
-Error: deployment history setting (false) does not match the existing state (true)
+update jobs.foo
 
-Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
-
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle deploy
-Error: deployment history setting (false) does not match the existing state (true)
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
-Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
+>>> jq .features // {} .databricks/bundle/default/resources.json
+{}
 
+>>> print_requests.py --dms //api/2.0/bundle --oneline
 
+=== Removing the YAML setting also leaves history disabled
+>>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy also uses the disabled setting
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.foo
@@ -44,7 +71,3 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 >>> print_requests.py --dms //api/2.0/bundle --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_DELETE", "resource_key": "jobs.foo"}], "previous_version_id": "1", "version_type": "VERSION_TYPE_DESTROY"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/jobs.foo", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
-{"method": "DELETE", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}

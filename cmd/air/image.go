@@ -122,8 +122,12 @@ func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
 	var opts imagePushOptions
 	cmd := &cobra.Command{
 		Use:   "push",
-		Short: "Push a container image to Databricks Artifact Registry",
-		Long: `Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
+		Short: "*Preview* Push a container image to Databricks Artifact Registry",
+		Long: `This CLI command is in Preview. For current feature status and requirements, see:
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images
+  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/docker-images
+
+Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
 
 The command configures Docker's Databricks credential helper, automatically detects
 the registry region, and pushes the source image to catalog.schema.artifact:tag.

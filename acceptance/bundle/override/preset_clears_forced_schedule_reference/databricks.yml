@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+resources:
+  quality_monitors:
+    src:
+      table_name: main.default.src
+      assets_dir: /Workspace/monitors/src
+      output_schema_name: main.default
+      schedule:
+        quartz_cron_expression: "0 0 12 * * ?"
+        timezone_id: UTC
+    dst:
+      table_name: main.default.dst
+      assets_dir: /Workspace/monitors/dst
+      output_schema_name: main.default
+
+targets:
+  dev:
+    presets:
+      trigger_pause_status: PAUSED
+    resources:
+      quality_monitors:
+        dst:
+          schedule: ${resources.quality_monitors.src.schedule}

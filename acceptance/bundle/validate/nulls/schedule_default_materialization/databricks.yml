@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    j:
+      name: test
+      schedule: null

@@ -20,6 +20,17 @@ targets:
     mode: production
     workspace:
       host: https://prod.example.com
+  custom_host_query_id:
+    workspace:
+      host: https://custom.test/?o=1234
+  custom_host_explicit_id:
+    workspace:
+      host: https://custom.test
+      workspace_id: 5678
+  custom_host_explicit_id_over_query:
+    workspace:
+      host: https://custom.test/?o=1234
+      workspace_id: "5678"
   uses_terraform:
     bundle:
       engine: terraform

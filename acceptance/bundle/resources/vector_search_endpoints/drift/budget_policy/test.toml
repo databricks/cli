@@ -1,2 +1,5 @@
 RecordRequests = false
 Cloud = false
+
+# DMS=true half of the split; see the vector_search_* test.toml.
+EnvMatrix.DMS = ["true"]

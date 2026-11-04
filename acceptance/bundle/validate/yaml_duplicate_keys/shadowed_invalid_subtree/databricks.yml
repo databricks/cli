@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    j:
+      name: test
+      tags:
+        7: invalid-key
+      tags:
+        good: ok

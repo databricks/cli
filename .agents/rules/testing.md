@@ -95,7 +95,7 @@ acceptance/cmd/fs/cp/file-to-dir/
   output.txt
 ```
 
-**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `Env.MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
+**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Disable the conversion for that one command only: `MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/...` (also works in front of `trace`; precedent: `acceptance/cmd/api/*/script`). Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Do NOT set `Env.MSYS_NO_PATHCONV = "1"` test-wide in `test.toml` when the script runs any `acceptance/bin/*.py` helper: the same conversion is what turns the helper's POSIX script path into a Windows path for the native `python3.exe`, so with it off every helper fails with `can't open file 'C:\c\...'`. The test-wide form is only safe when the script runs no Python helper (precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`).
 
 **RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). For example, `acceptance/bundle/test.toml` matrixes `DMS = ["", "true"]`, so a bundle test opts out of the DMS run with `EnvMatrix.DMS = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
 

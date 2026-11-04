@@ -18,7 +18,7 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${d
 
 trace print_state.py --no-dms
 
-title "Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged"
+title "Redeploying after pulling remote file state still creates the failed resource: it was never applied, so it must not be skipped as unchanged"
 rm -rf .databricks
 trace $CLI bundle plan
 # plan probes the state files concurrently, so the recorded order varies. Only the

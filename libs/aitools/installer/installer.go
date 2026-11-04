@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/versioncheck"
 	"golang.org/x/mod/semver"
 	"golang.org/x/sync/errgroup"
 )
@@ -92,34 +93,41 @@ var latestSkillsReleaseRefFn = fetchLatestSkillsReleaseRef
 const skillsLatestSentinel = clicompat.AgentSkillsLatest
 
 // GetSkillsRef returns the skills repo ref to use and whether it was explicitly
-// pinned (as opposed to tracking latest).
+// pinned (as opposed to tracking latest). An unresolved latest release is an error.
 //
 // By default we track the latest skills release tag, not the skills repo's main
-// branch. cli-compat.json is the remote control for this: it normally reports
-// "latest", but if a future change makes a skills release incompatible with
-// older CLIs, it can be edited remotely to pin those CLIs to the last compatible
-// version with no CLI release. DATABRICKS_SKILLS_REF overrides everything for
-// eval/reproducibility. (AppKit version resolution is unaffected; cli-compat
-// still manages it via its own field.)
+// branch. cli-compat.json is the remote control for this: its newest range
+// normally tracks latest, but if a future change makes a skills release
+// incompatible with older CLIs, it can be edited remotely to pin those CLIs to
+// the last compatible version with no CLI release. DATABRICKS_SKILLS_REF
+// overrides everything for eval/reproducibility. (AppKit version resolution is
+// unaffected; cli-compat still manages it via its own field.)
 func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
+	return getSkillsRef(ctx, false)
+}
+
+func getSkillsRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, true, nil
 	}
 	v, err := clicompat.ResolveAgentSkillsVersion(ctx)
 	if err != nil {
 		log.Debugf(ctx, "could not resolve skills compatibility, resolving latest release: %v", err)
-		return resolveLatestSkillsReleaseRef(ctx)
+		return resolveLatestSkillsReleaseRef(ctx, allowFallback)
 	}
 	if v == "" || v == skillsLatestSentinel {
-		return resolveLatestSkillsReleaseRef(ctx)
+		return resolveLatestSkillsReleaseRef(ctx, allowFallback)
 	}
 	return "v" + v, true, nil
 }
 
-func resolveLatestSkillsReleaseRef(ctx context.Context) (ref string, explicit bool, err error) {
+func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {
 	ref, err = latestSkillsReleaseRefFn(ctx)
 	if err == nil {
 		return ref, false, nil
+	}
+	if !allowFallback {
+		return "", false, fmt.Errorf("resolve latest skills release: %w", err)
 	}
 
 	embedded, embeddedErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
@@ -128,13 +136,13 @@ func resolveLatestSkillsReleaseRef(ctx context.Context) (ref string, explicit bo
 		return "v" + embedded, false, nil
 	}
 	if embeddedErr != nil {
-		return "", false, fmt.Errorf("resolve latest skills release: %w (embedded fallback failed: %v)", err, embeddedErr)
+		return "", false, fmt.Errorf("resolve latest skills release: %w (embedded fallback failed: %v)", err, embeddedErr) //nolint:errorlint // only the primary error belongs in the chain
 	}
 	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
 }
 
 func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", skillsRepoOwner, skillsRepoName)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", versioncheck.GitHubAPIURL(ctx), skillsRepoOwner, skillsRepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -267,25 +275,56 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 	return manifest, ref, err
 }
 
+// installedSkillsRelease returns the newest recorded raw-skills release and
+// whether fallback is safe to consider. Branch refs cannot be ordered, so they
+// require a successful latest-release fetch instead of an embedded fallback.
+func installedSkillsRelease(state *InstallState) (ref string, allowFallback bool) {
+	if state == nil || len(state.Skills) == 0 {
+		return "", true
+	}
+	ref = semver.Canonical("v" + DisplaySkillsVersion(state.Release))
+	allowFallback = ref != ""
+	// Plugin installs can overwrite state.Release, and selective skill installs
+	// can leave files from a newer release. Keep their provenance in the check.
+	knownSkills := make(map[string]bool, len(state.Skills))
+	for path, record := range state.Files {
+		if record.Origin == "" {
+			continue
+		}
+		origin := semver.Canonical("v" + DisplaySkillsVersion(record.Origin))
+		if origin == "" {
+			allowFallback = false
+		} else {
+			name, _, _ := strings.Cut(path, "/")
+			knownSkills[name] = true
+		}
+		if semver.Compare(origin, ref) > 0 {
+			ref = origin
+		}
+	}
+	// Without raw-file provenance, a mixed legacy/plugin install has no
+	// reliable raw-skills release to compare with the fallback.
+	if len(state.Plugins) > 0 {
+		for name := range state.Skills {
+			if !knownSkills[name] {
+				allowFallback = false
+			}
+		}
+	}
+	return ref, allowFallback
+}
+
+func checkSkillsDowngrade(installedRef, ref string, explicit bool) error {
+	if !explicit && semver.Compare(ref, installedRef) < 0 {
+		return fmt.Errorf("refusing to downgrade skills from %s to %s; retry when the latest release is available or set DATABRICKS_SKILLS_REF=%s to select this version explicitly", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(ref), ref)
+	}
+	return nil
+}
+
 // InstallSkillsForAgents fetches the manifest and installs skills for the given agents.
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.
 func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts InstallOptions) error {
-	ref, explicit, err := GetSkillsRef(ctx)
-	if err != nil {
-		return err
-	}
-	cmdio.LogProgress(ctx, "Using skills version "+DisplaySkillsVersion(ref))
-	cmdio.LogProgress(ctx, "Fetching skills manifest...")
-	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
-	if err != nil {
-		return err
-	}
-
-	if opts.IncludeExperimental && !manifestHasExperimental(manifest) {
-		log.Warnf(ctx, "--experimental was set but the manifest at %s exposes no experimental skills. Set DATABRICKS_SKILLS_REF to a release or ref that includes them.", ref)
-	}
-
 	scope := opts.Scope
 	if scope == "" {
 		scope = ScopeGlobal
@@ -310,7 +349,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		}
 	}
 
-	// Load existing state for idempotency checks.
+	// Load existing state for idempotency and downgrade checks.
 	state, err := LoadState(baseDir)
 	if err != nil {
 		return fmt.Errorf("failed to load install state: %w", err)
@@ -323,8 +362,29 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// full install first, which rebuilds complete state. Global scope only, since
 	// legacy installs only ever wrote to the global dir.
 	// hasLegacyInstall lives in update.go (shared with the update/uninstall paths).
-	if state == nil && scope == ScopeGlobal && len(opts.SpecificSkills) > 0 && hasLegacyInstall(ctx, baseDir) {
+	legacyInstall := state == nil && scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir)
+	if legacyInstall && len(opts.SpecificSkills) > 0 {
 		return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
+	}
+
+	installedRef, allowFallback := installedSkillsRelease(state)
+	allowFallback = allowFallback && !legacyInstall
+	ref, explicit, err := getSkillsRef(ctx, allowFallback)
+	if err != nil {
+		return err
+	}
+	cmdio.LogProgress(ctx, "Using skills version "+DisplaySkillsVersion(ref))
+	cmdio.LogProgress(ctx, "Fetching skills manifest...")
+	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, allowFallback && !explicit)
+	if err != nil {
+		return err
+	}
+	if err := checkSkillsDowngrade(installedRef, ref, explicit); err != nil {
+		return err
+	}
+
+	if opts.IncludeExperimental && !manifestHasExperimental(manifest) {
+		log.Warnf(ctx, "--experimental was set but the manifest at %s exposes no experimental skills. Set DATABRICKS_SKILLS_REF to a release or ref that includes them.", ref)
 	}
 
 	// Filter skills based on options, experimental flag, and CLI version.
@@ -785,7 +845,7 @@ func replaceDir(destDir, tmpDir string) error {
 	if err := renamePathFn(tmpDir, destDir); err != nil {
 		if backupDest != "" {
 			if restoreErr := renamePathFn(backupDest, destDir); restoreErr != nil {
-				return fmt.Errorf("failed to move skill into place: %w (also failed to restore existing skill: %v)", err, restoreErr)
+				return fmt.Errorf("failed to move skill into place: %w (also failed to restore existing skill: %v)", err, restoreErr) //nolint:errorlint // only the primary error belongs in the chain
 			}
 		}
 		return fmt.Errorf("failed to move skill into place: %w", err)

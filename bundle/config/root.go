@@ -289,7 +289,7 @@ func (r *Root) InitializeVariables(vars []string) error {
 
 		err := r.Variables[name].Set(val)
 		if err != nil {
-			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
+			return fmt.Errorf("failed to assign %s to %s: %w", val, name, err)
 		}
 	}
 	return nil

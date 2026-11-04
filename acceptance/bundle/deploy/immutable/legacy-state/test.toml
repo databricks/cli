@@ -1,0 +1,8 @@
+# The test rewrites the deployment state by hand, which the recording service refuses because it
+# no longer matches the deployment it has recorded, so run without deployment history.
+EnvMatrix.DMS = [""]
+
+# The test breaks the glass with "api post /api/2.0/snapshots:breakGlass". On Windows the script
+# runs under MSYS2, which rewrites leading-slash arguments to Windows paths before the CLI sees
+# them. Setting this environment variable disables that conversion.
+Env.MSYS_NO_PATHCONV = "1"

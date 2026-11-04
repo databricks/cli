@@ -1,0 +1,50 @@
+bundle:
+  name: test-bundle
+
+variables:
+  mode:
+    default: immutable
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: my_task
+          existing_cluster_id: "0101-120000-aaaaaaaa"
+          spark_python_task:
+            python_file: ./src/main.py
+
+targets:
+  default:
+    default: true
+  overwrite:
+    workspace:
+      sync_mode: overwrite
+  in-place:
+    workspace:
+      sync_mode: in-place
+  immutable:
+    workspace:
+      sync_mode: immutable
+  source_linked_enabled:
+    presets:
+      source_linked_deployment: true
+  source_linked_disabled:
+    presets:
+      source_linked_deployment: false
+  source_linked_with_sync_mode:
+    presets:
+      source_linked_deployment: true
+    workspace:
+      sync_mode: immutable
+  invalid:
+    workspace:
+      sync_mode: inplace
+  variable:
+    workspace:
+      sync_mode: ${var.mode}
+  immutable_file_path:
+    workspace:
+      sync_mode: immutable
+      file_path: /Workspace/Shared/files

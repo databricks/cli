@@ -1,0 +1,20 @@
+# Every request each command makes, workspace file calls included, so a change in the
+# number of API calls shows up here. Sorted because state files and bundle files are
+# read and uploaded concurrently.
+print_requests() {
+    print_requests.py --get --summary --sort '^//telemetry-ext'
+}
+
+trace $CLI bundle plan
+trace print_requests
+
+trace $CLI bundle deploy
+read_id.py foo > /dev/null
+trace print_requests
+
+# State now exists remotely, so this deploy reads it back.
+trace $CLI bundle deploy
+trace print_requests
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests
