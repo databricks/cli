@@ -50,7 +50,7 @@ and secret is not supported.`,
 
 	var tokenTimeout time.Duration
 	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTimeout,
-		"Timeout for acquiring a token.")
+		"Timeout for acquiring a token, including any browser login.")
 
 	var forceRefresh bool
 	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
