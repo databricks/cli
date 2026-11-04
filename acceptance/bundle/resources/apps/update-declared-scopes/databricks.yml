@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    mykey:
+      name: myappname
+      description: my_app_description
+      source_code_path: ./app
+      user_api_scopes: [sql, files.files]

@@ -1,0 +1,65 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.mykey
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Out-of-band: add a scope the bundle cannot declare (e.g. via account-level update)
+>>> MSYS_NO_PATHCONV=1 [CLI] api post /api/2.0/apps/myappname/update --json {"app": {"name": "myappname", "user_api_scopes": ["sql", "files.files", "jobs"]}, "update_mask": "user_api_scopes"}
+
+>>> [CLI] apps get myappname
+[
+  "sql",
+  "files.files",
+  "jobs"
+]
+
+=== Plan after out-of-band change
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Change description and re-deploy; declared scopes are in the mask, so the remote value is replaced
+>>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated apps.mykey
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests
+
+>>> [CLI] apps get myappname
+{
+  "description": "MY_APP_DESCRIPTION",
+  "user_api_scopes": [
+    "sql",
+    "files.files"
+  ]
+}
+
+=== Change the declared scopes
+>>> update_file.py databricks.yml [sql, files.files] [sql, iam.access-control:read]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated apps.mykey
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests
+
+>>> [CLI] apps get myappname
+[
+  "sql",
+  "iam.access-control:read"
+]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
