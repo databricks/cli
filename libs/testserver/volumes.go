@@ -51,6 +51,16 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	if _, exists := s.Volumes[volume.FullName]; exists {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "RESOURCE_ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Volume '%s' already exists", volume.FullName),
+			},
+		}
+	}
+
 	s.Volumes[volume.FullName] = volume
 
 	// Register the volume path as a directory so that fs cp works without

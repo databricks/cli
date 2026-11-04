@@ -110,6 +110,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 
 		// Delete the old entry and create with new name
 		delete(s.Catalogs, name)
+		s.moveCatalogChildren(name, updateRequest.NewName)
 		name = updateRequest.NewName
 	}
 
@@ -119,5 +120,27 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	s.Catalogs[name] = existing
 	return Response{
 		Body: existing,
+	}
+}
+
+// moveCatalogChildren mirrors UC, where the schemas and volumes of a renamed catalog move with it.
+func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName string) {
+	for key, schema := range s.Schemas {
+		if schema.CatalogName != oldCatalogName {
+			continue
+		}
+		delete(s.Schemas, key)
+		schema.CatalogName = newCatalogName
+		schema.FullName = newCatalogName + "." + schema.Name
+		s.Schemas[schema.FullName] = schema
+	}
+	for key, volume := range s.Volumes {
+		if volume.CatalogName != oldCatalogName {
+			continue
+		}
+		delete(s.Volumes, key)
+		volume.CatalogName = newCatalogName
+		volume.FullName = newCatalogName + "." + volume.SchemaName + "." + volume.Name
+		s.Volumes[volume.FullName] = volume
 	}
 }

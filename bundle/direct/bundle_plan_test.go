@@ -271,6 +271,64 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 	}
 }
 
+// TestFollowParentRenames pins when an ID field that references a renamed parent is
+// re-keyed (update_id) instead of recreated: only a provided_id_field of a resource with
+// DoUpdateWithID, and only if it was under that parent before the rename.
+func TestFollowParentRenames(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		resource       string
+		field          string
+		old            string
+		expectedAction deployplan.ActionType
+	}{
+		{
+			name:           "child of the renamed parent follows it",
+			resource:       "volumes",
+			field:          "schema_name",
+			old:            "s_old",
+			expectedAction: deployplan.UpdateWithID,
+		},
+		{
+			name:           "child moved from another parent is recreated",
+			resource:       "volumes",
+			field:          "schema_name",
+			old:            "other",
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			name:           "resource without DoUpdateWithID is recreated",
+			resource:       "registered_models",
+			field:          "schema_name",
+			old:            "s_old",
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			name:           "recreate_on_changes field is recreated",
+			resource:       "volumes",
+			field:          "storage_location",
+			old:            "s_old",
+			expectedAction: deployplan.Recreate,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			ch := &deployplan.ChangeDesc{Action: deployplan.Recreate, Reason: "id_field", Old: tt.old, New: "s_new", Remote: tt.old}
+			parentRenames := map[string]*deployplan.ChangeDesc{
+				tt.field: {Action: deployplan.UpdateWithID, Reason: "id_changes", Old: "s_old", New: "s_new", Remote: "s_old"},
+			}
+			require.NoError(t, followParentRenames(adapter, deployplan.Changes{tt.field: ch}, parentRenames))
+			assert.Equal(t, tt.expectedAction, ch.Action)
+		})
+	}
+}
+
 // TestRecreateBackendDefault pins the implicit backend-default behavior for
 // recreate_on_changes fields (recreateOrBackendDefault): an immutable field the
 // config never set (old and new nil) but the backend populated (remote set) is left

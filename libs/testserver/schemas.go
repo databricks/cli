@@ -86,7 +86,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		return *errResponse
 	}
 
-	var schemaUpdate catalog.SchemaInfo
+	var schemaUpdate catalog.UpdateSchema
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
 		return Response{
@@ -97,12 +97,34 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 
 	applyUpdatedFields(&existing, schemaUpdate, fields)
 
+	if schemaUpdate.NewName != "" {
+		delete(s.Schemas, name)
+		oldName := existing.Name
+		// UC normalizes schema names to lowercase.
+		existing.Name = strings.ToLower(schemaUpdate.NewName)
+		existing.FullName = existing.CatalogName + "." + existing.Name
+		s.moveSchemaVolumes(existing.CatalogName, oldName, existing.Name)
+	}
+
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Schemas[name] = existing
+	s.Schemas[existing.FullName] = existing
 
 	return Response{
 		Body: existing,
+	}
+}
+
+// moveSchemaVolumes mirrors UC, where the volumes of a renamed schema move with it.
+func (s *FakeWorkspace) moveSchemaVolumes(catalogName, oldSchemaName, newSchemaName string) {
+	for key, volume := range s.Volumes {
+		if volume.CatalogName != catalogName || volume.SchemaName != oldSchemaName {
+			continue
+		}
+		delete(s.Volumes, key)
+		volume.SchemaName = newSchemaName
+		volume.FullName = catalogName + "." + newSchemaName + "." + volume.Name
+		s.Volumes[volume.FullName] = volume
 	}
 }
