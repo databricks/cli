@@ -1,0 +1,22 @@
+root="/Users/$CURRENT_USER_NAME/fault-proxy-$UNIQUE_NAME"
+cleanup() {
+    $CLI workspace delete "$root" --recursive
+}
+$CLI workspace mkdirs "$root"
+trap cleanup EXIT
+
+title "a fault before forwarding prevents the mutation"
+fault.py --body-contains "$root/blocked" "POST /api/2.0/workspace/mkdirs" 403 0 1
+trace musterr $CLI workspace mkdirs "$root/blocked"
+musterr $CLI workspace get-status "$root/blocked" >/dev/null 2>&1
+echo "blocked directory does not exist"
+
+title "an after-handler fault preserves the upstream mutation"
+fault.py --after-handler --body-contains "$root/committed" "POST /api/2.0/workspace/mkdirs" 403 0 1
+trace musterr $CLI workspace mkdirs "$root/committed"
+trace $CLI workspace get-status "$root/committed" | jq '{object_type}'
+
+title "the CLI recovers from a retryable error after the mutation"
+fault.py --after-handler --body-contains "$root/retried" "POST /api/2.0/workspace/mkdirs" 503 0 1
+trace $CLI workspace mkdirs "$root/retried"
+trace $CLI workspace get-status "$root/retried" | jq '{object_type}'

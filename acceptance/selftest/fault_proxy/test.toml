@@ -1,0 +1,4 @@
+Cloud = true
+Proxy = true
+RecordRequests = false
+Env.MSYS_NO_PATHCONV = '1'
