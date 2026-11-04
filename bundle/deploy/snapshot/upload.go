@@ -82,7 +82,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
 	// modified outside the bundle fails before building a zip. A saved plan is checked as well:
 	// the snapshot may have been modified after the plan was produced.
-	prev, err := checkPrevSnapshot(ctx, b, uploader, remoteRoot)
+	prev, modified, err := checkPrevSnapshot(ctx, b, uploader, remoteRoot)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -90,6 +90,10 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	var zipPath string
 	var diags diag.Diagnostics
 	if m.clean {
+		// --force moves the deployment off a modified snapshot, so don't let it reuse that name.
+		if modified {
+			prev = nil
+		}
 		zipPath, diags, err = stageZip(ctx, b, snap, prev)
 	} else {
 		zipPath, err = stagedZipPath(ctx, b)
@@ -99,6 +103,11 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	snap.ZipPath = filepath.ToSlash(zipPath)
+	// A plan produced while the snapshot was untouched may keep it in place. Applying it would
+	// leave the deployment on the modified snapshot, which --force promises to move off.
+	if !m.clean && modified && snap.RelativePath() == prev.RelativePath {
+		return diag.Errorf("the last deployment was modified in the workspace since the plan was created; run 'bundle plan --force' again to move to a new snapshot")
+	}
 	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = snap
 
 	return diags
@@ -231,10 +240,11 @@ func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
 }
 
 // checkPrevSnapshot asks the backend whether the snapshot deployed last time was modified outside
-// of the bundle, and returns its state when the deployment may keep using it:
+// of the bundle, and returns its state:
 //   - the previous state while the snapshot is untouched;
-//   - nil when there is no previous snapshot, or it was modified and --force was given, which
-//     moves the deployment to a new snapshot;
+//   - nil when there is no previous snapshot;
+//   - the previous state and modified=true when it was modified and --force was given; the
+//     caller must then not keep the deployment on it;
 //   - an error when it was modified and --force was not given.
 //
 // The check has to happen here rather than in the resource's DoRead: it decides the snapshot's
@@ -242,32 +252,32 @@ func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
 // before any resource is read (see LookupReferencePreDeploy). Erroring unless --force also has no
 // equivalent in the resource layer. CheckDashboardsModifiedRemotely is the same shape: read state,
 // ask the API, refuse unless forced.
-func checkPrevSnapshot(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, remoteRoot string) (*dresources.SnapshotState, error) {
+func checkPrevSnapshot(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, remoteRoot string) (prev *dresources.SnapshotState, modified bool, err error) {
 	// The deploy/plan pipeline opens the state DB for read before this runs, but callers that
 	// exercise PlanUpload in isolation (unit tests) may not. No open state means no previous
 	// snapshot to check, which is the first-deploy case.
 	if !b.DeploymentBundle.StateDB.IsOpen() {
-		return nil, nil
+		return nil, false, nil
 	}
 
 	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(resources.SnapshotKey)
 	if !ok || len(entry.State) == 0 {
-		return nil, nil
+		return nil, false, nil
 	}
 
 	// Decode into the state type the engine persists, so the field names cannot drift apart.
-	var prev dresources.SnapshotState
-	if err := json.Unmarshal(entry.State, &prev); err != nil {
-		return nil, fmt.Errorf("reading previous snapshot state: %w", err)
+	var state dresources.SnapshotState
+	if err := json.Unmarshal(entry.State, &state); err != nil {
+		return nil, false, fmt.Errorf("reading previous snapshot state: %w", err)
 	}
-	if prev.RelativePath == "" {
-		return nil, nil
+	if state.RelativePath == "" {
+		return nil, false, nil
 	}
 
 	// Compose the content path from relative_path rather than reading full_path: relative_path
 	// means the same thing in every CLI version, while full_path from a CLI that predates the
 	// content subfolder points one level too high.
-	contentPath := path.Join(remoteRoot, prev.RelativePath, snapshot.ContentSubdir)
+	contentPath := path.Join(remoteRoot, state.RelativePath, snapshot.ContentSubdir)
 
 	status, err := uploader.InspectSnapshot(ctx, contentPath)
 	// Nothing to protect when no snapshot is there: the deployment predates the content
@@ -275,16 +285,16 @@ func checkPrevSnapshot(ctx context.Context, b *bundle.Bundle, uploader *snapshot
 	// Failing here would also be a dead end, since this runs before the --force check and so
 	// could not be forced past.
 	if errors.Is(err, apierr.ErrNotFound) {
-		return nil, nil
+		return nil, false, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if !status.Dirty {
-		return &prev, nil
+		return &state, false, nil
 	}
 	if !b.Config.Bundle.Force {
-		return nil, errors.New("the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag")
+		return nil, false, errors.New("the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag")
 	}
-	return nil, nil
+	return &state, true, nil
 }
