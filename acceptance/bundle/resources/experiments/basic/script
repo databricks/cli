@@ -36,4 +36,4 @@ trace $CLI bundle plan > out.plan.txt
 trace $CLI bundle deploy -qq
 experiment_id=$(read_id.py my_experiment)
 test "$experiment_id" = "$existing_experiment_id"
-trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
+trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags: (.tags | sort_by(.key))}'
