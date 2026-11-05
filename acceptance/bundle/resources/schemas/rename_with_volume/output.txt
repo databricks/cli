@@ -113,7 +113,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Deploy renames the schema and updates the volume at its new path
+=== Deploy renames the schema. UC moves the volume with it, so the volume gets no request
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
@@ -129,13 +129,6 @@ Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
     "comment": "",
     "custom_max_retention_hours": 0,
     "new_name": "test-schema-renamed-[UNIQUE_NAME]"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-renamed-[UNIQUE_NAME].myvolume",
-  "body": {
-    "comment": ""
   }
 }
 

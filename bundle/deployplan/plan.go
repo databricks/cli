@@ -235,6 +235,17 @@ func (c *Changes) HasChangeExcept(prefixes ...string) bool {
 	return false
 }
 
+// OnlyParentRenamed reports whether every actionable change follows a parent's rename
+// (ReasonParentRenamed). The backend has already moved such a resource, so only its ID changes.
+func (c *Changes) OnlyParentRenamed() bool {
+	for _, change := range *c {
+		if change.Action != Skip && change.Reason != ReasonParentRenamed {
+			return false
+		}
+	}
+	return true
+}
+
 func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
