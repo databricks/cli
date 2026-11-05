@@ -14,8 +14,8 @@ trap cleanup EXIT
 title "Deploy a catalog with a schema and a volume in it"
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
-SCHEMA_ID=$($CLI schemas get "$OLD_CATALOG.myschema" | jq -r .schema_id)
-VOLUME_ID=$($CLI volumes read "$OLD_CATALOG.myschema.myvolume" | jq -r .volume_id)
+add_repl "$($CLI schemas get "$OLD_CATALOG.myschema" | jq -r .schema_id)" SCHEMA_ID
+add_repl "$($CLI volumes read "$OLD_CATALOG.myschema.myvolume" | jq -r .volume_id)" VOLUME_ID
 
 title "Rename the catalog"
 trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
@@ -28,15 +28,11 @@ title "Deploy renames the catalog. UC moves the schema and the volume with it, s
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 
-title "The old catalog is gone and the schema and the volume are under the new one\n"
+title "The old catalog is gone and the schema and the volume are under the new one, with their original ids\n"
 # Not traced: the "not found" message differs between UC and the test server.
 $CLI catalogs get "$OLD_CATALOG" &> /dev/null && echo "old catalog still exists" || echo "old catalog is gone"
-trace $CLI schemas get "$NEW_CATALOG.myschema" | jq '{full_name, catalog_name}'
-trace $CLI volumes read "$NEW_CATALOG.myschema.myvolume" | jq '{full_name, catalog_name}'
-
-title "The schema_id and volume_id are preserved, so these are the same objects\n"
-[ "$($CLI schemas get "$NEW_CATALOG.myschema" | jq -r .schema_id)" = "$SCHEMA_ID" ] && echo "schema_id is unchanged" || echo "schema_id changed"
-[ "$($CLI volumes read "$NEW_CATALOG.myschema.myvolume" | jq -r .volume_id)" = "$VOLUME_ID" ] && echo "volume_id is unchanged" || echo "volume_id changed"
+trace $CLI schemas get "$NEW_CATALOG.myschema" | jq '{full_name, catalog_name, schema_id}'
+trace $CLI volumes read "$NEW_CATALOG.myschema.myvolume" | jq '{full_name, catalog_name, volume_id}'
 
 title "The state tracks the new paths"
 trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
