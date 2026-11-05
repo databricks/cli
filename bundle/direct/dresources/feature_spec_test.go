@@ -13,11 +13,9 @@ import (
 
 func TestFeatureSpecPrepareStateSortsOrderFreeListsWithoutMutatingConfig(t *testing.T) {
 	input := &resources.FeatureSpec{
-		FeatureSpec: ml.FeatureSpec{
-			Name:                 "main.default.spec",
-			ExcludeColumns:       []string{"b", "a"},
-			ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"scipy", "numpy"}},
-		},
+		Name:                 "main.default.spec",
+		ExcludeColumns:       []string{"b", "a"},
+		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"scipy", "numpy"}},
 	}
 
 	state := (&ResourceFeatureSpec{}).PrepareState(input)
@@ -30,10 +28,8 @@ func TestFeatureSpecPrepareStateSortsOrderFreeListsWithoutMutatingConfig(t *test
 
 func TestFeatureSpecPrepareStateKeepsEmptyListsEmpty(t *testing.T) {
 	input := &resources.FeatureSpec{
-		FeatureSpec: ml.FeatureSpec{
-			Name:                 "main.default.spec",
-			ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{}},
-		},
+		Name:                 "main.default.spec",
+		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{}},
 	}
 
 	state := (&ResourceFeatureSpec{}).PrepareState(input)
