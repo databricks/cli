@@ -43,12 +43,24 @@ func TestGetResourceConfig(t *testing.T) {
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
 }
 
-// TestSubResourceConfig checks that grants.yml applies to the grants of every parent.
+// TestSubResourceConfig checks that grants.yml and permissions.yml apply to the grants and
+// permissions of every parent, except where a parent has its own file.
 func TestSubResourceConfig(t *testing.T) {
 	for resourceType := range SupportedResources {
-		if strings.HasSuffix(resourceType, ".grants") {
-			assert.NotEmptyf(t, GetResourceConfig(resourceType).UpdatableIDFields, "%s: grants.yml does not apply", resourceType)
+		var field string
+		switch {
+		case resourceType == "secret_scopes.permissions":
+			field = "scope_name" // secret_scopes.permissions.yml
+		case strings.HasSuffix(resourceType, ".grants"):
+			field = "full_name" // grants.yml
+		case strings.HasSuffix(resourceType, ".permissions"):
+			field = "object_id" // permissions.yml
+		default:
+			continue
 		}
+		rules := GetResourceConfig(resourceType).UpdatableIDFields
+		require.Lenf(t, rules, 1, "%s", resourceType)
+		assert.Equalf(t, field, rules[0].Field.String(), "%s", resourceType)
 	}
 }
 
