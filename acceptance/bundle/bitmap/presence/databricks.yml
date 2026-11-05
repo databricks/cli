@@ -69,6 +69,17 @@ resources:
       name: Other Job
       queue:
         enabled: false
+  clusters:
+    # lifecycle.started is a *bool, so the explicit false is kept: true on one cluster
+    # and false on the other sets both value bits.
+    started_cluster:
+      cluster_name: started
+      lifecycle:
+        started: true
+    stopped_cluster:
+      cluster_name: stopped
+      lifecycle:
+        started: false
 
 targets:
   dev:
