@@ -14,7 +14,9 @@ deploy() {
 }
 
 title "Deploy two schemas and a volume in the first one"
-deploy
+trace $CLI bundle deploy
+# The two schemas are created in parallel.
+trace print_requests.py --sort //unity-catalog
 
 title "Rename the volume's schema: the volume is re-keyed without a request"
 trace update_file.py databricks.yml test-schema1- test-schema1-renamed-
