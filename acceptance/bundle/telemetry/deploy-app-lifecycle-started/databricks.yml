@@ -3,8 +3,14 @@ bundle:
 
 resources:
   apps:
+    # One app started and one stopped: app_lifecycle_started reports each value once.
     myapp:
       name: my-app
       source_code_path: .
       lifecycle:
         started: true
+    stopped_app:
+      name: stopped-app
+      source_code_path: ./stopped
+      lifecycle:
+        started: false

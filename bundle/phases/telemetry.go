@@ -335,26 +335,25 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	slices.Sort(clusterIds)
 	slices.Sort(dashboardIds)
 
+	var apps, clusters, warehouses []*resources.LifecycleWithStarted
 	for _, app := range b.Config.Resources.Apps {
-		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			b.Telemetry.AppLifecycleStarted = new(*app.Lifecycle.Started)
-			break
+		if app != nil {
+			apps = append(apps, app.Lifecycle)
 		}
 	}
-
 	for _, cluster := range b.Config.Resources.Clusters {
-		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
-			b.Telemetry.ClusterLifecycleStarted = new(*cluster.Lifecycle.Started)
-			break
+		if cluster != nil {
+			clusters = append(clusters, cluster.Lifecycle)
 		}
 	}
-
 	for _, warehouse := range b.Config.Resources.SqlWarehouses {
-		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
-			b.Telemetry.SqlWarehouseLifecycleStarted = new(*warehouse.Lifecycle.Started)
-			break
+		if warehouse != nil {
+			warehouses = append(warehouses, warehouse.Lifecycle)
 		}
 	}
+	b.Telemetry.AppLifecycleStarted = startedValues(apps)
+	b.Telemetry.ClusterLifecycleStarted = startedValues(clusters)
+	b.Telemetry.SqlWarehouseLifecycleStarted = startedValues(warehouses)
 
 	// Record which task types the bundle uses (has_<task_type> per type present),
 	// plus the ai_runtime_task-specific scheduling / multi-task dimensions.
@@ -494,4 +493,29 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			},
 		},
 	})
+}
+
+// startedValues returns the lifecycle.started values set in lifecycles, each
+// once: true if any is true, then false if any is false. Resources disagree
+// freely, so a single value would depend on map iteration order.
+func startedValues(lifecycles []*resources.LifecycleWithStarted) []bool {
+	var anyTrue, anyFalse bool
+	for _, l := range lifecycles {
+		if l == nil || l.Started == nil {
+			continue
+		}
+		if *l.Started {
+			anyTrue = true
+		} else {
+			anyFalse = true
+		}
+	}
+	var values []bool
+	if anyTrue {
+		values = append(values, true)
+	}
+	if anyFalse {
+		values = append(values, false)
+	}
+	return values
 }
