@@ -54,6 +54,9 @@ const (
 	falseSuffix = "=false"
 )
 
+// listSuffix marks a list element in a schema path.
+const listSuffix = "[*]"
+
 // WalkSchema reflects over config.Root and the internal telemetry struct and
 // returns the ordered list of field paths, one per field, with map keys
 // rendered as ".*" and slice elements as "[*]", and a "=true" and "=false"
@@ -208,7 +211,7 @@ func markChildren(v dyn.Value, pattern string, index map[string]int, bits []bool
 	}
 	if s, ok := v.AsSequence(); ok {
 		for _, elem := range s {
-			mark(elem, pattern+"[*]", index, bits)
+			mark(elem, pattern+listSuffix, index, bits)
 		}
 	}
 }
@@ -241,14 +244,15 @@ func joinField(pattern, key string) string {
 	return pattern + "." + key
 }
 
-// Text renders the set bits as "<value> <path>" lines in schema order: "T" or
-// "F" for a bool field holding that value, "1" for any other present field. A
-// bool shown as "1" holds an unresolved variable reference; one shown as both
-// "T" and "F" has both values under a wildcard. Unset fields are omitted. bits
-// may be shorter than schema (a bitmap from an older CLI) but not longer.
-func Text(schema []string, bits []bool) []string {
+// Text renders the bitmap as a "size=N context=C" header followed by one
+// "<value> <path>" line per set field in schema order: "T" or "F" for a bool
+// field holding that value, "1" for any other present field. A bool shown as "1"
+// holds an unresolved variable reference; one shown as both "T" and "F" has both
+// values under a wildcard. Unset fields are omitted. bits may be shorter than
+// schema (a bitmap from an older CLI) but not longer.
+func Text(schema []string, bits []bool, context uint16) []string {
 	index := indexSchema(schema[:len(bits)])
-	var lines []string
+	lines := []string{fmt.Sprintf("size=%d context=%d", len(bits), context)}
 	for i, p := range schema[:len(bits)] {
 		if !bits[i] {
 			continue
@@ -268,6 +272,72 @@ func Text(schema []string, bits []bool) []string {
 		lines = append(lines, "1 "+p)
 	}
 	return lines
+}
+
+// JSON is the JSON rendering of a bitmap. Presence, True and False are trees
+// keyed by path segment ("*" for any map key, "[*]" for any list element) with
+// true leaves: Presence holds every set field, True and False the bool fields
+// seen with that value. A field with set children is a subtree rather than a
+// leaf, since a child is only set when its parent is.
+type JSON struct {
+	Size     int            `json:"size"`
+	Context  uint16         `json:"context"`
+	Presence map[string]any `json:"presence"`
+	True     map[string]any `json:"true"`
+	False    map[string]any `json:"false"`
+}
+
+// ToJSON renders bits as JSON. bits may be shorter than schema but not longer.
+func ToJSON(schema []string, bits []bool, context uint16) JSON {
+	out := JSON{
+		Size:     len(bits),
+		Context:  context,
+		Presence: map[string]any{},
+		True:     map[string]any{},
+		False:    map[string]any{},
+	}
+	for i, p := range schema[:len(bits)] {
+		if !bits[i] {
+			continue
+		}
+		tree := out.Presence
+		if field, ok := strings.CutSuffix(p, trueSuffix); ok {
+			tree, p = out.True, field
+		} else if field, ok := strings.CutSuffix(p, falseSuffix); ok {
+			tree, p = out.False, field
+		}
+		insertPath(tree, treeKeys(p))
+	}
+	return out
+}
+
+// treeKeys splits a schema path into its segments: "a.*.b[*].c" becomes
+// a, *, b, [*], c. Schema paths only contain field names, ".*" and "[*]".
+func treeKeys(p string) []string {
+	var keys []string
+	for part := range strings.SplitSeq(p, ".") {
+		name, lists := strings.CutSuffix(part, listSuffix)
+		keys = append(keys, name)
+		if lists {
+			keys = append(keys, listSuffix)
+		}
+	}
+	return keys
+}
+
+// insertPath adds a true leaf at keys, turning a leaf on the way into a subtree.
+func insertPath(tree map[string]any, keys []string) {
+	for _, k := range keys[:len(keys)-1] {
+		child, ok := tree[k].(map[string]any)
+		if !ok {
+			child = map[string]any{}
+			tree[k] = child
+		}
+		tree = child
+	}
+	if _, ok := tree[keys[len(keys)-1]]; !ok {
+		tree[keys[len(keys)-1]] = true
+	}
 }
 
 func isSet(index map[string]int, bits []bool, p string) bool {

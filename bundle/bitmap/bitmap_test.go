@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -424,14 +425,125 @@ func TestText(t *testing.T) {
 		{"unresolved reference", []string{"ref"}, []string{"1 ref"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			bits := make([]bool, len(schema))
-			for _, p := range tc.set {
-				bits[slices.Index(schema, p)] = true
-			}
-			assert.Equal(t, tc.want, Text(schema, bits))
+			want := append([]string{"size=12 context=0"}, tc.want...)
+			assert.Equal(t, want, Text(schema, bitsFor(schema, tc.set), ContextFullBundle))
 		})
 	}
 
 	// A bitmap from an older CLI has fewer bits; the rest of the schema is unset.
-	assert.Equal(t, []string{"1 bundle"}, Text(schema, []bool{true}))
+	assert.Equal(t, []string{"size=1 context=7", "1 bundle"}, Text(schema, []bool{true}, 7))
+}
+
+func TestToJSON(t *testing.T) {
+	schema := []string{
+		"bundle", "bundle.name",
+		"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]",
+		"jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=true", "jobs.*.tasks[*].enabled=false",
+		"later",
+	}
+	tasks := func(leaf any) map[string]any {
+		return map[string]any{"jobs": map[string]any{"*": map[string]any{"tasks": leaf}}}
+	}
+	enabled := tasks(map[string]any{"[*]": map[string]any{"enabled": true}})
+	for _, tc := range []struct {
+		name                  string
+		set                   []string
+		presence, isTrue, isF map[string]any
+	}{
+		{"nothing set", nil, map[string]any{}, map[string]any{}, map[string]any{}},
+		{
+			"a parent with set children is a subtree",
+			[]string{"bundle", "bundle.name"},
+			map[string]any{"bundle": map[string]any{"name": true}},
+			map[string]any{},
+			map[string]any{},
+		},
+		{
+			"a set field without set children is a leaf",
+			[]string{"jobs", "jobs.*", "jobs.*.tasks"},
+			tasks(true),
+			map[string]any{},
+			map[string]any{},
+		},
+		{
+			"bool false",
+			[]string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=false"},
+			enabled,
+			map[string]any{},
+			enabled,
+		},
+		{
+			"both values under a wildcard",
+			[]string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=true", "jobs.*.tasks[*].enabled=false"},
+			enabled, enabled, enabled,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ToJSON(schema, bitsFor(schema, tc.set), ContextFullBundle)
+			assert.Equal(t, JSON{Size: len(schema), Presence: tc.presence, True: tc.isTrue, False: tc.isF}, got)
+		})
+	}
+
+	// A bitmap from an older CLI has fewer bits; the rest of the schema is unset.
+	got := ToJSON(schema, []bool{true}, 7)
+	assert.Equal(t, JSON{Size: 1, Context: 7, Presence: map[string]any{"bundle": true}, True: map[string]any{}, False: map[string]any{}}, got)
+}
+
+// TestToJSONIsLossless checks that every entry of the embedded schema maps to
+// its own tree node, so the JSON form keeps every set bit.
+func TestToJSONIsLossless(t *testing.T) {
+	schema := EmbeddedSchema()
+	bits := make([]bool, len(schema))
+	for i := range bits {
+		bits[i] = true
+	}
+	got := ToJSON(schema, bits, ContextFullBundle)
+
+	var presence, trueValues, falseValues int
+	for _, p := range schema {
+		switch {
+		case strings.HasSuffix(p, trueSuffix):
+			trueValues++
+		case strings.HasSuffix(p, falseSuffix):
+			falseValues++
+		default:
+			presence++
+		}
+	}
+	// "telemetry" namespaces the telemetry fields but is not a schema entry.
+	assert.Equal(t, presence+1, countNodes(got.Presence))
+	// A bool field has no children, so each value entry is a leaf.
+	assert.Equal(t, trueValues, countLeaves(got.True))
+	assert.Equal(t, falseValues, countLeaves(got.False))
+}
+
+func countNodes(tree map[string]any) int {
+	n := len(tree)
+	for _, v := range tree {
+		if child, ok := v.(map[string]any); ok {
+			n += countNodes(child)
+		}
+	}
+	return n
+}
+
+func countLeaves(tree map[string]any) int {
+	n := 0
+	for _, v := range tree {
+		if child, ok := v.(map[string]any); ok {
+			n += countLeaves(child)
+		} else {
+			n++
+		}
+	}
+	return n
+}
+
+// bitsFor returns bits with the given schema paths set.
+func bitsFor(schema, set []string) []bool {
+	bits := make([]bool, len(schema))
+	for _, p := range set {
+		bits[slices.Index(schema, p)] = true
+	}
+	return bits
 }

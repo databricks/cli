@@ -1,5 +1,6 @@
-# Invariant to test: every config validates, and its bitmap survives encoding: both the CLI decoder
-# and the databricks-bundles Python decoder reproduce the bits computed before encoding.
+# Invariant to test: every config validates, and its bitmap survives encoding: the CLI decoder
+# (text and JSON) and the databricks-bundles Python decoder (text) reproduce what the bitmap
+# command prints before encoding.
 # Nothing is deployed, so there is nothing to clean up.
 
 invariant_render
@@ -13,18 +14,23 @@ cat LOG.validate_json_err | contains.py '!panic:' '!internal error' > /dev/null
 # Tells the fuzzer the generated config was valid; failures after this count as bugs.
 echo INPUT_CONFIG_OK
 
-$CLI bundle bitmap bitmap-text > LOG.bitmap_text 2> LOG.bitmap_text_err
+$CLI bundle bitmap bitmap -o text > LOG.bitmap_text 2> LOG.bitmap_text_err
 cat LOG.bitmap_text_err | contains.py '!panic:' '!internal error' > /dev/null
 # Every config names its bundle; guards against comparing two empty decodes.
 cat LOG.bitmap_text | contains.py '1 bundle.name' > /dev/null
+
+$CLI bundle bitmap bitmap -o json > LOG.bitmap_json 2> LOG.bitmap_json_err
+cat LOG.bitmap_json_err | contains.py '!panic:' '!internal error' > /dev/null
 
 $CLI bundle bitmap bitmap > LOG.bitmap 2> LOG.bitmap_err
 cat LOG.bitmap_err | contains.py '!panic:' '!internal error' > /dev/null
 
 $CLI bundle bitmap decode < LOG.bitmap > LOG.bitmap_decoded
+$CLI bundle bitmap decode -o json < LOG.bitmap > LOG.bitmap_decoded_json
 # --reinstall-package: the wheel's version does not change with the code, and uv would reuse a
 # cached install.
 uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < LOG.bitmap > LOG.bitmap_decoded_python
 
 diff.py LOG.bitmap_text LOG.bitmap_decoded
+diff.py LOG.bitmap_json LOG.bitmap_decoded_json
 diff.py LOG.bitmap_text LOG.bitmap_decoded_python
