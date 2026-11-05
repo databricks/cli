@@ -168,6 +168,12 @@ type ResourceEntry struct {
 	ID        string                      `json:"__id__"`
 	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+
+	// RenamedFrom holds the old values of the fields an in-place ID change (update_id) changed,
+	// keyed by field path, until the resource is saved again. It is saved in the same write as
+	// the new ID, so a child that an interrupted deploy left under the old name can still follow
+	// the rename.
+	RenamedFrom map[string]any `json:"renamed_from,omitempty"`
 }
 
 type WALEntry struct {
@@ -274,7 +280,7 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 	var recorded json.RawMessage
 	if entry, ok := db.GetResourceEntry(resourceKey); resourceID != "" && ok && len(entry.State) > 0 {
 		var err error
-		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn, RenamedFrom: entry.RenamedFrom})
 		if err != nil {
 			// Nothing the caller can act on, so record the failure without the state.
 			recorded = nil
@@ -300,6 +306,12 @@ func NewDatabase(lineage string, serial int) Database {
 
 // SaveState records the resource's state after an operation was applied to it.
 func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+	return db.SaveStateRenamed(ctx, key, newID, state, dependsOn, nil)
+}
+
+// SaveStateRenamed is SaveState for an ID changed in place: renamedFrom (see ResourceEntry) is
+// recorded together with the new ID.
+func (db *DeploymentState) SaveStateRenamed(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, renamedFrom map[string]any) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -313,9 +325,10 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		return err
 	}
 	entry := ResourceEntry{
-		ID:        newID,
-		State:     json.RawMessage(jsonMessage),
-		DependsOn: dependsOn,
+		ID:          newID,
+		State:       json.RawMessage(jsonMessage),
+		DependsOn:   dependsOn,
+		RenamedFrom: renamedFrom,
 	}
 
 	switch db.mode {
@@ -329,7 +342,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		db.Data.State[key] = entry
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
-			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn, RenamedFrom: renamedFrom})
 			if err != nil {
 				return err
 			}
@@ -344,7 +357,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		}
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
-			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn, RenamedFrom: renamedFrom})
 			if err != nil {
 				return err
 			}

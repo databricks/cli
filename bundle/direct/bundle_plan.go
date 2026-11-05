@@ -377,15 +377,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		err = followParentRenames(adapter, entry.Changes, parentRenames)
+		followedRename, err := followParentRenames(adapter, entry.Changes, parentRenames)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
 		}
 
-		if remoteState == nil {
+		if remoteState == nil && !followedRename {
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
-			// because we know remote does not exist.
+			// because we know remote does not exist. A child that followed its parent's rename is not
+			// missing: it moved, and the read used its old ID.
 			action = deployplan.Create
 		} else {
 			action = getMaxAction(entry.Changes)
@@ -711,6 +712,9 @@ func (b *DeploymentBundle) parentRenames(resourceKey string) (map[string]*deploy
 }
 
 // renameChange returns the change to field of resourceKey if it is part of an update_id, nil otherwise.
+//
+// When this plan does not rename the field, the rename recorded with the resource's state counts
+// too: a deploy interrupted after renaming the parent leaves its children under the old name.
 func (b *DeploymentBundle) renameChange(resourceKey, field string) (*deployplan.ChangeDesc, error) {
 	entry, err := b.Plan.ReadLockEntry(resourceKey)
 	if err != nil {
@@ -719,14 +723,25 @@ func (b *DeploymentBundle) renameChange(resourceKey, field string) (*deployplan.
 	defer b.Plan.ReadUnlockEntry(resourceKey)
 
 	// A missing entry is reported by resolveReferences.
-	if entry == nil || entry.Action != deployplan.UpdateWithID {
+	if entry == nil {
 		return nil, nil
 	}
-	change := entry.Changes[field]
-	if change == nil || change.Action != deployplan.UpdateWithID {
+	if change := entry.Changes[field]; change != nil && change.Action == deployplan.UpdateWithID {
+		return change, nil
+	}
+	// A parent that is created or recreated is a new object; UC does not move children into it.
+	if !entry.Action.KeepsID() && entry.Action != deployplan.UpdateWithID {
 		return nil, nil
 	}
-	return change, nil
+	dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
+	if !ok {
+		return nil, nil
+	}
+	old, ok := dbentry.RenamedFrom[field]
+	if !ok {
+		return nil, nil
+	}
+	return &deployplan.ChangeDesc{Action: deployplan.UpdateWithID, Old: old}, nil
 }
 
 // followParentRenames plans an update_id instead of a recreate for an ID field that changes
@@ -736,10 +751,13 @@ func (b *DeploymentBundle) renameChange(resourceKey, field string) (*deployplan.
 //
 // The old values must match too: a child moved to the renamed parent from somewhere else
 // still has to be recreated.
-func followParentRenames(adapter *dresources.Adapter, changes deployplan.Changes, parentRenames map[string]*deployplan.ChangeDesc) error {
+//
+// It reports whether any change follows a rename.
+func followParentRenames(adapter *dresources.Adapter, changes deployplan.Changes, parentRenames map[string]*deployplan.ChangeDesc) (bool, error) {
 	if !adapter.HasDoUpdateWithID() {
-		return nil
+		return false, nil
 	}
+	followed := false
 	for pathString, parentChange := range parentRenames {
 		ch := changes[pathString]
 		if ch == nil || ch.Action != deployplan.Recreate || !structdiff.IsEqual(ch.Old, parentChange.Old) {
@@ -747,15 +765,16 @@ func followParentRenames(adapter *dresources.Adapter, changes deployplan.Changes
 		}
 		path, err := structpath.ParsePath(pathString)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if _, ok := findMatchingRule(path, adapter.ResourceConfig().ProvidedIDFields); !ok {
 			continue
 		}
 		ch.Action = deployplan.UpdateWithID
 		ch.Reason = deployplan.ReasonParentRenamed
+		followed = true
 	}
-	return nil
+	return followed, nil
 }
 
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
