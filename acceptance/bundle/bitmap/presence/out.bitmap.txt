@@ -40,6 +40,12 @@ F resources.jobs.*.tasks[*].disable_auto_optimization
 1 resources.jobs.*.tasks[*].notebook_task.notebook_path
 1 resources.jobs.*.tasks[*].task_key
 1 resources.jobs.*.timeout_seconds
+1 resources.clusters
+1 resources.clusters.*
+1 resources.clusters.*.lifecycle
+1 resources.clusters.*.cluster_name
+T resources.clusters.*.lifecycle.started
+F resources.clusters.*.lifecycle.started
 1 run_as
 1 run_as.service_principal_name
 1 presets
