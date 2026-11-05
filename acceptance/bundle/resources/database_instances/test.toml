@@ -1,1 +1,5 @@
 RecordRequests = false
+
+# Lakebase v1 is deprecated on GCP:
+#   Error: cannot create resources.database_instances.my_database: The Lakebase Database API is deprecated. Use the Postgres APIs instead: https://docs.databricks.com/api/postgres/v1/postgres (400 BAD_REQUEST)
+CloudEnvs.gcp = false

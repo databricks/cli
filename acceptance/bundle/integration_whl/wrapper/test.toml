@@ -5,3 +5,7 @@ CloudSlow = false # TEMP: run under -short in PR CI
 # ("legacy access is disabled in your workspace. Please use Databricks Runtime
 # 13.3 LTS or above").
 CloudEnvs.aws = false
+
+# On GCP, installing the wheel on the 12.2.x cluster fails:
+#   CalledProcessError: Command 'pip --disable-pip-version-check install --force-reinstall /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl' returned non-zero exit status 1.
+CloudEnvs.gcp = false

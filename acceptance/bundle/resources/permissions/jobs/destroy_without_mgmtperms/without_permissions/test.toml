@@ -1,5 +1,8 @@
 Cloud = true
 RecordRequests = false
+# The Azure test env does not provide TEST_SP_TOKEN:
+#   script: line 163: TEST_SP_TOKEN: unbound variable
+CloudEnvs.azure = false
 RunsOnDbr = false # Requires TEST_SP_TOKEN to be set which is not available on DBR
 
 Ignore = ["take_ownership.json", "databricks.yml"]
