@@ -505,6 +505,40 @@ func TestSubmitWorkloadValidatesWhileStaging(t *testing.T) {
 	assert.Equal(t, int64(777), runID)
 }
 
+// A validation failure must cancel in-flight staging and surface the validation
+// error, not the cancellation. The upload handler stalls, so without the
+// cancellation submitWorkload would block until the stall ends.
+func TestSubmitWorkloadValidationFailureCancelsStaging(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	var submissions atomic.Int32
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		<-release
+		return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, true)
+	})
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		return validateConfigResponse{Errors: []configFieldError{{Path: "task.experiment", Message: "is invalid"}}}
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		submissions.Add(1)
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.ErrorContains(t, err, "task.experiment: is invalid")
+	assert.Zero(t, submissions.Load())
+}
+
 func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)

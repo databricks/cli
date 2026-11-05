@@ -346,19 +346,25 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 
 	// Validate server-side while the run artifacts stage below. The backend check
 	// does not read the uploaded files, so the two can overlap; submission waits
-	// for the result, so an invalid config may leave staged artifacts but is never
-	// submitted.
-	validationCtx, cancelValidation := context.WithCancel(ctx)
+	// for the result, so an invalid config is never submitted. Both share
+	// stagingCtx, so a failure on either side cancels the other.
+	stagingCtx, cancelStaging := context.WithCancelCause(ctx)
 	validated := make(chan struct{})
 	var validationUnavailable bool
 	var validationErr error
 	go func() {
 		defer close(validated)
-		validationUnavailable, validationErr = preflightValidate(validationCtx, w, cfg, commandPath, containers, token)
+		validationUnavailable, validationErr = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
+		if validationErr != nil {
+			cancelStaging(validationErr)
+		}
 	}()
-	// Stop and wait for validation if staging fails first.
 	defer func() {
-		cancelValidation()
+		// A failed validation cancels staging; report it, not the cancellation.
+		if cause := context.Cause(stagingCtx); err != nil && cause != nil {
+			err = cause
+		}
+		cancelStaging(nil)
 		<-validated
 	}()
 
@@ -371,7 +377,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
 	}
 	if cfg.UsagePolicyName != nil {
-		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
+		usagePolicyID, err = resolveUsagePolicyIDByName(stagingCtx, w, *cfg.UsagePolicyName)
 		if err != nil {
 			return 0, "", err
 		}
@@ -383,7 +389,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if cfg.MLflowExperimentDirectory != nil {
 		experimentDir = *cfg.MLflowExperimentDirectory
 	}
-	if err := ensureExperimentDirectory(ctx, w, experimentDir); err != nil {
+	if err := ensureExperimentDirectory(stagingCtx, w, experimentDir); err != nil {
 		return 0, "", err
 	}
 
@@ -412,7 +418,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 
 	err = withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
 		var stageErr error
-		snap, stageErr = stageRunArtifacts(ctx, fc, items, stageSnapshot)
+		snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
 		return stageErr
 	})
 	if err != nil {
