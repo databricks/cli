@@ -707,6 +707,13 @@ func TestSshExtensionErrorCategory(t *testing.T) {
 	}
 }
 
+func TestIDECommandErrorCategory(t *testing.T) {
+	assert.Equal(t, protos.SshTunnelErrorCategoryIDECommandOverrideInvalid,
+		ideCommandErrorCategory(fmt.Errorf("wrapped: %w", vscode.ErrIDECommandOverrideInvalid)))
+	assert.Equal(t, protos.SshTunnelErrorCategoryIDECommandNotOnPath,
+		ideCommandErrorCategory(errors.New("command not found on PATH")))
+}
+
 func TestProxySessionEndCategory(t *testing.T) {
 	tests := []struct {
 		name string

@@ -1,0 +1,19 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_data_quality_monitor"
+
+resources:
+  data_quality_monitors:
+    my_data_quality_monitor_1:
+      object_type: "schema"
+      object_id: "11111111-2222-3333-4444-555555555555"
+      anomaly_detection_config:
+        excluded_table_full_names:
+          - "main.default.excluded"

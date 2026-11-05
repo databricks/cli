@@ -8,9 +8,3 @@ EnvMatrix.DMS = []
 Old = "Field 'spec\\.[a-z_.]+' is in update_mask but not provided"
 New = "Field '[SPEC_FIELD]' is in update_mask but not provided"
 Order = 1
-
-[[Repls]]
-# The whole-spec 500 carries a per-request trace id.
-Old = '\[TraceId: [0-9a-f]+\]'
-New = '[TraceId: [TRACE_ID]]'
-Order = 1

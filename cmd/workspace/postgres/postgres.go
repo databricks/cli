@@ -4866,7 +4866,13 @@ func newUpdateRole() *cobra.Command {
 	cmd.Short = `Update a Postgres Role for a Branch.`
 	cmd.Long = `Update a Postgres Role for a Branch.
 
-  Update a role for a branch.
+  Updates the mutable fields of a Postgres role for a branch.
+
+  The fields spec.identity_type, spec.auth_method, and spec.postgres_role
+  are fixed when the role is created. UpdateRole ignores values supplied for
+  these fields in the request body and retains their existing values. Explicitly
+  naming one of these fields in update_mask returns an INVALID_PARAMETER_VALUE
+  error.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4876,7 +4882,21 @@ func newUpdateRole() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the role. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. Supported fields are
+      spec.membership_roles, spec.attributes.createdb,
+      spec.attributes.createrole, and spec.attributes.bypassrls.
+
+      spec.identity_type, spec.auth_method, and spec.postgres_role cannot
+      be changed. Values supplied for these fields in the request body are
+      ignored. Including one of these fields as an explicit path in update_mask
+      returns an INVALID_PARAMETER_VALUE error. When spec is the only path in
+      the mask, only the supplied mutable attributes are updated. * by itself,
+      or spec combined with other supported paths, selects all supported
+      mutable fields. For these masks, all three attributes (createdb,
+      createrole, and bypassrls) must be supplied; omitting any returns an
+      INVALID_PARAMETER_VALUE error. Each of these mask forms replaces
+      membership_roles. Omitting it or supplying an empty list clears all
+      memberships, including DATABRICKS_SUPERUSER.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

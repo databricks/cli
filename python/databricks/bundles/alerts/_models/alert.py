@@ -23,10 +23,7 @@ from databricks.bundles.alerts._models.custom_template_format import (
     CustomTemplateFormat,
     CustomTemplateFormatParam,
 )
-from databricks.bundles.alerts._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.alerts._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.alerts._models.permission import Permission, PermissionParam
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
@@ -100,7 +97,7 @@ class Alert(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
+    [Beta] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
     
     Reference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.
     Each parameter consists of a name, a value, and optionally a type. To represent a NULL
@@ -205,7 +202,7 @@ class AlertDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
+    [Beta] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
     
     Reference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.
     Each parameter consists of a name, a value, and optionally a type. To represent a NULL

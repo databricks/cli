@@ -57,7 +57,7 @@ import (
       ]{{end}}{{end}}
 
 {{define "service"}}
-{{- $excludeMethods := list "put-secret" -}}
+{{- $excludeMethods := list "put-secret" "upload-file" -}}
 {{- $hideService := .IsHiddenCLI }}
 
 // Slice with functions to override default command behavior.

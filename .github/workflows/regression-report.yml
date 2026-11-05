@@ -105,7 +105,7 @@ jobs:
 
       - name: Upload report
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: regression-report
           path: regression_report.md
@@ -148,8 +148,9 @@ jobs:
             const MAX_REPORT = 60000;
             let report = fs.readFileSync(path, 'utf8');
             if (report.length > MAX_REPORT) {
-              const [head, ...blocks] = report.split('<details>\n');
-              let kept = head;
+              // The first <details> block is the table, which is always kept.
+              const [head, table, ...blocks] = report.split('<details>\n');
+              let kept = head + '<details>\n' + table;
               let shown = 0;
               for (const block of blocks) {
                 if (kept.length + block.length > MAX_REPORT) break;

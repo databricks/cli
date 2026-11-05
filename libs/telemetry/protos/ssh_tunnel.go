@@ -39,6 +39,11 @@ const (
 	// condition rather than a transient failure, so it is distinguished from the rest.
 	SshTunnelErrorCategoryIDECommandNotOnPath SshTunnelErrorCategory = "IDE_COMMAND_NOT_ON_PATH"
 
+	// The IDE command override (DATABRICKS_SSH_IDE_COMMAND, set by the VS Code extension) names
+	// a command that can't be run. Distinct from IDE_COMMAND_NOT_ON_PATH because it points at
+	// whatever set the override rather than at the user's PATH.
+	SshTunnelErrorCategoryIDECommandOverrideInvalid SshTunnelErrorCategory = "IDE_COMMAND_OVERRIDE_INVALID"
+
 	// The IDE's installed-extension list could not be read, so whether the Remote SSH
 	// extension was present is unknown. Distinct from the install failures below because it
 	// says nothing about the extension itself, only that the check could not run.
