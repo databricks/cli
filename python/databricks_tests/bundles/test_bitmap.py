@@ -4,7 +4,13 @@ import zlib
 
 import pytest
 
-from databricks.bundles._bitmap import SCHEMA, decode, decode_bits, text
+from databricks.bundles._bitmap import (
+    CONTEXT_FULL_BUNDLE,
+    SCHEMA,
+    decode,
+    decode_bits,
+    text,
+)
 
 
 def _encode(raw: bytes) -> str:
@@ -91,16 +97,21 @@ SCHEMA_FOR_TEXT = [
 )
 def test_text(set_paths: list[str], lines: list[str]):
     bits = [path in set_paths for path in SCHEMA_FOR_TEXT]
-    assert text(SCHEMA_FOR_TEXT, bits) == lines
+    header = f"size={len(SCHEMA_FOR_TEXT)} context=0"
+    assert text(SCHEMA_FOR_TEXT, bits, CONTEXT_FULL_BUNDLE) == [header, *lines]
 
 
 def test_text_older_bitmap():
-    assert text(SCHEMA_FOR_TEXT, [True]) == ["1 bundle"]
+    assert text(SCHEMA_FOR_TEXT, [True], 7) == ["size=1 context=7", "1 bundle"]
 
 
 def test_decode():
     bits = [path in ("bundle", "bundle.name") for path in SCHEMA]
-    assert decode(_encode(_payload(bits))) == ["1 bundle", "1 bundle.name"]
+    assert decode(_encode(_payload(bits))) == [
+        f"size={len(SCHEMA)} context=0",
+        "1 bundle",
+        "1 bundle.name",
+    ]
 
 
 def test_decode_rejects_unknown_context():
