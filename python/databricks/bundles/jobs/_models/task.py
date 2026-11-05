@@ -119,7 +119,7 @@ class Task:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Applies an AI function to a set of input documents or rows.
+    [Beta] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
@@ -373,7 +373,7 @@ class TaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Applies an AI function to a set of input documents or rows.
+    [Beta] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]
