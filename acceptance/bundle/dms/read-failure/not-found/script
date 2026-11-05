@@ -1,0 +1,9 @@
+deploy_recorded foo
+
+title "A deployment node without a record (404) is a half-created deployment: the deploy registers it again and records history"
+trace update_file.py databricks.yml 'name: foo' 'name: renamed'
+trace fault.py "GET /api/2.0/bundle/deployments/*" 404 0 1 NOT_FOUND
+trace $CLI bundle deploy
+# The fake registers a new node, so the deployment gets a new id.
+add_repl "$(deployment_node_id)" NEW_DEPLOYMENT_ID
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
