@@ -461,6 +461,43 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Empty(t, b.Config.Resources.Alerts["alert3"].Schedule.PauseStatus)
 }
 
+func TestProcessTargetModeDevelopmentTriggersPauseStatus(t *testing.T) {
+	type testCase struct {
+		preset   string
+		expected jobs.PauseStatus
+	}
+
+	tests := map[string]testCase{
+		"defaults to paused":          {expected: jobs.PauseStatusPaused},
+		"unpaused preset is honoured": {preset: config.Unpaused, expected: jobs.PauseStatusUnpaused},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			b := mockBundle(config.Development)
+			b.Config.Presets.TriggerPauseStatus = tc.preset
+			b.Config.Resources.Jobs["multi_triggers"] = &resources.Job{
+				Name: "multi_triggers",
+				Triggers: []jobs.TriggerConfiguration{
+					{Schedule: &jobs.CronTriggerConfiguration{QuartzCronExpression: "0 0 0 1 1 ? 2099", TimezoneId: "UTC"}},
+					{FileArrival: &jobs.FileArrivalTriggerConfiguration{Url: "/Volumes/main/default/landing/"}},
+					{
+						Schedule:    &jobs.CronTriggerConfiguration{QuartzCronExpression: "0 0 0 2 1 ? 2099", TimezoneId: "UTC"},
+						PauseStatus: jobs.PauseStatusPaused,
+					},
+				},
+			}
+
+			diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
+			require.NoError(t, diags.Error())
+
+			triggers := b.Config.Resources.Jobs["multi_triggers"].Triggers
+			actual := []jobs.PauseStatus{triggers[0].PauseStatus, triggers[1].PauseStatus, triggers[2].PauseStatus}
+			assert.Equal(t, []jobs.PauseStatus{tc.expected, tc.expected, jobs.PauseStatusPaused}, actual)
+		})
+	}
+}
+
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Tagging = tags.ForCloud(&sdkconfig.Config{
