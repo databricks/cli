@@ -38,10 +38,7 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import (
-    ForEachTask,
-    ForEachTaskParam,
-)
+from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
     GenAiComputeTaskParam,
