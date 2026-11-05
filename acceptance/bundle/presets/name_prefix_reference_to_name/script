@@ -1,2 +1,2 @@
-# name_prefix is added to a name that is a reference to the name of another job, which has the prefix too.
+# The name of viaref is a reference to the name of another job, which has the prefix already.
 trace $CLI bundle plan -o json | jq '.plan["resources.jobs.viaref"].new_state.value.name'
