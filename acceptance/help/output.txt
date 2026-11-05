@@ -3,6 +3,9 @@ Databricks CLI
 Usage:
   databricks [command]
 
+Lakewatch
+  lakewatch                              *Beta* Manage Lakewatch: security-analytics data sources, detection rules, and per-catalog configuration.
+
 Databricks Workspace
   fs                                     Filesystem related commands
   git-credentials                        Registers personal access token for Databricks to do operations on behalf of the user.
@@ -19,9 +22,6 @@ Compute
   libraries                              The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.
   policy-compliance-for-clusters         The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.
   policy-families                        View available policy families.
-
-Sandbox
-  sandbox                                *Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.
 
 Lakeflow
   jobs                                   The Jobs API allows you to create, edit, and delete jobs.
@@ -182,6 +182,7 @@ Domains
 Developer Tools
   air                                    *Public Preview* Run and manage AI Runtime training workloads
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
+  sandbox                                Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

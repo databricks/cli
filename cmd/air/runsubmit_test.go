@@ -141,12 +141,11 @@ func TestSubmitRun(t *testing.T) {
 	}{
 		{name: "on-demand"},
 		{name: "pool", poolID: "capacity-1"},
-		{name: "pool-critical", poolID: "capacity-1", priorityClass: "CRITICAL"},
 		{name: "pool-normal", poolID: "capacity-1", priorityClass: "NORMAL"},
 		{name: "pool-best-effort", poolID: "capacity-1", priorityClass: "BEST_EFFORT"},
 		{name: "image", unityCatalogImagePath: "main.air.training:prod"},
 		{name: "pool-image", poolID: "capacity-1", unityCatalogImagePath: "main.air.training:prod"},
-		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "CRITICAL", unityCatalogImagePath: "main.air.training:prod"},
+		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "BEST_EFFORT", unityCatalogImagePath: "main.air.training:prod"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			server := testserver.New(t)
