@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -24,11 +25,13 @@ func newDockerConfigureCommand() *cobra.Command {
 This command installs docker-credential-databricks and configures Docker to use
 it for the selected workspace's Artifact Registry host. If the selected profile
 does not already include a workspace_id, the command resolves and saves it so
-the Docker helper can map the registry host back to the profile. The registry
-region is inferred from the workspace's metastore. Select the workspace with
-[PROFILE] or --profile; --host, --account-id, and --workspace-id are not
-supported. The deprecated --region flag is retained for compatibility; omit it
-because it will be fully removed in the next release.`,
+the Docker helper can map the registry host back to the profile. If several
+profiles match the workspace, the helper uses the first logged-in one, checking
+[DEFAULT] first and then the others in file order. The registry region is
+inferred from the workspace's metastore. Select the workspace with [PROFILE] or
+--profile; --host, --account-id, and --workspace-id are not supported. The
+deprecated --region flag is retained for compatibility; omit it because it will
+be fully removed in the next release.`,
 		Args: cobra.MaximumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return errorOnUnsupportedDockerFlags(cmd, "[PROFILE] or --profile")
@@ -66,9 +69,6 @@ func configureDockerTarget(cmd *cobra.Command, args []string, region string) (*d
 	if err != nil {
 		return nil, err
 	}
-	if err := dockercredentials.EnsureUniqueProfile(ctx, profile.DefaultProfiler, w.profile, w.id); err != nil {
-		return nil, err
-	}
 	return w.target(ctx, explicitRegion)
 }
 
@@ -83,7 +83,22 @@ func (t *dockerTarget) configure(ctx context.Context) (dockercredentials.Configu
 			return dockercredentials.Configuration{}, fmt.Errorf("save workspace ID to profile %q: %w", t.profile.Name, err)
 		}
 	}
+	if err := t.warnSharedWorkspace(ctx); err != nil {
+		return dockercredentials.Configuration{}, err
+	}
 	return dockercredentials.Configure(ctx, t.executable, t.registryHost)
+}
+
+func (t *dockerTarget) warnSharedWorkspace(ctx context.Context) error {
+	registry := dockercredentials.Registry{WorkspaceID: t.workspaceID, Host: t.registryHost}
+	profiles, err := dockercredentials.ProfilesForRegistry(ctx, profile.DefaultProfiler, registry)
+	if err != nil {
+		return err
+	}
+	if len(profiles) > 1 {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: multiple Databricks profiles match workspace ID %s: %s. Docker credential helper uses the first logged-in profile in this order", t.workspaceID, strings.Join(profiles.Names(), ", ")))
+	}
+	return nil
 }
 
 func (t *dockerTarget) logConfigured(ctx context.Context, result dockercredentials.Configuration) {

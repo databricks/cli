@@ -172,6 +172,10 @@ func TestToken_loadToken(t *testing.T) {
 				Host: "https://valid-token.cloud.databricks.com",
 			},
 			{
+				Name: "no-refresh-token",
+				Host: "https://no-refresh-token.cloud.databricks.com",
+			},
+			{
 				Name:      "custom-client",
 				Host:      "https://accounts.cloud.databricks.com",
 				AccountID: "custom-client",
@@ -232,6 +236,10 @@ func TestToken_loadToken(t *testing.T) {
 			"custom-client": {
 				RefreshToken: "custom-refresh-token",
 			},
+			"no-refresh-token": {
+				AccessToken: "cached-access-token",
+				Expiry:      time.Now().Add(1 * time.Hour),
+			},
 		},
 	}
 	validateToken := func(got *oauth2.Token) {
@@ -246,6 +254,7 @@ func TestToken_loadToken(t *testing.T) {
 		validateToken           func(*oauth2.Token)
 		wantErr                 string
 		wantInvalidRefreshToken bool
+		wantErrIs               error
 	}{
 		{
 			name: "prints helpful login message on refresh failure when profile is specified",
@@ -472,6 +481,7 @@ func TestToken_loadToken(t *testing.T) {
 			wantErr: "cache: databricks OAuth is not configured for this host. " +
 				"Try logging in again with `databricks auth login --host https://nonexistent.cloud.databricks.com` before retrying. " +
 				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+			wantErrIs: storage.ErrNotFound,
 		},
 		{
 			// Regression test: when notFoundHintCache wraps ErrNotFound
@@ -501,6 +511,7 @@ func TestToken_loadToken(t *testing.T) {
 				"stored credentials from older CLI versions are no longer used; " +
 				"run `databricks auth login` to sign in again, " +
 				"or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache",
+			wantErrIs: storage.ErrNotFound,
 		},
 		{
 			name: "errors with clear message for non-host non-profile positional arg",
@@ -901,6 +912,26 @@ func TestToken_loadToken(t *testing.T) {
   $ databricks auth login --profile valid-token`,
 			wantInvalidRefreshToken: true,
 		},
+		{
+			name: "force refresh without a cached refresh token",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "no-refresh-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				forceRefresh:  true,
+				profiler:      profiler,
+				tokenStore:    tokenStore,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenStore(tokenStore),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			wantErr: "forced token refresh: cached token has no refresh token. " +
+				"Try logging in again with `databricks auth login --profile no-refresh-token` before retrying. " +
+				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+			wantErrIs: u2m.ErrMissingRefreshToken,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -913,6 +944,9 @@ func TestToken_loadToken(t *testing.T) {
 				assert.Equal(t, c.wantErr, err.Error())
 				_, isInvalidRefreshToken := errors.AsType[*u2m.InvalidRefreshTokenError](err)
 				assert.Equal(t, c.wantInvalidRefreshToken, isInvalidRefreshToken)
+				if c.wantErrIs != nil {
+					assert.ErrorIs(t, err, c.wantErrIs)
+				}
 			} else {
 				assert.NoError(t, err)
 				c.validateToken(got)

@@ -77,9 +77,7 @@ func HintForNotFound(err error) string {
 
 // NewNotFoundHint returns an error that renders as msg but unwraps to
 // ErrNotFound, mirroring what notFoundHintStore produces in
-// production. Exported so tests in other packages (e.g. cmd/auth) can
-// construct a hint-wrapped error without going through the full
-// resolver setup.
+// production.
 func NewNotFoundHint(msg string) error {
 	return &notFoundHint{msg: msg}
 }

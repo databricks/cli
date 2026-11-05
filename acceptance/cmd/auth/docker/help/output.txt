@@ -65,11 +65,13 @@ Use "databricks auth docker [command] --help" for more information about a comma
 This command installs docker-credential-databricks and configures Docker to use
 it for the selected workspace's Artifact Registry host. If the selected profile
 does not already include a workspace_id, the command resolves and saves it so
-the Docker helper can map the registry host back to the profile. The registry
-region is inferred from the workspace's metastore. Select the workspace with
-[PROFILE] or --profile; --host, --account-id, and --workspace-id are not
-supported. The deprecated --region flag is retained for compatibility; omit it
-because it will be fully removed in the next release.
+the Docker helper can map the registry host back to the profile. If several
+profiles match the workspace, the helper uses the first logged-in one, checking
+[DEFAULT] first and then the others in file order. The registry region is
+inferred from the workspace's metastore. Select the workspace with [PROFILE] or
+--profile; --host, --account-id, and --workspace-id are not supported. The
+deprecated --region flag is retained for compatibility; omit it because it will
+be fully removed in the next release.
 
 Usage:
   databricks auth docker configure [PROFILE] [flags]

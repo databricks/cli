@@ -154,3 +154,28 @@ Warning: ensure [TEST_TMP_DIR]/home/bin is on PATH before any other docker-crede
   "method": "GET",
   "path": "/api/2.1/unity-catalog/metastore_summary"
 }
+
+=== Profiles sharing the workspace
+
+>>> databricks auth docker configure docker-test
+Warning: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: docker-test, shared. Docker credential helper uses the first logged-in profile in this order
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+
+>>> print_requests.py --get //api
+{
+  "headers": {
+    "X-Databricks-Workspace-Id": [
+      "[WORKSPACE_ID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/metastore_summary"
+}
+
+>>> docker-credential-databricks get
+{
+  "Secret": "oauth-token",
+  "Username": "oauthtoken"
+}

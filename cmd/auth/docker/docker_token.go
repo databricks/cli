@@ -41,15 +41,17 @@ func newDockerTokenCommand(load TokenLoader) *cobra.Command {
 	cmd.Flags().BoolVar(&noForceRefresh, "no-force-refresh", false, "Use a valid cached token instead of forcing a refresh.")
 
 	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		p, err := dockerTokenProfile(cmd.Context(), cmd.InOrStdin())
+		registry, err := dockerTokenRegistry(cmd.InOrStdin())
 		if err != nil {
 			return err
 		}
-		token, err := load(cmd.Context(), TokenRequest{
-			Profile: p,
-			Timeout: tokenTimeout,
-			// Docker may reuse one credential for a long upload, so maximize its lifetime.
-			ForceRefresh: !noForceRefresh,
+		token, err := dockercredentials.TokenForRegistry(cmd.Context(), profile.DefaultProfiler, registry, func(ctx context.Context, p profile.Profile) (*oauth2.Token, error) {
+			return load(ctx, TokenRequest{
+				Profile: p,
+				Timeout: tokenTimeout,
+				// Docker may reuse one credential for a long upload, so maximize its lifetime.
+				ForceRefresh: !noForceRefresh,
+			})
 		})
 		if err != nil {
 			return err
@@ -62,16 +64,12 @@ func newDockerTokenCommand(load TokenLoader) *cobra.Command {
 	return cmd
 }
 
-func dockerTokenProfile(ctx context.Context, input io.Reader) (profile.Profile, error) {
+func dockerTokenRegistry(input io.Reader) (dockercredentials.Registry, error) {
 	raw, err := io.ReadAll(input)
 	if err != nil {
-		return profile.Profile{}, fmt.Errorf("read Docker credential request: %w", err)
+		return dockercredentials.Registry{}, fmt.Errorf("read Docker credential request: %w", err)
 	}
-	registry, err := dockercredentials.ParseRegistryHost(string(raw))
-	if err != nil {
-		return profile.Profile{}, err
-	}
-	return dockercredentials.ProfileForRegistry(ctx, profile.DefaultProfiler, registry)
+	return dockercredentials.ParseRegistryHost(string(raw))
 }
 
 func validateDockerTokenRequest(cmd *cobra.Command, args []string) error {
