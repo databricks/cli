@@ -1,0 +1,16 @@
+resources.internal_immutable_snapshots	4923
+resources.internal_immutable_snapshots.*	4924
+resources.internal_immutable_snapshots.*.bundle_id	4925
+resources.internal_immutable_snapshots.*.acl	4926
+resources.internal_immutable_snapshots.*.acl[*]	4927
+resources.internal_immutable_snapshots.*.acl[*].user_name	4928
+resources.internal_immutable_snapshots.*.acl[*].group_name	4929
+resources.internal_immutable_snapshots.*.acl[*].service_principal_name	4930
+resources.internal_immutable_snapshots.*.acl[*].permission_level	4931
+resources.internal_immutable_snapshots.*.can_manage	4932
+resources.internal_immutable_snapshots.*.can_manage[*]	4933
+resources.internal_immutable_snapshots.*.can_manage[*].user_name	4934
+resources.internal_immutable_snapshots.*.can_manage[*].group_name	4935
+resources.internal_immutable_snapshots.*.can_manage[*].service_principal_name	4936
+resources.internal_immutable_snapshots.*.zip_path	4937
+resources.internal_immutable_snapshots.*.remote_root	4938
