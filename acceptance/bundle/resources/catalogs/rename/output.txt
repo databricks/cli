@@ -88,7 +88,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       "full_name": "test_catalog_[UNIQUE_NAME].myschema",
       "name": "myschema",
       "owner": "[USERNAME]",
-      "schema_id": "[UUID]"
+      "schema_id": "[SCHEMA_ID]"
     },
     "changes": {
       "catalog_name": {
@@ -128,7 +128,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       "name": "myvolume",
       "owner": "[USERNAME]",
       "schema_name": "myschema",
-      "volume_id": "[UUID]",
+      "volume_id": "[VOLUME_ID]",
       "volume_type": "MANAGED"
     },
     "changes": {
@@ -163,24 +163,22 @@ Resources: 0 created, 3 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== The old catalog is gone and the schema and the volume are under the new one
+=== The old catalog is gone and the schema and the volume are under the new one, with their original ids
 old catalog is gone
 
 >>> [CLI] schemas get test_catalog_renamed_[UNIQUE_NAME].myschema
 {
   "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema",
-  "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]"
+  "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+  "schema_id": "[SCHEMA_ID]"
 }
 
 >>> [CLI] volumes read test_catalog_renamed_[UNIQUE_NAME].myschema.myvolume
 {
   "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema.myvolume",
-  "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]"
+  "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+  "volume_id": "[VOLUME_ID]"
 }
-
-=== The schema_id and volume_id are preserved, so these are the same objects
-schema_id is unchanged
-volume_id is unchanged
 
 === The state tracks the new paths
 >>> [CLI] bundle summary --output json
