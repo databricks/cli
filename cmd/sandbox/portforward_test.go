@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -29,11 +30,20 @@ func TestParseForwards(t *testing.T) {
 	assert.Equal(t, []portForward{{localPort: 8080, remotePort: 10080}, {localPort: 0, remotePort: 10081}}, forwards)
 }
 
-func TestParseForwardsRejectsInvalidSpecs(t *testing.T) {
-	for _, spec := range []string{"8080", "8080:", ":10080", "a:10080", "8080:b", "-1:10080", "65536:10080", "8080:0", "8080:65536", "8080:10080:1"} {
+func TestParseForwardsRejectsMalformedSpecs(t *testing.T) {
+	for _, spec := range []string{"8080", "8080:", ":10080", "a:10080", "8080:b", "-1:10080", "65536:10080", "8080:10080:1"} {
 		t.Run(spec, func(t *testing.T) {
 			_, err := parseForwards([]string{spec})
 			assert.EqualError(t, err, `invalid -L "`+spec+`": expected LOCAL:REMOTE ports, e.g. 8080:10080`)
+		})
+	}
+}
+
+func TestParseForwardsRejectsRemotePortsOutsideRange(t *testing.T) {
+	for _, spec := range []string{"8080:0", "8080:8080", "8080:9999", "8080:65536"} {
+		t.Run(spec, func(t *testing.T) {
+			_, err := parseForwards([]string{spec})
+			assert.EqualError(t, err, `invalid -L "`+spec+`": remote port must be between 10000 and 65535`)
 		})
 	}
 }
@@ -79,7 +89,7 @@ func startForward(t *testing.T, upstream *httptest.Server, authenticate func(*ht
 		headers:      map[string]string{"X-Databricks-Workspace-Id": "123"},
 		transport:    http.DefaultTransport,
 	}
-	forward := httptest.NewServer(newPortForwardHandler(target, 10080))
+	forward := httptest.NewServer(newPortForwardHandler(target, 10080, slog.Default()))
 	t.Cleanup(forward.Close)
 	return forward
 }
@@ -172,6 +182,45 @@ func TestPortForwardHandlerRejectsForeignHost(t *testing.T) {
 	status, _, _ := rawRequest(t, addr, "GET / HTTP/1.1\r\nHost: rebound.example:8080\r\nConnection: close\r\n\r\n")
 	assert.Equal(t, http.StatusForbidden, status)
 	assert.Zero(t, calls.Load())
+}
+
+func TestPortForwardHandlerRejectsCrossSiteRequests(t *testing.T) {
+	var calls atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+	}))
+	defer upstream.Close()
+	forward := startForward(t, upstream, fakeAuth)
+	addr := strings.TrimPrefix(forward.URL, "http://")
+
+	for name, headers := range map[string]string{
+		"foreign origin":       "Origin: https://attacker.example\r\n",
+		"null origin":          "Origin: null\r\n",
+		"cross-site fetch":     "Sec-Fetch-Site: cross-site\r\n",
+		"cross-site websocket": "Origin: https://attacker.example\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			status, _, _ := rawRequest(t, addr, "GET / HTTP/1.1\r\nHost: "+addr+"\r\n"+headers+"Connection: close\r\n\r\n")
+			assert.Equal(t, http.StatusForbidden, status)
+		})
+	}
+	assert.Zero(t, calls.Load())
+}
+
+func TestPortForwardHandlerAllowsLocalOrigins(t *testing.T) {
+	var calls atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+	}))
+	defer upstream.Close()
+	forward := startForward(t, upstream, fakeAuth)
+	addr := strings.TrimPrefix(forward.URL, "http://")
+
+	for _, headers := range []string{"Origin: http://localhost:3000\r\nSec-Fetch-Site: same-site\r\n", "Origin: http://" + addr + "\r\nSec-Fetch-Site: same-origin\r\n", "Sec-Fetch-Site: none\r\n"} {
+		status, _, _ := rawRequest(t, addr, "POST / HTTP/1.1\r\nHost: "+addr+"\r\n"+headers+"Content-Length: 0\r\nConnection: close\r\n\r\n")
+		assert.Equal(t, http.StatusOK, status, headers)
+	}
+	assert.Equal(t, int32(3), calls.Load())
 }
 
 func TestIsLoopbackHost(t *testing.T) {
@@ -302,9 +351,10 @@ func TestResolvePortForwardSandboxUsesDefault(t *testing.T) {
 	ctx = cmdio.MockDiscard(ctx)
 	require.NoError(t, setDefault(ctx, "profile", testSandboxID))
 
-	got, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusOK), "profile", nil)
+	got, status, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusOK), "profile", nil)
 	require.NoError(t, err)
 	assert.Equal(t, testSandboxID, got)
+	assert.Equal(t, "Running", status)
 }
 
 func TestResolvePortForwardSandboxClearsMissingDefault(t *testing.T) {
@@ -312,7 +362,7 @@ func TestResolvePortForwardSandboxClearsMissingDefault(t *testing.T) {
 	ctx = cmdio.MockDiscard(ctx)
 	require.NoError(t, setDefault(ctx, "profile", testSandboxID))
 
-	_, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", nil)
+	_, _, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", nil)
 	assert.ErrorContains(t, err, `saved default "`+testSandboxID+`" no longer exists (cleared)`)
 	assert.Empty(t, getDefault(ctx, "profile"))
 }
@@ -321,7 +371,7 @@ func TestResolvePortForwardSandboxRejectsUnknownID(t *testing.T) {
 	ctx, _ := stateCtx(t)
 	ctx = cmdio.MockDiscard(ctx)
 
-	_, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", []string{testSandboxID})
+	_, _, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", []string{testSandboxID})
 	assert.ErrorContains(t, err, `no sandbox named "`+testSandboxID+`"`)
 }
 
@@ -329,16 +379,17 @@ func TestResolvePortForwardSandboxContinuesOnOtherLookupErrors(t *testing.T) {
 	ctx, _ := stateCtx(t)
 	ctx = cmdio.MockDiscard(ctx)
 
-	got, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusForbidden), "profile", []string{testSandboxID})
+	got, status, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusForbidden), "profile", []string{testSandboxID})
 	require.NoError(t, err)
 	assert.Equal(t, testSandboxID, got)
+	assert.Empty(t, status)
 }
 
 func TestResolvePortForwardSandboxRejectsDotSegmentIDs(t *testing.T) {
 	ctx, _ := stateCtx(t)
 	for _, id := range []string{".", ".."} {
 		t.Run(id, func(t *testing.T) {
-			_, err := resolvePortForwardSandbox(ctx, nil, "profile", []string{id})
+			_, _, err := resolvePortForwardSandbox(ctx, nil, "profile", []string{id})
 			assert.EqualError(t, err, `invalid sandbox ID "`+id+`"`)
 		})
 	}
@@ -347,6 +398,6 @@ func TestResolvePortForwardSandboxRejectsDotSegmentIDs(t *testing.T) {
 func TestResolvePortForwardSandboxRequiresDefault(t *testing.T) {
 	ctx, _ := stateCtx(t)
 
-	_, err := resolvePortForwardSandbox(ctx, nil, "profile", nil)
+	_, _, err := resolvePortForwardSandbox(ctx, nil, "profile", nil)
 	assert.ErrorContains(t, err, "no default sandbox configured")
 }
