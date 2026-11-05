@@ -127,10 +127,6 @@ type gen struct {
 	out     bytes.Buffer
 	pending []*tnode
 
-	// pendingTypes are the struct types whose functions are still to be written
-	// (strings walker).
-	pendingTypes []reflect.Type
-
 	// walkerType is the name of the type of the walker state (first parameter).
 	walkerType string
 
@@ -490,63 +486,26 @@ func generateWalker(spec walkerSpec) error {
 	return os.WriteFile(file, formatted, 0o644)
 }
 
-// patternMaps returns the required fields by parent pattern and the enum values by
-// field pattern, without targets and environments (they are merged into the root).
-func patternMaps() (map[string][]string, map[string][]string, error) {
-	required, err := extractRequiredFields(reflect.TypeFor[config.Root]())
-	if err != nil {
-		return nil, nil, err
+// formatSliceToString formats a list of values into string of the form `{value1, value2, ...}`
+// representing a Go slice literal.
+func formatSliceToString(values []string) string {
+	if len(values) == 0 {
+		return "{}"
 	}
-	enums, err := extractEnumFields(reflect.TypeFor[config.Root]())
-	if err != nil {
-		return nil, nil, err
+
+	var quoted []string
+	for _, value := range values {
+		quoted = append(quoted, fmt.Sprintf("%q", value))
 	}
-	skip := func(p string) bool {
-		k := getGroupingKey(p)
-		return k == "targets" || k == "environments"
-	}
-	r := map[string][]string{}
-	for p, fields := range required {
-		if !skip(p) {
-			r[p] = fields
-		}
-	}
-	e := map[string][]string{}
-	for p, values := range enums {
-		if !skip(p) {
-			e[p] = values
-		}
-	}
-	return r, e, nil
+
+	return "{" + strings.Join(quoted, ", ") + "}"
 }
 
-func generateWalkers(dir string) error {
-	required, enums, err := patternMaps()
-	if err != nil {
-		return err
-	}
-	err = generateWalker(walkerSpec{
-		file: dir + "/required_walk.go", pkg: "validate", prefix: "required", walkerType: "walker",
-		doc: "requiredWalk reports required fields that are not set.", required: required,
-	})
-	if err != nil {
-		return err
-	}
-	err = generateWalker(walkerSpec{
-		file: dir + "/enum_walk.go", pkg: "validate", prefix: "enum", walkerType: "walker",
-		doc: "enumWalk reports enum fields with invalid values.", enums: enums,
-	})
-	if err != nil {
-		return err
-	}
-	err = generateWalker(walkerSpec{
+func generateWalkers() error {
+	err := generateWalker(walkerSpec{
 		file: "bundle/config/mutator/resourcemutator/defaults_walk.go", pkg: "resourcemutator", prefix: "defaults", walkerType: "defaultsWalker",
 		doc: "defaultsWalk calls unset for the fields with a default (resourcedefaults.Defaults) that are not set.", defaults: resourcedefaults.Patterns(),
 	})
-	if err != nil {
-		return err
-	}
-	err = generateStringsWalker("bundle/config/walk/strings_walk.go")
 	if err != nil {
 		return err
 	}

@@ -185,6 +185,12 @@ func (sv *StructVar) CopyMetadata(src *StructVar, path *structpath.PathNode) {
 	sv.Refs = refs
 }
 
+// IsEmpty reports whether the map or slice at path was written as empty ({} or []): a
+// typed value cannot tell it from an unset one. See [Locations.IsEmpty].
+func (sv *StructVar) IsEmpty(path *structpath.PathNode) bool {
+	return sv.Locations.Sub(path).IsEmpty()
+}
+
 // SetLocations sets the locations of the value at path and of every value below it,
 // including values that have no locations yet (e.g. set in Go code).
 func (sv *StructVar) SetLocations(path *structpath.PathNode, locs []diag.Location) {
