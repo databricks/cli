@@ -47,11 +47,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "catalog_type": "MANAGED_CATALOG",
       "created_at": [UNIX_TIME_MILLIS][0],
       "created_by": "[USERNAME]",
-      "effective_predictive_optimization_flag": {
-        "inherited_from_name": "[METASTORE_NAME]",
-        "inherited_from_type": "METASTORE",
-        "value": "ENABLE"
-      },
       "enable_predictive_optimization": "INHERIT",
       "full_name": "main.test-schema-[UNIQUE_NAME]",
       "name": "test-schema-[UNIQUE_NAME]",
@@ -92,7 +87,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "name": "myvolume",
       "owner": "[USERNAME]",
       "schema_name": "test-schema-[UNIQUE_NAME]",
-      "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
       "volume_id": "[UUID]",
       "volume_type": "MANAGED"
     },
@@ -103,11 +97,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test-schema-[UNIQUE_NAME]",
         "new": "test-schema-renamed-[UNIQUE_NAME]",
         "remote": "test-schema-[UNIQUE_NAME]"
-      },
-      "storage_location": {
-        "action": "skip",
-        "reason": "immutable_backend_value",
-        "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
       }
     }
   }
