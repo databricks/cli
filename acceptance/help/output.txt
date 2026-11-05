@@ -182,7 +182,7 @@ Domains
 Developer Tools
   air                                    *Public Preview* Run and manage AI Runtime training workloads
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
-  sandbox                                Manage Databricks Sandbox environments
+  sandbox                                *Beta* Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

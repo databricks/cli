@@ -8,7 +8,7 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sandbox",
-		Short:   "Manage Databricks Sandbox environments",
+		Short:   "*Beta* Manage Databricks Sandbox environments",
 		GroupID: "development",
 		Long: `Manage Databricks Sandbox environments.
 
