@@ -38,8 +38,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AiFunctionTask:
     """
-    :meta private: [EXPERIMENTAL]
-
     A task that applies an AI function to a set of input documents or rows.
     """
 
@@ -47,7 +45,7 @@ class AiFunctionTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Output destination table. When `table` is unset the task generates a stable name from the
+    [Beta] Output destination table. When `table` is unset the task generates a stable name from the
     function and task identity so a downstream task can reference it.
     """
 
@@ -55,35 +53,35 @@ class AiFunctionTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Classifies each input document or row into one or more labels.
+    [Beta] Classifies each input document or row into one or more labels.
     """
 
     ai_extract: VariableOrOptional[AiExtractFunction] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Extracts structured fields from the input documents or rows.
+    [Beta] Extracts structured fields from the input documents or rows.
     """
 
     ai_parse_document: VariableOrOptional[AiParseDocumentFunction] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Parses the input documents into structured text.
+    [Beta] Parses the input documents into structured text.
     """
 
     delta_table: VariableOrOptional[DeltaTableSource] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A Unity Catalog Delta table. The function is applied to each row.
+    [Beta] A Unity Catalog Delta table. The function is applied to each row.
     """
 
     volume: VariableOrOptional[VolumeSource] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A Unity Catalog volume. The function is applied to each file.
+    [Beta] A Unity Catalog volume. The function is applied to each file.
     """
 
     @classmethod
@@ -101,7 +99,7 @@ class AiFunctionTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Output destination table. When `table` is unset the task generates a stable name from the
+    [Beta] Output destination table. When `table` is unset the task generates a stable name from the
     function and task identity so a downstream task can reference it.
     """
 
@@ -109,35 +107,35 @@ class AiFunctionTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Classifies each input document or row into one or more labels.
+    [Beta] Classifies each input document or row into one or more labels.
     """
 
     ai_extract: VariableOrOptional[AiExtractFunctionParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Extracts structured fields from the input documents or rows.
+    [Beta] Extracts structured fields from the input documents or rows.
     """
 
     ai_parse_document: VariableOrOptional[AiParseDocumentFunctionParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Parses the input documents into structured text.
+    [Beta] Parses the input documents into structured text.
     """
 
     delta_table: VariableOrOptional[DeltaTableSourceParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A Unity Catalog Delta table. The function is applied to each row.
+    [Beta] A Unity Catalog Delta table. The function is applied to each row.
     """
 
     volume: VariableOrOptional[VolumeSourceParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A Unity Catalog volume. The function is applied to each file.
+    [Beta] A Unity Catalog volume. The function is applied to each file.
     """
 
 

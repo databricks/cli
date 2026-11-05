@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AiClassifyFunctionInlineLabels:
     """
-    :meta private: [EXPERIMENTAL]
-
     A label set listed inline.
     """
 
@@ -27,7 +25,7 @@ class AiClassifyFunctionInlineLabels:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The labels an input can be classified as. At least two labels are required
+    [Beta] The labels an input can be classified as. At least two labels are required
     unless `multilabel` is true, which also accepts a single label.
     """
 
@@ -46,7 +44,7 @@ class AiClassifyFunctionInlineLabelsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The labels an input can be classified as. At least two labels are required
+    [Beta] The labels an input can be classified as. At least two labels are required
     unless `multilabel` is true, which also accepts a single label.
     """
 

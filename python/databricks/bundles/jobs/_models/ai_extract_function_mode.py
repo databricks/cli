@@ -6,8 +6,6 @@ from typing import Literal
 
 class AiExtractFunctionMode(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     The extraction mode.
     """
 

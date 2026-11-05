@@ -8,9 +8,8 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sandbox",
-		Short:   "Manage Databricks Sandbox environments",
+		Short:   "*Beta* Manage Databricks Sandbox environments",
 		GroupID: "development",
-		Hidden:  true,
 		Long: `Manage Databricks Sandbox environments.
 
 Sandbox provides SSH-accessible development environments backed by
