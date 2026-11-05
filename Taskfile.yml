@@ -1017,12 +1017,13 @@ tasks:
       - bundle/**/*.go
       - exclude: bundle/**/*_test.go
       - acceptance/bundle/bitmap/full/script
+      - acceptance/bundle/bitmap/full/split.py
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/bitmap/schema.txt
-      - acceptance/bundle/bitmap/full/out.schema.txt
+      - acceptance/bundle/bitmap/full/output/*.txt
       - python/databricks/bundles/_bitmap/_schema.py
     cmds:
       - go run . bundle bitmap update-schema > bundle/bitmap/schema.txt.tmp

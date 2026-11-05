@@ -1,4 +1,4 @@
-# Records every schema line, so a PR that adds a config field shows where it
-# landed in the append-only schema. Refreshed by 'task generate-bitmap-schema';
+# Records every schema line with its bit, split per resource type, so a PR that adds a config
+# field shows where it landed in the append-only schema. Refreshed by 'task generate-bitmap-schema';
 # ../presence pins the semantics of the bits.
-trace $CLI bundle bitmap schema > out.schema.txt
+$CLI bundle bitmap schema | python3 split.py
