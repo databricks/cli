@@ -1,1 +1,0 @@
-* `databricks auth token --timeout` now also applies to the browser login after "Create a new profile" in the profile picker, which previously always waited up to one hour. ([#7337](https://github.com/databricks/cli/pull/7337))
