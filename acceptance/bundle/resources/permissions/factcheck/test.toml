@@ -1,4 +1,4 @@
 Cloud = true
-CloudSlow = true
+CloudSlow = false # TEMP: run under -short in PR CI
 RecordRequests = false
 RunsOnDbr = true
