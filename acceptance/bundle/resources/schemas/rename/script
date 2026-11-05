@@ -20,7 +20,8 @@ title "Rename the schema"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
 title "The plan renames the schema in place instead of recreating it"
-trace $CLI bundle plan --output json | jq .plan
+# Drop the remote_state fields that differ between clouds or from the test server.
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by effective_predictive_optimization_flag
 
 title "Deploy renames the schema without a deletion prompt"
 trace $CLI bundle deploy
