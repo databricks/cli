@@ -5,7 +5,7 @@ trace $CLI schemas create "fspec_$UNIQUE_NAME" main -o json | jq '{full_name}'
 trace create_feature_spec_fixtures.py "$SCHEMA_FULL_NAME"
 
 cleanup() {
-    $CLI schemas delete "$SCHEMA_FULL_NAME" --force &>> LOG.cleanup || true
+    $CLI schemas delete "$SCHEMA_FULL_NAME" --force >> LOG.cleanup 2>&1 || true
 }
 trap cleanup EXIT
 
