@@ -1,0 +1,50 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+deploy() {
+    trace $CLI bundle deploy "$@"
+    trace print_requests.py //unity-catalog
+}
+
+title "Deploy two schemas and a volume in the first one"
+deploy
+
+title "Rename the volume's schema: the volume is re-keyed without a request"
+trace update_file.py databricks.yml test-schema1- test-schema1-renamed-
+deploy
+
+title "After the rename, update, update_id and recreate of the volume all reach it at its new path"
+trace update_file.py databricks.yml "comment: c1" "comment: c2"
+deploy
+trace update_file.py databricks.yml "name: myvolume" "name: myvolume2"
+deploy
+trace update_file.py databricks.yml schemas.schema1.name schemas.schema2.name
+deploy --auto-approve
+
+title "Rename the volume's new schema: the volume is re-keyed again"
+trace update_file.py databricks.yml test-schema2- test-schema2-renamed-
+deploy
+
+title "Update, update_id and recreate work again, moving the volume back to the first schema"
+trace update_file.py databricks.yml "comment: c2" "comment: c3"
+deploy
+trace update_file.py databricks.yml "name: myvolume2" "name: myvolume"
+deploy
+trace update_file.py databricks.yml schemas.schema2.name schemas.schema1.name
+deploy --auto-approve
+
+title "Rename the first schema back: the volume is re-keyed to its original path"
+trace update_file.py databricks.yml test-schema1-renamed- test-schema1-
+deploy
+
+title "The state tracks the current paths and the plan is a no-op"
+trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+trace $CLI bundle plan
+trace $CLI volumes read "main.test-schema1-${UNIQUE_NAME}.myvolume" | jq '{full_name, comment}'
