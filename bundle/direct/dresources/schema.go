@@ -108,13 +108,8 @@ func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *
 	fullName := config.CatalogName + "." + nameFromID
 
 	if entry.Changes.OnlyParentRenamed() {
-		// Nothing to update. Read the schema to record its full name as UC spells it: UC
-		// lowercases names, config may not.
-		response, err := r.DoRead(ctx, fullName)
-		if err != nil {
-			return "", nil, err
-		}
-		return response.FullName, response, nil
+		// UC already moved the schema with its catalog; only the ID changes.
+		return fullName, nil, nil
 	}
 
 	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(fullName, newName, config))
