@@ -92,7 +92,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 }
 
 // DoUpdateWithID renames the schema in place when the name changes; the ID is the full name, so it changes too.
-func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (string, *catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateSchema, entry *PlanEntry) (string, *catalog.SchemaInfo, error) {
 	nameFromID, err := getNameFromID(id)
 	if err != nil {
 		return "", nil, err
@@ -106,6 +106,16 @@ func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *
 	// The catalog comes from config: a renamed catalog moves the schema with it, leaving id
 	// stale (see followParentRenames).
 	fullName := config.CatalogName + "." + nameFromID
+
+	if entry.Changes.OnlyParentRenamed() {
+		// Nothing to update. Read the schema to record its full name as UC spells it: UC
+		// lowercases names, config may not.
+		response, err := r.DoRead(ctx, fullName)
+		if err != nil {
+			return "", nil, err
+		}
+		return response.FullName, response, nil
+	}
 
 	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(fullName, newName, config))
 	if err != nil || response == nil {

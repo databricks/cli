@@ -24,7 +24,7 @@ title "UC moves the volume with the schema, so the plan re-keys the volume inste
 # Drop the remote_state fields that the test server omits or fills differently from UC.
 trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id
 
-title "Deploy renames the schema and updates the volume at its new path"
+title "Deploy renames the schema. UC moves the volume with it, so the volume gets no request"
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 
