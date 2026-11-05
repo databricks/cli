@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// TODO: possible optimizations, in the order to try them. The enum walk is 1.5x slower than
+// Possible optimizations, in the order to try them. The enum walk is 1.5x slower than
 // the generated walker it replaced (0.62 ms vs 0.42 ms for 1000 jobs, about 4 ns vs 2.6 ns
 // per visited field); the profile shows the time in field() itself, not in allocation.
 //   - Split each walk list by kind (nil-able pointers, enum strings, containers) and loop
