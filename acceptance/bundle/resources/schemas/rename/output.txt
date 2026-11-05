@@ -23,11 +23,46 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === The plan renames the schema in place instead of recreating it
 >>> [CLI] bundle plan --output json
 {
-  "action": "update_id",
-  "reason": "id_changes",
-  "old": "test-schema-[UNIQUE_NAME]",
-  "new": "test-schema-renamed-[UNIQUE_NAME]",
-  "remote": "test-schema-[UNIQUE_NAME]"
+  "resources.schemas.schema1": {
+    "action": "update_id",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "comment": "COMMENT1",
+        "name": "test-schema-renamed-[UNIQUE_NAME]"
+      }
+    },
+    "remote_state": {
+      "browse_only": false,
+      "catalog_name": "main",
+      "catalog_type": "MANAGED_CATALOG",
+      "comment": "COMMENT1",
+      "created_at": [UNIX_TIME_MILLIS][0],
+      "created_by": "[USERNAME]",
+      "effective_predictive_optimization_flag": {
+        "inherited_from_name": "[METASTORE_NAME]",
+        "inherited_from_type": "METASTORE",
+        "value": "ENABLE"
+      },
+      "enable_predictive_optimization": "INHERIT",
+      "full_name": "main.test-schema-[UNIQUE_NAME]",
+      "metastore_id": "[UUID]",
+      "name": "test-schema-[UNIQUE_NAME]",
+      "owner": "[USERNAME]",
+      "schema_id": "[UUID]",
+      "updated_at": [UNIX_TIME_MILLIS][0],
+      "updated_by": "[USERNAME]"
+    },
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-[UNIQUE_NAME]"
+      }
+    }
+  }
 }
 
 === Deploy renames the schema without a deletion prompt
