@@ -83,7 +83,7 @@ func NewView(ctx context.Context, worktreeRoot, root vfs.Path) (*View, error) {
 	target := root.Native()
 	prefix := repo.rootDir.Native()
 	if !strings.HasPrefix(target, prefix) {
-		return nil, fmt.Errorf("path %q is not within repository root %q", root.Native(), prefix)
+		return nil, fmt.Errorf("path %q is not within repository root %q", filepath.ToSlash(root.Native()), filepath.ToSlash(prefix))
 	}
 
 	// Make target a relative path.

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -122,13 +123,13 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 				Locations: []diag.Location{le.Loc},
 			}}
 		}
-		return nil, diag.Errorf("failed to load %s: %v", path, err)
+		return nil, diag.Errorf("failed to load %s: %v", filepath.ToSlash(path), err)
 	}
 
 	// Rewrite configuration tree where necessary.
 	v, err = rewriteShorthands(v)
 	if err != nil {
-		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
+		return nil, diag.Errorf("failed to rewrite %s: %v", filepath.ToSlash(path), err)
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
@@ -137,7 +138,7 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Convert normalized configuration tree to typed configuration.
 	err = r.updateWithDynamicValue(v)
 	if err != nil {
-		diags = diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+		diags = diags.Extend(diag.Errorf("failed to load %s: %v", filepath.ToSlash(path), err))
 		return nil, diags
 	}
 	return &r, diags
