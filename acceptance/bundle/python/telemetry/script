@@ -20,6 +20,6 @@ print_pydabs_telemetry
 # The pipeline is defined only in Python. The bitmap records it as written:
 # its name, without the defaults the CLI fills in afterwards.
 title "Bitmap includes resources defined in Python"
-trace uv run $UV_ARGS -q $CLI bundle bitmap bitmap-text | grep ' resources.pipelines'
+trace uv run $UV_ARGS -q $CLI bundle bitmap bitmap -o text | grep ' resources.pipelines'
 
 rm -fr .databricks __pycache__

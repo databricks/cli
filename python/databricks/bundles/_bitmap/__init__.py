@@ -38,7 +38,7 @@ def decode(encoded: str) -> list[str]:
             f"bitmap has {len(bits)} bits but the schema has {len(SCHEMA)} fields; "
             "decode it with a newer databricks-bundles"
         )
-    return text(SCHEMA, bits)
+    return text(SCHEMA, bits, context)
 
 
 def decode_bits(encoded: str) -> tuple[list[bool], int]:
@@ -60,8 +60,9 @@ def decode_bits(encoded: str) -> tuple[list[bool], int]:
     return bits, context
 
 
-def text(schema: list[str], bits: list[bool]) -> list[str]:
-    """Render the set bits as ``"<value> <field>"`` lines in schema order.
+def text(schema: list[str], bits: list[bool], context: int) -> list[str]:
+    """Render a ``"size=N context=C"`` header and then the set bits as
+    ``"<value> <field>"`` lines in schema order.
 
     ``T`` or ``F`` is a bool field holding that value and ``1`` any other present
     field. A bool shown as ``1`` holds an unresolved variable reference; one shown
@@ -70,7 +71,7 @@ def text(schema: list[str], bits: list[bool]) -> list[str]:
     """
     schema = schema[: len(bits)]
     index = {path: i for i, path in enumerate(schema)}
-    lines = []
+    lines = [f"size={len(bits)} context={context}"]
     for i, path in enumerate(schema):
         if not bits[i]:
             continue
