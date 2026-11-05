@@ -371,40 +371,23 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 
 	// Validate server-side while the run artifacts upload. The backend check does
 	// not read the uploaded files, so the two can overlap; submission waits for
-	// the result, so an invalid config is never submitted. Both share stagingCtx,
-	// so a failure on either side cancels the other.
-	stagingCtx, cancelStaging := context.WithCancelCause(ctx)
-	validated := make(chan struct{})
+	// both, so an invalid config is never submitted. The first failure cancels
+	// the other side and is the one reported.
+	group, stagingCtx := errgroup.WithContext(ctx)
 	var validationUnavailable bool
-	var validationErr error
-	go func() {
-		defer close(validated)
-		validationUnavailable, validationErr = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
-		if validationErr != nil {
-			cancelStaging(validationErr)
-		}
-	}()
-	defer func() {
-		// A failed validation cancels staging; report it, not the cancellation.
-		if cause := context.Cause(stagingCtx); err != nil && cause != nil {
-			err = cause
-		}
-		cancelStaging(nil)
-		<-validated
-	}()
-
-	err = withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
-		var stageErr error
-		snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
-		return stageErr
+	group.Go(func() (err error) {
+		validationUnavailable, err = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
+		return err
 	})
-	if err != nil {
+	group.Go(func() error {
+		return withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
+			var stageErr error
+			snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
+			return stageErr
+		})
+	})
+	if err := group.Wait(); err != nil {
 		return 0, "", err
-	}
-
-	<-validated
-	if validationErr != nil {
-		return 0, "", validationErr
 	}
 	// Warn only after staging so the warning doesn't interleave with the spinner.
 	if validationUnavailable && cmdio.HasIO(ctx) {
