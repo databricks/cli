@@ -473,8 +473,10 @@ func (a *Adapter) validate() error {
 		if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
 			return errors.New("resourceConfig has updatable_id_fields but DoUpdateWithID is not implemented")
 		}
-		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
-			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks updatable_id_fields")
+		// A parent's rename also re-keys a resource through its provided_id_fields (see followParentRenames).
+		canUpdateWithID := hasUpdateWithIDTrigger || (a.resourceConfig != nil && len(a.resourceConfig.ProvidedIDFields) > 0)
+		if a.doUpdateWithID != nil && !canUpdateWithID {
+			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks updatable_id_fields and provided_id_fields")
 		}
 	}
 
