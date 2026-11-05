@@ -237,31 +237,8 @@ func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte
 			return encodeYAML(&doc)
 		}
 
-		switch current.Kind {
-		case yaml.MappingNode:
-			key, ok := part.StringKey()
-			if !ok {
-				return nil, nil
-			}
-			keyNode = nil
-			for j := 0; j+1 < len(current.Content); j += 2 {
-				if current.Content[j].Value == key {
-					keyNode = current.Content[j]
-					current = current.Content[j+1]
-					break
-				}
-			}
-			if keyNode == nil {
-				return nil, nil
-			}
-		case yaml.SequenceNode:
-			index, ok := part.Index()
-			if !ok || index < 0 || index >= len(current.Content) {
-				return nil, nil
-			}
-			keyNode = nil
-			current = current.Content[index]
-		default:
+		current, keyNode = yamlChild(current, (*structpath.PathNode)(part))
+		if current == nil {
 			return nil, nil
 		}
 	}
@@ -397,6 +374,32 @@ func encodeYAML(doc *yaml.Node) ([]byte, error) {
 	return buf.Bytes(), enc.Close()
 }
 
+// yamlChild returns the child and its mapping key so callers can preserve comments.
+// A nil child means the path component cannot be followed.
+func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *yaml.Node) {
+	switch current.Kind {
+	case yaml.MappingNode:
+		key, ok := part.StringKey()
+		if !ok {
+			return nil, nil
+		}
+		// current.Content: [key1, val1, key2, val2, ...]
+		for i := 0; i+1 < len(current.Content); i += 2 {
+			if current.Content[i].Value == key {
+				return current.Content[i+1], current.Content[i]
+			}
+		}
+	case yaml.SequenceNode:
+		index, ok := part.Index()
+		if ok && index >= 0 && index < len(current.Content) {
+			return current.Content[index], nil
+		}
+	default:
+		return nil, nil
+	}
+	return nil, nil
+}
+
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
 // clearing FlowStyle on every node from root to leaf (inclusive).
 func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
@@ -412,35 +415,10 @@ func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
 
 	for _, n := range node.AsSlice() {
 		current.Style &^= yaml.FlowStyle
-
-		if key, ok := n.StringKey(); ok {
-			if current.Kind != yaml.MappingNode {
-				return
-			}
-			found := false
-			// current.Content: [key1, val1, key2, val2, ...]
-			for i := 0; i+1 < len(current.Content); i += 2 {
-				if current.Content[i].Value == key {
-					current = current.Content[i+1]
-					found = true
-					break
-				}
-			}
-			if !found {
-				return
-			}
-			continue
+		current, _ = yamlChild(current, n)
+		if current == nil {
+			return
 		}
-
-		if idx, ok := n.Index(); ok {
-			if current.Kind != yaml.SequenceNode || idx < 0 || idx >= len(current.Content) {
-				return
-			}
-			current = current.Content[idx]
-			continue
-		}
-
-		return
 	}
 
 	clearFlowStyleNodes(current)
