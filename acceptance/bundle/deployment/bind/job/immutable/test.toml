@@ -1,0 +1,12 @@
+# DMS does not support the immutable snapshot resource yet (see bundle/deploy/immutable/test.toml).
+EnvMatrix.DMS = [""]
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
+
+[[Repls]]
+# Snapshot paths embed the bundle ID and the content hash, both sha256 hex digests.
+Old = "[0-9a-f]{64}"
+New = "[SNAPSHOT_HASH]"
