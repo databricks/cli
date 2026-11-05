@@ -11,21 +11,17 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// heartbeatInterval is how long a version may go without an update before a heartbeat is sent.
-// The UI shows a version as interrupted once its last update is over 2 minutes old.
+// heartbeatInterval is the maximum time between consecutive updates.
 const heartbeatInterval = 30 * time.Second
 
-// Heartbeat keeps an open deployment version's last update time fresh, which is how the UI tells
-// a running deploy from an interrupted one. CreateVersion and every successful write update it
-// too, so a heartbeat is sent only after an interval without one. Best effort: a failure can only
-// make the deploy show as interrupted, so it is reported and the next interval tries again.
+// Heartbeat updates the update_time of an open deployment version. This is also updated by
+// CreateVersion and every successful write.
 type Heartbeat struct {
 	renewed chan struct{}
 	cancel  context.CancelFunc
 }
 
-// StartHeartbeat starts heartbeating the version the caller just created. CreateVersion counts
-// as the first update, so the first heartbeat goes out an interval later.
+// StartHeartbeat starts the heartbeat. We count CreateVersion as the first heartbeat.
 func StartHeartbeat(ctx context.Context, deploymentID string, versionNum int) *Heartbeat {
 	name := VersionName(deploymentID, versionNum)
 	return startHeartbeat(ctx, func(ctx context.Context) error {
@@ -62,9 +58,7 @@ func (h *Heartbeat) run(ctx context.Context, send func(context.Context) error) {
 	}
 }
 
-// renew records that a successful write updated the version, which the service counts as a
-// heartbeat, so the next heartbeat is pushed back a full interval. Non-blocking: one pending
-// signal is enough.
+// renew records that a successful write updated the version.
 func (h *Heartbeat) renew() {
 	select {
 	case h.renewed <- struct{}{}:
@@ -72,7 +66,7 @@ func (h *Heartbeat) renew() {
 	}
 }
 
-// Stop ends the heartbeat, cutting short one in flight.
+// Stop ends the heartbeat.
 func (h *Heartbeat) Stop() {
 	h.cancel()
 }
