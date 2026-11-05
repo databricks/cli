@@ -104,6 +104,17 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog
 	return remapSecretRemote(response), nil
 }
 
+// DoUpdateWithID re-keys the secret after its catalog or schema is renamed: UC moves the secret
+// with its parent. A secret cannot be renamed itself, so this is the only way its ID changes.
+func (r *ResourceSecret) DoUpdateWithID(ctx context.Context, _ string, state *catalog.Secret, entry *PlanEntry) (string, *catalog.Secret, error) {
+	newID := state.CatalogName + "." + state.SchemaName + "." + state.Name
+	if entry.Changes.OnlyParentRenamed() {
+		return newID, nil, nil
+	}
+	remote, err := r.DoUpdate(ctx, newID, state, entry)
+	return newID, remote, err
+}
+
 // DoDelete deletes the secret.
 func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *catalog.Secret) error {
 	return r.client.SecretsUc.DeleteSecret(ctx, catalog.DeleteSecretRequest{
