@@ -1,0 +1,20 @@
+
+=== Destroy with a failed read: no history is recorded, so no second deployment is created and then deleted
+>>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
+
+>>> [CLI] bundle destroy --auto-approve
+Warn: Could not read deployment history, not recording it for this run: Fault injected by test.
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-read-failure-[UNIQUE_NAME]/default
+
+Warn: Keeping the deployment history record, if any: it could not be read, so this destroy does not delete it
+Destroy: 1 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle --get --oneline
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+
+=== The deployment record is kept
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments get-deployment deployments/[DEPLOYMENT_ID] -o json
+{"last_version_id":"1"}

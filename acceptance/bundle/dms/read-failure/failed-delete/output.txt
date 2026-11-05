@@ -1,0 +1,30 @@
+
+=== A delete that fails in a run with a failed read still fails the deploy and keeps the job in state
+>>> update_file.py databricks.yml bar: {name: bar} 
+
+>>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
+
+>>> fault.py POST /api/2.2/jobs/delete 400 0 1 INVALID_PARAMETER_VALUE
+
+>>> musterr [CLI] bundle deploy
+Warn: Could not read deployment history, not recording it for this run: Fault injected by test.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-read-failure-[UNIQUE_NAME]/default/files...
+Error: cannot delete resources.jobs.bar: deleting id=[BAR_ID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+Files: 2 uploaded, 0 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle --get --oneline
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+
+>>> [CLI] jobs get [BAR_ID]
+"bar"
+
+>>> [CLI] bundle plan
+delete jobs.bar
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged

@@ -1,0 +1,11 @@
+deploy_recorded bar
+
+title "A delete that fails in a run with a failed read still fails the deploy and keeps the job in state"
+trace update_file.py databricks.yml 'bar: {name: bar}' ''
+fail_deployment_read
+trace fault.py "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+trace $CLI jobs get "$bar_id" | jq .settings.name
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"

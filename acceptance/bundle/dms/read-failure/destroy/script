@@ -1,0 +1,10 @@
+deploy_recorded
+
+title "Destroy with a failed read: no history is recorded, so no second deployment is created and then deleted"
+fail_deployment_read
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+
+title "The deployment record is kept"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments get-deployment "deployments/${deployment_id}" -o json | jq -c '{last_version_id}'
+rm -f "$OUT_REQUESTS"
