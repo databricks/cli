@@ -1,0 +1,87 @@
+
+=== Deploy with the dev policy
+>>> [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/dev/files...
+Created cluster_policies.policy
+Created jobs.policy_sync
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Sync the UI edit into shared YAML
+>>> [CLI] bundle config-remote-sync -t dev --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.policy_sync
+  description: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -29,5 +29,5 @@
+     policy_sync:
+       name: test-job-[UNIQUE_NAME]-${bundle.target}
+-      description: Before UI edit
++      description: Edited in the UI
+       job_clusters:
+         - job_cluster_key: main
+
+=== Deploy shared YAML with the prod policy
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/prod/files...
+Created cluster_policies.policy
+Created jobs.policy_sync
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Add a user tag beside the policy tag in the UI
+>>> [CLI] bundle config-remote-sync -t dev --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.policy_sync
+  job_clusters[job_cluster_key='main'].new_cluster.custom_tags['UserTag']: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -39,4 +39,5 @@
+             custom_tags:
+               owner: bundle-author
++              UserTag: edited-in-ui
+       tasks:
+         - task_key: main
+
+=== Deploy the user tag with the prod policy
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/prod/files...
+Updated jobs.policy_sync
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] jobs get [POLICY_SYNC_ID_2] -o json
+{
+  "UserTag": "edited-in-ui",
+  "owner": "bundle-author",
+  "workspace": "prod"
+}
+
+>>> [CLI] bundle destroy -t prod --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.policy
+  delete resources.jobs.policy_sync
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/prod
+
+Destroy: 2 deleted
+
+>>> [CLI] bundle destroy -t dev --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.policy
+  delete resources.jobs.policy_sync
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/dev
+
+Destroy: 2 deleted

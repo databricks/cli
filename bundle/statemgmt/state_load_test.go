@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -32,8 +33,10 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.models.test_mlflow_model":                                    {ID: "1"},
 		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
 		"resources.features.test_feature":                                       {ID: "main.default.test_feature"},
+		"resources.materialization_sets.test_materialization_set":               {ID: "set1"},
 		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
 		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
+		"resources.data_quality_monitors.test_data_quality_monitor":             {ID: "table,uuid-1"},
 		"resources.mcp_services.test_mcp_service":                               {ID: "main.default.test_mcp_service"},
 		"resources.model_provider_services.test_model_provider_service":         {ID: "main.default.test_model_provider_service"},
 		"resources.registered_models.test_registered_model":                     {ID: "1"},
@@ -60,6 +63,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_roles.test_postgres_role":                           {ID: "projects/test-project/branches/main/roles/test-role"},
 		"resources.postgres_synced_tables.test_postgres_synced_table":           {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.postgres_snapshot_schedules.test_postgres_snapshot_schedule": {ID: "projects/test-project/branches/main/snapshot-schedule"},
+		"resources.postgres_data_apis.test_postgres_data_api":                   {ID: "projects/test-project/branches/main/databases/test-db/data-api"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":         {ID: "vs-endpoint-1"},
 		"resources.vector_search_indexes.test_vector_search_index":              {ID: "vs-index-1"},
 		"resources.instance_pools.test_instance_pool":                           {ID: "1"},
@@ -154,6 +158,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "projects/test-project/branches/main/snapshot-schedule", config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
 
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db/data-api", config.Resources.PostgresDataApis["test_postgres_data_api"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDataApis["test_postgres_data_api"].ModifiedStatus)
+
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -171,6 +178,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "main.default.test_model_service", config.Resources.ModelServices["test_model_service"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+
+	assert.Equal(t, "table,uuid-1", config.Resources.DataQualityMonitors["test_data_quality_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.DataQualityMonitors["test_data_quality_monitor"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
 	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)
@@ -222,6 +232,15 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_feature": {
 					Feature: ml.Feature{
 						FullName: "main.default.test_feature",
+					},
+				},
+			},
+			MaterializationSets: map[string]*resources.MaterializationSet{
+				"test_materialization_set": {
+					MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{FeatureName: "main.default.test_feature"},
+						},
 					},
 				},
 			},
@@ -415,6 +434,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDataApis: map[string]*resources.PostgresDataApi{
+				"test_postgres_data_api": {
+					PostgresDataApiConfig: resources.PostgresDataApiConfig{
+						Parent: "projects/test-project/branches/main/databases/test-db",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -449,6 +475,11 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 						Parent:         "schemas/main.default",
 						ModelServiceId: "test_model_service",
 					},
+				},
+			},
+			DataQualityMonitors: map[string]*resources.DataQualityMonitor{
+				"test_data_quality_monitor": {
+					Monitor: dataquality.Monitor{ObjectType: "table", ObjectId: "uuid-1"},
 				},
 			},
 			McpServices: map[string]*resources.McpService{
@@ -566,6 +597,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.PostgresDataApis["test_postgres_data_api"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDataApis["test_postgres_data_api"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -580,6 +614,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.ModelServices["test_model_service"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.DataQualityMonitors["test_data_quality_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DataQualityMonitors["test_data_quality_monitor"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.McpServices["test_mcp_service"].ID)
 	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service"].ID)
@@ -661,6 +698,15 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_feature_new": {
 					Feature: ml.Feature{
 						FullName: "main.default.test_feature_new",
+					},
+				},
+			},
+			MaterializationSets: map[string]*resources.MaterializationSet{
+				"test_materialization_set": {
+					MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{FeatureName: "main.default.test_feature"},
+						},
 					},
 				},
 			},
@@ -976,6 +1022,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDataApis: map[string]*resources.PostgresDataApi{
+				"test_postgres_data_api": {
+					PostgresDataApiConfig: resources.PostgresDataApiConfig{
+						Parent: "projects/test-project/branches/main/databases/test-db",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -1036,6 +1089,14 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 						Parent:         "schemas/main.default",
 						ModelServiceId: "test_model_service_new",
 					},
+				},
+			},
+			DataQualityMonitors: map[string]*resources.DataQualityMonitor{
+				"test_data_quality_monitor": {
+					Monitor: dataquality.Monitor{ObjectType: "table", ObjectId: "uuid-1"},
+				},
+				"test_data_quality_monitor_new": {
+					Monitor: dataquality.Monitor{ObjectType: "table", ObjectId: "uuid-3"},
 				},
 			},
 			McpServices: map[string]*resources.McpService{
@@ -1131,6 +1192,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.cluster_policies.test_cluster_policy_old":                {ID: "cp-2"},
 		"resources.model_services.test_model_service":                       {ID: "main.default.test_model_service"},
 		"resources.model_services.test_model_service_old":                   {ID: "main.default.test_model_service_old"},
+		"resources.data_quality_monitors.test_data_quality_monitor":         {ID: "table,uuid-1"},
+		"resources.data_quality_monitors.test_data_quality_monitor_old":     {ID: "table,uuid-2"},
 		"resources.mcp_services.test_mcp_service":                           {ID: "main.default.test_mcp_service"},
 		"resources.model_provider_services.test_model_provider_service":     {ID: "main.default.test_model_provider_service"},
 		"resources.mcp_services.test_mcp_service_old":                       {ID: "main.default.test_mcp_service_old"},
@@ -1359,6 +1422,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServices["test_model_service_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.ModelServices["test_model_service_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServices["test_model_service_new"].ModifiedStatus)
+
+	assert.Equal(t, "table,uuid-1", config.Resources.DataQualityMonitors["test_data_quality_monitor"].ID)
+	assert.Empty(t, config.Resources.DataQualityMonitors["test_data_quality_monitor"].ModifiedStatus)
+	assert.Equal(t, "table,uuid-2", config.Resources.DataQualityMonitors["test_data_quality_monitor_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.DataQualityMonitors["test_data_quality_monitor_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.DataQualityMonitors["test_data_quality_monitor_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DataQualityMonitors["test_data_quality_monitor_new"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
 	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)

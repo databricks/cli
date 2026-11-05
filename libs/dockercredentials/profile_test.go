@@ -152,7 +152,7 @@ func TestEnsureUniqueProfile(t *testing.T) {
 			name:     "duplicate workspace ID",
 			profiles: profile.Profiles{selected, workspaceProfile("dev")},
 			selected: selected,
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Remove duplicate workspace_id entries before using Docker credential helper",
+			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
 		},
 		{
 			name: "unsupported duplicate",
@@ -172,7 +172,7 @@ func TestEnsureUniqueProfile(t *testing.T) {
 				Host:     workspaceHost,
 				AuthType: auth.AuthTypeDatabricksCli,
 			},
-			wantErr: "multiple Databricks profiles match workspace ID 123456789: prod and workspace. Remove duplicate workspace_id entries before using Docker credential helper",
+			wantErr: "multiple Databricks profiles match workspace ID 123456789: prod and workspace. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
 		},
 	}
 
@@ -204,7 +204,7 @@ func TestProfileForRegistry(t *testing.T) {
 		{
 			name:     "duplicate workspace ID",
 			profiles: profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Remove duplicate workspace_id entries before using Docker credential helper",
+			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
 		},
 		{
 			name: "ignores unsupported duplicate",

@@ -1,0 +1,79 @@
+bundle:
+  name: test-matset-settled-$UNIQUE_NAME
+
+resources:
+  features:
+    okfeat:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.ok_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+    # The fake refuses to tear down any member of a feature whose name carries this marker, which
+    # is how a fixture asks for a failure that real infrastructure would produce.
+    failfeat:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.teardown_fails_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: id
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+
+  materialization_sets:
+    set1:
+      materialized_features:
+        - feature_name: ${resources.features.okfeat.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: sf_${UNIQUE_NAME}_off
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: ${resources.features.okfeat.full_name}
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: sf_$UNIQUE_NAME
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: ${resources.features.failfeat.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: sf_${UNIQUE_NAME}_off
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: ${resources.features.failfeat.full_name}
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: sf_$UNIQUE_NAME
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

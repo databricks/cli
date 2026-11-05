@@ -16,6 +16,7 @@ See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tool
    databricks.bundles.cluster_policies
    databricks.bundles.clusters
    databricks.bundles.dashboards
+   databricks.bundles.data_quality_monitors
    databricks.bundles.database_catalogs
    databricks.bundles.database_instances
    databricks.bundles.experiments
@@ -25,6 +26,7 @@ See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tool
    databricks.bundles.instance_pools
    databricks.bundles.job_runs
    databricks.bundles.jobs
+   databricks.bundles.materialization_sets
    databricks.bundles.mcp_services
    databricks.bundles.model_provider_services
    databricks.bundles.model_services

@@ -70,6 +70,14 @@ var RequiredFields = map[string][]string{
 	"resources.dashboards.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.dashboards.*.permissions[*]":          {"level"},
 
+	"resources.data_quality_monitors.*":                                         {"object_id", "object_type"},
+	"resources.data_quality_monitors.*.data_profiling_config":                   {"output_schema_id"},
+	"resources.data_quality_monitors.*.data_profiling_config.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
+	"resources.data_quality_monitors.*.data_profiling_config.inference_log":     {"granularities", "model_id_column", "prediction_column", "problem_type", "timestamp_column"},
+	"resources.data_quality_monitors.*.data_profiling_config.schedule":          {"quartz_cron_expression", "timezone_id"},
+	"resources.data_quality_monitors.*.data_profiling_config.time_series":       {"granularities", "timestamp_column"},
+	"resources.data_quality_monitors.*.lifecycle.depends_on[*]":                 {"resource"},
+
 	"resources.database_catalogs.*":                         {"database_instance_name", "database_name", "name"},
 	"resources.database_catalogs.*.lifecycle.depends_on[*]": {"resource"},
 
@@ -291,6 +299,11 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*]":                                        {"id"},
 	"resources.jobs.*.webhook_notifications.on_success[*]":                                                           {"id"},
 
+	"resources.materialization_sets.*.lifecycle.depends_on[*]":                       {"resource"},
+	"resources.materialization_sets.*.materialized_features[*]":                      {"feature_name"},
+	"resources.materialization_sets.*.materialized_features[*].offline_store_config": {"catalog_name", "schema_name", "table_name_prefix"},
+	"resources.materialization_sets.*.materialized_features[*].online_store_config":  {"catalog_name", "online_store_name", "schema_name", "table_name_prefix"},
+
 	"resources.mcp_services.*":                          {"parent", "mcp_service_id"},
 	"resources.mcp_services.*.config.rate_limits[*]":    {"key", "renewal_period"},
 	"resources.mcp_services.*.config.source_connection": {"name"},
@@ -393,6 +406,9 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_catalogs.*":                         {"postgres_database", "catalog_id"},
 	"resources.postgres_catalogs.*.lifecycle.depends_on[*]": {"resource"},
+
+	"resources.postgres_data_apis.*":                         {"parent"},
+	"resources.postgres_data_apis.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.postgres_databases.*":                         {"role", "database_id", "parent"},
 	"resources.postgres_databases.*.lifecycle.depends_on[*]": {"resource"},

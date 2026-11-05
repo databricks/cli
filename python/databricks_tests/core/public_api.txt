@@ -19,6 +19,7 @@ __all__ = [
     cluster_mutator,
     cluster_policy_mutator,
     dashboard_mutator,
+    data_quality_monitor_mutator,
     database_catalog_mutator,
     database_instance_mutator,
     external_location_mutator,
@@ -31,6 +32,7 @@ __all__ = [
     load_resources_from_module,
     load_resources_from_modules,
     load_resources_from_package_module,
+    materialization_set_mutator,
     mcp_service_mutator,
     mlflow_experiment_mutator,
     mlflow_model_mutator,
@@ -96,6 +98,7 @@ class Resources:
     def add_cluster(self, resource_name: str, cluster: ClusterParam, *, location: Union[Location, None] = None) -> None
     def add_cluster_policy(self, resource_name: str, cluster_policy: ClusterPolicyParam, *, location: Union[Location, None] = None) -> None
     def add_dashboard(self, resource_name: str, dashboard: DashboardParam, *, location: Union[Location, None] = None) -> None
+    def add_data_quality_monitor(self, resource_name: str, data_quality_monitor: DataQualityMonitorParam, *, location: Union[Location, None] = None) -> None
     def add_database_catalog(self, resource_name: str, database_catalog: DatabaseCatalogParam, *, location: Union[Location, None] = None) -> None
     def add_database_instance(self, resource_name: str, database_instance: DatabaseInstanceParam, *, location: Union[Location, None] = None) -> None
     def add_diagnostic_error(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
@@ -108,6 +111,7 @@ class Resources:
     def add_job(self, resource_name: str, job: JobParam, *, location: Union[Location, None] = None) -> None
     def add_job_run(self, resource_name: str, job_run: JobRunParam, *, location: Union[Location, None] = None) -> None
     def add_location(self, path: tuple[str, ...], location: Location) -> None
+    def add_materialization_set(self, resource_name: str, materialization_set: MaterializationSetParam, *, location: Union[Location, None] = None) -> None
     def add_mcp_service(self, resource_name: str, mcp_service: McpServiceParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_experiment(self, resource_name: str, mlflow_experiment: MlflowExperimentParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_model(self, resource_name: str, mlflow_model: MlflowModelParam, *, location: Union[Location, None] = None) -> None
@@ -133,6 +137,7 @@ class Resources:
     @property cluster_policies -> dict[str, ClusterPolicy]
     @property clusters -> dict[str, Cluster]
     @property dashboards -> dict[str, Dashboard]
+    @property data_quality_monitors -> dict[str, DataQualityMonitor]
     @property database_catalogs -> dict[str, DatabaseCatalog]
     @property database_instances -> dict[str, DatabaseInstance]
     @property diagnostics -> Diagnostics
@@ -143,6 +148,7 @@ class Resources:
     @property instance_pools -> dict[str, InstancePool]
     @property job_runs -> dict[str, JobRun]
     @property jobs -> dict[str, Job]
+    @property materialization_sets -> dict[str, MaterializationSet]
     @property mcp_services -> dict[str, McpService]
     @property model_provider_services -> dict[str, ModelProviderService]
     @property model_services -> dict[str, ModelService]
@@ -201,6 +207,10 @@ def cluster_policy_mutator(function: Callable) -> ResourceMutator[ClusterPolicy]
 @overload def dashboard_mutator(function: Callable[[Dashboard], Dashboard]) -> ResourceMutator[Dashboard]
 def dashboard_mutator(function: Callable) -> ResourceMutator[Dashboard]
 
+@overload def data_quality_monitor_mutator(function: Callable[[Bundle, DataQualityMonitor], DataQualityMonitor]) -> ResourceMutator[DataQualityMonitor]
+@overload def data_quality_monitor_mutator(function: Callable[[DataQualityMonitor], DataQualityMonitor]) -> ResourceMutator[DataQualityMonitor]
+def data_quality_monitor_mutator(function: Callable) -> ResourceMutator[DataQualityMonitor]
+
 @overload def database_catalog_mutator(function: Callable[[Bundle, DatabaseCatalog], DatabaseCatalog]) -> ResourceMutator[DatabaseCatalog]
 @overload def database_catalog_mutator(function: Callable[[DatabaseCatalog], DatabaseCatalog]) -> ResourceMutator[DatabaseCatalog]
 def database_catalog_mutator(function: Callable) -> ResourceMutator[DatabaseCatalog]
@@ -240,6 +250,10 @@ def load_resources_from_module(module: module) -> Resources
 def load_resources_from_modules(modules: Iterable[module]) -> Resources
 
 def load_resources_from_package_module(package_module: module) -> Resources
+
+@overload def materialization_set_mutator(function: Callable[[Bundle, MaterializationSet], MaterializationSet]) -> ResourceMutator[MaterializationSet]
+@overload def materialization_set_mutator(function: Callable[[MaterializationSet], MaterializationSet]) -> ResourceMutator[MaterializationSet]
+def materialization_set_mutator(function: Callable) -> ResourceMutator[MaterializationSet]
 
 @overload def mcp_service_mutator(function: Callable[[Bundle, McpService], McpService]) -> ResourceMutator[McpService]
 @overload def mcp_service_mutator(function: Callable[[McpService], McpService]) -> ResourceMutator[McpService]
@@ -318,6 +332,7 @@ singular_name=catalog plural_name=catalogs resource_type=Catalog
 singular_name=cluster plural_name=clusters resource_type=Cluster
 singular_name=cluster_policy plural_name=cluster_policies resource_type=ClusterPolicy
 singular_name=dashboard plural_name=dashboards resource_type=Dashboard
+singular_name=data_quality_monitor plural_name=data_quality_monitors resource_type=DataQualityMonitor
 singular_name=database_catalog plural_name=database_catalogs resource_type=DatabaseCatalog
 singular_name=database_instance plural_name=database_instances resource_type=DatabaseInstance
 singular_name=external_location plural_name=external_locations resource_type=ExternalLocation
@@ -326,6 +341,7 @@ singular_name=genie_space plural_name=genie_spaces resource_type=GenieSpace
 singular_name=instance_pool plural_name=instance_pools resource_type=InstancePool
 singular_name=job plural_name=jobs resource_type=Job
 singular_name=job_run plural_name=job_runs resource_type=JobRun
+singular_name=materialization_set plural_name=materialization_sets resource_type=MaterializationSet
 singular_name=mcp_service plural_name=mcp_services resource_type=McpService
 singular_name=mlflow_experiment plural_name=experiments resource_type=MlflowExperiment
 singular_name=mlflow_model plural_name=models resource_type=MlflowModel

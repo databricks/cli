@@ -14,10 +14,7 @@ from databricks.bundles.features._models.column_selection import (
     ColumnSelection,
     ColumnSelectionParam,
 )
-from databricks.bundles.features._models.custom_udf import (
-    CustomUdf,
-    CustomUdfParam,
-)
+from databricks.bundles.features._models.custom_udf import CustomUdf, CustomUdfParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

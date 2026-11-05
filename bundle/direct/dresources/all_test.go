@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,6 +26,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -121,6 +123,31 @@ var testConfig map[string]any = map[string]any{
 		},
 		Entities:         []ml.EntityColumn{{Name: "id"}},
 		TimeseriesColumn: &ml.TimeseriesColumn{Name: "ts"},
+	},
+
+	// A feature materialized to both an offline table and one online store: the two members
+	// share a feature name, so they exercise the member key's online-store discriminator.
+	"materialization_sets": &resources.MaterializationSet{
+		MaterializedFeatures: []ml.MaterializedFeature{
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OfflineStoreConfig: &ml.OfflineStoreConfig{
+					CatalogName:     "main",
+					SchemaName:      "default",
+					TableNamePrefix: "offline",
+				},
+			},
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OnlineStoreConfig: &ml.OnlineStoreConfig{
+					CatalogName:     "main",
+					SchemaName:      "default",
+					OnlineStoreName: "my_store",
+				},
+			},
+		},
 	},
 
 	"experiments": &resources.MlflowExperiment{
@@ -250,6 +277,16 @@ var testConfig map[string]any = map[string]any{
 		TableName:        "main.myschema.mytable",
 		AssetsDir:        "/Workspace/Users/user@example.com/assets",
 		OutputSchemaName: "main.myschema",
+	},
+
+	"data_quality_monitors": &resources.DataQualityMonitor{
+		ObjectType: "table",
+		ObjectId:   "11111111-2222-3333-4444-555555555555",
+		DataProfilingConfig: &dataquality.DataProfilingConfig{
+			AssetsDir:      "/Workspace/Users/user@example.com/assets",
+			OutputSchemaId: "66666666-7777-8888-9999-000000000000",
+			Snapshot:       &dataquality.SnapshotConfig{},
+		},
 	},
 
 	"dashboards": &resources.Dashboard{
@@ -890,6 +927,46 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"postgres_data_apis": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Creating the project implicitly provisions the "production" branch and
+		// its primary read-write endpoint, which the Data API requires.
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-data-api",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Data API",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		waiter, err := client.Postgres.CreateDatabase(ctx, postgres.CreateDatabaseRequest{
+			Parent:     "projects/test-project-for-data-api/branches/production",
+			DatabaseId: "test-database",
+			Database: postgres.Database{
+				Spec: &postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-data-api/branches/production/roles/owner",
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		database, err := waiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDataApi{
+			Parent:    database.Name,
+			DbSchemas: []string{"public"},
+		}, nil
+	},
+
 	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
@@ -943,22 +1020,27 @@ func TestAll(t *testing.T) {
 
 // testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
 type testIgnoreFilter struct {
-	ignoreFields map[string]bool
-	adapter      *Adapter
+	ignoreFields   map[string]bool
+	ignorePatterns []*structpath.PatternNode
+	adapter        *Adapter
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
 // It also ignores fields that exist in StateType but not in RemoteType, because
 // those are automatically suppressed by the planner (reason: missing_in_remote)
 // and RemapState cannot populate them from remote state.
-func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
+func newTestIgnoreFilter(adapter *Adapter, group string) *testIgnoreFilter {
 	ignoreFields := make(map[string]bool)
+	var ignorePatterns []*structpath.PatternNode
 	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 		if cfg == nil {
 			continue
 		}
 		for _, p := range cfg.IgnoreRemoteChanges {
 			ignoreFields[p.Field.String()] = true
+			if group == "materialization_sets" {
+				ignorePatterns = append(ignorePatterns, p.Field)
+			}
 		}
 	}
 	// Auto-include fields present in StateType but absent from RemoteType.
@@ -972,7 +1054,7 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 		}
 		return true
 	})
-	return &testIgnoreFilter{ignoreFields: ignoreFields, adapter: adapter}
+	return &testIgnoreFilter{ignoreFields: ignoreFields, ignorePatterns: ignorePatterns, adapter: adapter}
 }
 
 // shouldIgnore returns true if the field at the given path should be ignored.
@@ -991,7 +1073,19 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 		topLevelField = parts[0]
 	}
 
-	return f.ignoreFields[topLevelField]
+	if f.ignoreFields[topLevelField] {
+		return true
+	}
+
+	// Pattern rules are collected for materialization_sets alone, so this loop is empty for every
+	// other resource. A rule inside a slice (foo[*].bar) never matches the indexed path a walk
+	// produces (foo[0].bar); jobs, apps and database_instances carry such rules too, so widening
+	// the comparison to them is its own change.
+	parsed, err := structpath.ParsePath(path)
+	if err != nil {
+		return false
+	}
+	return slices.ContainsFunc(f.ignorePatterns, parsed.HasPatternPrefix)
 }
 
 // filterChanges returns only the changes that should not be ignored.
@@ -1082,7 +1176,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NotNil(t, remappedState)
 
 	// Create filter for fields that should be ignored based on ignore_remote_changes config.
-	ignoreFilter := newTestIgnoreFilter(adapter)
+	ignoreFilter := newTestIgnoreFilter(adapter, group)
 
 	if remoteStateFromCreate != nil {
 		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)

@@ -1,5 +1,43 @@
 # Version changelog
 
+## Release v1.24.0 (2026-11-04)
+
+### Notable Changes
+
+ * A variable used as the value of a secret is now sensitive: referencing it from any other field, such as a job parameter or a secret's `comment`, is an error because the value would be used in plain text. Mark other secret-holding variables with `sensitive: true` to get the same protection. ([#7288](https://github.com/databricks/cli/pull/7288))
+
+### CLI
+
+ * Fix `databricks auth login` and `databricks configure` overwriting the parent profile's host and token when saving a profile with a dotted name such as `team.prod` next to an existing `[team]`. ([#7266](https://github.com/databricks/cli/pull/7266))
+ * `databricks auth login` and `databricks auth token` now reject the name of an existing profile after "Create a new profile" instead of logging in to that profile. ([#7196](https://github.com/databricks/cli/pull/7196))
+ * `databricks auth login` and `databricks auth token` now reject a host that is not a URL with a hostname, such as `/`, `?o=123` or `https://`, instead of falling back to `DATABRICKS_HOST` or failing later. An empty host after "Enter a host URL manually" in the login profile picker no longer starts discovery login. ([#7195](https://github.com/databricks/cli/pull/7195))
+ * Prompts that validate their input, such as the `databricks configure` host prompt, no longer open with a red cross before anything is typed. ([#7314](https://github.com/databricks/cli/pull/7314))
+ * `databricks ssh connect` now documents `--environment-version` for choosing the serverless environment version, starts a separate default-named server for each version, and rejects the flag together with `--cluster`. Default connection names also include the environment version in their hash, so the default name when `--environment-version` is not specified changes with this release. Configuration associated with the old connection name (secret scope, SSH keys and known hosts in your local `.databricks` folder) will no longer be used and can be safely removed. ([#7310](https://github.com/databricks/cli/pull/7310))
+
+### AI Runtime
+
+ * Show workspace-supported accelerator types in `databricks air run -h config.compute.accelerator_type`. ([#7275](https://github.com/databricks/cli/pull/7275))
+ * `air list` now reports `No active runs found.` for an empty active-only result. ([#7276](https://github.com/databricks/cli/pull/7276))
+ * Stop printing a retry notice on every `air run --watch`; retries are still reported when they happen. ([#7270](https://github.com/databricks/cli/pull/7270))
+
+### Bundles
+
+ * Fix `bundle plan` reporting an update to an app's `config.env` values on every run, which also redeployed the app on every `bundle deploy`. The Apps API returns environment variable names only, so `value` and `value_from` are no longer compared against the remote deployment. ([#7326](https://github.com/databricks/cli/pull/7326))
+ * Add the `data_quality_monitors` resource for data quality monitors on Unity Catalog schemas and tables (direct engine only). ([#7094](https://github.com/databricks/cli/pull/7094))
+ * `bundle deploy` now asks for confirmation before recreating or deleting a Feature View, and `bundle deploy` and `bundle destroy` warn that FeatureSpecs using a Feature View are not checked. ([#7164](https://github.com/databricks/cli/pull/7164))
+ * Accept grant `privileges` values that the SDK enum does not list yet: `bundle validate` no longer warns (or errors under `--strict`) on them, and the PyDABs `Privilege` enum accepts unknown strings instead of raising. The JSON schema and PyDABs still advertise the known values for completion. ([#7315](https://github.com/databricks/cli/pull/7315))
+ * Add the `materialization_sets` resource, which materializes Feature Store Feature Views to offline and online stores. ([#7164](https://github.com/databricks/cli/pull/7164))
+ * Detect notebooks with the same rule as the workspace: a `.py`, `.sql`, `.scala` or `.r` file is a notebook when its first line contains `Databricks notebook source`, for example after a byte order mark. Previously such a file was tracked as a plain file, so removing it locally left the remote notebook behind. ([#7290](https://github.com/databricks/cli/pull/7290))
+ * Add `sensitive: true` for bundle variables. A variable used as the value of a secret is sensitive by default. `bundle validate -o json` redacts only sensitive variables instead of every string variable, and a sensitive variable can only be referenced from a sensitive resource field (such as a secret's `value`) or from another sensitive variable. ([#7288](https://github.com/databricks/cli/pull/7288))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7305](https://github.com/databricks/cli/pull/7305))
+ * Bump dependencies with known vulnerabilities. ([#7327](https://github.com/databricks/cli/pull/7327))
+ * Update the Go SDK to [v0.191.1](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.191.1). ([#7277](https://github.com/databricks/cli/pull/7277))
+ * Update the Go SDK to [v0.193.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.193.0). ([#7303](https://github.com/databricks/cli/pull/7303))
+
+
 ## Release v1.23.0 (2026-10-29)
 
 ### CLI

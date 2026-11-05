@@ -556,8 +556,12 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 // preResolvedValueAt returns the pre-resolved dyn.Value at the field path,
 // if the field exists in the merged pre-resolved config.
 func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, bool) {
-	p, err := dyn.NewPathFromString(fieldPath)
+	node, err := structpath.ParsePath(fieldPath)
 	if err != nil {
+		return dyn.InvalidValue, false
+	}
+	p, ok := dyn.FromStructPath(node)
+	if !ok {
 		return dyn.InvalidValue, false
 	}
 	v, err := dyn.GetByPath(preResolved, p)
@@ -602,12 +606,8 @@ func sequenceSiblings(preResolved dyn.Value, fieldPath string) ([]dyn.Value, boo
 	if !hasIndex && !node.BracketStar() {
 		return nil, false
 	}
-	p, err := dyn.NewPathFromString(node.Parent().String())
-	if err != nil {
-		return nil, false
-	}
-	parentValue, err := dyn.GetByPath(preResolved, p)
-	if err != nil {
+	parentValue, ok := preResolvedValueAt(preResolved, node.Parent().String())
+	if !ok {
 		return nil, false
 	}
 	seq, ok := parentValue.AsSequence()

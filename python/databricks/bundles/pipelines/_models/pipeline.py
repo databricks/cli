@@ -15,10 +15,7 @@ from databricks.bundles.pipelines._models.event_log_spec import (
     EventLogSpec,
     EventLogSpecParam,
 )
-from databricks.bundles.pipelines._models.filters import (
-    Filters,
-    FiltersParam,
-)
+from databricks.bundles.pipelines._models.filters import Filters, FiltersParam
 from databricks.bundles.pipelines._models.ingestion_gateway_pipeline_definition import (
     IngestionGatewayPipelineDefinition,
     IngestionGatewayPipelineDefinitionParam,
@@ -27,10 +24,7 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
-from databricks.bundles.pipelines._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.pipelines._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
