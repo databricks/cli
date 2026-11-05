@@ -106,6 +106,29 @@ func TestCollectTaskTypes(t *testing.T) {
 	assert.Empty(t, collectTaskTypes(nil))
 }
 
+func TestStartedValues(t *testing.T) {
+	started := func(v bool) *resources.LifecycleWithStarted {
+		return &resources.LifecycleWithStarted{Started: &v}
+	}
+	unset := &resources.LifecycleWithStarted{}
+	for _, tc := range []struct {
+		name       string
+		lifecycles []*resources.LifecycleWithStarted
+		want       []bool
+	}{
+		{"no resources", nil, nil},
+		{"no lifecycle or started unset", []*resources.LifecycleWithStarted{nil, unset}, nil},
+		{"true", []*resources.LifecycleWithStarted{started(true), unset}, []bool{true}},
+		{"false", []*resources.LifecycleWithStarted{nil, started(false)}, []bool{false}},
+		{"each value once", []*resources.LifecycleWithStarted{started(true), started(true)}, []bool{true}},
+		{"mixed", []*resources.LifecycleWithStarted{started(false), started(true), started(false)}, []bool{true, false}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, startedValues(tc.lifecycles))
+		})
+	}
+}
+
 // aiRuntimeJob builds a job with a single ai_runtime_task, plus optionally an extra
 // no-op task to make it multi-task.
 func aiRuntimeJob(extraTask bool) *resources.Job {

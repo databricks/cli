@@ -14,7 +14,7 @@ import (
 // The field type says what was measured:
 //   - bool: a flag reported only when true; absence means "not seen".
 //   - *bool: a measured value; nil when the measurement did not run.
-//   - []bool: one value per measurement (e.g. per artifact).
+//   - []bool: one value per measurement (e.g. per artifact), or each value seen.
 //
 // The `metric` tag is the key in bool_values. Fields have no json tags: the
 // bitmap uses the Go field names (e.g. "telemetry.SelectUsed").
@@ -24,15 +24,18 @@ import (
 // which describe the local user cache rather than the bundle. Both are written
 // to Metrics.BoolValues directly.
 type Telemetry struct {
-	PythonWheelWrapperIsSet      *bool  `metric:"python_wheel_wrapper_is_set"`
-	ArtifactDynamicVersionIsSet  []bool `metric:"artifact_dynamic_version_is_set"`
-	ArtifactBuildCommandIsSet    []bool `metric:"artifact_build_command_is_set"`
-	ArtifactFilesIsSet           []bool `metric:"artifact_files_is_set"`
-	PresetsNamePrefixIsSet       *bool  `metric:"presets_name_prefix_is_set"`
-	AppLifecycleStarted          *bool  `metric:"app_lifecycle_started"`
-	ClusterLifecycleStarted      *bool  `metric:"cluster_lifecycle_started"`
+	PythonWheelWrapperIsSet     *bool  `metric:"python_wheel_wrapper_is_set"`
+	ArtifactDynamicVersionIsSet []bool `metric:"artifact_dynamic_version_is_set"`
+	ArtifactBuildCommandIsSet   []bool `metric:"artifact_build_command_is_set"`
+	ArtifactFilesIsSet          []bool `metric:"artifact_files_is_set"`
+	PresetsNamePrefixIsSet      *bool  `metric:"presets_name_prefix_is_set"`
+	// The *LifecycleStarted fields hold the lifecycle.started values set across
+	// the resources of that type, each value once: true if any resource sets
+	// true, false if any sets false.
+	AppLifecycleStarted          []bool `metric:"app_lifecycle_started"`
+	ClusterLifecycleStarted      []bool `metric:"cluster_lifecycle_started"`
 	DeploymentHistoryEnabled     *bool  `metric:"deployment_history_enabled"`
-	SqlWarehouseLifecycleStarted *bool  `metric:"sql_warehouse_lifecycle_started"`
+	SqlWarehouseLifecycleStarted []bool `metric:"sql_warehouse_lifecycle_started"`
 	SelectUsed                   bool   `metric:"select_used"`
 
 	// Whether the deploy registered an immutable snapshot. Derived from the snapshot
