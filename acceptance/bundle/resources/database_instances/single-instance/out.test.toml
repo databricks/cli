@@ -1,4 +1,4 @@
 Cloud = true
-CloudSlow = false
+CloudSlow = true
 CloudEnvs.gcp = false
 EnvMatrix.DMS = ["", "true"]

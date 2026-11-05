@@ -1,7 +1,7 @@
 Cloud = true
 
 # Mitigates running into quota limits in workspaces
-CloudSlow = false # TEMP: run under -short in PR CI
+CloudSlow = true
 
 RecordRequests = false
 RunsOnDbr = true

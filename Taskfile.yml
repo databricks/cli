@@ -764,7 +764,7 @@ tasks:
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SELECT_CHANGED=200 VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SELECT_CHANGED=50 VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \

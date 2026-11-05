@@ -1,4 +1,4 @@
 Cloud = true
-CloudSlow = false
+CloudSlow = true
 RunsOnDbr = true
 EnvMatrix.DMS = ["", "true"]

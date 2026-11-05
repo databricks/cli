@@ -1,6 +1,6 @@
 Timeout = '30m'
 Cloud = true
-CloudSlow = false # TEMP: run under -short in PR CI
+CloudSlow = true
 
 # GCP test envs lack serving capacity for this endpoint:
 #   Error: cannot create resources.model_serving_endpoints.my_endpoint: waiting after creating id=test-endpoint-[UNIQUE_NAME]: failed to reach NOT_UPDATING, got UPDATE_FAILED: current status: UPDATE_FAILED
