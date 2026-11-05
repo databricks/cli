@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    schema1:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+  volumes:
+    volume1:
+      catalog_name: main
+      schema_name: ${resources.schemas.schema1.name}
+      name: myvolume
+  jobs:
+    job1:
+      name: test-job-$UNIQUE_NAME
+      parameters:
+        - name: volume_full_name
+          default: ${resources.volumes.volume1.full_name}
+        - name: volume_id
+          default: ${resources.volumes.volume1.id}
