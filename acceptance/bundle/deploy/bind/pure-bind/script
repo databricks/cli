@@ -11,6 +11,10 @@ trace $CLI bundle deploy --auto-approve
 title "Unbind the job. The bind block is still in config, so the next deploy re-binds it"
 trace $CLI bundle deployment unbind foo
 
+title "Imperative bind warns that the declarative bind block is redundant"
+trace $CLI bundle deployment bind foo "$NEW_JOB_ID" --auto-approve
+trace $CLI bundle deployment unbind foo
+
 title "The job now matches the config, so this is a pure bind"
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | gron.py | grep -E 'jobs\.foo\.(action|bind_id)'

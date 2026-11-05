@@ -5,7 +5,19 @@ Bound and updated pipelines.foo
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 
-=== Removing the bind block is the opt-out: with it gone, the same storage change plans a recreate
+=== Removing only the bind block is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-block-removed-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_state.py
+json.state.resources.pipelines.foo.__id__ = "[NEW_PIPELINE_ID]";
+
+=== Without the bind block, a storage change plans a recreate
 >>> [CLI] bundle plan
 recreate pipelines.foo
 

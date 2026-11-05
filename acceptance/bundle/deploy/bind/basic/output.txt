@@ -1,14 +1,14 @@
 
 >>> [CLI] bundle plan
-bind_and_update jobs.foo (id: [NEW_JOB_ID])
+bind experiments.foo (id: [NEW_EXPERIMENT_ID])
 
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
+Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-basic-[UNIQUE_NAME]/default/files...
-Bound and updated jobs.foo
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
+Bound experiments.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 bound
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -20,37 +20,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "state": {
-  "resources.jobs.foo": {
-   "__id__": "[NEW_JOB_ID]",
+  "resources.experiments.foo": {
+   "__id__": "[NEW_EXPERIMENT_ID]",
    "state": {
-    "deployment": {
-     "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bind-basic-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "environments": [
-     {
-      "environment_key": "default",
-      "spec": {
-       "client": "1"
-      }
-     }
-    ],
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "test-bind-job",
-    "queue": {
-     "enabled": true
-    },
-    "tasks": [
-     {
-      "environment_key": "default",
-      "spark_python_task": {
-       "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-basic-[UNIQUE_NAME]/default/files/hello.py"
-      },
-      "task_key": "my_task"
-     }
-    ]
+    "name": "/Shared/test-bind-basic-[UNIQUE_NAME]"
    }
   }
  }
@@ -58,7 +31,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.jobs.foo
+  delete resources.experiments.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-basic-[UNIQUE_NAME]/default
 

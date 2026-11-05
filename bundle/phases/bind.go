@@ -51,6 +51,16 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 
 	// Direct engine: import into temp state, run plan, check for changes.
 	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
+	resource, _, err := b.Config.Resources.ResolveKey(opts.Group + "." + opts.ResourceKey)
+	if err == nil && resource.GetLifecycle().GetBind() != nil {
+		bindPath := structpath.NewPath(nil, "resources", opts.Group, opts.ResourceKey, "lifecycle", "bind")
+		logdiag.LogDiag(ctx, diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   resourceKey + ".lifecycle.bind already declares the resource ID; use 'bundle deploy' to bind it declaratively",
+			Locations: b.Config.GetLocationsOf(bindPath),
+			Paths:     []*structpath.PathNode{bindPath},
+		})
+	}
 	_, statePath := b.StateFilenameDirect(ctx)
 
 	result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)

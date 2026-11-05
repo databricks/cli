@@ -1,4 +1,8 @@
 
+=== Existing cluster has 2 workers; bundle configuration requests 3
+>>> [CLI] clusters get [CLUSTER_ID]
+json.num_workers = 2;
+
 >>> [CLI] bundle plan
 bind_and_update clusters.test_cluster (id: [CLUSTER_ID])
 

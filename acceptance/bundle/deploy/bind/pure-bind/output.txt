@@ -13,6 +13,21 @@ Warning: resources.jobs.foo.lifecycle.bind re-binds the resource on the next dep
   in databricks.yml:22:11
 
 
+=== Imperative bind warns that the declarative bind block is redundant
+>>> [CLI] bundle deployment bind foo [NEW_JOB_ID] --auto-approve
+Warning: resources.jobs.foo.lifecycle.bind already declares the resource ID; use 'bundle deploy' to bind it declaratively
+  at resources.jobs.foo.lifecycle.bind
+  in databricks.yml:22:11
+
+Successfully bound job with an id '[NEW_JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deployment unbind foo
+Warning: resources.jobs.foo.lifecycle.bind re-binds the resource on the next deploy; remove it to keep the resource unbound
+  at resources.jobs.foo.lifecycle.bind
+  in databricks.yml:22:11
+
+
 === The job now matches the config, so this is a pure bind
 >>> [CLI] bundle plan
 bind jobs.foo (id: [NEW_JOB_ID])
@@ -25,6 +40,9 @@ json.plan.resources.jobs.foo.bind_id = "[NEW_JOB_ID]";
 json.plan.resources.jobs.foo.action = "bind";
 
 >>> print_requests.py --get --oneline //jobs/get
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}

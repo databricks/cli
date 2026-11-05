@@ -3,11 +3,9 @@ update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
 # Create a job in the workspace; its ID reaches the bind block through a variable
 NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-bind-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
 add_repl.py $NEW_JOB_ID NEW_JOB_ID
-update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
-
-trace $CLI bundle plan
-trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan --var "job_id=$NEW_JOB_ID"
+trace $CLI bundle deploy --auto-approve --var "job_id=$NEW_JOB_ID"
 trace print_state.py | gron.py | grep __id__
 
 # Cleanup
-trace $CLI bundle destroy --auto-approve
+trace $CLI bundle destroy --auto-approve --var "job_id=$NEW_JOB_ID"

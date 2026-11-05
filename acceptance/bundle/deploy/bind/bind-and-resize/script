@@ -1,14 +1,33 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# Create a cluster out-of-band, then bring it to RUNNING so that a num_workers
-# change is planned as a resize rather than an edit. The cluster uses an instance
-# pool only: the API rejects node_type_id together with instance_pool_id.
-CLUSTER_ID=$($CLI clusters create --json "{\"cluster_name\": \"test-cluster-$UNIQUE_NAME\", \"spark_version\": \"$DEFAULT_SPARK_VERSION\", \"instance_pool_id\": \"$TEST_INSTANCE_POOL_ID\", \"num_workers\": 2, \"autotermination_minutes\": 60}" | jq -r .cluster_id)
-add_repl.py "$CLUSTER_ID" CLUSTER_ID
+# The shared AWS pool uses Spot in a fixed AZ and can exhaust capacity before
+# this test reaches bind planning. Use on-demand capacity with automatic AZ selection.
+COMPUTE=$(jq -n --arg pool "$TEST_INSTANCE_POOL_ID" '{instance_pool_id: $pool}')
+if [[ "$CLOUD_ENV_BASE" == aws ]]; then
+    COMPUTE=$(jq -n --arg node "$NODE_TYPE_ID" '{node_type_id: $node, aws_attributes: {availability: "ON_DEMAND", zone_id: "auto"}}')
+    update_file.py databricks.yml "instance_pool_id: $TEST_INSTANCE_POOL_ID" "node_type_id: $NODE_TYPE_ID
+      aws_attributes:
+        availability: ON_DEMAND
+        zone_id: auto"
+fi
+jq -n --arg name "test-cluster-$UNIQUE_NAME" --arg spark "$DEFAULT_SPARK_VERSION" --argjson compute "$COMPUTE" \
+    '$compute + {cluster_name: $name, spark_version: $spark, num_workers: 2, autotermination_minutes: 60}' > LOG.create.json
+CLUSTER_ID=$($CLI clusters create --no-wait --json @LOG.create.json | jq -r .cluster_id)
+add_repl "$CLUSTER_ID" CLUSTER_ID
 update_file.py databricks.yml 'PLACEHOLDER_CLUSTER_ID' "$CLUSTER_ID"
 
-# Transition PENDING -> RUNNING (ClustersGet promotes the state).
-$CLI clusters get "$CLUSTER_ID" > /dev/null
+cleanup() {
+    if [[ -n "$CLUSTER_ID" ]]; then
+        $CLI clusters permanent-delete "$CLUSTER_ID" &> LOG.cluster-cleanup
+    fi
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+RETRY_MAX_ATTEMPTS=120 RETRY_INTERVAL_MS=10000 retry --until '"state": "RUNNING"' $CLI clusters get "$CLUSTER_ID" > LOG.wait
+
+title "Existing cluster has 2 workers; bundle configuration requests 3"
+trace $CLI clusters get "$CLUSTER_ID" | gron.py | grep '^json.num_workers = '
 
 # Plan: config differs only in num_workers, so the bound running cluster is
 # planned as bind_and_update backed by a resize.
@@ -23,4 +42,4 @@ trace $CLI clusters get "$CLUSTER_ID" | jq '{cluster_name,num_workers}'
 
 # Cleanup
 trace $CLI bundle destroy --auto-approve
-rm -f out.requests.txt
+CLUSTER_ID=""

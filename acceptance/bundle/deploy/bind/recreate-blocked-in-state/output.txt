@@ -8,30 +8,10 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 >>> musterr [CLI] bundle plan
 Error: cannot plan resources.pipelines.foo: lifecycle.bind prevents recreating the bound resource
 
-This would destroy and recreate the bound workspace resource, changing its ID.
-
-The following fields cannot be modified because they require resource recreation:
+Fields requiring resource recreation:
   - storage (immutable)
 
-To resolve this issue, you have two options:
-
-1. Revert the problematic fields in your configuration to keep the bound resource as it is:
-
-   resources:
-     pipelines:
-       foo:
-         # Remove or comment out these fields:
-         # storage: ...
-
-2. Remove lifecycle.bind if you want to allow the resource to be recreated/updated:
-
-   resources:
-     pipelines:
-       foo:
-         lifecycle:
-           # Remove the bind block:
-           # bind:
-           #   id: <resource_id>
+Match these fields to the existing resource to preserve its ID; remove lifecycle.bind to allow the ID to change
 
 Error: planning failed
 

@@ -4,7 +4,6 @@ bundle:
 variables:
   job_id:
     description: ID of the existing job to bind
-    default: "PLACEHOLDER_JOB_ID"
 
 resources:
   jobs:

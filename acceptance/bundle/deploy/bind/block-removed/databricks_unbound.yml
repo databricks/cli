@@ -5,7 +5,7 @@ resources:
   pipelines:
     foo:
       name: test-pipeline
-      storage: /new/storage/path
+      storage: /old/storage/path
       libraries:
         - notebook:
             path: ./nb.sql

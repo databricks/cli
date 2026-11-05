@@ -2,18 +2,9 @@ bundle:
   name: test-bind-basic-UNIQUE_NAME
 
 resources:
-  jobs:
+  experiments:
     foo:
-      name: test-bind-job
-      environments:
-        - environment_key: default
-          spec:
-            client: "1"
-      tasks:
-        - task_key: my_task
-          environment_key: default
-          spark_python_task:
-            python_file: ./hello.py
+      name: /Shared/test-bind-basic-UNIQUE_NAME
       lifecycle:
         bind:
-          id: "PLACEHOLDER_JOB_ID"
+          id: "PLACEHOLDER_EXPERIMENT_ID"

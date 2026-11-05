@@ -208,10 +208,8 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 	return true
 }
 
-// buildBindConflictError formats a multi-line message that names the fields whose
-// changes forced an incompatible action (Recreate / UpdateWithID) and shows the two
-// concrete resolutions: drop the offending fields, or drop lifecycle.bind. firstBind
-// tells a resource being adopted apart from one that is already bound in state.
+// buildBindConflictError names the incompatible fields and distinguishes creating a
+// new resource before adoption from replacing an already-managed resource.
 func buildBindConflictError(resourceKey string, action deployplan.ActionType, changes deployplan.Changes, firstBind bool) error {
 	problematicFields := make([]string, 0, len(changes))
 	for fieldPath, change := range changes {
@@ -219,39 +217,25 @@ func buildBindConflictError(resourceKey string, action deployplan.ActionType, ch
 			problematicFields = append(problematicFields, fieldPath)
 		}
 	}
-	// Stable order so the YAML examples are deterministic across runs.
 	slices.Sort(problematicFields)
 
-	resourceType, resourceName := splitResourceKey(resourceKey)
-
-	var headline, effect, option1 string
+	var headline string
 	// buildBindConflictError is only invoked for Recreate / UpdateWithID; other
 	// action types are guarded by the caller.
 	switch { //nolint:exhaustive
 	case action == deployplan.Recreate && firstBind:
 		headline = "cannot bind " + resourceKey + ": cannot recreate resource with lifecycle.bind"
-		effect = "This would destroy and recreate the existing workspace resource, changing its ID."
 	case action == deployplan.Recreate:
 		headline = "cannot plan " + resourceKey + ": lifecycle.bind prevents recreating the bound resource"
-		effect = "This would destroy and recreate the bound workspace resource, changing its ID."
 	case action == deployplan.UpdateWithID && firstBind:
 		headline = "cannot bind " + resourceKey + ": cannot update resource ID with lifecycle.bind"
-		effect = "This would replace the existing workspace resource with a new ID."
 	case action == deployplan.UpdateWithID:
 		headline = "cannot plan " + resourceKey + ": lifecycle.bind prevents changing the ID of the bound resource"
-		effect = "This would replace the bound workspace resource with a new ID."
-	}
-	if firstBind {
-		option1 = "Remove the problematic fields from your configuration to make this a bind-only operation:"
-	} else {
-		option1 = "Revert the problematic fields in your configuration to keep the bound resource as it is:"
 	}
 
 	var msg strings.Builder
 	msg.WriteString(headline + "\n\n")
-	msg.WriteString(effect + "\n\n")
-
-	msg.WriteString("The following fields cannot be modified because they require ")
+	msg.WriteString("Fields requiring ")
 	if action == deployplan.Recreate {
 		msg.WriteString("resource recreation:\n")
 	} else {
@@ -264,27 +248,12 @@ func buildBindConflictError(resourceKey string, action deployplan.ActionType, ch
 			fmt.Fprintf(&msg, "  - %s\n", field)
 		}
 	}
-	msg.WriteString("\n")
-
-	msg.WriteString("To resolve this issue, you have two options:\n\n")
-	msg.WriteString("1. " + option1 + "\n\n")
-	msg.WriteString("   resources:\n")
-	fmt.Fprintf(&msg, "     %s:\n", resourceType)
-	fmt.Fprintf(&msg, "       %s:\n", resourceName)
-	msg.WriteString("         # Remove or comment out these fields:\n")
-	for _, field := range problematicFields {
-		fmt.Fprintf(&msg, "         # %s: ...\n", field)
+	msg.WriteString("\nMatch these fields to the existing resource to preserve its ID")
+	if firstBind {
+		msg.WriteString("; remove lifecycle.bind to create a new resource instead of adopting this one")
+	} else {
+		msg.WriteString("; remove lifecycle.bind to allow the ID to change")
 	}
-	msg.WriteString("\n")
-	msg.WriteString("2. Remove lifecycle.bind if you want to allow the resource to be recreated/updated:\n\n")
-	msg.WriteString("   resources:\n")
-	fmt.Fprintf(&msg, "     %s:\n", resourceType)
-	fmt.Fprintf(&msg, "       %s:\n", resourceName)
-	msg.WriteString("         lifecycle:\n")
-	msg.WriteString("           # Remove the bind block:\n")
-	msg.WriteString("           # bind:\n")
-	// No trailing newline: error strings must not end with one.
-	msg.WriteString("           #   id: <resource_id>")
 
 	return errors.New(msg.String())
 }

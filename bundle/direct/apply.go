@@ -76,7 +76,7 @@ func (d *DeploymentUnit) Bind(ctx context.Context, db *dstate.DeploymentState, i
 		return err
 	}
 
-	err = db.SaveState(ctx, d.ResourceKey, id, newState, d.DependsOn)
+	err = d.saveState(ctx, db, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}

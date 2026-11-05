@@ -40,7 +40,7 @@ func (a Action) IsChildResource() bool {
 type ActionType string
 
 // Actions are ordered in increasing severity.
-// If case of several options, action with highest severity wins.
+// In case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
 	Undefined     ActionType = ""
@@ -68,6 +68,8 @@ var actionOrder = map[ActionType]int{
 	Delete:        9,
 }
 
+// KeepsID reports whether the action preserves an ID already recorded in deployment state.
+// Bind actions have a remote ID but no existing state entry.
 func (a ActionType) KeepsID() bool {
 	switch a {
 	case Create, UpdateWithID, Recreate, Delete, Bind, BindAndUpdate:
@@ -88,7 +90,7 @@ func (a ActionType) StringShort() string {
 	return items[0]
 }
 
-// AppliedLine renders the user-facing line reporting that action has been applied
+// AppliedLine renders the user-facing line reporting that a non-Skip action has been applied
 // to resourceKey, e.g. "Created jobs.foo". The past-tense verb is the short action
 // name plus "d" (create->Created, delete->Deleted, ...), capitalized to match the
 // sentence case of other output. "bundle plan" keeps the lower-case present tense,
