@@ -20,7 +20,7 @@ title "Rename the schema"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
 title "The plan renames the schema in place instead of recreating it"
-trace $CLI bundle plan --output json | jq '.plan["resources.schemas.schema1"].changes.name'
+trace $CLI bundle plan --output json | jq .plan
 
 title "Deploy renames the schema without a deletion prompt"
 trace $CLI bundle deploy

@@ -21,7 +21,8 @@ title "Rename the schema"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
 title "UC moves the volume with the schema, so the plan re-keys the volume instead of recreating it"
-trace $CLI bundle plan --output json | jq '.plan["resources.volumes.volume1"].changes.schema_name'
+# Drop the remote_state fields that the test server omits or fills differently from UC.
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id
 
 title "Deploy renames the schema and updates the volume at its new path"
 trace $CLI bundle deploy
