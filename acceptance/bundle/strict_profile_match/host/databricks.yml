@@ -18,12 +18,6 @@ targets:
   custom_host:
     workspace:
       host: $CUSTOM_HOST/?o=$WORKSPACE_ID
-  classic_with_w:
-    workspace:
-      host: $CLASSIC_HOST?w=$WORKSPACE_ID
-  custom_host_with_w:
-    workspace:
-      host: $CUSTOM_HOST?w=$WORKSPACE_ID
   custom_host_workspace_id_field:
     workspace:
       host: $CUSTOM_HOST

@@ -2,7 +2,7 @@
 Welcome to the default SQL template for Declarative Automation Bundles!
 
 A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
-workspace_url: [DATABRICKS_URL]
+workspace_host: [DATABRICKS_URL]
 
 ✨ Your new project has been created in the 'my_default_sql' directory!
 

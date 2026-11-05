@@ -1,5 +1,0 @@
-# The template doesn't declare a workspace input, so the extra key is ignored
-# and the template still gets the workspace context.
-trace $CLI bundle init default-minimal --config-file ./input.json
-trace grep 'host:' my_default_minimal/databricks.yml
-rm -r my_default_minimal

@@ -15,8 +15,8 @@ Your workspace at [DATABRICKS_URL] is used for initialization.
 To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> grep host: databricks.yml
-      host: "[DATABRICKS_URL]"
-      host: "[DATABRICKS_URL]"
+      host: [DATABRICKS_URL]
+      host: [DATABRICKS_URL]
 
 >>> DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=1 [CLI] bundle validate -t dev
 Name: my_default_minimal
@@ -49,8 +49,8 @@ Your workspace at [CUSTOM_HOST]?w=[WORKSPACE_ID] is used for initialization.
 To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> grep host: databricks.yml
-      host: "[CUSTOM_HOST]?w=[WORKSPACE_ID]"
-      host: "[CUSTOM_HOST]?w=[WORKSPACE_ID]"
+      host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+      host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 
 >>> DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=1 [CLI] bundle validate -t dev
 Name: my_default_minimal
