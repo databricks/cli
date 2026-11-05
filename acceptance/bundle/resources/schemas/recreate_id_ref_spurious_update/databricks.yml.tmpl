@@ -1,0 +1,34 @@
+bundle:
+  name: schema-id-ref-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# When a resource is recreated, the direct deploy engine cannot resolve a reference to its
+# output fields at plan time (a recreate does not preserve the id), so the reference stays the
+# literal "${...}" placeholder. A dependent that uses it then diffs its saved value against the
+# placeholder and plans a phantom change -- even when the referenced value is actually unchanged.
+#
+# This test shows that on UC schemas (Lakebase/postgres resources exhibit it too) and its
+# boundary: UC resources reference each other by NAME (catalog_name, schema_name) -- user-
+# provided INPUT fields the planner resolves from config even when the target is recreated, so
+# idiomatic UC wiring never hits it. The exception is a reference to an OUTPUT-only field such
+# as .id (a schema's full_name "catalog.schema").
+#
+# referent recreates on storage_root (immutable, non-identity), so its full_name / .id
+# (main.referent) is unchanged. consumer references ${referent.id} in its mutable comment, so
+# the direct engine plans a spurious update of consumer.
+#
+# This test runs the direct engine only. For context, the terraform engine (now being removed)
+# left consumer alone: it re-plans at apply, finds ${referent.id} resolved to the unchanged
+# value, and issues no request for consumer.
+resources:
+  schemas:
+    referent:
+      catalog_name: main
+      name: referent
+      storage_root: s3://my-bucket/v1
+    consumer:
+      catalog_name: main
+      name: consumer
+      comment: refers to ${resources.schemas.referent.id}
