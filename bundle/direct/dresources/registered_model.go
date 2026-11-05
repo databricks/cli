@@ -169,6 +169,14 @@ func (r *ResourceRegisteredModel) syncChangedAliases(ctx context.Context, fullNa
 	if !entry.Changes.HasChange(registeredModelAliasesPath) {
 		return nil
 	}
+	if entry.RemoteState == nil {
+		// The plan read the model at a stale ID: an interrupted deploy renamed its parent.
+		remote, err := r.DoRead(ctx, fullName)
+		if err != nil {
+			return err
+		}
+		return r.syncAliases(ctx, fullName, config.Aliases, remote.Aliases)
+	}
 	remote, ok := entry.RemoteState.(*catalog.RegisteredModelInfo)
 	if !ok {
 		return fmt.Errorf("internal error: unexpected remote state type %T", entry.RemoteState)
