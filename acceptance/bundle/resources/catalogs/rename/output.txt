@@ -128,7 +128,6 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       "name": "myvolume",
       "owner": "[USERNAME]",
       "schema_name": "myschema",
-      "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
       "volume_id": "[UUID]",
       "volume_type": "MANAGED"
     },
@@ -139,11 +138,6 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test_catalog_[UNIQUE_NAME]",
         "new": "test_catalog_renamed_[UNIQUE_NAME]",
         "remote": "test_catalog_[UNIQUE_NAME]"
-      },
-      "storage_location": {
-        "action": "skip",
-        "reason": "immutable_backend_value",
-        "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
       }
     }
   }

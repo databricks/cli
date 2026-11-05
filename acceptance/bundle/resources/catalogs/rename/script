@@ -21,8 +21,8 @@ title "Rename the catalog"
 trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
 
 title "UC moves the schema and the volume with the catalog, so the plan re-keys them instead of recreating them"
-# Drop the remote_state fields that the test server omits or fills differently from UC.
-trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type
+# Drop the remote_state fields that differ between clouds or from the test server.
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
 
 title "Deploy renames the catalog. UC moves the schema and the volume with it, so they get no request"
 trace $CLI bundle deploy
