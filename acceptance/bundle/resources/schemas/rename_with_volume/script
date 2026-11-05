@@ -15,7 +15,7 @@ trap cleanup EXIT
 title "Deploy a schema with a volume in it"
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
-VOLUME_ID=$($CLI volumes read "$OLD_VOLUME" | jq -r .volume_id)
+add_repl "$($CLI volumes read "$OLD_VOLUME" | jq -r .volume_id)" VOLUME_ID
 
 title "Rename the schema"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
@@ -28,16 +28,9 @@ title "Deploy renames the schema. UC moves the volume with it, so the volume get
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 
-title "The old schema is gone and the volume is under the new one"
+title "The old schema is gone and the volume is under the new one, with its original volume_id"
 trace musterr $CLI schemas get "$OLD_SCHEMA"
-trace $CLI volumes read "$NEW_VOLUME" | jq '{full_name, schema_name}'
-
-title "The volume_id is preserved, so this is the same volume\n"
-if [ "$($CLI volumes read "$NEW_VOLUME" | jq -r .volume_id)" = "$VOLUME_ID" ]; then
-    echo "volume_id is unchanged"
-else
-    echo "volume_id changed"
-fi
+trace $CLI volumes read "$NEW_VOLUME" | jq '{full_name, schema_name, volume_id}'
 
 title "The state tracks the new path"
 trace $CLI bundle summary --output json | jq '.resources.volumes.volume1.id'

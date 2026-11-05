@@ -44,7 +44,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "metastore_id": "[UUID]",
       "name": "test-schema-[UNIQUE_NAME]",
       "owner": "[USERNAME]",
-      "schema_id": "[UUID]"
+      "schema_id": "[SCHEMA_ID]"
     },
     "changes": {
       "name": {
@@ -76,7 +76,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== The schema is only reachable under the new name
+=== The schema is only reachable under the new name, with its original schema_id
 >>> musterr [CLI] schemas get main.test-schema-[UNIQUE_NAME]
 Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 
@@ -84,11 +84,9 @@ Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 {
   "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
   "name": "test-schema-renamed-[UNIQUE_NAME]",
-  "comment": "COMMENT1"
+  "comment": "COMMENT1",
+  "schema_id": "[SCHEMA_ID]"
 }
-
-=== The schema_id is preserved, so this is the same schema
-schema_id is unchanged
 
 === The state and summary track the new name
 >>> [CLI] bundle summary --output json
