@@ -83,7 +83,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, entry *PlanEntry) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    "", // Initialized below
@@ -103,6 +103,16 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	// The parents come from config: a renamed catalog or schema moves the volume with it,
 	// leaving id stale (see followParentRenames).
 	updateRequest.Name = config.CatalogName + "." + config.SchemaName + "." + nameFromID
+
+	if entry.Changes.OnlyParentRenamed() {
+		// Nothing to update. Read the volume to record its full name as UC spells it: UC
+		// lowercases names, config may not.
+		response, err := r.DoRead(ctx, updateRequest.Name)
+		if err != nil {
+			return "", nil, err
+		}
+		return response.FullName, response, nil
+	}
 
 	if config.Name != nameFromID {
 		updateRequest.NewName = config.Name
