@@ -952,6 +952,32 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "feature_specs":
+      "description": |-
+        The feature spec definitions for the bundle, where each key is the name of the feature spec.
+      "markdown_description": |-
+        The feature spec definitions for the bundle, where each key is the name of the feature spec.
+      "$fields":
+        "grants":
+          "description": |-
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+            See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
+          "markdown_examples": |-
+            ```yaml
+            grants:
+              - principal: account users
+                privileges:
+                  - EXECUTE
+              - principal: data-engineers
+                privileges:
+                  - ALL_PRIVILEGES
+            ```
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "features":
       "description": |-
         The feature definitions for the bundle, where each key is the name of the feature.
