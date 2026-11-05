@@ -324,3 +324,26 @@ func TestNestedYAMLAnchorCycle(t *testing.T) {
 	_, diags := LoadFromBytes("a.yml", []byte("variables:\n  v:\n    default: &x {a: [*x]}\n"))
 	assert.ErrorContains(t, diags.Error(), `cyclic reference to anchor "x"`)
 }
+
+func TestRootEmpties(t *testing.T) {
+	r, diags := LoadFromBytes("databricks.yml", []byte(`
+resources:
+  jobs:
+    j:
+      name: x
+      permissions: []
+      tags: {}
+    k:
+      name: y
+`))
+	require.False(t, diags.HasError(), diags)
+
+	empty := func(name, field string) bool {
+		return r.IsEmptyAt(structpath.NewPath(nil, "resources", "jobs", name, field))
+	}
+	assert.True(t, empty("j", "permissions"))
+	assert.True(t, empty("j", "tags"))
+	assert.False(t, empty("k", "permissions"))
+	assert.Empty(t, r.Resources.Jobs["j"].Permissions)
+	assert.Empty(t, r.Resources.Jobs["k"].Permissions)
+}

@@ -153,11 +153,18 @@ type decoder struct {
 
 // dnode is the decoded shape of a value: what the typed value does not hold.
 type dnode struct {
-	kind  Kind
-	locs  []diag.Location
-	ref   string
-	keys  map[string]*dnode
-	elems []*dnode
+	// container is set for a value decoded into a Go map or slice.
+	container bool
+	kind      Kind
+	locs      []diag.Location
+	ref       string
+	keys      map[string]*dnode
+	elems     []*dnode
+}
+
+// empty reports whether the value is a map or slice written as empty.
+func (n *dnode) empty() bool {
+	return n.container && (n.kind == KindMap && len(n.keys) == 0 || n.kind == KindSequence && len(n.elems) == 0)
 }
 
 // locations returns the locations of the decoded value.
@@ -165,7 +172,7 @@ func (n *dnode) locations() *Locations {
 	if n == nil {
 		return nil
 	}
-	out := &Locations{locs: n.locs}
+	out := &Locations{locs: n.locs, empty: n.empty()}
 	for k, c := range n.keys {
 		if out.keys == nil {
 			out.keys = make(map[string]*Locations, len(n.keys))
@@ -291,6 +298,7 @@ func (d *decoder) decode(dst reflect.Value, src source, path *structpath.PathNod
 		}
 		return d.decodeStruct(dst, src, path, n, ref)
 	case reflect.Map:
+		n.container = true
 		switch src.kind() {
 		case KindMap:
 			pairs, err := src.pairs()
@@ -326,6 +334,7 @@ func (d *decoder) decode(dst reflect.Value, src source, path *structpath.PathNod
 		d.typeMismatch(KindMap, src, path)
 		return nil, false, nil
 	case reflect.Slice:
+		n.container = true
 		switch src.kind() {
 		case KindSequence:
 			elems, err := src.elems()

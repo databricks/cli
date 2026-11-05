@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -15,18 +14,6 @@ import (
 // enum_walk.go).
 type walker struct {
 	diags diag.Diagnostics
-}
-
-// walkConfig runs the generated walker fn over the configuration of root; refs makes
-// the nodes follow the pure references.
-func walkConfig(root *config.Root, refs bool, fn func(*walker, *walk.Node, *config.Root)) diag.Diagnostics {
-	w := &walker{}
-	n := walk.Root(root)
-	if refs {
-		n = walk.RootWithReferences(root)
-	}
-	fn(w, &n, root)
-	return w.diags
 }
 
 // missing reports that the required field of n is not set. A pure reference
