@@ -323,8 +323,10 @@ func TestFollowParentRenames(t *testing.T) {
 			parentRenames := map[string]*deployplan.ChangeDesc{
 				tt.field: {Action: deployplan.UpdateWithID, Reason: "id_changes", Old: "s_old", New: "s_new", Remote: "s_old"},
 			}
-			require.NoError(t, followParentRenames(adapter, deployplan.Changes{tt.field: ch}, parentRenames))
+			followed, err := followParentRenames(adapter, deployplan.Changes{tt.field: ch}, parentRenames)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAction, ch.Action)
+			assert.Equal(t, tt.expectedAction == deployplan.UpdateWithID, followed)
 		})
 	}
 }
