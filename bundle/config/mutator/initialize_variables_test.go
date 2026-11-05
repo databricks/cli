@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/variable"
-	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +22,7 @@ func TestInitializeVariables(t *testing.T) {
 			},
 		},
 	}
-	diags := bundletest.ApplyLoading(t, b, mutator.InitializeVariables())
+	diags := bundle.Apply(t.Context(), b, mutator.InitializeVariables())
 	require.NoError(t, diags.Error())
 	assert.NotNil(t, b.Config.Variables["foo"])
 	assert.NotNil(t, b.Config.Variables["bar"])
@@ -36,7 +35,7 @@ func TestInitializeVariablesWithoutVariables(t *testing.T) {
 			Variables: nil,
 		},
 	}
-	diags := bundletest.ApplyLoading(t, b, mutator.InitializeVariables())
+	diags := bundle.Apply(t.Context(), b, mutator.InitializeVariables())
 	require.NoError(t, diags.Error())
 	assert.Nil(t, b.Config.Variables)
 }

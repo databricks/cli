@@ -18,17 +18,12 @@ func VerifyCliVersion() bundle.Mutator {
 type verifyCliVersion struct{}
 
 func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// This runs while the configuration is loading.
-	var constraint string
-	if err := b.Config.DecodeLoading(&constraint, "bundle", "databricks_cli_version"); err != nil {
-		return diag.FromErr(err)
-	}
-
 	// No constraints specified, skip the check.
-	if constraint == "" {
+	if b.Config.Bundle.DatabricksCliVersion == "" {
 		return nil
 	}
 
+	constraint := b.Config.Bundle.DatabricksCliVersion
 	if err := validateConstraintSyntax(constraint); err != nil {
 		return diag.FromErr(err)
 	}

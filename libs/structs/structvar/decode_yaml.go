@@ -59,6 +59,20 @@ func ParseYAML(r io.Reader) (*yaml.Node, error) {
 	return doc.Content[0], nil
 }
 
+// ValidateYAMLNode reports the first YAML error in the document node (nil if it is empty)
+// that decoding would report, also in values that decoding drops: a merge key with an
+// invalid value, two merge keys in a mapping, or a key that is not a string.
+func ValidateYAMLNode(file string, node *yaml.Node) error {
+	if node == nil {
+		return nil
+	}
+	src, err := newYAMLSource(file, node, nil)
+	if err != nil {
+		return err
+	}
+	return validate(src)
+}
+
 // aliasChain is an immutable list of alias nodes.
 type aliasChain struct {
 	node *yaml.Node
@@ -312,6 +326,94 @@ func (s *yamlSource) pairs() ([]sourcePair, error) {
 		out.set(p)
 	}
 	return out.pairs, nil
+}
+
+// validateAll reports the first YAML error in the value: a key that is not a string, two
+// merge keys in a mapping, or a merge key with a value that is not a mapping or a sequence
+// of mappings. Unlike [yamlSource.pairs] it visits the values that a later duplicate key
+// shadows.
+func (s *yamlSource) validateAll() error {
+	switch s.k {
+	case KindSequence:
+		for _, n := range s.target.Content {
+			c, err := s.child(n, noPath)
+			if err != nil {
+				return err
+			}
+			if err := c.validateAll(); err != nil {
+				return err
+			}
+		}
+	case KindMap:
+		return s.validateMapping()
+	default:
+	}
+	return nil
+}
+
+// noPath is the path of a value that is only validated.
+func noPath() *structpath.PathNode { return nil }
+
+func (s *yamlSource) validateMapping() error {
+	node := s.target
+	loc := s.loc(node)
+	var merge *yaml.Node
+	for i := 0; i < len(node.Content); i += 2 {
+		key := node.Content[i]
+		val := node.Content[i+1]
+
+		if key.Kind != yaml.ScalarNode {
+			return yamlErrorf(loc, "key is not a scalar")
+		}
+		switch st := key.ShortTag(); st {
+		case "!!str", "!!null":
+		case "!!merge":
+			if merge != nil {
+				return &LocationError{
+					Loc:     s.loc(key),
+					Summary: "duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'",
+				}
+			}
+			merge = val
+			continue
+		default:
+			return yamlErrorf(loc, "invalid key tag: %v", st)
+		}
+		c, err := s.child(val, noPath)
+		if err != nil {
+			return err
+		}
+		if err := c.validateAll(); err != nil {
+			return err
+		}
+	}
+	if merge == nil {
+		return nil
+	}
+
+	merr := yamlErrorf(s.loc(merge), "map merge requires map or sequence of maps as the value")
+	var mnodes []*yaml.Node
+	switch merge.Kind {
+	case yaml.SequenceNode:
+		mnodes = merge.Content
+	case yaml.AliasNode:
+		mnodes = []*yaml.Node{merge}
+	default:
+		return merr
+	}
+	for _, n := range mnodes {
+		c, err := s.child(n, noPath)
+		if err != nil {
+			return err
+		}
+		if c.k != KindMap {
+			return merr
+		}
+		if err := c.validateAll(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // setPair sets the pair in pairs: an existing key keeps its position and key location.
