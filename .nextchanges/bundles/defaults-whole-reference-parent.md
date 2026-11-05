@@ -1,1 +1,0 @@
-* Fix `bundle validate` failing with "expected a map to index" when a job cluster `new_cluster` or a cluster `workload_type` is a reference to a whole block, such as `${resources.jobs.base.job_clusters[0].new_cluster}`. ([#7338](https://github.com/databricks/cli/pull/7338))
