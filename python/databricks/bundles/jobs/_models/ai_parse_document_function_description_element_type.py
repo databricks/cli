@@ -6,8 +6,6 @@ from typing import Literal
 
 class AiParseDocumentFunctionDescriptionElementType(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     An element type that AI descriptions can be generated for.
     """
 

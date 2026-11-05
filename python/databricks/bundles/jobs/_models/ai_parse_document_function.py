@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AiParseDocumentFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Configuration for a task that runs the `ai_parse_document` function.
     """
 
@@ -31,7 +29,7 @@ class AiParseDocumentFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The ai_parse_document output schema version to invoke (for example, `2.0`).
+    [Beta] The ai_parse_document output schema version to invoke (for example, `2.0`).
     """
 
     description_element_types: VariableOrList[
@@ -40,7 +38,7 @@ class AiParseDocumentFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Element types to generate AI descriptions for. Leave empty to generate no
+    [Beta] Element types to generate AI descriptions for. Leave empty to generate no
     descriptions; use ALL for every supported type, or list specific types to
     restrict generation to only those.
     """
@@ -49,14 +47,14 @@ class AiParseDocumentFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog volume path where rendered page and element images are written.
+    [Beta] Unity Catalog volume path where rendered page and element images are written.
     """
 
     page_range: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Pages to parse (1-indexed), as a comma-separated list of page numbers or
+    [Beta] Pages to parse (1-indexed), as a comma-separated list of page numbers or
     ranges (e.g. "1,3,5-10").
     """
 
@@ -75,7 +73,7 @@ class AiParseDocumentFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The ai_parse_document output schema version to invoke (for example, `2.0`).
+    [Beta] The ai_parse_document output schema version to invoke (for example, `2.0`).
     """
 
     description_element_types: VariableOrList[
@@ -84,7 +82,7 @@ class AiParseDocumentFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Element types to generate AI descriptions for. Leave empty to generate no
+    [Beta] Element types to generate AI descriptions for. Leave empty to generate no
     descriptions; use ALL for every supported type, or list specific types to
     restrict generation to only those.
     """
@@ -93,14 +91,14 @@ class AiParseDocumentFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog volume path where rendered page and element images are written.
+    [Beta] Unity Catalog volume path where rendered page and element images are written.
     """
 
     page_range: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Pages to parse (1-indexed), as a comma-separated list of page numbers or
+    [Beta] Pages to parse (1-indexed), as a comma-separated list of page numbers or
     ranges (e.g. "1,3,5-10").
     """
 

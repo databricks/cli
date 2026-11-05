@@ -29,7 +29,7 @@
           "label": "${resources.jobs.my_job.id}"
         }
       ],
-      "action": "update",
+      "action": "update_id",
       "new_state": {
         "value": {
           "object_id": "",
@@ -79,7 +79,8 @@
           ]
         },
         "object_id": {
-          "action": "update",
+          "action": "update_id",
+          "reason": "id_changes",
           "old": "/jobs/123",
           "new": "",
           "remote": "/jobs/123"

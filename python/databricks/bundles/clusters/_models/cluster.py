@@ -3,10 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.clusters._models.auto_scale import (
-    AutoScale,
-    AutoScaleParam,
-)
+from databricks.bundles.clusters._models.auto_scale import AutoScale, AutoScaleParam
 from databricks.bundles.clusters._models.aws_attributes import (
     AwsAttributes,
     AwsAttributesParam,
