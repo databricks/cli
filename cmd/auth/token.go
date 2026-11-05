@@ -327,9 +327,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			// this issue" trailer. The hint is more specific and avoids
 			// users reporting expected post-upgrade behavior as a bug.
 			if hint := storage.HintForNotFound(err); hint != "" {
-				return nil, fmt.Errorf("cache: %s. %s", compatSubstring, hint)
+				return nil, storage.NewNotFoundHint(fmt.Sprintf("cache: %s. %s", compatSubstring, hint))
 			}
-			err = errors.New("cache: " + compatSubstring)
+			err = storage.NewNotFoundHint("cache: " + compatSubstring)
 		}
 		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
 			return nil, rewrittenErr

@@ -1,16 +1,19 @@
 package dockercredentials_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -139,82 +142,41 @@ func TestLoadProfile(t *testing.T) {
 	}
 }
 
-func TestEnsureUniqueProfile(t *testing.T) {
-	selected := workspaceProfile("prod")
-	tests := []struct {
-		name     string
-		profiles profile.Profiles
-		selected profile.Profile
-		wantErr  string
-	}{
-		{name: "single profile", profiles: profile.Profiles{selected}, selected: selected},
-		{
-			name:     "duplicate workspace ID",
-			profiles: profile.Profiles{selected, workspaceProfile("dev")},
-			selected: selected,
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
-		},
-		{
-			name: "unsupported duplicate",
-			profiles: profile.Profiles{selected, {
-				Name:                 "m2m",
-				Host:                 workspaceHost,
-				WorkspaceID:          workspaceID,
-				HasClientCredentials: true,
-			}},
-			selected: selected,
-		},
-		{
-			name:     "resolved workspace ID appends selected profile",
-			profiles: profile.Profiles{selected},
-			selected: profile.Profile{
-				Name:     "workspace",
-				Host:     workspaceHost,
-				AuthType: auth.AuthTypeDatabricksCli,
-			},
-			wantErr: "multiple Databricks profiles match workspace ID 123456789: prod and workspace. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := dockercredentials.EnsureUniqueProfile(t.Context(), profile.InMemoryProfiler{Profiles: tt.profiles}, tt.selected, workspaceID)
-			if tt.wantErr == "" {
-				assert.NoError(t, err)
-				return
-			}
-			assert.EqualError(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestProfileForRegistry(t *testing.T) {
+func TestProfilesForRegistry(t *testing.T) {
 	registry := dockercredentials.Registry{
 		WorkspaceID: workspaceID,
 		Host:        "123456789.container.us-west-2.cloud.databricks.test",
 	}
-	workspace := workspaceProfile("workspace")
+	m2m := profile.Profile{
+		Name:                 "m2m",
+		Host:                 workspaceHost,
+		WorkspaceID:          workspaceID,
+		HasClientCredentials: true,
+	}
+	loopback := profile.Profile{
+		Name:        "loopback",
+		Host:        "http://127.0.0.1:8080",
+		WorkspaceID: workspaceID,
+		AuthType:    auth.AuthTypeDatabricksCli,
+	}
 	tests := []struct {
 		name     string
 		profiles profile.Profiles
-		want     string
+		want     []string
 		wantErr  string
 	}{
-		{name: "selects workspace profile", profiles: profile.Profiles{workspace}, want: workspace.Name},
+		{name: "selects workspace profile", profiles: profile.Profiles{workspaceProfile("workspace")}, want: []string{"workspace"}},
 		{
-			name:     "duplicate workspace ID",
+			name:     "shared workspace ID in file order",
 			profiles: profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
+			want:     []string{"prod", "dev"},
 		},
+		{name: "ignores unsupported profile", profiles: profile.Profiles{m2m, workspaceProfile("workspace")}, want: []string{"workspace"}},
+		{name: "ignores host the registry does not serve", profiles: profile.Profiles{loopback, workspaceProfile("workspace")}, want: []string{"workspace"}},
 		{
-			name: "ignores unsupported duplicate",
-			profiles: profile.Profiles{workspace, {
-				Name:                 "m2m",
-				Host:                 workspaceHost,
-				WorkspaceID:          workspaceID,
-				HasClientCredentials: true,
-			}},
-			want: workspace.Name,
+			name:     "only unsupported profiles",
+			profiles: profile.Profiles{m2m},
+			wantErr:  `profile "m2m" uses client credentials. Docker credential helper requires a profile created by databricks auth login`,
 		},
 		{
 			name:    "no matching profile",
@@ -224,13 +186,97 @@ func TestProfileForRegistry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := dockercredentials.ProfileForRegistry(t.Context(), profile.InMemoryProfiler{Profiles: tt.profiles}, registry)
+			got, err := dockercredentials.ProfilesForRegistry(t.Context(), profile.InMemoryProfiler{Profiles: tt.profiles}, registry)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got.Name)
+			assert.Equal(t, tt.want, got.Names())
+		})
+	}
+}
+
+func TestTokenForRegistry(t *testing.T) {
+	registry := dockercredentials.Registry{
+		WorkspaceID: workspaceID,
+		Host:        "123456789.container.us-west-2.cloud.databricks.test",
+	}
+	errUnavailable := errors.New("service unavailable")
+	tests := []struct {
+		name      string
+		profiles  profile.Profiles
+		errs      map[string]error
+		canceled  bool
+		want      string
+		wantTried []string
+		wantErr   string
+	}{
+		{
+			name:      "first logged-in profile wins",
+			profiles:  profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
+			want:      "prod",
+			wantTried: []string{"prod"},
+		},
+		{
+			name:      "skips profiles that are logged out",
+			profiles:  profile.Profiles{workspaceProfile("missing"), workspaceProfile("no-refresh"), workspaceProfile("revoked"), workspaceProfile("dev")},
+			errs:      map[string]error{"missing": storage.ErrNotFound, "no-refresh": u2m.ErrMissingRefreshToken, "revoked": &u2m.InvalidRefreshTokenError{}},
+			want:      "dev",
+			wantTried: []string{"missing", "no-refresh", "revoked", "dev"},
+		},
+		{
+			name:      "stops at other errors",
+			profiles:  profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
+			errs:      map[string]error{"prod": errUnavailable},
+			wantTried: []string{"prod"},
+			wantErr:   `profile "prod": load token: service unavailable`,
+		},
+		{
+			name:      "no logged-in profile",
+			profiles:  profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
+			errs:      map[string]error{"prod": storage.ErrNotFound, "dev": storage.ErrNotFound},
+			wantTried: []string{"prod", "dev"},
+			wantErr:   "no logged-in Databricks profile for workspace ID 123456789 from registry host 123456789.container.us-west-2.cloud.databricks.test. Run databricks auth login --profile <profile-name> for one of these profiles:\nprofile \"prod\": load token: token not found\nprofile \"dev\": load token: token not found",
+		},
+		{
+			name:     "stops when the context is canceled",
+			profiles: profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
+			canceled: true,
+			wantErr:  "context canceled",
+		},
+		{
+			name:      "single profile keeps its error",
+			profiles:  profile.Profiles{workspaceProfile("workspace")},
+			errs:      map[string]error{"workspace": storage.ErrNotFound},
+			wantTried: []string{"workspace"},
+			wantErr:   "load token: token not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var tried []string
+			load := func(_ context.Context, p profile.Profile) (*oauth2.Token, error) {
+				tried = append(tried, p.Name)
+				if err := tt.errs[p.Name]; err != nil {
+					return nil, fmt.Errorf("load token: %w", err)
+				}
+				return &oauth2.Token{AccessToken: p.Name}, nil
+			}
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			if tt.canceled {
+				cancel()
+			}
+			got, err := dockercredentials.TokenForRegistry(ctx, profile.InMemoryProfiler{Profiles: tt.profiles}, registry, load)
+			assert.Equal(t, tt.wantTried, tried)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got.AccessToken)
 		})
 	}
 }
