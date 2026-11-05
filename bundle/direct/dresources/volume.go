@@ -105,13 +105,8 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	updateRequest.Name = config.CatalogName + "." + config.SchemaName + "." + nameFromID
 
 	if entry.Changes.OnlyParentRenamed() {
-		// Nothing to update. Read the volume to record its full name as UC spells it: UC
-		// lowercases names, config may not.
-		response, err := r.DoRead(ctx, updateRequest.Name)
-		if err != nil {
-			return "", nil, err
-		}
-		return response.FullName, response, nil
+		// UC already moved the volume with its parent; only the ID changes.
+		return updateRequest.Name, nil, nil
 	}
 
 	if config.Name != nameFromID {
