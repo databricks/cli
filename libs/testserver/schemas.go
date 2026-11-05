@@ -103,7 +103,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		// UC normalizes schema names to lowercase.
 		existing.Name = strings.ToLower(schemaUpdate.NewName)
 		existing.FullName = existing.CatalogName + "." + existing.Name
-		s.moveSchemaVolumes(existing.CatalogName, oldName, existing.Name)
+		s.moveSchemaChildren(existing.CatalogName, oldName, existing.Name)
 	}
 
 	existing.UpdatedAt = nowMilli()
@@ -116,8 +116,8 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	}
 }
 
-// moveSchemaVolumes mirrors UC, where the volumes of a renamed schema move with it.
-func (s *FakeWorkspace) moveSchemaVolumes(catalogName, oldSchemaName, newSchemaName string) {
+// moveSchemaChildren mirrors UC, where the volumes and registered models of a renamed schema move with it.
+func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchemaName string) {
 	for key, volume := range s.Volumes {
 		if volume.CatalogName != catalogName || volume.SchemaName != oldSchemaName {
 			continue
@@ -126,6 +126,13 @@ func (s *FakeWorkspace) moveSchemaVolumes(catalogName, oldSchemaName, newSchemaN
 		volume.SchemaName = newSchemaName
 		volume.FullName = catalogName + "." + newSchemaName + "." + volume.Name
 		s.Volumes[volume.FullName] = volume
+	}
+	for key, model := range s.RegisteredModels {
+		if model.CatalogName != catalogName || model.SchemaName != oldSchemaName {
+			continue
+		}
+		model.SchemaName = newSchemaName
+		s.moveRegisteredModel(key, model)
 	}
 }
 

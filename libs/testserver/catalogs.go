@@ -133,7 +133,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	}
 }
 
-// moveCatalogChildren mirrors UC, where the schemas and volumes of a renamed catalog move with it.
+// moveCatalogChildren mirrors UC, where the schemas, volumes and registered models of a renamed catalog move with it.
 func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName string) {
 	for key, schema := range s.Schemas {
 		if schema.CatalogName != oldCatalogName {
@@ -152,6 +152,13 @@ func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName strin
 		volume.CatalogName = newCatalogName
 		volume.FullName = newCatalogName + "." + volume.SchemaName + "." + volume.Name
 		s.Volumes[volume.FullName] = volume
+	}
+	for key, model := range s.RegisteredModels {
+		if model.CatalogName != oldCatalogName {
+			continue
+		}
+		model.CatalogName = newCatalogName
+		s.moveRegisteredModel(key, model)
 	}
 }
 
