@@ -37,7 +37,8 @@ var userSetWorkspaceIDSources = []sdkconfig.SourceType{
 //
 // The fields are strings so that templates which print the root data get stable output.
 type workspaceContext struct {
-	// Hostname is the workspace host without scheme, port, path, or query.
+	// Hostname is the workspace host without scheme, path, or query. It keeps the port if the
+	// host has one.
 	Hostname string
 
 	host        string
@@ -71,7 +72,7 @@ func loadWorkspaceContext(ctx context.Context, schema *jsonschema.Schema) (*work
 		urlWorkspaceID = workspaceID
 	}
 	return &workspaceContext{
-		Hostname:       host.Hostname(),
+		Hostname:       host.Host,
 		host:           cfg.Host,
 		workspaceID:    workspaceID,
 		urlWorkspaceID: urlWorkspaceID,

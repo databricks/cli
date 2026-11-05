@@ -97,12 +97,12 @@ workspace: 0
 
 >>> [CLI] bundle debug render-template-schema ./undeclared --input-file input.value.json
 {
-  "welcome_message": "workspace: {localhost [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}",
+  "welcome_message": "workspace: {[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}",
   "success_message": null,
   "properties": {}
 }
 
 >>> [CLI] bundle init ./undeclared --config-file input.value.json
-workspace: {localhost [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}
+workspace: {[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}
 ✨ Successfully initialized template
-workspace: {localhost [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}
+workspace: {[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}
