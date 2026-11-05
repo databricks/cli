@@ -85,8 +85,8 @@ Updated materialization_sets.set1
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
-=== A member whose feature name changes reads as one member removed and another added, so it
-=== plans a recreate as well
+=== Changing the feature name the set's materialized feature member references, from feata's to
+=== featb's, reads as one member removed and another added, so it plans a recreate as well
 >>> [CLI] bundle plan -o json
 Warn: planning resources.materialization_sets.set1: the member for feature "main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed
 
@@ -95,7 +95,8 @@ Warn: planning resources.materialization_sets.set1: the member for feature "main
   "resources.materialization_sets.set1": "recreate"
 }
 
-=== That recreate needs approval too, and with it the set is rebuilt for the renamed member
+=== That recreate needs approval too, and with it the set is rebuilt with its member referencing
+=== featb's feature name
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
 Warn: planning resources.materialization_sets.set1: the member for feature "main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed

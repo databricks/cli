@@ -20,8 +20,6 @@ resources:
         - name: id
       timeseries_column:
         name: timestamp
-    # Declared so a later phase can add a member for it, or rename the set's member to it. A member
-    # names a feature that must already exist.
     featb:
       full_name: $CATALOG_NAME.$SCHEMA_NAME.immb_$UNIQUE_NAME
       source:
@@ -43,6 +41,7 @@ resources:
   materialization_sets:
     set1:
       materialized_features:
+        # Unlike the earlier phases, the member references featb's feature name instead of feata's.
         - feature_name: ${resources.features.featb.full_name}
           offline_store_config:
             catalog_name: $CATALOG_NAME
