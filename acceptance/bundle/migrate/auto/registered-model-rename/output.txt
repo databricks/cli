@@ -2,18 +2,17 @@
 === Replay the prior terraform deployment (captured from a real terraform run)
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
-=== Rename the model (an immutable id field) and deploy on direct
+=== Rename the model (an updatable id field) and deploy on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: migration to direct: registered_models.my_model: name differs between config ("themodel-[UNIQUE_NAME]-renamed") and terraform state ("themodel-[UNIQUE_NAME]"); this resource will be recreated.
+Warn: migration to direct: registered_models.my_model: name differs between config ("themodel-[UNIQUE_NAME]-renamed") and terraform state ("themodel-[UNIQUE_NAME]"); this resource will be renamed.
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Migrated 2 resources to direct deployment engine.
-Recreated registered_models.my_model
+Updated registered_models.my_model
 Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry
-direct_migrate_recreate_planned true
 direct_migrated_via_env true
 
 === Redeploy on direct: the model now matches config, so the plan is a clean no-op

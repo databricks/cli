@@ -302,8 +302,8 @@ func TestFollowsParentRename(t *testing.T) {
 		},
 		{
 			name:           "resource without DoUpdateWithID is recreated",
-			resource:       "registered_models",
-			field:          "schema_name",
+			resource:       "quality_monitors",
+			field:          "table_name",
 			old:            "s_old",
 			expectedAction: deployplan.Recreate,
 		},
