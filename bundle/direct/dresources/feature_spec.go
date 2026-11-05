@@ -19,8 +19,9 @@ func (*ResourceFeatureSpec) New(client *databricks.WorkspaceClient) *ResourceFea
 	return &ResourceFeatureSpec{client: client}
 }
 
-// PrepareState sorts the order-free string lists, so a reorder in config is not a recreate. The
-// sorted lists are what gets sent and stored; DoRead sorts the same lists on the way back.
+// PrepareState sorts the fields in FeatureSpec that are order-free lists, so a reorder in config is
+// not a recreate. The FeatureSpec with the order-free list fields sorted is what gets sent and
+// stored in the backend.
 func (*ResourceFeatureSpec) PrepareState(input *resources.FeatureSpec) *ml.FeatureSpec {
 	state := input.FeatureSpec
 	sortOrderFreeLists(&state)
@@ -32,7 +33,8 @@ func (r *ResourceFeatureSpec) DoRead(ctx context.Context, id string) (*ml.Featur
 	if err != nil {
 		return nil, err
 	}
-	// A feature spec created outside the bundle may hold these lists in any order.
+	// Returns the FeatureSpec with its order-free list fields sorted, so a feature spec created
+	// outside the bundle also has them sorted.
 	sortOrderFreeLists(featureSpec)
 	return featureSpec, nil
 }
@@ -49,9 +51,9 @@ func (r *ResourceFeatureSpec) DoDelete(ctx context.Context, id string, _ *ml.Fea
 	return r.client.FeatureEngineering.DeleteFeatureSpec(ctx, ml.DeleteFeatureSpecRequest{Name: id})
 }
 
-// KeyedSlices compares the map-like pair lists by key, since their order means nothing. The other
-// lists stay positional: features sets the output column order, and lookup keys must follow the
-// feature table's primary key order.
+// KeyedSlices compares the fields in FeatureSpec that consist of a list of key-value pairs by key
+// instead of position, since their order means nothing. The other list fields in FeatureSpec are
+// still compared positionally.
 func (*ResourceFeatureSpec) KeyedSlices() map[string]any {
 	return map[string]any{
 		"features[*].feature_lookup.rename_outputs":   renameOutputKey,
@@ -72,9 +74,10 @@ func featureFunctionInputBindingKey(x ml.FeatureFunctionInputBinding) (string, s
 	return "parameter", x.Parameter
 }
 
-// sortOrderFreeLists sorts exclude_columns and the extra pip requirements. Both are sets to the
-// server, but as string lists they cannot be compared by key (KeyedSlices needs struct elements).
-// It replaces the slices rather than sorting them in place, so the bundle config is not mutated.
+// sortOrderFreeLists sorts a FeatureSpec's ExcludeColumns and ExtraPipRequirements. Both are
+// treated as sets by the server but stored as string lists, which cannot be compared by a key
+// defined in KeyedSlices. Each field is replaced with the sorted list rather than sorted in place,
+// so the bundle config is not mutated.
 func sortOrderFreeLists(featureSpec *ml.FeatureSpec) {
 	featureSpec.ExcludeColumns = sortedClone(featureSpec.ExcludeColumns)
 	if featureSpec.ExtraPipRequirements != nil {
