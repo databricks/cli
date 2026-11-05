@@ -344,54 +344,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	containers := submittedContainers(cfg, funcDir)
 	token := effectiveIdempotencyToken(idempotencyKey, cfg)
 
-	// Validate server-side while the run artifacts stage below. The backend check
-	// does not read the uploaded files, so the two can overlap; submission waits
-	// for the result, so an invalid config is never submitted. Both share
-	// stagingCtx, so a failure on either side cancels the other.
-	stagingCtx, cancelStaging := context.WithCancelCause(ctx)
-	validated := make(chan struct{})
-	var validationUnavailable bool
-	var validationErr error
-	go func() {
-		defer close(validated)
-		validationUnavailable, validationErr = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
-		if validationErr != nil {
-			cancelStaging(validationErr)
-		}
-	}()
-	defer func() {
-		// A failed validation cancels staging; report it, not the cancellation.
-		if cause := context.Cause(stagingCtx); err != nil && cause != nil {
-			err = cause
-		}
-		cancelStaging(nil)
-		<-validated
-	}()
-
-	// Resolve the usage policy to its id next, so a bad name fails fast with a
-	// clear (caller-fixable) message before we upload any artifacts. Validation
-	// guarantees name and id are mutually exclusive: a literal id is used as-is, a
-	// name is resolved against the workspace.
-	usagePolicyID := ""
-	if cfg.UsagePolicyID != nil {
-		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
-	}
-	if cfg.UsagePolicyName != nil {
-		usagePolicyID, err = resolveUsagePolicyIDByName(stagingCtx, w, *cfg.UsagePolicyName)
-		if err != nil {
-			return 0, "", err
-		}
-	}
-
 	deps, _ := cfg.inlineDependencies()
-
-	experimentDir := ""
-	if cfg.MLflowExperimentDirectory != nil {
-		experimentDir = *cfg.MLflowExperimentDirectory
-	}
-	if err := ensureExperimentDirectory(stagingCtx, w, experimentDir); err != nil {
-		return 0, "", err
-	}
 
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
@@ -416,6 +369,30 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
+	// Validate server-side while the run artifacts upload. The backend check does
+	// not read the uploaded files, so the two can overlap; submission waits for
+	// the result, so an invalid config is never submitted. Both share stagingCtx,
+	// so a failure on either side cancels the other.
+	stagingCtx, cancelStaging := context.WithCancelCause(ctx)
+	validated := make(chan struct{})
+	var validationUnavailable bool
+	var validationErr error
+	go func() {
+		defer close(validated)
+		validationUnavailable, validationErr = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
+		if validationErr != nil {
+			cancelStaging(validationErr)
+		}
+	}()
+	defer func() {
+		// A failed validation cancels staging; report it, not the cancellation.
+		if cause := context.Cause(stagingCtx); err != nil && cause != nil {
+			err = cause
+		}
+		cancelStaging(nil)
+		<-validated
+	}()
+
 	err = withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
 		var stageErr error
 		snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
@@ -437,6 +414,29 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Retain the local guard after backend validation so an unavailable endpoint
 	// cannot let a bad key reach submission.
 	if err := validateIdempotencyToken(token); err != nil {
+		return 0, "", err
+	}
+
+	// Resolve the usage policy to its id next, so a bad name fails with a clear
+	// (caller-fixable) message before submission. Validation guarantees name and
+	// id are mutually exclusive: a literal id is used as-is, a name is resolved
+	// against the workspace.
+	usagePolicyID := ""
+	if cfg.UsagePolicyID != nil {
+		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
+	}
+	if cfg.UsagePolicyName != nil {
+		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
+		if err != nil {
+			return 0, "", err
+		}
+	}
+
+	experimentDir := ""
+	if cfg.MLflowExperimentDirectory != nil {
+		experimentDir = *cfg.MLflowExperimentDirectory
+	}
+	if err := ensureExperimentDirectory(ctx, w, experimentDir); err != nil {
 		return 0, "", err
 	}
 
