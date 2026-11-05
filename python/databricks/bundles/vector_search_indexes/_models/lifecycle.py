@@ -6,10 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.vector_search_indexes._models.bind import (
-    Bind,
-    BindParam,
-)
+from databricks.bundles.vector_search_indexes._models.bind import Bind, BindParam
 from databricks.bundles.vector_search_indexes._models.depends_on import (
     DependsOn,
     DependsOnParam,

@@ -641,24 +641,27 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				}
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
+				matched := false
 				for ind, envset := range expanded {
+					// Under selection.EnvVar, an invariant dir re-enabled by a
+					// specific config change runs only its matching variants.
+					if selectChanged && !selection.MatchesFilters(envset, changedTests[dir]) {
+						continue
+					}
+					matched = true
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if runParallel {
 							t.Parallel()
-						}
-						// Under selection.EnvVar, an invariant dir re-enabled by a
-						// specific config change runs only its matching variants.
-						if selectChanged {
-							if variantFilters := changedTests[dir]; variantFilters != nil {
-								checkEnvFilters(t, envset, variantFilters)
-							}
 						}
 						if reason := subset.skipReason(dir, envset); reason != "" {
 							t.Skip(reason)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
+				}
+				if selectChanged && !matched {
+					t.Skip("No environment matrix variants match changed-test selection")
 				}
 			}
 		})

@@ -7,10 +7,7 @@ from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
 from databricks.bundles.dashboards._models.bind import Bind, BindParam
-from databricks.bundles.dashboards._models.depends_on import (
-    DependsOn,
-    DependsOnParam,
-)
+from databricks.bundles.dashboards._models.depends_on import DependsOn, DependsOnParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

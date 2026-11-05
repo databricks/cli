@@ -432,6 +432,10 @@ var RequiredFields = map[string][]string{
 	"resources.postgres_catalogs.*.lifecycle.bind":          {"id"},
 	"resources.postgres_catalogs.*.lifecycle.depends_on[*]": {"resource"},
 
+	"resources.postgres_data_apis.*":                         {"parent"},
+	"resources.postgres_data_apis.*.lifecycle.bind":          {"id"},
+	"resources.postgres_data_apis.*.lifecycle.depends_on[*]": {"resource"},
+
 	"resources.postgres_databases.*":                         {"role", "database_id", "parent"},
 	"resources.postgres_databases.*.lifecycle.bind":          {"id"},
 	"resources.postgres_databases.*.lifecycle.depends_on[*]": {"resource"},
