@@ -46,13 +46,18 @@ func (h *Heartbeat) run(ctx context.Context, send func(context.Context) error) {
 			return
 		case <-h.renewed:
 		case <-timer.C:
-			// A request cut short by Stop is not a failure.
-			if err := send(ctx); err != nil && ctx.Err() == nil {
-				logdiag.LogDiag(ctx, diag.Diagnostic{
-					Severity: diag.Warning,
-					Summary:  fmt.Sprintf("Failed to send deployment heartbeat, so the deployment may show as interrupted; retrying in %s: %s", heartbeatInterval, err),
-				})
+			err := send(ctx)
+			if err == nil {
+				break
 			}
+			// We only get an error if Stop was called
+			if ctx.Err() != nil {
+				return
+			}
+			logdiag.LogDiag(ctx, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("Failed to send deployment heartbeat, so the deployment may show as interrupted; retrying in %s: %s", heartbeatInterval, err),
+			})
 		}
 		timer.Reset(heartbeatInterval)
 	}
