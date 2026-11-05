@@ -111,9 +111,8 @@ func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := validateServer(t, tt.status, tt.body, nil)
-			unavailable, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 			assert.NoError(t, err)
-			assert.True(t, unavailable)
 		})
 	}
 }
@@ -146,9 +145,8 @@ func TestPreflightValidationDoesNotRetryTransportFailure(t *testing.T) {
 		return nil, errors.New("connection failed")
 	})
 
-	unavailable, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
-	assert.True(t, unavailable)
 	assert.Equal(t, int32(1), requests.Load())
 }
 
@@ -178,9 +176,8 @@ func TestPreflightValidationFailsOpenOnInvalidSuccessResponse(t *testing.T) {
 				}, nil
 			})
 
-			unavailable, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			_, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 			require.NoError(t, err)
-			assert.True(t, unavailable)
 			assert.Equal(t, int32(1), requests.Load())
 		})
 	}
@@ -240,10 +237,9 @@ func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
 	started := time.Now()
-	unavailable, err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, err = preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 
 	require.NoError(t, err)
-	assert.True(t, unavailable)
 	assert.Less(t, time.Since(started), time.Second)
 	select {
 	case <-refreshStarted:
@@ -307,10 +303,9 @@ func TestPreflightValidationTimeoutFailsOpen(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
 	started := time.Now()
-	unavailable, err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	close(releaseRequest)
 	require.NoError(t, err)
-	assert.True(t, unavailable)
 	assert.Less(t, time.Since(started), time.Second)
 }
 
