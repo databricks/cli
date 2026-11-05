@@ -6,7 +6,7 @@
       host: [DATABRICKS_URL]
 
 >>> grep -E ^    default: [^{] my_dbt_sql/profile_template.yml
-    default: 127.0.0.1
+    default: [DATABRICKS_HOST]
     default: /sql/2.0/warehouses/f00dcafe
     default: main
     default: 4
@@ -18,7 +18,7 @@
       host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 
 >>> grep -E ^    default: [^{] my_dbt_sql/profile_template.yml
-    default: localhost
+    default: [CUSTOM_HOSTNAME]
     default: /sql/2.0/warehouses/f00dcafe?o=[WORKSPACE_ID]
     default: main
     default: 4
