@@ -5,6 +5,13 @@ cp ../databricks.yml .
 git-repo-init
 git remote add origin https://github.com/databricks/cli
 trace $CLI bundle validate -o json | jq .bundle.git
+
+title "a linked worktree: branch and origin URL come from the main checkout's .git\n"
+git worktree add -q ../linked -b feature
+cd ../linked
+trace $CLI bundle validate -o json | jq .bundle.git
+cd ../withremote
+git worktree remove ../linked
 cd ..
 rm -fr withremote
 
