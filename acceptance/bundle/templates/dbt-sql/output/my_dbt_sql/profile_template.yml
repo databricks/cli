@@ -5,7 +5,7 @@ fixed:
   type: databricks
 prompts:
   host:
-    default: [DATABRICKS_HOST]
+    default: 127.0.0.1
   token:
     hint: 'personal access token to use, dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
     hide_input: true

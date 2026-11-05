@@ -1,0 +1,29 @@
+# The test server is reachable as both 127.0.0.1 and localhost. The second
+# stands in for a host shared by several workspaces.
+CUSTOM_HOST=${DATABRICKS_HOST/127.0.0.1/localhost}
+add_repl "$CUSTOM_HOST" CUSTOM_HOST
+WORKSPACE_ID=$(curl -s "$DATABRICKS_HOST/.well-known/databricks-config" | jq -r .workspace_id)
+
+cat > .databrickscfg <<EOT
+[no_workspace_id]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+
+[custom_host]
+host = $CUSTOM_HOST
+workspace_id = $WORKSPACE_ID
+token = $DATABRICKS_TOKEN
+EOT
+export DATABRICKS_CONFIG_FILE=$PWD/.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# dbt reads the workspace ID from ?o= in the HTTP path. The template adds it
+# when the profile sets the ID, like ?w= in the bundle host.
+for profile in no_workspace_id custom_host; do
+  title "Profile $profile\n"
+  $CLI bundle init dbt-sql --config-file ./input.json --profile $profile > /dev/null 2>&1
+  trace grep 'host:' my_dbt_sql/databricks.yml
+  trace grep -E "^    default: [^{]" my_dbt_sql/profile_template.yml
+  rm -r my_dbt_sql
+done

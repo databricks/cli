@@ -1,0 +1,24 @@
+
+=== Profile no_workspace_id
+
+>>> grep host: my_dbt_sql/databricks.yml
+      host: [DATABRICKS_URL]
+      host: [DATABRICKS_URL]
+
+>>> grep -E ^    default: [^{] my_dbt_sql/profile_template.yml
+    default: 127.0.0.1
+    default: /sql/2.0/warehouses/f00dcafe
+    default: main
+    default: 4
+
+=== Profile custom_host
+
+>>> grep host: my_dbt_sql/databricks.yml
+      host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+      host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+
+>>> grep -E ^    default: [^{] my_dbt_sql/profile_template.yml
+    default: localhost
+    default: /sql/2.0/warehouses/f00dcafe?o=[WORKSPACE_ID]
+    default: main
+    default: 4

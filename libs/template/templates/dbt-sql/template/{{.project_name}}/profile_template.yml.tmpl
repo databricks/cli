@@ -5,13 +5,16 @@ fixed:
   type: databricks
 prompts:
   host:
-    default: {{(regexp "^https?://").ReplaceAllString workspace_host ""}}
+    default: {{.workspace.Hostname}}
   token:
     hint: 'personal access token to use, dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
     hide_input: true
   http_path:
     hint: 'HTTP path of SQL warehouse to use'
-    default: {{.http_path}}
+    {{- /* dbt selects the workspace on a host shared by several workspaces with ?o=<id> in the
+    HTTP path. Use the ID from the workspace URL, which has it when the profile sets it. */}}
+    {{- $id := (regexp `[?&]w=([^&#]+)`).FindStringSubmatch .workspace.URL}}
+    default: {{.http_path}}{{if $id}}?o={{index $id 1}}{{end}}
   {{- if eq .default_catalog ""}}
   _choose_unity_catalog:
     'use the default workspace catalog (or do not use Unity Catalog)':
