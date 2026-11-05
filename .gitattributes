@@ -120,6 +120,7 @@ cmd/workspace/jobs/jobs.go linguist-generated=true
 cmd/workspace/knowledge-assistants/knowledge-assistants.go linguist-generated=true
 cmd/workspace/lakeview-embedded/lakeview-embedded.go linguist-generated=true
 cmd/workspace/lakeview/lakeview.go linguist-generated=true
+cmd/workspace/lakewatch/lakewatch.go linguist-generated=true
 cmd/workspace/libraries/libraries.go linguist-generated=true
 cmd/workspace/llm-proxy-partner-powered-workspace/llm-proxy-partner-powered-workspace.go linguist-generated=true
 cmd/workspace/materialized-features/materialized-features.go linguist-generated=true
