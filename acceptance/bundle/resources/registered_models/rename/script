@@ -1,0 +1,44 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+# Drop the remote_state fields that differ between clouds or from the test server.
+plan() {
+    trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
+}
+
+title "Deploy a catalog with a schema and a registered model in it"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+add_repl "$($CLI registered-models get "test_catalog_${UNIQUE_NAME}.myschema.mymodel" | jq -r .created_at)" MODEL_CREATED_AT
+
+title "Rename the model: it is renamed in place, keeping its versions"
+trace update_file.py databricks.yml "name: mymodel" "name: mymodel2"
+plan
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "test_catalog_${UNIQUE_NAME}.myschema.mymodel2" | jq '{full_name, created_at}'
+
+title "Rename the schema: UC moves the model with it, so the model is re-keyed without a request"
+trace update_file.py databricks.yml "name: myschema" "name: myschema2"
+plan
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "test_catalog_${UNIQUE_NAME}.myschema2.mymodel2" | jq '{full_name, created_at}'
+
+title "Rename the catalog: the model is re-keyed again"
+trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
+plan
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "test_catalog_renamed_${UNIQUE_NAME}.myschema2.mymodel2" | jq '{full_name, created_at}'
+
+title "The state tracks the new paths and the plan is a no-op"
+trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+trace $CLI bundle plan
