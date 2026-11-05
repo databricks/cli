@@ -1,6 +1,7 @@
 package bitmap
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -27,7 +28,6 @@ bundle configuration type and embedded into the CLI binary.`,
 	}
 	cmd.AddCommand(newSchemaCommand())
 	cmd.AddCommand(newUpdateSchemaCommand())
-	cmd.AddCommand(newBitmapTextCommand())
 	cmd.AddCommand(newBitmapCommand())
 	cmd.AddCommand(newDecodeCommand())
 	return cmd
@@ -73,37 +73,74 @@ fields are kept so that bit positions stay stable.`,
 	return cmd
 }
 
-func newBitmapTextCommand() *cobra.Command {
+// Values of the -o flag.
+const (
+	outputCompressed = "compressed"
+	outputText       = "text"
+	outputJSON       = "json"
+)
+
+// outputFormat is the -o flag of the bitmap and decode commands. It shadows the
+// global --output flag, which only accepts text and json.
+type outputFormat string
+
+func (f *outputFormat) String() string {
+	return string(*f)
+}
+
+func (f *outputFormat) Set(s string) error {
+	switch s {
+	case outputCompressed, outputText, outputJSON:
+		*f = outputFormat(s)
+		return nil
+	}
+	return fmt.Errorf("accepted values are %s, %s and %s", outputCompressed, outputText, outputJSON)
+}
+
+func (f *outputFormat) Type() string {
+	return "format"
+}
+
+const outputHelp = `output format:
+  compressed: base64 of the DEFLATE-compressed wire format
+  text:       a "size=N context=C" header, then one "<value> <field>" line per
+              set field: "T" or "F" for a boolean field holding that value, "1"
+              for any other field; unset fields are omitted
+  json:       size, context, and trees of the fields present ("presence") and of
+              the boolean fields seen holding "true" and "false"`
+
+func addOutputFlag(cmd *cobra.Command, output *outputFormat, def string) {
+	*output = outputFormat(def)
+	cmd.Flags().VarP(output, "output", "o", outputHelp)
+}
+
+func newBitmapCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bitmap-text",
-		Short: textShort + " for the current bundle",
-		Long:  textLong,
+		Use:   "bitmap",
+		Short: "Print the bitmap of the current bundle",
 		Args:  root.NoArgs,
 	}
+	var output outputFormat
+	addOutputFlag(cmd, &output, outputCompressed)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		bits, schema, err := loadBits(cmd)
 		if err != nil {
 			return err
 		}
-		return printLines(cmd.OutOrStdout(), bundlebitmap.Text(schema, bits))
+		return render(cmd.OutOrStdout(), output, schema, bits, bundlebitmap.ContextFullBundle)
 	}
 	return cmd
 }
 
-const (
-	textShort = "Print the fields set in the bitmap"
-	textLong  = `Prints one "<value> <field>" line per field set in the bitmap: "T" or "F" for a
-boolean field holding that value, "1" for any other field. Unset fields are
-omitted.`
-)
-
 func newDecodeCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "decode",
-		Short: textShort + " of an encoded bitmap read from stdin",
-		Long:  textLong + "\n\nThe input is the output of 'bundle bitmap bitmap'.",
+		Short: "Decode a compressed bitmap read from stdin",
+		Long:  "The input is the output of 'bundle bitmap bitmap'.",
 		Args:  root.NoArgs,
 	}
+	var output outputFormat
+	addOutputFlag(cmd, &output, outputText)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		encoded, err := io.ReadAll(cmd.InOrStdin())
 		if err != nil {
@@ -122,30 +159,29 @@ func newDecodeCommand() *cobra.Command {
 		if len(bits) > len(schema) {
 			return fmt.Errorf("bitmap has %d bits but the schema has %d fields; decode it with a newer CLI", len(bits), len(schema))
 		}
-		return printLines(cmd.OutOrStdout(), bundlebitmap.Text(schema, bits))
+		return render(cmd.OutOrStdout(), output, schema, bits, context)
 	}
 	return cmd
 }
 
-func newBitmapCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "bitmap",
-		Short: "Print the compressed, base64-encoded bitmap for the current bundle",
-		Args:  root.NoArgs,
-	}
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		bits, _, err := loadBits(cmd)
+func render(out io.Writer, output outputFormat, schema []string, bits []bool, context uint16) error {
+	switch output {
+	case outputCompressed:
+		encoded, err := bundlebitmap.Encode(bits, context)
 		if err != nil {
 			return err
 		}
-		encoded, err := bundlebitmap.Encode(bits, bundlebitmap.ContextFullBundle)
+		return printLines(out, []string{encoded})
+	case outputText:
+		return printLines(out, bundlebitmap.Text(schema, bits, context))
+	case outputJSON:
+		data, err := json.MarshalIndent(bundlebitmap.ToJSON(schema, bits, context), "", "  ")
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), encoded)
-		return nil
+		return printLines(out, []string{string(data)})
 	}
-	return cmd
+	return fmt.Errorf("unknown output format %q", output)
 }
 
 // loadBits loads the bundle and computes its bitmap against the embedded schema.
