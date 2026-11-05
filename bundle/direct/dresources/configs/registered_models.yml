@@ -20,10 +20,6 @@ ignore_remote_changes:
   - field: aliases[*].model_name
     reason: output_only
 provided_id_fields:
-  # The name can technically be updated without recreate. We recreate for now though
-  # to match TF implementation.
-  - field: name
-    reason: terraform_compat
   - field: catalog_name
     reason: id_field
   - field: schema_name
@@ -33,6 +29,9 @@ parent_id_fields:
     reason: parent
   - field: schema_name
     reason: parent
+updatable_id_fields:
+  - field: name
+    reason: id_changes
 recreate_on_changes:
   - field: storage_location
     reason: immutable
