@@ -146,6 +146,7 @@ def get_resources(target):
                 "id": resource.get("resource_id"),
                 "state": envelope.get("state") or {},
                 "depends_on": envelope.get("depends_on") or [],
+                "stable_id": envelope.get("stable_id"),
             }
         page_token = listed.get("next_page_token")
         if not page_token:
@@ -154,12 +155,14 @@ def get_resources(target):
 
 def get_recorded_state(target):
     """The recorded resources in the on-disk state file's `state` shape (resources.<key> ->
-    {__id__, state, depends_on}), so a recording run prints the same shape as a non-recording one."""
+    {__id__, state, depends_on, stable_id}), so a recording run prints the same shape as a non-recording one."""
     state = {}
     for key, value in sorted(get_resources(target).items()):
         entry = {"__id__": value["id"], "state": value["state"]}
         if value["depends_on"]:
             entry["depends_on"] = value["depends_on"]
+        if value["stable_id"]:
+            entry["stable_id"] = value["stable_id"]
         state[f"resources.{key}"] = entry
     return state
 
