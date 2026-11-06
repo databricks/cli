@@ -94,7 +94,7 @@ func walkTypePaths(t reflect.Type, prefix string, prune func(string) bool) ([]st
 		if typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
-		if typ.Kind() == reflect.Bool {
+		if typ.Kind() == reflect.Bool || typ.Implements(boolValuesType) {
 			paths = append(paths, prefix+p+trueSuffix, prefix+p+falseSuffix)
 		}
 		return true
@@ -152,48 +152,49 @@ func Merge(old, fresh []string) (merged, added []string) {
 // namespaced under "telemetry.".
 func Bits(cfg dyn.Value, telemetry any, schema []string) ([]bool, error) {
 	index := indexSchema(schema)
-
-	tm, err := telemetryValue(telemetry)
-	if err != nil {
+	bits := make([]bool, len(schema))
+	if err := markTelemetry(telemetry, index, bits); err != nil {
 		return nil, err
 	}
-
-	bits := make([]bool, len(schema))
 	markChildren(cfg, "", index, bits)
-	markChildren(tm, telemetryPrefix, index, bits)
 	return bits, nil
 }
 
-// telemetryValue converts the telemetry struct to a map keyed by Go field name
-// that holds only what was measured: a true bool, the value of a non-nil
-// *bool, and the elements of a non-empty []bool.
-func telemetryValue(telemetry any) (dyn.Value, error) {
+// boolValues is implemented by bundle.BoolSet, a telemetry field that records
+// each value it took. It is matched by method so that this package does not
+// import the bundle package.
+type boolValues interface{ Values() []bool }
+
+var boolValuesType = reflect.TypeFor[boolValues]()
+
+// markTelemetry sets the bits of the measured telemetry fields: the presence
+// bit and the bit of each value taken. A bool counts only when true.
+func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 	v := reflect.ValueOf(telemetry)
-	out := dyn.NewMapping()
 	for i := range v.NumField() {
 		name := v.Type().Field(i).Name
+		var values []bool
 		switch f := v.Field(i).Interface().(type) {
 		case bool:
 			if f {
-				out.SetLoc(name, nil, dyn.V(true))
+				values = []bool{true}
 			}
 		case *bool:
 			if f != nil {
-				out.SetLoc(name, nil, dyn.V(*f))
+				values = []bool{*f}
 			}
-		case []bool:
-			if len(f) > 0 {
-				elems := make([]dyn.Value, len(f))
-				for j, value := range f {
-					elems[j] = dyn.V(value)
-				}
-				out.SetLoc(name, nil, dyn.V(elems))
-			}
+		case boolValues:
+			values = f.Values()
 		default:
-			return dyn.InvalidValue, fmt.Errorf("telemetry field %s has unsupported type %s", name, v.Field(i).Type())
+			return fmt.Errorf("telemetry field %s has unsupported type %s", name, v.Field(i).Type())
+		}
+		path := joinField(telemetryPrefix, name)
+		for _, value := range values {
+			setBit(index, bits, path)
+			setBit(index, bits, path+valueSuffix(value))
 		}
 	}
-	return dyn.V(out), nil
+	return nil
 }
 
 // markChildren marks every child of v whose schema pattern is known. A map key
@@ -226,15 +227,24 @@ func mark(v dyn.Value, pattern string, index map[string]int, bits []bool) {
 	}
 	bits[i] = true
 	if value, ok := v.AsBool(); ok {
-		suffix := falseSuffix
-		if value {
-			suffix = trueSuffix
-		}
-		if j, ok := index[pattern+suffix]; ok {
-			bits[j] = true
-		}
+		setBit(index, bits, pattern+valueSuffix(value))
 	}
 	markChildren(v, pattern, index, bits)
+}
+
+// setBit sets the bit of schema path p, if the schema has it.
+func setBit(index map[string]int, bits []bool, p string) {
+	if i, ok := index[p]; ok {
+		bits[i] = true
+	}
+}
+
+// valueSuffix returns the suffix of the schema entry for a bool value.
+func valueSuffix(value bool) string {
+	if value {
+		return trueSuffix
+	}
+	return falseSuffix
 }
 
 func joinField(pattern, key string) string {

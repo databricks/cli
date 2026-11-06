@@ -71,10 +71,8 @@
 1 resources.pipelines.*.schema
 1 presets
 T presets.artifacts_dynamic_version
-1 telemetry.ArtifactBuildCommandIsSet
-T telemetry.ArtifactBuildCommandIsSet[*]
-1 telemetry.ArtifactFilesIsSet
-F telemetry.ArtifactFilesIsSet[*]
+T telemetry.ArtifactBuildCommandIsSet
+F telemetry.ArtifactFilesIsSet
 T telemetry.PresetsNamePrefixIsSet
 F telemetry.UseLegacyRunAs
 F telemetry.RunAsSet

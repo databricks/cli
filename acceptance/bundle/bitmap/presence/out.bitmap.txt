@@ -52,12 +52,10 @@ F resources.clusters.*.lifecycle.started
 1 presets.name_prefix
 F presets.pipelines_development
 1 experimental
-1 telemetry.ArtifactBuildCommandIsSet
-T telemetry.ArtifactBuildCommandIsSet[*]
-F telemetry.ArtifactBuildCommandIsSet[*]
-1 telemetry.ArtifactFilesIsSet
-T telemetry.ArtifactFilesIsSet[*]
-F telemetry.ArtifactFilesIsSet[*]
+T telemetry.ArtifactBuildCommandIsSet
+F telemetry.ArtifactBuildCommandIsSet
+T telemetry.ArtifactFilesIsSet
+F telemetry.ArtifactFilesIsSet
 T telemetry.PresetsNamePrefixIsSet
 T telemetry.ConfigHasDoubleDollarBrace
 F telemetry.UseLegacyRunAs

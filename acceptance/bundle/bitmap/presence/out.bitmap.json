@@ -70,12 +70,8 @@
       "service_principal_name": true
     },
     "telemetry": {
-      "ArtifactBuildCommandIsSet": {
-        "[*]": true
-      },
-      "ArtifactFilesIsSet": {
-        "[*]": true
-      },
+      "ArtifactBuildCommandIsSet": true,
+      "ArtifactFilesIsSet": true,
       "ConfigHasDoubleDollarBrace": true,
       "PresetsNamePrefixIsSet": true,
       "RunAsSet": true,
@@ -107,12 +103,8 @@
       }
     },
     "telemetry": {
-      "ArtifactBuildCommandIsSet": {
-        "[*]": true
-      },
-      "ArtifactFilesIsSet": {
-        "[*]": true
-      },
+      "ArtifactBuildCommandIsSet": true,
+      "ArtifactFilesIsSet": true,
       "ConfigHasDoubleDollarBrace": true,
       "PresetsNamePrefixIsSet": true,
       "RunAsSet": true
@@ -144,12 +136,8 @@
       }
     },
     "telemetry": {
-      "ArtifactBuildCommandIsSet": {
-        "[*]": true
-      },
-      "ArtifactFilesIsSet": {
-        "[*]": true
-      },
+      "ArtifactBuildCommandIsSet": true,
+      "ArtifactFilesIsSet": true,
       "UseLegacyRunAs": true
     }
   }
