@@ -6,8 +6,8 @@ repo_path="/Repos/$CURRENT_USER_NAME/sync-repo-$UNIQUE_NAME"
 workspace_path="/Users/$CURRENT_USER_NAME/sync-$UNIQUE_NAME"
 
 cleanup() {
-    $CLI repos delete "$repo_path" &>> LOG.cleanup || true
-    $CLI workspace delete --recursive "$workspace_path" &>> LOG.cleanup || true
+    $CLI repos delete "$repo_path" >> LOG.cleanup 2>&1 || true
+    $CLI workspace delete --recursive "$workspace_path" >> LOG.cleanup 2>&1 || true
 }
 trap cleanup EXIT
 
