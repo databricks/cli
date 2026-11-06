@@ -118,6 +118,17 @@ type IResource interface {
 	// (returned by GET, not 404) that rejects a second DELETE.
 	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
 	IsGone(remoteState any) bool
+
+	// [Optional] IDFromState returns the ID the state gives the resource, for resource types whose ID
+	// is built from their own fields (a UC full name). Implemented together with StableID.
+	// Example: func (*ResourceVolume) IDFromState(state *catalog.CreateVolumeRequestContent) string
+	IDFromState(state any) string
+
+	// [Optional] StableID returns the backend's ID for the object that a rename keeps (a volume's
+	// volume_id). When the resource is not at its recorded ID, the plan looks for it at the ID
+	// IDFromState gives it, and takes what it finds only if StableID matches the recorded one.
+	// Example: func (*ResourceVolume) StableID(remote *catalog.VolumeInfo) string
+	StableID(remoteState any) string
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -141,6 +152,8 @@ type Adapter struct {
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 	isGone             *calladapt.BoundCaller
+	idFromState        *calladapt.BoundCaller
+	stableID           *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -182,6 +195,8 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		isGone:                  nil,
+		idFromState:             nil,
+		stableID:                nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -308,6 +323,16 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.idFromState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IDFromState")
+	if err != nil {
+		return err
+	}
+
+	a.stableID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "StableID")
+	if err != nil {
+		return err
+	}
+
 	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
@@ -400,6 +425,14 @@ func (a *Adapter) validate() error {
 
 	if a.isGone != nil {
 		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
+	}
+
+	if (a.idFromState == nil) != (a.stableID == nil) {
+		return errors.New("IDFromState and StableID must be implemented together")
+	}
+	if a.idFromState != nil {
+		validations = append(validations, "IDFromState state", a.idFromState.InTypes[0], stateType)
+		validations = append(validations, "StableID remoteState", a.stableID.InTypes[0], remoteType)
 	}
 
 	if a.doUpdateWithID != nil {
@@ -725,6 +758,33 @@ func (a *Adapter) IsGone(remoteState any) bool {
 		return false
 	}
 	return outs[0].(bool)
+}
+
+// HasStableID reports whether the resource implements IDFromState and StableID.
+func (a *Adapter) HasStableID() bool {
+	return a.stableID != nil
+}
+
+// IDFromState returns the ID the state gives the resource; see IResource.IDFromState.
+func (a *Adapter) IDFromState(state any) (string, error) {
+	outs, err := a.idFromState.Call(state)
+	if err != nil {
+		return "", err
+	}
+	return outs[0].(string), nil
+}
+
+// StableID returns the rename-proof ID of the object in remoteState; see IResource.StableID.
+// It is empty for a resource type without one and for a nil remote state.
+func (a *Adapter) StableID(remoteState any) string {
+	if a.stableID == nil || remoteState == nil || reflect.ValueOf(remoteState).IsNil() {
+		return ""
+	}
+	outs, err := a.stableID.Call(remoteState)
+	if err != nil {
+		return ""
+	}
+	return outs[0].(string)
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

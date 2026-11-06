@@ -37,6 +37,16 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
+	if _, exists := s.Catalogs[createRequest.Name]; exists {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "CATALOG_ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Catalog '%s' already exists", createRequest.Name),
+			},
+		}
+	}
+
 	// Echo back every field create accepts: a dropped one makes the next plan see a
 	// phantom change.
 	catalogInfo := catalog.CatalogInfo{
@@ -143,4 +153,27 @@ func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName strin
 		volume.FullName = newCatalogName + "." + volume.SchemaName + "." + volume.Name
 		s.Volumes[volume.FullName] = volume
 	}
+}
+
+// CatalogsDelete mirrors UC, where deleting a catalog with force deletes its schemas and volumes too.
+func (s *FakeWorkspace) CatalogsDelete(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.Catalogs[name]; !ok {
+		return Response{StatusCode: http.StatusNotFound}
+	}
+	delete(s.Catalogs, name)
+	if req.URL.Query().Get("force") == "true" {
+		for key, schema := range s.Schemas {
+			if schema.CatalogName == name {
+				delete(s.Schemas, key)
+			}
+		}
+		for key, volume := range s.Volumes {
+			if volume.CatalogName == name {
+				delete(s.Volumes, key)
+			}
+		}
+	}
+	return Response{}
 }

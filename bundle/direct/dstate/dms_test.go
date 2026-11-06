@@ -45,15 +45,15 @@ func TestApplyDMSState(t *testing.T) {
 			},
 		},
 		{
-			name: "renamed_from comes back from the envelope",
+			name: "stable_id comes back from the envelope",
 			recorded: []dms.Resource{
-				{Key: "resources.schemas.foo", ID: "main.new", State: `{"state":{"name":"new"},"renamed_from":{"name":"old"}}`},
+				{Key: "resources.schemas.foo", ID: "main.foo", State: `{"state":{"name":"foo"},"stable_id":"uuid-1"}`},
 			},
 			want: map[string]ResourceEntry{
 				"resources.schemas.foo": {
-					ID:          "main.new",
-					State:       json.RawMessage(`{"name":"new"}`),
-					RenamedFrom: map[string]any{"name": "old"},
+					ID:       "main.foo",
+					State:    json.RawMessage(`{"name":"foo"}`),
+					StableID: "uuid-1",
 				},
 			},
 		},

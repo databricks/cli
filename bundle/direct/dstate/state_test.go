@@ -38,20 +38,20 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	mustFinalize(t, &db2)
 }
 
-func TestSaveStateRenamedRoundTrip(t *testing.T) {
+func TestSaveStateWithStableIDRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
-	require.NoError(t, db.SaveStateRenamed(t.Context(), "schemas.foo", "main.new", map[string]string{"name": "new"}, nil, map[string]any{"name": "old"}))
+	require.NoError(t, db.SaveStateWithStableID(t.Context(), "schemas.foo", "main.foo", map[string]string{"name": "foo"}, nil, "uuid-1"))
 	mustFinalize(t, &db)
 
 	var db2 DeploymentState
 	require.NoError(t, db2.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 	entry, ok := db2.GetResourceEntry("schemas.foo")
 	require.True(t, ok)
-	assert.Equal(t, "main.new", entry.ID)
-	assert.Equal(t, map[string]any{"name": "old"}, entry.RenamedFrom)
+	assert.Equal(t, "main.foo", entry.ID)
+	assert.Equal(t, "uuid-1", entry.StableID)
 	mustFinalize(t, &db2)
 }
 

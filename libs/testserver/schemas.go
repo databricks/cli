@@ -128,3 +128,22 @@ func (s *FakeWorkspace) moveSchemaVolumes(catalogName, oldSchemaName, newSchemaN
 		s.Volumes[volume.FullName] = volume
 	}
 }
+
+// SchemasDelete mirrors UC, where deleting a schema with force deletes the volumes in it too.
+func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
+	defer s.LockUnlock()()
+
+	schema, ok := s.Schemas[fullName]
+	if !ok {
+		return Response{StatusCode: http.StatusNotFound}
+	}
+	delete(s.Schemas, fullName)
+	if req.URL.Query().Get("force") == "true" {
+		for key, volume := range s.Volumes {
+			if volume.CatalogName == schema.CatalogName && volume.SchemaName == schema.Name {
+				delete(s.Volumes, key)
+			}
+		}
+	}
+	return Response{}
+}

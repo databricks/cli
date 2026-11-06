@@ -119,6 +119,8 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 }
 
 type PlanEntry struct {
+	// ID is set when the resource was found at another ID than the one in state: a rename
+	// moved it there (see findMoved). Applying the entry addresses the resource at ID.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`

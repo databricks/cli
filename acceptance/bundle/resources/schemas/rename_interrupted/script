@@ -23,11 +23,9 @@ kill_after.py "PATCH /api/2.1/unity-catalog/volumes/$NEW_VOLUME" 0 1
 trace errcode $CLI bundle deploy -q
 trace print_requests.py //unity-catalog
 
-title "The next plan still re-keys the volume, whose state has the old schema"
-trace $CLI bundle plan --output json | jq .plan
-
-title "It can, because the schema's old name was saved together with its rename"
-trace print_state.py | jq '.state["resources.schemas.schema1"] | {__id__, renamed_from}'
+title "The volume is gone from its recorded path, so the plan looks for it at its path in config"
+trace print_state.py | jq '.state["resources.volumes.volume1"] | {__id__, stable_id}'
+trace $CLI bundle plan --output json | jq '.plan["resources.volumes.volume1"]'
 
 title "The next deploy updates the volume at its new path"
 trace $CLI bundle deploy --force-lock
