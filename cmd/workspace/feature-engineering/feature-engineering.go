@@ -2153,7 +2153,6 @@ func newUpdateFeature() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
 	// TODO: array: entities
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, ``)
 	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
@@ -2386,7 +2385,6 @@ func newUpdateMaterializationSet() *cobra.Command {
 	cmd.Flags().Var(&updateMaterializationSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateMaterializationSetReq.RequestId, "request-id", updateMaterializationSetReq.RequestId, `Idempotency token for the request.`)
-	cmd.Flags().StringVar(&updateMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", updateMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
 	// TODO: array: materialized_features
 	// TODO: complex arg: notifications
 
@@ -2513,7 +2511,6 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
 	// TODO: complex arg: cron_schedule_trigger
-	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config

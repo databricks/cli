@@ -2468,8 +2468,6 @@ func newUpdateMemory() *cobra.Command {
 	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Content, "content", updateMemoryReq.ManagedMemoryEntry.Content, `Optional free-form memory content.`)
 	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Description, "description", updateMemoryReq.ManagedMemoryEntry.Description, `Human-readable description of the memory entry.`)
 	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Name, "name", updateMemoryReq.ManagedMemoryEntry.Name, `Resource name in the form memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}.`)
-	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.SessionId, "session-id", updateMemoryReq.ManagedMemoryEntry.SessionId, `Optional identifier for the session associated with this memory entry.`)
-	cmd.Flags().Var(&updateMemoryReq.ManagedMemoryEntry.SourceType, "source-type", `Which writer created this entry. Supported values: [MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT, MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER]`)
 
 	cmd.Use = "update-memory NAME UPDATE_MASK ACTOR_ID PATH"
 	cmd.Short = `*Beta* Update a memory entry.`
@@ -2575,7 +2573,6 @@ func newUpdateMemoryStore() *cobra.Command {
 	cmd.Flags().Var(&updateMemoryStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateMemoryStoreReq.ManagedMemoryStore.Description, "description", updateMemoryStoreReq.ManagedMemoryStore.Description, `Human-readable description of the memory store.`)
-	cmd.Flags().StringVar(&updateMemoryStoreReq.ManagedMemoryStore.DisplayName, "display-name", updateMemoryStoreReq.ManagedMemoryStore.DisplayName, `Deprecated compatibility alias for the caller-provided memory store ID.`)
 	// TODO: complex arg: storage_backend
 
 	cmd.Use = "update-memory-store NAME UPDATE_MASK"
@@ -2662,7 +2659,6 @@ func newUpdateSession() *cobra.Command {
 	cmd.Flags().Var(&updateSessionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: map via StringToStringVar: metadata
-	cmd.Flags().StringVar(&updateSessionReq.Session.ParentSessionId, "parent-session-id", updateSessionReq.Session.ParentSessionId, `Immediate parent session ID.`)
 
 	cmd.Use = "update-session NAME UPDATE_MASK ACTOR_ID"
 	cmd.Short = `*Beta* Update a session.`

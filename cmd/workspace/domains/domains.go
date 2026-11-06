@@ -372,8 +372,6 @@ func newUpdateDomain() *cobra.Command {
 	cmd.Flags().StringVar(&updateDomainReq.Domain.Description, "description", updateDomainReq.Domain.Description, `Full description (max 4096 chars).`)
 	cmd.Flags().BoolVar(&updateDomainReq.Domain.Draft, "draft", updateDomainReq.Domain.Draft, `Whether to mark the domain as a draft.`)
 	// TODO: complex arg: icon
-	cmd.Flags().StringVar(&updateDomainReq.Domain.Name, "name", updateDomainReq.Domain.Name, `Full resource name of the domain.`)
-	cmd.Flags().StringVar(&updateDomainReq.Domain.ParentDomainId, "parent-domain-id", updateDomainReq.Domain.ParentDomainId, `Domain ID of the parent.`)
 	cmd.Flags().StringVar(&updateDomainReq.Domain.Subtitle, "subtitle", updateDomainReq.Domain.Subtitle, `Short description (max 280 chars).`)
 	// TODO: array: technical_owner_ids
 
