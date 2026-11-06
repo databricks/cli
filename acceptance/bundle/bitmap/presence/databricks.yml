@@ -1,0 +1,90 @@
+bundle:
+  name: test-bundle
+
+variables:
+  scalar_var:
+    description: a variable
+    default: abc
+  complex_var:
+    type: complex
+    default:
+      key: value
+  flag:
+    default: true
+
+# Known gap: an explicit false on an omitempty bool of a CLI-defined struct (11
+# such fields, all without ForceSendFields) is dropped when the loader syncs typed
+# config back to dyn, so only "experimental" itself is recorded here. SDK bools
+# keep it (see disable_auto_optimization below).
+experimental:
+  use_legacy_run_as: false
+
+presets:
+  name_prefix: dev_
+  pipelines_development: false
+
+run_as:
+  service_principal_name: sp-1234
+
+artifacts:
+  # One artifact with a build command and one with files only, so each
+  # per-artifact flag records both outcomes.
+  with_build:
+    type: whl
+    build: "true"
+  with_files:
+    type: whl
+    files:
+      - source: wheels/*.whl
+
+resources:
+  jobs:
+    my_job:
+      name: My Job
+      description: "escaped $${var.scalar_var}"
+      timeout_seconds: 0
+      email_notifications: {}
+      parameters: []
+      tags:
+        team: data
+        "a.b": c
+      # Unresolved when the bitmap snapshots the config: present, with no value bit.
+      notification_settings:
+        no_alert_for_skipped_runs: ${var.flag}
+      # true here and false in other_job: both value bits are set.
+      queue:
+        enabled: true
+      tasks:
+        - task_key: a
+          # SDK bool with omitempty: an explicit false is kept via ForceSendFields.
+          disable_auto_optimization: false
+          notebook_task:
+            notebook_path: ./notebook.py
+        - task_key: b
+          depends_on:
+            - task_key: a
+          notebook_task:
+            notebook_path: ./notebook.py
+    other_job:
+      name: Other Job
+      queue:
+        enabled: false
+  clusters:
+    # lifecycle.started is a *bool, so the explicit false is kept: true on one cluster
+    # and false on the other sets both value bits.
+    started_cluster:
+      cluster_name: started
+      lifecycle:
+        started: true
+    stopped_cluster:
+      cluster_name: stopped
+      lifecycle:
+        started: false
+
+targets:
+  dev:
+    default: true
+    resources:
+      jobs:
+        my_job:
+          max_concurrent_runs: 2

@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -47,7 +46,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	t := b.Config.Presets
 	prefix := t.NamePrefix
 
-	b.Metrics.AddBoolValue(metrics.PresetsNamePrefixIsSet, prefix != "")
+	b.Telemetry.PresetsNamePrefixIsSet = new(prefix != "")
 
 	tags := toTagArray(t.Tags)
 

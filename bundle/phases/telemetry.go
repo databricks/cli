@@ -257,8 +257,8 @@ func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
-	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.RecordsHistory())
-	b.Metrics.SetBoolValue(metrics.ImmutableSnapshotUsed, len(b.Config.Resources.Snapshots) > 0)
+	b.Telemetry.DeploymentHistoryEnabled = new(b.DeploymentBundle.StateDB.RecordsHistory())
+	b.Telemetry.ImmutableSnapshotUsed = new(len(b.Config.Resources.Snapshots) > 0)
 	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   metrics.SnapshotUploadDuration,
@@ -337,33 +337,32 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 	for _, app := range b.Config.Resources.Apps {
 		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
-			break
+			b.Telemetry.AppLifecycleStarted.SetBool(*app.Lifecycle.Started)
 		}
 	}
 
 	for _, cluster := range b.Config.Resources.Clusters {
 		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
-			break
+			b.Telemetry.ClusterLifecycleStarted.SetBool(*cluster.Lifecycle.Started)
 		}
 	}
 
 	for _, warehouse := range b.Config.Resources.SqlWarehouses {
 		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
-			break
+			b.Telemetry.SqlWarehouseLifecycleStarted.SetBool(*warehouse.Lifecycle.Started)
 		}
 	}
 
 	// Record which task types the bundle uses (has_<task_type> per type present),
 	// plus the ai_runtime_task-specific scheduling / multi-task dimensions.
+	// The has_<task_type> keys are dynamic, so they bypass b.Telemetry; the bitmap
+	// records each task type as a config field (resources.jobs.*.tasks[*].<type>_task).
 	for _, key := range collectTaskTypes(b.Config.Resources.Jobs) {
 		b.Metrics.SetBoolValue(key, true)
 	}
 	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
-		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskScheduled, airScheduled)
-		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
+		b.Telemetry.AiRuntimeTaskScheduled = new(airScheduled)
+		b.Telemetry.AiRuntimeTaskMultitask = new(airMultitask)
 	}
 
 	// Record whether the removed terraform engine was still requested (the command
@@ -372,10 +371,10 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	// already failed the command upstream via ValidateEngineSetting, so treating the
 	// FromEnv error as "not terraform" here cannot mask a real terraform request.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
-		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+		b.Telemetry.EngineTerraformConfig = true
 	}
 	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
-		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
+		b.Telemetry.EngineTerraformEnv = true
 	}
 
 	// If the bundle UUID is not set, we use a default 0 value.
@@ -467,7 +466,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.BoolValues,
+				BoolValues:                   append(b.Telemetry.BoolValues(), b.Metrics.BoolValues...),
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,

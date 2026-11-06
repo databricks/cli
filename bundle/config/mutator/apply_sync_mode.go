@@ -75,7 +75,7 @@ func (m *applySyncMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return diags
 		}
 
-		b.Metrics.AddBoolValue("source_linked_set_for_non_development", b.Config.Bundle.Mode != config.Development)
+		b.Telemetry.SourceLinkedSetForNonDevelopment = new(b.Config.Bundle.Mode != config.Development)
 
 		if b.Config.Bundle.Mode != config.Development {
 			diags = diags.Append(

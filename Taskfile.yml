@@ -802,6 +802,7 @@ tasks:
       # Refreshes acceptance/bundle/refschema/output/*.txt, which feeds
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
+      - task: generate-bitmap-schema
       - task: generate-schema
       - task: generate-validation
       - task: generate-direct
@@ -820,6 +821,7 @@ tasks:
     cmds:
       - task: generate-cligen
       - task: generate-refschema
+      - task: generate-bitmap-schema
       - task: generate-schema
       - task: generate-validation
       - task: generate-direct
@@ -988,6 +990,33 @@ tasks:
       - acceptance/bundle/refschema/output/*.txt
     cmds:
       - go test ./acceptance -run TestAccept/bundle/refschema -update
+
+  # Appends any newly added bundle config fields to bundle/bitmap/schema.txt, the
+  # embedded bitmap schema (see cmd/bundle/bitmap). The schema is append-only, so
+  # update-schema reads the currently embedded schema and only appends. Output is
+  # written to a temp file first so the redirect does not truncate schema.txt
+  # before `go run` embeds it at compile time. Also refreshes the schema embedded
+  # in the databricks-bundles decoder (python/databricks/bundles/_bitmap) and the
+  # listing in acceptance/bundle/bitmap/full, which tracks every schema line.
+  generate-bitmap-schema:
+    desc: Regenerate bundle/bitmap/schema.txt and its acceptance listing
+    sources:
+      - bundle/**/*.go
+      - exclude: bundle/**/*_test.go
+      - acceptance/bundle/bitmap/full/script
+      - acceptance/bundle/bitmap/full/split.py
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/bitmap/schema.txt
+      - acceptance/bundle/bitmap/full/output/*.txt
+      - python/databricks/bundles/_bitmap/_schema.py
+    cmds:
+      - go run . bundle bitmap update-schema > bundle/bitmap/schema.txt.tmp
+      - mv bundle/bitmap/schema.txt.tmp bundle/bitmap/schema.txt
+      - go run ./bundle/bitmap/genpython python/databricks/bundles/_bitmap/_schema.py
+      - go test ./acceptance -run TestAccept/bundle/bitmap/full -update
 
   # Upstream field documentation comes from the checked-in .codegen/cli.json;
   # bundle/internal/schema/annotations.yml carries the CLI-owned docs and

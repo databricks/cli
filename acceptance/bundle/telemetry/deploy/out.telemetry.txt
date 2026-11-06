@@ -43,19 +43,7 @@
           "target_count": 1,
           "bool_values": [
             {
-              "key": "local.cache.attempt",
-              "value": true
-            },
-            {
-              "key": "local.cache.miss",
-              "value": true
-            },
-            {
-              "key": "experimental.use_legacy_run_as",
-              "value": false
-            },
-            {
-              "key": "run_as_set",
+              "key": "python_wheel_wrapper_is_set",
               "value": false
             },
             {
@@ -63,16 +51,20 @@
               "value": false
             },
             {
-              "key": "python_wheel_wrapper_is_set",
+              "key": "deployment_history_enabled",
               "value": false
             },
             {
-              "key": "skip_artifact_cleanup",
+              "key": "immutable_snapshot_used",
               "value": false
             },
             {
               "key": "state_path_is_shared",
               "value": false
+            },
+            {
+              "key": "dms_compat_auto",
+              "value": true
             },
             {
               "key": "permissions_section_set",
@@ -107,8 +99,16 @@
               "value": false
             },
             {
-              "key": "dms_compat_auto",
-              "value": true
+              "key": "skip_artifact_cleanup",
+              "value": false
+            },
+            {
+              "key": "experimental.use_legacy_run_as",
+              "value": false
+            },
+            {
+              "key": "run_as_set",
+              "value": false
             },
             {
               "key": "has_serverless_compute",
@@ -123,12 +123,12 @@
               "value": false
             },
             {
-              "key": "deployment_history_enabled",
-              "value": false
+              "key": "local.cache.attempt",
+              "value": true
             },
             {
-              "key": "immutable_snapshot_used",
-              "value": false
+              "key": "local.cache.miss",
+              "value": true
             }
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",

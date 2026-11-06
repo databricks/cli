@@ -1,0 +1,55 @@
+
+>>> [CLI] bundle bitmap bitmap -o text
+
+>>> [CLI] bundle bitmap bitmap -o json
+
+>>> [CLI] bundle bitmap bitmap
+
+>>> [CLI] bundle bitmap decode
+
+>>> [CLI] bundle bitmap decode -o json
+
+>>> [CLI] bundle bitmap decode -o compressed
+
+>>> uv run --isolated --no-project --reinstall-package databricks-bundles --with [DATABRICKS_BUNDLES_WHEEL] -q python -m databricks.bundles._bitmap
+
+>>> [CLI] bundle bitmap update-schema --validate
+
+=== decode rejects input that is not an encoded bitmap
+
+>>> musterr [CLI] bundle bitmap decode
+Error: base64: illegal base64 data at input byte 3
+
+=== -o accepts compressed, text and json
+
+>>> musterr [CLI] bundle bitmap bitmap -o yaml
+Error: invalid argument "yaml" for "-o, --output" flag: accepted values are compressed, text and json
+
+Usage:
+  databricks bundle bitmap bitmap [flags]
+
+Flags:
+  -h, --help            help for bitmap
+  -o, --output format   output format:
+                          compressed: base64 of the DEFLATE-compressed wire format
+                          text:       a "size=N context=C" header, then one "<value> <field>" line per
+                                      set field: "T" or "F" for a boolean field holding that value, "1"
+                                      for any other field; unset fields are omitted
+                          json:       size, context, and trees of the fields present ("presence") and of
+                                      the boolean fields seen holding "true" and "false" (default compressed)
+
+Global Flags:
+      --debug            enable debug logging
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+
+
+=== An invalid bundle fails instead of printing a bitmap
+
+>>> musterr [CLI] bundle bitmap bitmap
+Error: Artifact not properly configured
+  in databricks.yml:5:10
+
+please specify artifact properties
+

@@ -1,0 +1,144 @@
+{
+  "size": [SCHEMA_SIZE],
+  "context": 0,
+  "presence": {
+    "artifacts": {
+      "*": {
+        "build": true,
+        "files": {
+          "[*]": {
+            "source": true
+          }
+        },
+        "type": true
+      }
+    },
+    "bundle": {
+      "environment": true,
+      "name": true,
+      "target": true
+    },
+    "experimental": true,
+    "presets": {
+      "name_prefix": true,
+      "pipelines_development": true
+    },
+    "resources": {
+      "clusters": {
+        "*": {
+          "cluster_name": true,
+          "lifecycle": {
+            "started": true
+          }
+        }
+      },
+      "jobs": {
+        "*": {
+          "description": true,
+          "email_notifications": true,
+          "max_concurrent_runs": true,
+          "name": true,
+          "notification_settings": {
+            "no_alert_for_skipped_runs": true
+          },
+          "parameters": true,
+          "queue": {
+            "enabled": true
+          },
+          "tags": {
+            "*": true
+          },
+          "tasks": {
+            "[*]": {
+              "depends_on": {
+                "[*]": {
+                  "task_key": true
+                }
+              },
+              "disable_auto_optimization": true,
+              "notebook_task": {
+                "notebook_path": true
+              },
+              "task_key": true
+            }
+          },
+          "timeout_seconds": true
+        }
+      }
+    },
+    "run_as": {
+      "service_principal_name": true
+    },
+    "telemetry": {
+      "ArtifactBuildCommandIsSet": true,
+      "ArtifactFilesIsSet": true,
+      "ConfigHasDoubleDollarBrace": true,
+      "PresetsNamePrefixIsSet": true,
+      "RunAsSet": true,
+      "UseLegacyRunAs": true
+    },
+    "variables": {
+      "*": {
+        "default": true,
+        "description": true,
+        "type": true
+      }
+    }
+  },
+  "true": {
+    "resources": {
+      "clusters": {
+        "*": {
+          "lifecycle": {
+            "started": true
+          }
+        }
+      },
+      "jobs": {
+        "*": {
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "telemetry": {
+      "ArtifactBuildCommandIsSet": true,
+      "ArtifactFilesIsSet": true,
+      "ConfigHasDoubleDollarBrace": true,
+      "PresetsNamePrefixIsSet": true,
+      "RunAsSet": true
+    }
+  },
+  "false": {
+    "presets": {
+      "pipelines_development": true
+    },
+    "resources": {
+      "clusters": {
+        "*": {
+          "lifecycle": {
+            "started": true
+          }
+        }
+      },
+      "jobs": {
+        "*": {
+          "queue": {
+            "enabled": true
+          },
+          "tasks": {
+            "[*]": {
+              "disable_auto_optimization": true
+            }
+          }
+        }
+      }
+    },
+    "telemetry": {
+      "ArtifactBuildCommandIsSet": true,
+      "ArtifactFilesIsSet": true,
+      "UseLegacyRunAs": true
+    }
+  }
+}
