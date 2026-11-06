@@ -19,8 +19,8 @@ on:
 jobs:
   label:
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-ghec-public-repos-runner-group-small
+      labels: linux-ubuntu-latest-public-2core-8gb
 
     permissions:
       contents: read

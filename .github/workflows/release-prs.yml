@@ -37,8 +37,8 @@ jobs:
   create-setup-cli-release-pr:
     if: ${{ inputs.setup_cli }}
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-ghec-public-repos-runner-group-small
+      labels: linux-ubuntu-latest-public-2core-8gb
 
     steps:
       - name: Derive version from tag
@@ -72,8 +72,8 @@ jobs:
   create-homebrew-tap-release-pr:
     if: ${{ inputs.homebrew_tap }}
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-ghec-public-repos-runner-group-small
+      labels: linux-ubuntu-latest-public-2core-8gb
 
     steps:
       - name: Derive version from tag
@@ -138,8 +138,8 @@ jobs:
   create-vscode-extension-update-pr:
     if: ${{ inputs.vscode_extension }}
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-ghec-public-repos-runner-group-small
+      labels: linux-ubuntu-latest-public-2core-8gb
 
     steps:
       - name: Derive version from tag
@@ -173,8 +173,8 @@ jobs:
   publish-to-winget-pkgs:
     if: ${{ inputs.winget }}
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-ghec-public-repos-runner-group-small
+      labels: linux-ubuntu-latest-public-2core-8gb
 
     environment: release
 
