@@ -49,7 +49,8 @@ class MaterializationSet(Resource):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] The materialized features in this set. Order is not significant.
-    Updating the set with a materialized feature removed from this set will cause it to be deleted.
+    An `UpdateMaterializationSet` request with `materialized_features` or `*`
+    in its update mask deletes omitted materialized features.
     """
 
     notifications: VariableOrOptional[MaterializationNotifications] = None
@@ -89,7 +90,8 @@ class MaterializationSetDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] The materialized features in this set. Order is not significant.
-    Updating the set with a materialized feature removed from this set will cause it to be deleted.
+    An `UpdateMaterializationSet` request with `materialized_features` or `*`
+    in its update mask deletes omitted materialized features.
     """
 
     notifications: VariableOrOptional[MaterializationNotificationsParam]
