@@ -83,7 +83,7 @@ type OperationBuffer struct {
 	// pending holds the newest update per resource key, absent once the writer takes it.
 	pending map[string]*bufferedUpdate
 	stats   OperationBufferStats
-	// Each operation points to its latest update; older uploads retain their own entry.
+	// Tracks the recording outcome of each resource's latest update.
 	operations map[string]*bufferedUpdate
 
 	// latestState is the newest state-bearing update per resource key, kept for the buffer's
