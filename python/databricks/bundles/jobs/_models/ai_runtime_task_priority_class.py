@@ -14,9 +14,8 @@ class AiRuntimeTaskPriorityClass(Enum):
 
     BEST_EFFORT = "BEST_EFFORT"
     NORMAL = "NORMAL"
-    CRITICAL = "CRITICAL"
 
 
 AiRuntimeTaskPriorityClassParam = (
-    Literal["BEST_EFFORT", "NORMAL", "CRITICAL"] | AiRuntimeTaskPriorityClass
+    Literal["BEST_EFFORT", "NORMAL"] | AiRuntimeTaskPriorityClass
 )

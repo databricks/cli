@@ -1,5 +1,4 @@
 Cloud = true
 RunsOnDbr = false
 CloudEnvs.azure = false
-CloudEnvs.gcp = false
 EnvMatrix.DMS = ["", "true"]

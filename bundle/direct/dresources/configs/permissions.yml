@@ -1,0 +1,6 @@
+updatable_id_fields:
+  # The ID is the parent's object ID, which changes when the parent is recreated.
+  # UpdateWithID records the new ID, so DoRead does not keep reading the permissions
+  # of the deleted object.
+  - field: object_id
+    reason: id_changes

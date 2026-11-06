@@ -27,7 +27,8 @@ type RenderSchemaResult struct {
 // are rendered (welcome_message, success_message, property descriptions, and defaults).
 //
 // Rendering is done in two passes:
-// 1. First pass: Render all default values (in order) and add them to the values map
+// 1. First pass: Render all default values (in order) and add those of properties
+// without an input value to the values map
 // 2. Second pass: Render descriptions and other fields using the populated values
 func RenderSchema(ctx context.Context, reader Reader, input RenderSchemaInput) (*RenderSchemaResult, error) {
 	schemaFS, err := reader.SchemaFS(ctx)
@@ -65,6 +66,11 @@ func RenderSchema(ctx context.Context, reader Reader, input RenderSchemaInput) (
 		}
 	}
 
+	workspace, err := loadWorkspaceContext(ctx, typedSchema)
+	if err != nil {
+		return nil, err
+	}
+
 	// missingkey=zero to allow missing variables
 	helpers := loadHelpers(ctx)
 	baseTmpl := template.New("base").Funcs(helpers).Option("missingkey=zero")
@@ -83,7 +89,7 @@ func RenderSchema(ctx context.Context, reader Reader, input RenderSchemaInput) (
 			return "", fmt.Errorf("failed to parse template %q: %w", truncate(s, 50), err)
 		}
 		var buf strings.Builder
-		if err := tmpl.Execute(&buf, values); err != nil {
+		if err := tmpl.Execute(&buf, templateData(values, workspace)); err != nil {
 			return "", fmt.Errorf("failed to render template %q: %w", truncate(s, 50), err)
 		}
 		// Replace <no value> with empty string for missing variables
@@ -121,10 +127,9 @@ func RenderSchema(ctx context.Context, reader Reader, input RenderSchemaInput) (
 				continue
 			}
 
-			// Skip if value already provided in input
-			if _, exists := values[propName]; exists {
-				continue
-			}
+			// A value from the input is what the user entered, so it is kept. The default
+			// is still rendered, so that a caller showing it doesn't get template text.
+			_, supplied := values[propName]
 
 			// Render default value (only if it's a string)
 			if def, ok := prop["default"].(string); ok {
@@ -134,8 +139,10 @@ func RenderSchema(ctx context.Context, reader Reader, input RenderSchemaInput) (
 				}
 				prop["default"] = rendered
 				// Add to values map for use in subsequent renders
-				values[propName] = rendered
-			} else if def, ok := prop["default"]; ok {
+				if !supplied {
+					values[propName] = rendered
+				}
+			} else if def, ok := prop["default"]; ok && !supplied {
 				// Non-string default (bool, int, etc.) - skip render
 				values[propName] = def
 			}

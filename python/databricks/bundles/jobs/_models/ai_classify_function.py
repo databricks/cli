@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AiClassifyFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Configuration for a task that runs the `ai_classify` function.
 
     The label set comes from exactly one of two places: `inline_labels`, which
@@ -31,35 +29,35 @@ class AiClassifyFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The ai_classify function version to invoke (for example, `2.1`).
+    [Beta] The ai_classify function version to invoke (for example, `2.1`).
     """
 
     enable_confidence_scores: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes a per-label confidence score in the response.
+    [Beta] When true, includes a per-label confidence score in the response.
     """
 
     enable_rationales: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes a rationale explaining each classification in the response.
+    [Beta] When true, includes a rationale explaining each classification in the response.
     """
 
     inline_labels: VariableOrOptional[AiClassifyFunctionInlineLabels] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Labels listed inline, for a small label set.
+    [Beta] Labels listed inline, for a small label set.
     """
 
     instructions: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Global description of the task and domain, passed to the model to improve
+    [Beta] Global description of the task and domain, passed to the model to improve
     classification quality.
     """
 
@@ -67,7 +65,7 @@ class AiClassifyFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, more than one label can be returned for each input.
+    [Beta] When true, more than one label can be returned for each input.
     """
 
     @classmethod
@@ -85,35 +83,35 @@ class AiClassifyFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The ai_classify function version to invoke (for example, `2.1`).
+    [Beta] The ai_classify function version to invoke (for example, `2.1`).
     """
 
     enable_confidence_scores: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes a per-label confidence score in the response.
+    [Beta] When true, includes a per-label confidence score in the response.
     """
 
     enable_rationales: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes a rationale explaining each classification in the response.
+    [Beta] When true, includes a rationale explaining each classification in the response.
     """
 
     inline_labels: VariableOrOptional[AiClassifyFunctionInlineLabelsParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Labels listed inline, for a small label set.
+    [Beta] Labels listed inline, for a small label set.
     """
 
     instructions: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Global description of the task and domain, passed to the model to improve
+    [Beta] Global description of the task and domain, passed to the model to improve
     classification quality.
     """
 
@@ -121,7 +119,7 @@ class AiClassifyFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, more than one label can be returned for each input.
+    [Beta] When true, more than one label can be returned for each input.
     """
 
 

@@ -433,13 +433,13 @@ func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
 
 	cfg := baseRunConfig()
 	cfg.Compute.PoolID = new("cap-8xh100-res")
-	cfg.Compute.PriorityClass = new("CRITICAL")
+	cfg.Compute.PriorityClass = new("NORMAL")
 	_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
 	task := gotReq["task"].(map[string]any)
 	// priority_class is task-level; provisioned_capacity_id stays on the compute spec.
-	assert.Equal(t, "CRITICAL", task["priority_class"])
+	assert.Equal(t, "NORMAL", task["priority_class"])
 	compute := task["deployments"].([]any)[0].(map[string]any)["compute"].(map[string]any)
 	assert.Equal(t, "cap-8xh100-res", compute["provisioned_capacity_id"])
 }

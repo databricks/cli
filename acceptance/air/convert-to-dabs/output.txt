@@ -57,7 +57,7 @@ resources:
                   provisioned_capacity_id: capacity-1
             code_source_path: ./dist/code_source.tgz
             mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
-            priority_class: CRITICAL
+            priority_class: NORMAL
             unity_catalog_image_path: main.air.training:prod
       environments:
         - environment_key: default
