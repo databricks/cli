@@ -111,10 +111,11 @@ type SandboxClient struct {
 	root WorkspaceRootPath
 }
 
-// NewSandboxClient returns a [Filer] for the filesystem of sandbox sandboxID.
-// Paths are relative to root, an absolute path inside the sandbox, and cannot
-// escape it. A stopped sandbox starts automatically on the first call, which
-// makes that call slow.
+// NewSandboxClient returns a [Filer] for the filesystem of sandbox sandboxID,
+// rooted at root, an absolute path inside the sandbox. Names are joined to root,
+// and a name that would resolve outside it is rejected (see
+// [WorkspaceRootPath.Join]). A stopped sandbox starts automatically on the first
+// call, which makes that call slow.
 func NewSandboxClient(w *databricks.WorkspaceClient, sandboxID, root string) (Filer, error) {
 	// The ID becomes a path segment of every request URL, so it can't contain "/" or be a
 	// relative segment that the URL would resolve away.
@@ -211,7 +212,7 @@ func (c *SandboxClient) createExclusive(ctx context.Context, absPath string, rea
 		if errors.Is(err, apierr.ErrAlreadyExists) {
 			return fileAlreadyExistsError{absPath}
 		}
-		return err
+		return sandboxPathError(err, absPath)
 	}
 
 	return nil
@@ -220,11 +221,13 @@ func (c *SandboxClient) createExclusive(ctx context.Context, absPath string, rea
 // exclusiveCreateTempPath returns the temporary path that createExclusive
 // uploads to before renaming it to absPath. It is in the same directory because
 // rename fails across filesystems (400), and the directory is the only location
-// known to be on the target's filesystem. The leading dot hides it from
-// listings that skip dotfiles, and the random part keeps concurrent writers of
-// the same target from sharing one temporary file.
+// known to be on the target's filesystem. The random name keeps concurrent
+// writers of the same target from sharing one temporary file, and its fixed
+// length keeps it within the filesystem's name limit whatever the target's name.
+// A temporary file left behind (removeTemp failed or the process was killed) is
+// a regular dotfile, visible to listings and recursive copies.
 func exclusiveCreateTempPath(absPath string) string {
-	return path.Join(path.Dir(absPath), "."+path.Base(absPath)+"."+rand.Text()+".tmp")
+	return path.Join(path.Dir(absPath), ".databricks-"+rand.Text()+".tmp")
 }
 
 // removeTemp deletes a temporary file left by createExclusive. It runs even if
@@ -359,8 +362,8 @@ func (c *SandboxClient) Mkdir(ctx context.Context, name string) error {
 	_, err = c.api.CreateDirectory(ctx, sandbox.CreateDirectoryRequest{
 		Parent: c.parent,
 		Path:   absPath,
-		// Filer.Mkdir creates intermediate directories. Without Parents, the
-		// server also returns 409 if the directory already exists.
+		// Filer.Mkdir creates intermediate directories. With parents=false,
+		// the server also returns 409 if the directory already exists.
 		Parents: true,
 	})
 

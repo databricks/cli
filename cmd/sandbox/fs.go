@@ -13,8 +13,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// sandboxCpLong replaces the help of cp, which describes DBFS and UC paths,
+// and keeps its description of how directories are copied.
+const sandboxCpLong = `Copy files and directories between your local filesystem and sandboxes.
+
+  Use SANDBOX:/absolute/path for sandbox paths.
+
+  Recursively copying a directory will copy all files inside directory
+  at SOURCE_PATH to the directory at TARGET_PATH.
+
+  When copying a file, if TARGET_PATH is a directory, the file will be created
+  inside the directory, otherwise the file is created at TARGET_PATH.
+`
+
 func newFsCommand() *cobra.Command {
 	cmd := filesystem.NewWithPathResolver(sandboxFilerForPath)
+	// The top-level fs command belongs to a help group that the sandbox command
+	// doesn't define, and cobra panics on an undefined group.
 	cmd.GroupID = ""
 	cmd.Long = `Transfer files between your local filesystem and sandboxes.
 
@@ -23,6 +38,9 @@ name from the local cache populated by sandbox list. Paths without a
 sandbox prefix refer to the local filesystem.`
 	for _, sub := range cmd.Commands() {
 		sub.Long = sub.Short + " Use SANDBOX:/absolute/path for sandbox paths."
+		if sub.Name() == "cp" {
+			sub.Long = sandboxCpLong
+		}
 		sub.ValidArgsFunction = completeSandboxPaths(sub.ValidArgsFunction)
 	}
 	cmd.Example = `  databricks sandbox fs cp -r my-sandbox:/foo/bar ./local/output
@@ -44,11 +62,7 @@ func sandboxFilerForPath(ctx context.Context, fullPath string) (filer.Filer, str
 		return nil, "", fmt.Errorf("sandbox path must be absolute: use %s:/path", identifier)
 	}
 	w := cmdctx.WorkspaceClient(ctx)
-	profile := w.Config.Profile
-	if profile == "" {
-		profile = w.Config.Host
-	}
-	id, err := resolveLocalID(ctx, profile, identifier)
+	id, err := resolveLocalID(ctx, cacheProfile(w), identifier)
 	if err != nil {
 		return nil, "", err
 	}
@@ -65,11 +79,7 @@ func completeSandboxPaths(complete cobra.CompletionFunc) cobra.CompletionFunc {
 		}
 		completions = slices.DeleteFunc(completions, func(p string) bool { return p == "dbfs:/" })
 		w := cmdctx.WorkspaceClient(cmd.Context())
-		profile := w.Config.Profile
-		if profile == "" {
-			profile = w.Config.Host
-		}
-		for _, s := range getSandboxes(cmd.Context(), profile) {
+		for _, s := range getSandboxes(cmd.Context(), cacheProfile(w)) {
 			completions = append(completions, s.ID+":/")
 			if s.Name != "" && s.Name != s.ID {
 				completions = append(completions, s.Name+":/")

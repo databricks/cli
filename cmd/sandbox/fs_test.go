@@ -1,7 +1,6 @@
 package sandbox_test
 
 import (
-	"strings"
 	"testing"
 
 	sandboxcmd "github.com/databricks/cli/cmd/sandbox"
@@ -10,16 +9,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSandboxFsRejectsRelativeRemotePaths(t *testing.T) {
-	for _, input := range []string{"my-sandbox:relative", ":/tmp/file"} {
-		t.Run(input, func(t *testing.T) {
+func TestSandboxFsRejectsInvalidRemotePaths(t *testing.T) {
+	for _, tc := range []struct {
+		input string
+		err   string
+	}{
+		{"my-sandbox:relative", "sandbox path must be absolute: use my-sandbox:/path"},
+		{":/tmp/file", "empty sandbox identifier: use SANDBOX:/path"},
+	} {
+		t.Run(tc.input, func(t *testing.T) {
 			ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
 			cmd, _, err := sandboxcmd.New().Find([]string{"fs", "cat"})
 			require.NoError(t, err)
 			cmd.SetContext(ctx)
-			err = cmd.RunE(cmd, []string{input})
-			require.Error(t, err)
-			assert.Contains(t, strings.ToLower(err.Error()), "sandbox")
+			assert.EqualError(t, cmd.RunE(cmd, []string{tc.input}), tc.err)
 		})
 	}
 }

@@ -10,8 +10,11 @@ hello world!
 >>> [CLI] sandbox fs cp local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
 local.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt (skipped; already exists)
 
->>> [CLI] sandbox fs cp --overwrite local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
-local.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+>>> [CLI] sandbox fs cp --overwrite updated.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+updated.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+
+>>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+hello again!
 
 === Writing into a directory that does not exist fails
 >>> [CLI] sandbox fs cp local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing/file.txt

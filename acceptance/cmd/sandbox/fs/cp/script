@@ -4,7 +4,8 @@ trace $CLI sandbox fs cat $SANDBOX_ROOT/file.txt
 
 title "Writing over an existing file needs --overwrite"
 trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/file.txt
-trace $CLI sandbox fs cp --overwrite local.txt $SANDBOX_ROOT/file.txt
+trace $CLI sandbox fs cp --overwrite updated.txt $SANDBOX_ROOT/file.txt
+trace $CLI sandbox fs cat $SANDBOX_ROOT/file.txt
 
 title "Writing into a directory that does not exist fails"
 errcode trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/missing/file.txt

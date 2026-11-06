@@ -304,7 +304,8 @@ func (s *FakeWorkspace) SandboxFilesMkdir(req Request, sandboxID string) Respons
 	defer s.LockUnlock()()
 	sfs := s.sandboxFs(sandboxID)
 	entry, underFile := sfs.lookup(p)
-	// Parents defaults to true, which also succeeds when the directory exists.
+	// An omitted parents defaults to true, per the API docs; the SDK omits false
+	// unless it is in ForceSendFields. With parents, an existing directory is fine.
 	if body.Parents == nil || *body.Parents {
 		if !sfs.mkdirAll(p) {
 			return sandboxFsError(400, "BAD_REQUEST")

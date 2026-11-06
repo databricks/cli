@@ -58,15 +58,11 @@ func completeSSHKeyHashes(cmd *cobra.Command, args []string, toComplete string) 
 }
 
 // completionProfile returns the profile name the cache is keyed under,
-// matching the resolution used by the runtime commands (Profile if set,
-// else Host). Returns "" if the workspace client can't be bootstrapped.
+// matching the resolution used by the runtime commands (see cacheProfile).
+// Returns "" if the workspace client can't be bootstrapped.
 func completionProfile(cmd *cobra.Command, args []string) string {
 	if err := root.MustWorkspaceClient(cmd, args); err != nil {
 		return ""
 	}
-	w := cmdctx.WorkspaceClient(cmd.Context())
-	if w.Config.Profile != "" {
-		return w.Config.Profile
-	}
-	return w.Config.Host
+	return cacheProfile(cmdctx.WorkspaceClient(cmd.Context()))
 }
