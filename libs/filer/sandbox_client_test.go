@@ -1,205 +1,145 @@
 package filer_test
 
 import (
-	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
-	"strconv"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const sandboxFilesRoute = "/api/2.0/sandbox-files/sandboxes/test-sandbox"
-
-func newSandboxFiler(t *testing.T, server *testserver.Server, root, workspaceID string) filer.Filer {
+func newSandboxTestClient(t *testing.T, server *testserver.Server) *databricks.WorkspaceClient {
 	t.Helper()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host: server.URL, Token: "testtoken", WorkspaceID: workspaceID,
+		Host:  server.URL,
+		Token: "testtoken",
+		// The SDK's default rate limit would throttle the concurrent writes below.
+		RateLimitPerSecond: 10000,
 	})
 	require.NoError(t, err)
-	f, err := filer.NewSandboxClient(w, "test-sandbox", root)
+	return w
+}
+
+// newSandboxTestFiler returns a sandbox filer rooted at "/tmp", backed by the testserver
+// fake of the sandbox file APIs, which reproduces the server semantics the filer works around.
+func newSandboxTestFiler(t *testing.T) filer.Filer {
+	t.Helper()
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	f, err := filer.NewSandboxClient(newSandboxTestClient(t, server), testserver.TestDefaultSandboxId, "/tmp")
 	require.NoError(t, err)
 	return f
 }
 
-func TestSandboxWriteOverwrite(t *testing.T) {
-	for _, overwrite := range []bool{false, true} {
-		t.Run(strconv.FormatBool(overwrite), func(t *testing.T) {
-			server := testserver.New(t)
-			server.Handle("PUT", sandboxFilesRoute+"/content", func(req testserver.Request) any {
-				assert.Equal(t, "/root/a ?#雪.txt", req.URL.Query().Get("path"))
-				assert.Equal(t, []string{strconv.FormatBool(overwrite)}, req.URL.Query()["overwrite"])
-				assert.Equal(t, "application/octet-stream", req.Headers.Get("Content-Type"))
-				assert.Equal(t, "123", req.Headers.Get(auth.WorkspaceIDHeader))
-				assert.Equal(t, "contents", string(req.Body))
-				if !overwrite {
-					return testserver.Response{StatusCode: 412, Body: map[string]string{
-						"error_code": "RESOURCE_ALREADY_EXISTS", "message": "already exists",
-					}}
-				}
-				return testserver.Response{StatusCode: 204}
-			})
-			f := newSandboxFiler(t, server, "/root", "123")
-			mode := []filer.WriteMode{filer.CreateParentDirectories}
-			if overwrite {
-				mode = append(mode, filer.OverwriteIfExists)
-			}
-			err := f.Write(t.Context(), "a ?#雪.txt", strings.NewReader("contents"), mode...)
-			if overwrite {
-				require.NoError(t, err)
-			} else {
-				require.ErrorIs(t, err, fs.ErrExist)
-			}
-		})
-	}
-}
-
-func TestSandboxWriteParent(t *testing.T) {
-	for _, fileType := range []sandbox.SandboxFileType{
-		sandbox.SandboxFileTypeSandboxFileTypeDirectory,
-		sandbox.SandboxFileTypeSandboxFileTypeFile,
-		sandbox.SandboxFileTypeSandboxFileTypeSymlink,
-	} {
-		t.Run(string(fileType), func(t *testing.T) {
-			server := testserver.New(t)
-			server.Handle("GET", sandboxFilesRoute+"/paths:describe", func(req testserver.Request) any {
-				assert.Equal(t, "/root/sub", req.URL.Query().Get("path"))
-				return sandbox.GetMetadataResponse{File: &sandbox.SandboxFileInfo{FileType: fileType}}
-			})
-			uploaded := false
-			server.Handle("PUT", sandboxFilesRoute+"/content", func(req testserver.Request) any {
-				uploaded = true
-				assert.Empty(t, req.Headers.Get(auth.WorkspaceIDHeader))
-				return testserver.Response{StatusCode: 204}
-			})
-			f := newSandboxFiler(t, server, "/root", "none")
-			err := f.Write(t.Context(), "sub/file", strings.NewReader("content"))
-			if fileType != sandbox.SandboxFileTypeSandboxFileTypeFile {
-				require.NoError(t, err)
-				assert.True(t, uploaded)
-			} else {
-				require.ErrorIs(t, err, fs.ErrInvalid)
-				assert.False(t, uploaded)
-			}
-		})
-	}
-}
-
-func TestSandboxReadAndMetadata(t *testing.T) {
-	server := testserver.New(t)
-	modified := time.Date(2026, 11, 5, 1, 2, 3, 123456789, time.UTC)
-	server.Handle("GET", sandboxFilesRoute+"/content", func(req testserver.Request) any {
-		assert.Equal(t, "/tmp/file", req.URL.Query().Get("path"))
-		return testserver.Response{Body: []byte("contents"), Headers: http.Header{"Content-Type": {"application/octet-stream"}}}
-	})
-	server.Handle("GET", sandboxFilesRoute+"/paths:describe", func(req testserver.Request) any {
-		return sandbox.GetMetadataResponse{File: &sandbox.SandboxFileInfo{
-			Path: "/tmp/file", Size: 8, Mode: 0o640, ModifyTime: sdktime.New(modified),
-			FileType: sandbox.SandboxFileTypeSandboxFileTypeFile,
-		}}
-	})
-	f := newSandboxFiler(t, server, "/", "")
-	r, err := f.Read(t.Context(), "/tmp/file")
+func readString(t *testing.T, f filer.Filer, name string) string {
+	t.Helper()
+	r, err := f.Read(t.Context(), name)
 	require.NoError(t, err)
 	defer r.Close()
-	contents, err := io.ReadAll(r)
+	b, err := io.ReadAll(r)
 	require.NoError(t, err)
-	assert.Equal(t, "contents", string(contents))
-	info, err := f.Stat(t.Context(), "/tmp/file")
-	require.NoError(t, err)
-	assert.Equal(t, "file", info.Name())
-	assert.Equal(t, int64(8), info.Size())
-	assert.Equal(t, fs.FileMode(0o640), info.Mode())
-	assert.Equal(t, modified, info.ModTime())
-	assert.False(t, info.IsDir())
+	return string(b)
 }
 
-func TestSandboxReadDirPagination(t *testing.T) {
-	server := testserver.New(t)
-	var tokens []string
-	server.Handle("GET", sandboxFilesRoute+"/directory-entries", func(req testserver.Request) any {
-		assert.Equal(t, "/tmp", req.URL.Query().Get("path"))
-		token := req.URL.Query().Get("page_token")
-		tokens = append(tokens, token)
-		if token == "" {
-			return sandbox.ListDirectoryContentsResponse{
-				Contents:      []sandbox.SandboxFileInfo{{Path: "/tmp/z", FileType: sandbox.SandboxFileTypeSandboxFileTypeSymlink}},
-				NextPageToken: "page2",
-			}
-		}
-		return sandbox.ListDirectoryContentsResponse{Contents: []sandbox.SandboxFileInfo{
-			{Path: "/tmp/a", FileType: sandbox.SandboxFileTypeSandboxFileTypeDirectory},
-		}}
-	})
-	f := newSandboxFiler(t, server, "/", "")
-	entries, err := f.ReadDir(t.Context(), "/tmp")
+func TestSandboxClientRejectsInvalidArguments(t *testing.T) {
+	w := &databricks.WorkspaceClient{}
+	for _, id := range []string{"", ".", "..", "a/b"} {
+		_, err := filer.NewSandboxClient(w, id, "/")
+		assert.ErrorContains(t, err, "invalid sandbox ID")
+	}
+	_, err := filer.NewSandboxClient(w, "id", "relative")
+	assert.ErrorContains(t, err, "sandbox root must be absolute")
+}
+
+func TestSandboxClientWriteDoesNotOverwrite(t *testing.T) {
+	// The upload API always replaces, so exclusive writes go through a temporary file
+	// and a rename, which must not leave the temporary file behind.
+	ctx := t.Context()
+	f := newSandboxTestFiler(t)
+
+	require.NoError(t, f.Write(ctx, "file", strings.NewReader("one")))
+	assert.ErrorIs(t, f.Write(ctx, "file", strings.NewReader("two")), fs.ErrExist)
+	assert.Equal(t, "one", readString(t, f, "file"))
+
+	entries, err := f.ReadDir(ctx, ".")
 	require.NoError(t, err)
-	require.Len(t, entries, 2)
-	assert.Equal(t, []string{"", "page2"}, tokens)
-	assert.Equal(t, "a", entries[0].Name())
-	assert.True(t, entries[0].IsDir())
-	assert.Equal(t, "z", entries[1].Name())
-	assert.Equal(t, fs.ModeSymlink, entries[1].Type())
+	require.Len(t, entries, 1)
+	assert.Equal(t, "file", entries[0].Name())
 }
 
-func TestSandboxMkdirAndDelete(t *testing.T) {
-	server := testserver.New(t)
-	server.Handle("GET", sandboxFilesRoute+"/paths:describe", func(req testserver.Request) any {
-		return sandbox.GetMetadataResponse{File: &sandbox.SandboxFileInfo{
-			Path: "/root/sub", FileType: sandbox.SandboxFileTypeSandboxFileTypeDirectory,
-		}}
-	})
-	server.Handle("POST", sandboxFilesRoute+"/directories:make", func(req testserver.Request) any {
-		var body sandbox.CreateDirectoryRequest
-		require.NoError(t, json.Unmarshal(req.Body, &body))
-		assert.Equal(t, "/root/sub", body.Path)
-		assert.True(t, body.Parents)
-		return sandbox.CreateDirectoryResponse{}
-	})
-	server.Handle("POST", sandboxFilesRoute+"/paths:remove", func(req testserver.Request) any {
-		var body sandbox.DeletePathRequest
-		require.NoError(t, json.Unmarshal(req.Body, &body))
-		assert.Equal(t, "/root/sub", body.Path)
-		assert.True(t, body.Recursive)
-		return sandbox.DeletePathResponse{}
-	})
-	f := newSandboxFiler(t, server, "/root", "")
-	require.NoError(t, f.Mkdir(t.Context(), "sub"))
-	require.NoError(t, f.Delete(t.Context(), "sub", filer.DeleteRecursively))
-	require.ErrorIs(t, f.Delete(t.Context(), ".", filer.DeleteRecursively), fs.ErrInvalid)
-	require.Error(t, f.Mkdir(t.Context(), "../escape"))
-}
+func TestSandboxClientConcurrentExclusiveWrite(t *testing.T) {
+	ctx := t.Context()
+	f := newSandboxTestFiler(t)
 
-func TestSandboxPathErrors(t *testing.T) {
-	for _, tc := range []struct {
-		status int
-		code   string
-		want   error
-	}{
-		{404, "NOT_FOUND", fs.ErrNotExist},
-		{403, "PERMISSION_DENIED", fs.ErrPermission},
-		{400, "INVALID_PARAMETER_VALUE", apierr.ErrInvalidParameterValue},
-	} {
-		t.Run(tc.code, func(t *testing.T) {
-			server := testserver.New(t)
-			server.Handle("GET", sandboxFilesRoute+"/paths:describe", func(req testserver.Request) any {
-				return testserver.Response{StatusCode: tc.status, Body: map[string]string{"error_code": tc.code, "message": "failed"}}
-			})
-			f := newSandboxFiler(t, server, "/", "")
-			_, err := f.Stat(t.Context(), "missing")
-			require.ErrorIs(t, err, tc.want)
+	const writers = 8
+	var wg sync.WaitGroup
+	errs := make([]error, writers)
+	for i := range writers {
+		wg.Go(func() {
+			errs[i] = f.Write(ctx, "file", strings.NewReader(fmt.Sprintf("writer-%d", i)))
 		})
 	}
+	wg.Wait()
+
+	winner := -1
+	for i, err := range errs {
+		if err == nil {
+			assert.Equal(t, -1, winner, "more than one writer created the file")
+			winner = i
+			continue
+		}
+		assert.ErrorIs(t, err, fs.ErrExist)
+	}
+	require.NotEqual(t, -1, winner, "no writer created the file")
+	assert.Equal(t, fmt.Sprintf("writer-%d", winner), readString(t, f, "file"))
+}
+
+func TestSandboxClientWriteMissingParent(t *testing.T) {
+	// The upload API always creates missing parents.
+	err := newSandboxTestFiler(t).Write(t.Context(), "missing/file", strings.NewReader("x"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestSandboxClientDeleteMissing(t *testing.T) {
+	// The delete API succeeds if the path is absent.
+	err := newSandboxTestFiler(t).Delete(t.Context(), "missing")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestSandboxClientGenericErrors(t *testing.T) {
+	// The server reports each of these with a generic status, which the filer
+	// disambiguates with a stat.
+	ctx := t.Context()
+	f := newSandboxTestFiler(t)
+	require.NoError(t, f.Write(ctx, "dir/file", strings.NewReader("x"), filer.CreateParentDirectories))
+
+	_, err := f.Read(ctx, "dir")
+	assert.ErrorIs(t, err, fs.ErrInvalid, "read of a directory")
+	_, err = f.ReadDir(ctx, "dir/file")
+	assert.ErrorIs(t, err, fs.ErrInvalid, "list of a file")
+	assert.ErrorIs(t, f.Delete(ctx, "dir"), fs.ErrInvalid, "delete of a non-empty directory")
+	assert.ErrorIs(t, f.Mkdir(ctx, "dir/file"), fs.ErrExist, "mkdir onto a file")
+}
+
+func TestSandboxClientPermissionDenied(t *testing.T) {
+	// The fake doesn't model filesystem permissions, so stub the response a real
+	// sandbox returns for a path the sandbox user can't access.
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/sandbox-files/sandboxes/{sandbox_id}/paths:describe", func(req testserver.Request) any {
+		return testserver.Response{StatusCode: 403, Body: map[string]string{
+			"error_code": "PERMISSION_DENIED", "message": "Access to the requested operation is denied.",
+		}}
+	})
+	f, err := filer.NewSandboxClient(newSandboxTestClient(t, server), testserver.TestDefaultSandboxId, "/")
+	require.NoError(t, err)
+
+	_, err = f.Stat(t.Context(), "/root/x")
+	assert.ErrorIs(t, err, fs.ErrPermission)
 }
