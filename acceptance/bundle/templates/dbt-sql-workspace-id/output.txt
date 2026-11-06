@@ -1,6 +1,18 @@
 
 === Profile no_workspace_id
 
+>>> [CLI] bundle init dbt-sql --config-file ./input.json --profile no_workspace_id
+
+Welcome to the dbt template for Declarative Automation Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+📊 Your new project has been created in the 'my_dbt_sql' directory!
+If you already have dbt installed, just type 'cd my_dbt_sql; dbt init' to get started.
+Refer to the README.md file for full "getting started" guide and production setup instructions.
+
+
 >>> grep host: my_dbt_sql/databricks.yml
       host: [DATABRICKS_URL]
       host: [DATABRICKS_URL]
@@ -12,6 +24,18 @@
     default: 4
 
 === Profile custom_host
+
+>>> [CLI] bundle init dbt-sql --config-file ./input.json --profile custom_host
+
+Welcome to the dbt template for Declarative Automation Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+
+📊 Your new project has been created in the 'my_dbt_sql' directory!
+If you already have dbt installed, just type 'cd my_dbt_sql; dbt init' to get started.
+Refer to the README.md file for full "getting started" guide and production setup instructions.
+
 
 >>> grep host: my_dbt_sql/databricks.yml
       host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
