@@ -160,6 +160,7 @@ Database Instances
 
 Agent Bricks
   agent-kit                              *Beta* APIs for managing agent memory and durable session state.
+  custom-agents                          *Beta* Please use the standalone databricks-agentbricks CLI on PyPi to build and deploy custom agents on databricks
   knowledge-assistants                   *Beta* Manage legacy Knowledge Assistants and related resources.
   supervisor-agents                      *Beta* Manage legacy Supervisor Agents and related resources.
 
