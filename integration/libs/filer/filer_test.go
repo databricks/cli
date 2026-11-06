@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -127,6 +129,7 @@ func TestFilerRecursiveDelete(t *testing.T) {
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
+		{"sandbox", setupSandboxFiler},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
@@ -229,6 +232,7 @@ func TestFilerReadWrite(t *testing.T) {
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
+		{"sandbox", setupSandboxFiler},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
@@ -335,6 +339,7 @@ func TestFilerReadDir(t *testing.T) {
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
+		{"sandbox", setupSandboxFiler},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
@@ -342,6 +347,60 @@ func TestFilerReadDir(t *testing.T) {
 			ctx := t.Context()
 
 			commonFilerReadDirTest(t, ctx, f)
+		})
+	}
+}
+
+// Concurrent writes without OverwriteIfExists must let exactly one writer
+// create the file. The lock file in libs/locker relies on this.
+func commonFilerConcurrentExclusiveWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
+	const writers = 8
+
+	var wg sync.WaitGroup
+	errs := make([]error, writers)
+	for i := range writers {
+		wg.Go(func() {
+			errs[i] = f.Write(ctx, "file", strings.NewReader(fmt.Sprintf("writer-%d", i)))
+		})
+	}
+	wg.Wait()
+
+	winner := -1
+	for i, err := range errs {
+		if err == nil {
+			assert.Equal(t, -1, winner, "more than one writer created the file")
+			winner = i
+			continue
+		}
+		assert.ErrorIs(t, err, fs.ErrExist)
+	}
+	require.NotEqual(t, -1, winner, "no writer created the file")
+	filerTest{t, f}.assertContents(ctx, "file", fmt.Sprintf("writer-%d", winner))
+
+	// Writers that lost must not leave anything behind.
+	entries, err := f.ReadDir(ctx, ".")
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	assert.Equal(t, "file", entries[0].Name())
+}
+
+func TestFilerConcurrentExclusiveWrite(t *testing.T) {
+	t.Parallel()
+
+	// Only filers verified to make exclusive creates atomic are listed.
+	for _, testCase := range []struct {
+		name string
+		f    func(t testutil.TestingT) (filer.Filer, string)
+	}{
+		{"local", setupLocalFiler},
+		{"sandbox", setupSandboxFiler},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			f, _ := testCase.f(t)
+			ctx := t.Context()
+
+			commonFilerConcurrentExclusiveWriteTest(t, ctx, f)
 		})
 	}
 }
