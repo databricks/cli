@@ -8,6 +8,7 @@ sync_once
 trace remote_tree
 trace remote_content foo.txt
 trace snapshot_files
+trace snapshot_target
 
 title "Write to file\n"
 echo '{"statement": "Mi Gente"}' > src/foo.txt

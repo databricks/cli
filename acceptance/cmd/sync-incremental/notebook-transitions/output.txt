@@ -43,6 +43,9 @@ Uploaded bar.py
 >>> remote_tree
 FILE bar.py
 
+>>> snapshot_files
+bar.py
+
 === Turn the plain Python file into a notebook
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
