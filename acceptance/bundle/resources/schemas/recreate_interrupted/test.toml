@@ -28,3 +28,9 @@ New = 'Exit code: [KILLED]'
 [[Repls]]
 Old = '(\[PROCESS_KILLED\]\n\nExit code: )1'
 New = '${1}[KILLED]'
+
+# On Windows a killed CLI leaves no bash "Killed" line. The kill lands right after the
+# approval text, so its last line is followed directly by "Exit code: 1".
+[[Repls]]
+Old = '(  recreate resources\.volumes\.volume1)\n\nExit code: 1'
+New = "${1}\n[PROCESS_KILLED]\n\nExit code: [KILLED]"
