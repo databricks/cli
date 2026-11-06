@@ -32,6 +32,9 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
+	// heartbeat is told of each successful write, which the service counts as a heartbeat.
+	heartbeat *Heartbeat
+
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
 	// second write for a resource replaces the first.
 	queue     chan string
@@ -69,7 +72,7 @@ type OperationBuffer struct {
 
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
-func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
+func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions, heartbeat *Heartbeat) *OperationBuffer {
 	// History can stop independently without canceling the deployment.
 	ctx, cancel := context.WithCancel(ctx)
 	capacity := bufferedOperations
@@ -82,6 +85,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
+		heartbeat:    heartbeat,
 		queue:        make(chan string, capacity),
 		done:         make(chan struct{}),
 		cancel:       cancel,
@@ -203,6 +207,7 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 
 	// The next write for this resource echoes the sequence id this one earned.
 	b.sequenceIDs[key] = result.SequenceId
+	b.heartbeat.renew()
 	return nil
 }
 

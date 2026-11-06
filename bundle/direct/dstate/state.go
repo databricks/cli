@@ -107,6 +107,9 @@ type DeploymentState struct {
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
 	operationBuffer *dms.OperationBuffer
 
+	// heartbeat keeps the open version's last update time fresh. Set together with operationBuffer.
+	heartbeat *dms.Heartbeat
+
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
 	versionCompleted bool
@@ -187,7 +190,8 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 		BestEffort:     db.mode == WritingDeploymentHistoryShadow,
 		OperationCount: operationCount,
 	}
-	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
+	db.heartbeat = dms.StartHeartbeat(ctx, deploymentID, versionID)
+	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options, db.heartbeat)
 	db.DeploymentID = deploymentID
 	db.VersionID = versionID
 }
@@ -233,8 +237,12 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	}
 	db.versionCompleted = true
 	deploymentID, versionID := db.DeploymentID, db.VersionID
+	heartbeat := db.heartbeat
 	db.reset()
 	db.mu.Unlock()
+
+	// Stopped first: a heartbeat racing the completion would be rejected and warn for nothing.
+	heartbeat.Stop()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
 	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
