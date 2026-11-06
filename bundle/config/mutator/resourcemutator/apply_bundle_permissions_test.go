@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -384,5 +385,42 @@ func TestApplyBundlePermissionsEmpty(t *testing.T) {
 		v, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.jobs."+name))
 		require.NoError(t, err)
 		assert.False(t, v.Get("permissions").IsValid(), name)
+	}
+}
+
+func TestDuplicatePermissionsInOneSection(t *testing.T) {
+	for _, section := range []string{"root", "target", "resource"} {
+		t.Run(section, func(t *testing.T) {
+			b := &bundle.Bundle{Config: config.Root{
+				Targets: map[string]*config.Target{"test": {}},
+				Workspace: config.Workspace{CurrentUser: &config.User{
+					User: &iam.User{UserName: "deployer@example.test"},
+				}},
+				Resources: config.Resources{Jobs: map[string]*resources.Job{"test": {}}},
+			}}
+			permissions := []resources.Permission{
+				{UserName: "reader@example.test", Level: "CAN_VIEW"},
+				{UserName: "reader@example.test", Level: "CAN_MANAGE"},
+			}
+			switch section {
+			case "root":
+				b.Config.Permissions = permissions
+			case "target":
+				b.Config.Targets["test"].Permissions = permissions
+			case "resource":
+				b.Config.Resources.Jobs["test"].Permissions = []resources.JobPermission{
+					{UserName: "reader@example.test", Level: "CAN_VIEW"},
+					{UserName: "reader@example.test", Level: "CAN_MANAGE"},
+				}
+			}
+
+			diags := bundle.ApplySeq(t.Context(), b,
+				mutator.SelectTarget("test"), ApplyBundlePermissions(), FixPermissions())
+			require.Empty(t, diags)
+			assert.Equal(t, []resources.JobPermission{
+				{UserName: "reader@example.test", Level: "CAN_MANAGE"},
+				{UserName: "deployer@example.test", Level: "IS_OWNER"},
+			}, b.Config.Resources.Jobs["test"].Permissions)
+		})
 	}
 }

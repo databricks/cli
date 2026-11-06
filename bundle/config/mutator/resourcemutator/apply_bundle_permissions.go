@@ -124,7 +124,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 				permissions,
 				key,
 				lm,
-				b.Config.TargetPermissionsStart(),
+				b.TargetPermissionsStart(),
 			)...)
 			writePermissions(field, permissions)
 		}

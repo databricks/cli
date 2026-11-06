@@ -38,9 +38,6 @@ type Root struct { //nolint:recvcheck // value receivers for read-only accessors
 	value dyn.Value
 	depth int
 
-	// Nil when no target permissions were merged. Recorded before variable resolution.
-	targetPermissionsStart *int
-
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
 
@@ -163,13 +160,12 @@ func (r *Root) initializeDynamicValue() error {
 }
 
 func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
-	// ToTyped clears all fields, including internal state.
+	// Hack: restore state; it may be cleared by [ToTyped] if
+	// the configuration equals nil (happens in tests).
 	depth := r.depth
-	targetPermissionsStart := r.targetPermissionsStart
 
 	defer func() {
 		r.depth = depth
-		r.targetPermissionsStart = targetPermissionsStart
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -330,14 +326,6 @@ func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 	return dyn.SetByPath(rv, path, out)
 }
 
-// TargetPermissionsStart returns the first target permission index, or the list length if none were merged.
-func (r Root) TargetPermissionsStart() int {
-	if r.targetPermissionsStart == nil {
-		return len(r.Permissions)
-	}
-	return *r.targetPermissionsStart
-}
-
 func (r *Root) MergeTargetOverrides(name string) error {
 	root := r.value
 	target, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
@@ -349,14 +337,6 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	err = validateVariableOverrides(root, target)
 	if err != nil {
 		return err
-	}
-
-	var targetPermissionsStart *int
-	if p := target.Get("permissions"); p.IsValid() && p.Kind() != dyn.KindNil {
-		// Lists concatenate; a complex-variable reference replaces another reference.
-		rootPermissions, _ := root.Get("permissions").AsSequence()
-		start := len(rootPermissions)
-		targetPermissionsStart = &start
 	}
 
 	// Merge fields that can be merged 1:1.
@@ -467,11 +447,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Convert normalized configuration tree to typed configuration.
-	if err := r.updateWithDynamicValue(root); err != nil {
-		return err
-	}
-	r.targetPermissionsStart = targetPermissionsStart
-	return nil
+	return r.updateWithDynamicValue(root)
 }
 
 var allowedVariableDefinitions = []([]string){

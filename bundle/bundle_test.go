@@ -237,3 +237,24 @@ func TestBundleSyncMode(t *testing.T) {
 		})
 	}
 }
+
+func TestSelectTargetMergeFailure(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
+permissions:
+  - {group_name: developers, level: CAN_VIEW}
+targets:
+  test:
+    permissions: ${var.acl}
+`))
+	require.Empty(t, diags)
+	b := &Bundle{Config: *root}
+	require.NoError(t, b.Config.MarkMutatorEntry(t.Context()))
+	t.Cleanup(func() { require.NoError(t, b.Config.MarkMutatorExit(t.Context())) })
+
+	err := b.SelectTarget("test")
+	require.ErrorContains(t, err, "cannot merge sequence with string")
+	assert.Nil(t, b.Target)
+	assert.Empty(t, b.Config.Bundle.Target)
+	assert.Contains(t, b.Config.Targets, "test")
+	assert.Equal(t, []resources.Permission{{GroupName: "developers", Level: "CAN_VIEW"}}, b.Config.Permissions)
+}
