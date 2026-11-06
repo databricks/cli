@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    job1:
+      name: job1
+      triggers:
+        - schedule:
+            quartz_cron_expression: "0 0 0 1 1 ? 2099"
+            timezone_id: UTC
+        - schedule:
+            quartz_cron_expression: "0 0 0 2 1 ? 2099"
+            timezone_id: UTC
+          pause_status: UNPAUSED
+
+    job2:
+      name: job2
+      triggers:
+        - file_arrival:
+            url: /Volumes/main/default/landing/
+
+presets:
+  trigger_pause_status: PAUSED
