@@ -47,6 +47,10 @@ For resources whose create or update is asynchronous (the resource is not immedi
 
 If the API may return a slice's elements in a different order between calls (e.g., `depends_on` in job tasks, `privileges` in grants), implement `KeyedSlices` to compare elements by a natural key rather than by index. Without this, every deploy after any reordering shows phantom diffs.
 
+## Moved resources: IDFromState / StableID
+
+If the ID is built from the resource's own fields (a UC full name) and the backend has an ID that a rename keeps (a volume's `volume_id`), implement `IDFromState` and `StableID` together, along with `DoUpdateWithID`. When nothing is at the recorded ID, the plan reads at the ID the config gives the resource and takes what it finds only if its stable ID matches the one saved in state. This covers a rename done out of band, or by a deploy that stopped before re-keying the resource.
+
 ## Empty states: IsEmptyState
 
 If a desired state describes no resource at all (e.g. an empty grants list), implement `IsEmptyState`. The planner omits such a node instead of planning a create, and apply drops its state entry instead of persisting one.

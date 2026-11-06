@@ -120,6 +120,16 @@ func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *
 	return response.FullName, response, nil
 }
 
+// IDFromState returns the full name, which is the ID.
+func (*ResourceSchema) IDFromState(state *catalog.CreateSchema) string {
+	return state.CatalogName + "." + state.Name
+}
+
+// StableID returns the schema_id, which a rename keeps.
+func (*ResourceSchema) StableID(remote *catalog.SchemaInfo) string {
+	return remote.SchemaId
+}
+
 func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *catalog.CreateSchema) error {
 	return r.client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 		FullName:        id,

@@ -12,9 +12,9 @@ import (
 // config so depends_on survives the round trip: DMS has no field for dependency edges, and
 // nesting them in the config would collide with resource fields of the same name.
 type RecordedState struct {
-	State       json.RawMessage             `json:"state"`
-	DependsOn   []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
-	RenamedFrom map[string]any              `json:"renamed_from,omitempty"`
+	State     json.RawMessage             `json:"state"`
+	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+	StableID  string                      `json:"stable_id,omitempty"`
 }
 
 // applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS
@@ -55,9 +55,9 @@ func stateEntry(res dms.Resource) (ResourceEntry, error) {
 	}
 
 	return ResourceEntry{
-		ID:          res.ID,
-		State:       recorded.State,
-		DependsOn:   recorded.DependsOn,
-		RenamedFrom: recorded.RenamedFrom,
+		ID:        res.ID,
+		State:     recorded.State,
+		DependsOn: recorded.DependsOn,
+		StableID:  recorded.StableID,
 	}, nil
 }

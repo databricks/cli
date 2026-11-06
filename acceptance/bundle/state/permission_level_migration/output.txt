@@ -54,10 +54,7 @@ Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
      "node": "resources.jobs.my_job",
      "label": "${resources.jobs.my_job.id}"
     }
-   ],
-   "renamed_from": {
-    "object_id": "/jobs/123"
-   }
+   ]
   }
  }
 }

@@ -29,85 +29,65 @@ Exit code: [KILLED]
   }
 }
 
-=== The next plan still re-keys the volume, whose state has the old schema
->>> [CLI] bundle plan --output json
-{
-  "resources.schemas.schema1": {
-    "action": "skip",
-    "remote_state": {
-      "browse_only": false,
-      "catalog_name": "main",
-      "catalog_type": "MANAGED_CATALOG",
-      "comment": "",
-      "created_at": [UNIX_TIME_MILLIS][0],
-      "created_by": "[USERNAME]",
-      "custom_max_retention_hours": 0,
-      "effective_predictive_optimization_flag": {
-        "inherited_from_name": "[METASTORE_NAME]",
-        "inherited_from_type": "METASTORE",
-        "value": "ENABLE"
-      },
-      "enable_predictive_optimization": "INHERIT",
-      "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
-      "metastore_id": "[UUID]",
-      "name": "test-schema-renamed-[UNIQUE_NAME]",
-      "owner": "[USERNAME]",
-      "schema_id": "[UUID]",
-      "updated_at": [UNIX_TIME_MILLIS][1],
-      "updated_by": "[USERNAME]"
-    },
-    "changes": {
-      "comment": {
-        "action": "skip",
-        "reason": "empty",
-        "remote": ""
-      },
-      "custom_max_retention_hours": {
-        "action": "skip",
-        "reason": "empty",
-        "remote": 0
-      }
-    }
-  },
-  "resources.volumes.volume1": {
-    "depends_on": [
-      {
-        "node": "resources.schemas.schema1",
-        "label": "${resources.schemas.schema1.name}"
-      }
-    ],
-    "action": "update_id",
-    "new_state": {
-      "value": {
-        "catalog_name": "main",
-        "comment": "c2",
-        "name": "myvolume",
-        "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
-        "volume_type": "MANAGED"
-      }
-    },
-    "changes": {
-      "comment": {
-        "action": "update",
-        "old": "c1",
-        "new": "c2"
-      },
-      "schema_name": {
-        "action": "update_id",
-        "reason": "parent_renamed",
-        "old": "test-schema-[UNIQUE_NAME]",
-        "new": "test-schema-renamed-[UNIQUE_NAME]"
-      }
-    }
-  }
-}
-
-=== It can, because the schema's old name was saved together with its rename
+=== The volume is gone from its recorded path, so the plan looks for it at its path in config
 >>> print_state.py
 {
-  "__id__": "main.test-schema-renamed-[UNIQUE_NAME]",
-  "renamed_from": {
-    "name": "test-schema-[UNIQUE_NAME]"
+  "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
+  "stable_id": "[VOLUME_ID]"
+}
+
+>>> [CLI] bundle plan --output json
+{
+  "id": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
+  "depends_on": [
+    {
+      "node": "resources.schemas.schema1",
+      "label": "${resources.schemas.schema1.name}"
+    }
+  ],
+  "action": "update_id",
+  "new_state": {
+    "value": {
+      "catalog_name": "main",
+      "comment": "c2",
+      "name": "myvolume",
+      "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
+      "volume_type": "MANAGED"
+    }
+  },
+  "remote_state": {
+    "catalog_name": "main",
+    "comment": "c1",
+    "created_at": [UNIX_TIME_MILLIS][0],
+    "created_by": "[USERNAME]",
+    "full_name": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
+    "name": "myvolume",
+    "owner": "[USERNAME]",
+    "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
+    "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[VOLUME_ID]",
+    "updated_at": [UNIX_TIME_MILLIS][0],
+    "volume_id": "[VOLUME_ID]",
+    "volume_type": "MANAGED"
+  },
+  "changes": {
+    "comment": {
+      "action": "update",
+      "old": "c1",
+      "new": "c2",
+      "remote": "c1"
+    },
+    "schema_name": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "old": "test-schema-[UNIQUE_NAME]",
+      "new": "test-schema-renamed-[UNIQUE_NAME]",
+      "remote": "test-schema-renamed-[UNIQUE_NAME]"
+    },
+    "storage_location": {
+      "action": "skip",
+      "reason": "immutable_backend_value",
+      "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[VOLUME_ID]"
+    }
   }
 }
 
