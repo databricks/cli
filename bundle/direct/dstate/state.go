@@ -169,11 +169,6 @@ type ResourceEntry struct {
 	ID        string                      `json:"__id__"`
 	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
-
-	// StableID is the backend's ID for the object that survives a rename (a volume's volume_id),
-	// for resource types that have one. When the object is not at ID any more, the plan looks for
-	// it at the ID its config gives it and takes what it finds there only if StableID matches.
-	StableID string `json:"stable_id,omitempty"`
 }
 
 type WALEntry struct {
@@ -294,7 +289,7 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 	var recorded json.RawMessage
 	if entry, ok := db.GetResourceEntry(resourceKey); resourceID != "" && ok && len(entry.State) > 0 {
 		var err error
-		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn, StableID: entry.StableID})
+		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn})
 		if err != nil {
 			// Nothing the caller can act on, so record the failure without the state.
 			recorded = nil
@@ -320,11 +315,6 @@ func NewDatabase(lineage string, serial int) Database {
 
 // SaveState records the resource's state after an operation was applied to it.
 func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	return db.SaveStateWithStableID(ctx, key, newID, state, dependsOn, "")
-}
-
-// SaveStateWithStableID is SaveState that also records the object's stable ID (see ResourceEntry).
-func (db *DeploymentState) SaveStateWithStableID(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, stableID string) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -341,7 +331,6 @@ func (db *DeploymentState) SaveStateWithStableID(ctx context.Context, key, newID
 		ID:        newID,
 		State:     json.RawMessage(jsonMessage),
 		DependsOn: dependsOn,
-		StableID:  stableID,
 	}
 
 	switch db.mode {
@@ -355,7 +344,7 @@ func (db *DeploymentState) SaveStateWithStableID(ctx context.Context, key, newID
 		db.Data.State[key] = entry
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
-			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn, StableID: stableID})
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
 			if err != nil {
 				return err
 			}
@@ -370,7 +359,7 @@ func (db *DeploymentState) SaveStateWithStableID(ctx context.Context, key, newID
 		}
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
-			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn, StableID: stableID})
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
 			if err != nil {
 				return err
 			}

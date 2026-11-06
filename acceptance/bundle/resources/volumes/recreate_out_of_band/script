@@ -29,6 +29,6 @@ print_requests.py //unity-catalog &> LOG.recreate_requests
 
 title "With the config renamed to match, the plan finds a volume at the new name, but its volume_id differs, so it plans a create"
 trace update_file.py databricks.yml "name: myvolume" "name: myvolume2"
-trace print_state.py | jq '.state["resources.volumes.volume1"] | {__id__, stable_id}'
+trace print_state.py | jq '.state["resources.volumes.volume1"] | {__id__, volume_id: .state.volume_id}'
 trace $CLI volumes read "$SCHEMA.myvolume2" | jq '{full_name, volume_id}'
 plan

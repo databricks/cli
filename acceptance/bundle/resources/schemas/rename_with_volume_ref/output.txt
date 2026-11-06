@@ -17,6 +17,10 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   {
     "default": "main.test-schema-[UNIQUE_NAME].myvolume",
     "name": "volume_id"
+  },
+  {
+    "default": "[VOLUME_ID]",
+    "name": "volume_uuid"
   }
 ]
 
@@ -60,6 +64,10 @@ Resources: 0 created, 3 changed, 0 deleted, 0 unchanged
   {
     "default": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
     "name": "volume_id"
+  },
+  {
+    "default": "[VOLUME_ID]",
+    "name": "volume_uuid"
   }
 ]
 
