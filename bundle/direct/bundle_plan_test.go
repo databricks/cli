@@ -795,3 +795,128 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }
+
+func TestAddGrantsDependencies(t *testing.T) {
+	const (
+		catalog       = "resources.catalogs.main"
+		catalogGrants = "resources.catalogs.main.grants"
+		schema        = "resources.schemas.src"
+		schemaGrants  = "resources.schemas.src.grants"
+		pipeline      = "resources.pipelines.load"
+		app           = "resources.apps.app"
+		job           = "resources.jobs.job"
+	)
+
+	schemaID := deployplan.DependsOnEntry{Node: schema, Label: "${resources.schemas.src.id}"}
+	schemaCatalogName := deployplan.DependsOnEntry{Node: schema, Label: "${resources.schemas.src.catalog_name}"}
+	schemaName := deployplan.DependsOnEntry{Node: schema, Label: "${resources.schemas.src.name}"}
+	appSP := deployplan.DependsOnEntry{Node: app, Label: "${resources.apps.app.service_principal_client_id}"}
+
+	tests := []struct {
+		name     string
+		plan     map[string][]deployplan.DependsOnEntry
+		expected map[string][]deployplan.DependsOnEntry
+	}{
+		{
+			name: "resource referring to a resource with grants depends on the grants",
+			plan: map[string][]deployplan.DependsOnEntry{
+				schema:       nil,
+				schemaGrants: {schemaID},
+				pipeline:     {schemaCatalogName, schemaName},
+			},
+			expected: map[string][]deployplan.DependsOnEntry{
+				schema:       nil,
+				schemaGrants: {schemaID},
+				pipeline: {
+					schemaCatalogName,
+					schemaName,
+					{Node: schemaGrants, Label: "${resources.schemas.src.catalog_name}"},
+				},
+			},
+		},
+		{
+			name: "resource without grants",
+			plan: map[string][]deployplan.DependsOnEntry{
+				schema:   nil,
+				pipeline: {schemaName},
+			},
+			expected: map[string][]deployplan.DependsOnEntry{
+				schema:   nil,
+				pipeline: {schemaName},
+			},
+		},
+		{
+			name: "each resource depends on the grants of the resource it refers to",
+			plan: map[string][]deployplan.DependsOnEntry{
+				catalog:       nil,
+				catalogGrants: {{Node: catalog, Label: "${resources.catalogs.main.id}"}},
+				schema:        {{Node: catalog, Label: "${resources.catalogs.main.name}"}},
+				schemaGrants:  {schemaID},
+				pipeline:      {schemaName},
+			},
+			expected: map[string][]deployplan.DependsOnEntry{
+				catalog:       nil,
+				catalogGrants: {{Node: catalog, Label: "${resources.catalogs.main.id}"}},
+				schema: {
+					{Node: catalog, Label: "${resources.catalogs.main.name}"},
+					{Node: catalogGrants, Label: "${resources.catalogs.main.name}"},
+				},
+				schemaGrants: {schemaID},
+				pipeline: {
+					schemaName,
+					{Node: schemaGrants, Label: "${resources.schemas.src.name}"},
+				},
+			},
+		},
+		{
+			name: "grants that depend on the referring resource",
+			plan: map[string][]deployplan.DependsOnEntry{
+				schema:       nil,
+				schemaGrants: {appSP, schemaID},
+				app:          {schemaName},
+				pipeline:     {schemaName},
+			},
+			expected: map[string][]deployplan.DependsOnEntry{
+				schema:       nil,
+				schemaGrants: {appSP, schemaID},
+				app:          {schemaName},
+				pipeline: {
+					schemaName,
+					{Node: schemaGrants, Label: "${resources.schemas.src.name}"},
+				},
+			},
+		},
+		{
+			name: "grants that transitively depend on the referring resource",
+			plan: map[string][]deployplan.DependsOnEntry{
+				schema:       nil,
+				schemaGrants: {{Node: job, Label: "${resources.jobs.job.run_as.service_principal_name}"}, schemaID},
+				job:          {{Node: app, Label: "${resources.apps.app.name}"}},
+				app:          {schemaName},
+			},
+			expected: map[string][]deployplan.DependsOnEntry{
+				schema:       nil,
+				schemaGrants: {{Node: job, Label: "${resources.jobs.job.run_as.service_principal_name}"}, schemaID},
+				job:          {{Node: app, Label: "${resources.apps.app.name}"}},
+				app:          {schemaName},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plan := deployplan.NewPlanDirect()
+			for node, dependsOn := range tt.plan {
+				plan.Plan[node] = &deployplan.PlanEntry{DependsOn: dependsOn}
+			}
+
+			addGrantsDependencies(plan)
+
+			actual := make(map[string][]deployplan.DependsOnEntry, len(plan.Plan))
+			for node, entry := range plan.Plan {
+				actual[node] = entry.DependsOn
+			}
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
