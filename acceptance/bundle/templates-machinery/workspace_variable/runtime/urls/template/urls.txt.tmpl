@@ -1,0 +1,9 @@
+{{- $ws := .workspace -}}
+workspace_host: {{ workspace_host }}
+Hostname: {{ .workspace.Hostname }}
+URL: {{ .workspace.URL }}
+URL "/jobs": {{ .workspace.URL "/jobs" }}
+URL "{{ .path }}": {{ $ws.URL .path }}
+jobs_url: {{ .jobs_url }}
+Root keys:{{ range $key, $value := . }} {{ $key }}{{ end }}
+Root data: {{ . }}
