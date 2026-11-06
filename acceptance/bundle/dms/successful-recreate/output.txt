@@ -47,7 +47,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "main.dms_successful_recreate_schema_[UNIQUE_NAME]",
     "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"},\"stable_id\":\"[UUID]\"}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -101,7 +101,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "catalog_name": "main",
     "comment": "v1",
     "name": "dms_successful_recreate_schema_[UNIQUE_NAME]"
-   }
+   },
+   "stable_id": "[UUID]"
   }
  }
 }
@@ -159,7 +160,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
     "sequence_id": 1,
-    "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"},\"stable_id\":\"[UUID]\"}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -213,7 +214,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "catalog_name": "dms_other_[UNIQUE_NAME]",
     "comment": "v1",
     "name": "dms_successful_recreate_schema_[UNIQUE_NAME]"
-   }
+   },
+   "stable_id": "[UUID]"
   }
  }
 }

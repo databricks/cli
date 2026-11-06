@@ -47,7 +47,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "main.dms_metadata_schema_[UNIQUE_NAME]",
     "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema_[UNIQUE_NAME]\"},\"stable_id\":\"[UUID]\"}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }

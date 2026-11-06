@@ -44,6 +44,10 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	if oldID == "" {
 		return errors.New("state entry not found")
 	}
+	if planEntry.ID != "" {
+		// The plan found the resource at the ID its config gives it: a rename moved it.
+		oldID = planEntry.ID
+	}
 
 	switch actionType {
 	case deployplan.Recreate:
@@ -89,7 +93,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn, nil)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn, d.Adapter.StableID(d.RemoteState))
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -187,7 +191,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.saveState(ctx, db, id, newState, d.DependsOn, nil)
+		err = d.saveState(ctx, db, id, newState, d.DependsOn, d.stableID(planEntry.RemoteState))
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -236,7 +240,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn, renamedFrom(planEntry.Changes))
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn, d.stableID(planEntry.RemoteState))
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -329,7 +333,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.saveState(ctx, db, id, newState, d.DependsOn, nil)
+	err = d.saveState(ctx, db, id, newState, d.DependsOn, d.stableID(entry.RemoteState))
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -341,7 +345,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 // with content hashes, see dresources.CompactState) before persisting it. Fields already
 // smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
 // placeholder value so secrets are never written to disk in plaintext.
-func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry, renamedFrom map[string]any) error {
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry, stableID string) error {
 	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
 	if err != nil {
 		return fmt.Errorf("compacting state: %w", err)
@@ -349,23 +353,16 @@ func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentSta
 	if err := zeroSensitiveFields(d.Adapter, compacted); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
-	return db.SaveStateRenamed(ctx, d.ResourceKey, newID, compacted, dependsOn, renamedFrom)
+	return db.SaveStateWithStableID(ctx, d.ResourceKey, newID, compacted, dependsOn, stableID)
 }
 
-// renamedFrom returns the old values of the fields an update_id changes, for the state entry's
-// RenamedFrom.
-func renamedFrom(changes deployplan.Changes) map[string]any {
-	var result map[string]any
-	for path, change := range changes {
-		if change.Action != deployplan.UpdateWithID {
-			continue
-		}
-		if result == nil {
-			result = make(map[string]any)
-		}
-		result[path] = change.Old
+// stableID returns the stable ID (see dstate.ResourceEntry) of the object being saved: from the
+// remote state the operation returned, else from planRemote, the same object as the plan read it.
+func (d *DeploymentUnit) stableID(planRemote any) string {
+	if id := d.Adapter.StableID(d.RemoteState); id != "" {
+		return id
 	}
-	return result
+	return d.Adapter.StableID(planRemote)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

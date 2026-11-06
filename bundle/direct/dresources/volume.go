@@ -121,6 +121,16 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	return response.FullName, response, nil
 }
 
+// IDFromState returns the full name, which is the ID.
+func (*ResourceVolume) IDFromState(state *catalog.CreateVolumeRequestContent) string {
+	return state.CatalogName + "." + state.SchemaName + "." + state.Name
+}
+
+// StableID returns the volume_id, which a rename keeps.
+func (*ResourceVolume) StableID(remote *catalog.VolumeInfo) string {
+	return remote.VolumeId
+}
+
 func (r *ResourceVolume) DoDelete(ctx context.Context, id string, _ *catalog.CreateVolumeRequestContent) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
 }
