@@ -11,7 +11,6 @@
   "from_file": "file-value",
   "included": "dev-included",
   "lookup_overridden": "dev-instead-of-lookup",
-  "lookup_var": "[UUID]",
   "override_full": "dev-full",
   "override_short": "dev-short",
   "simple": "simple-default",
@@ -30,13 +29,13 @@
     "databricks.yml:18:5"
   ],
   "variables.complex_var.value": [
-    "databricks.yml:46:9"
+    "databricks.yml:43:9"
   ],
   "variables.dash-name": [
-    "databricks.yml:33:5"
+    "databricks.yml:30:5"
   ],
   "variables.dash-name.value": [
-    "databricks.yml:33:14"
+    "databricks.yml:30:14"
   ],
   "variables.from_cli": [
     "databricks.yml:12:5"
@@ -57,25 +56,22 @@
     "targets.yml:4:17"
   ],
   "variables.lookup_overridden": [
-    "databricks.yml:35:5"
+    "databricks.yml:32:5"
   ],
   "variables.lookup_overridden.value": [
-    "databricks.yml:47:26"
-  ],
-  "variables.lookup_var": [
-    "databricks.yml:24:5"
+    "databricks.yml:44:26"
   ],
   "variables.override_full": [
-    "databricks.yml:29:5"
+    "databricks.yml:26:5"
   ],
   "variables.override_full.value": [
-    "databricks.yml:44:18"
+    "databricks.yml:41:18"
   ],
   "variables.override_short": [
-    "databricks.yml:27:5"
+    "databricks.yml:24:5"
   ],
   "variables.override_short.value": [
-    "databricks.yml:42:23"
+    "databricks.yml:39:23"
   ],
   "variables.simple": [
     "databricks.yml:10:5"
@@ -84,7 +80,7 @@
     "databricks.yml:10:14"
   ],
   "variables.split": [
-    "databricks.yml:31:5",
+    "databricks.yml:28:5",
     "variables/shared.yml:5:5"
   ],
   "variables.split.value": [

@@ -20,9 +20,6 @@ variables:
       key: value
   var_in_var:
     default: ${var.simple}-suffix
-  lookup_var:
-    lookup:
-      service_principal: deco-test-spn
   override_short:
     default: base
   override_full:
