@@ -19,9 +19,9 @@ class NotificationDestination:
 
     destination_ids: VariableOrList[str] = field(default_factory=list)
     """
-    The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The
-    destinations must already exist in the workspace; a workspace admin creates them. A maximum of
-    25 destination IDs is supported.
+    The notification-destination IDs (Slack / Teams / webhook / Asana / ServiceNow / AWS
+    EventBridge) to send the notification to. The destinations must already exist in the
+    workspace; a workspace admin creates them. A maximum of 25 destination IDs is supported.
     Only supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.
     """
 
@@ -49,9 +49,9 @@ class NotificationDestinationDict(TypedDict, total=False):
 
     destination_ids: VariableOrList[str]
     """
-    The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The
-    destinations must already exist in the workspace; a workspace admin creates them. A maximum of
-    25 destination IDs is supported.
+    The notification-destination IDs (Slack / Teams / webhook / Asana / ServiceNow / AWS
+    EventBridge) to send the notification to. The destinations must already exist in the
+    workspace; a workspace admin creates them. A maximum of 25 destination IDs is supported.
     Only supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.
     """
 

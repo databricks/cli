@@ -1,0 +1,1 @@
+* Expose the workspace of the selected profile to bundle templates as `.workspace`, with `Hostname`, `ID`, and `URL`, so templates can address a workspace on a host shared by several workspaces. A template input named `workspace` takes precedence. ([#7349](https://github.com/databricks/cli/pull/7349))

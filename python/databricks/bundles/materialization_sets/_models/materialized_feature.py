@@ -58,7 +58,7 @@ class MaterializedFeature:
 
     cron_schedule_trigger: VariableOrOptional[CronSchedule] = None
     """
-    A cron-based schedule trigger for the materialization pipeline.
+    A cron-based schedule trigger for batch materialization.
     """
 
     materialized_feature_id: VariableOrOptional[str] = None
@@ -87,7 +87,7 @@ class MaterializedFeature:
 
     table_trigger: VariableOrOptional[TableTrigger] = None
     """
-    A trigger that fires when the upstream source table changes.
+    A trigger that starts batch materialization when the upstream source table changes.
     """
 
     tags: VariableOrDict[str] = field(default_factory=dict)
@@ -129,7 +129,7 @@ class MaterializedFeatureDict(TypedDict, total=False):
 
     cron_schedule_trigger: VariableOrOptional[CronScheduleParam]
     """
-    A cron-based schedule trigger for the materialization pipeline.
+    A cron-based schedule trigger for batch materialization.
     """
 
     materialized_feature_id: VariableOrOptional[str]
@@ -158,7 +158,7 @@ class MaterializedFeatureDict(TypedDict, total=False):
 
     table_trigger: VariableOrOptional[TableTriggerParam]
     """
-    A trigger that fires when the upstream source table changes.
+    A trigger that starts batch materialization when the upstream source table changes.
     """
 
     tags: VariableOrDict[str]

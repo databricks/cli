@@ -1,0 +1,44 @@
+# A template input named "workspace" takes precedence over the workspace
+# context, with and without a value supplied.
+export DATABRICKS_CONFIG_PROFILE=workspace_custom_host
+
+title "String input\n"
+trace $CLI bundle debug render-template-schema ./string | schema_fields
+trace $CLI bundle debug render-template-schema ./string --input-file input.value.json | schema_fields
+for config in "" "--config-file input.empty.json" "--config-file input.value.json"; do
+  trace $CLI bundle init ./string $config
+  cat workspace.txt
+  rm workspace.txt
+done
+trace musterr $CLI bundle init ./string --config-file input.invalid.json
+
+# The welcome message is rendered before inputs get their values. The input
+# still owns the name, so the workspace context isn't used in its place.
+title "Input without a value yet\n"
+trace $CLI bundle debug render-template-schema ./no_value | schema_fields
+trace musterr $CLI bundle init ./no_value
+trace $CLI bundle init ./no_value --config-file input.value.json
+cat workspace.txt
+rm workspace.txt
+
+title "Boolean input\n"
+for config in "" "--config-file input.false.json"; do
+  trace $CLI bundle init ./boolean $config
+  cat workspace.txt
+  rm workspace.txt
+done
+
+title "Integer input\n"
+for config in "" "--config-file input.zero.json"; do
+  trace $CLI bundle init ./integer $config
+  cat workspace.txt
+  rm workspace.txt
+done
+
+# An input value that the schema doesn't declare doesn't claim the name, so
+# schema rendering and bundle init both use the workspace context.
+title "Undeclared input\n"
+trace $CLI bundle debug render-template-schema ./undeclared --input-file input.value.json | schema_fields
+trace $CLI bundle init ./undeclared --config-file input.value.json
+cat workspace.txt
+rm workspace.txt

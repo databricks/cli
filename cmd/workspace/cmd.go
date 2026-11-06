@@ -64,6 +64,7 @@ import (
 	knowledge_assistants "github.com/databricks/cli/cmd/workspace/knowledge-assistants"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
+	lakewatch "github.com/databricks/cli/cmd/workspace/lakewatch"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
@@ -204,6 +205,7 @@ func All() []*cobra.Command {
 	out = append(out, knowledge_assistants.New())
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
+	out = append(out, lakewatch.New())
 	out = append(out, libraries.New())
 	out = append(out, materialized_features.New())
 	out = append(out, metastores.New())
