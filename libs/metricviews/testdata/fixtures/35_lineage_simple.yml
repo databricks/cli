@@ -1,0 +1,13 @@
+version: 0.1
+source: main.default.t1
+
+dimensions:
+  - name: d1
+    expr: a
+
+  - name: d2
+    expr: b
+
+measures:
+  - name: total
+    expr: count(*)
