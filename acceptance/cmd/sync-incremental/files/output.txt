@@ -20,6 +20,10 @@ FILE foo.txt
 >>> snapshot_files
 foo.txt
 
+>>> snapshot_target
+[DATABRICKS_URL]
+/Users/[USERNAME]/sync-[UNIQUE_NAME]
+
 === Write to file
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]

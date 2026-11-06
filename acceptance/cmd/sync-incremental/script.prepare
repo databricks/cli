@@ -35,6 +35,11 @@ snapshot_files() {
     jq -r '.last_modified_times | keys[]' src/.databricks/sync-snapshots/*.json
 }
 
+# Prints the workspace host and remote path recorded in the sync snapshot.
+snapshot_target() {
+    jq -r '.host, .remote_path' src/.databricks/sync-snapshots/*.json
+}
+
 remote_content() {
     $CLI workspace export "$remote_dir/$1"
 }
