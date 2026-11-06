@@ -14,7 +14,6 @@ import (
 type RecordedState struct {
 	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
-	StableID  string                      `json:"stable_id,omitempty"`
 }
 
 // applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS
@@ -58,6 +57,5 @@ func stateEntry(res dms.Resource) (ResourceEntry, error) {
 		ID:        res.ID,
 		State:     recorded.State,
 		DependsOn: recorded.DependsOn,
-		StableID:  recorded.StableID,
 	}, nil
 }

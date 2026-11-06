@@ -120,15 +120,15 @@ type IResource interface {
 	IsGone(remoteState any) bool
 
 	// [Optional] IDFromState returns the ID the state gives the resource, for resource types whose ID
-	// is built from their own fields (a UC full name). Implemented together with StableID.
-	// Example: func (*ResourceVolume) IDFromState(state *catalog.CreateVolumeRequestContent) string
+	// is built from their own fields (a UC full name). Implemented together with InternalID.
+	// Example: func (*ResourceVolume) IDFromState(state *VolumeState) string
 	IDFromState(state any) string
 
-	// [Optional] StableID returns the backend's ID for the object that a rename keeps (a volume's
-	// volume_id). When the resource is not at its recorded ID, the plan looks for it at the ID
-	// IDFromState gives it, and takes what it finds only if StableID matches the recorded one.
-	// Example: func (*ResourceVolume) StableID(remote *catalog.VolumeInfo) string
-	StableID(remoteState any) string
+	// [Optional] InternalID returns the backend's own ID recorded in the state, which a rename keeps
+	// (a volume's volume_id). When the resource is not at its recorded ID, the plan looks for it at the
+	// ID IDFromState gives it, and takes what it finds only if the internal IDs match.
+	// Example: func (*ResourceVolume) InternalID(state *VolumeState) string
+	InternalID(state any) string
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -153,7 +153,7 @@ type Adapter struct {
 	doResize           *calladapt.BoundCaller
 	isGone             *calladapt.BoundCaller
 	idFromState        *calladapt.BoundCaller
-	stableID           *calladapt.BoundCaller
+	internalID         *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -196,7 +196,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		overrideChangeDesc:      nil,
 		isGone:                  nil,
 		idFromState:             nil,
-		stableID:                nil,
+		internalID:              nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -328,7 +328,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.stableID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "StableID")
+	a.internalID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "InternalID")
 	if err != nil {
 		return err
 	}
@@ -427,12 +427,12 @@ func (a *Adapter) validate() error {
 		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
 	}
 
-	if (a.idFromState == nil) != (a.stableID == nil) {
-		return errors.New("IDFromState and StableID must be implemented together")
+	if (a.idFromState == nil) != (a.internalID == nil) {
+		return errors.New("IDFromState and InternalID must be implemented together")
 	}
 	if a.idFromState != nil {
 		validations = append(validations, "IDFromState state", a.idFromState.InTypes[0], stateType)
-		validations = append(validations, "StableID remoteState", a.stableID.InTypes[0], remoteType)
+		validations = append(validations, "InternalID state", a.internalID.InTypes[0], stateType)
 	}
 
 	if a.doUpdateWithID != nil {
@@ -760,9 +760,9 @@ func (a *Adapter) IsGone(remoteState any) bool {
 	return outs[0].(bool)
 }
 
-// HasStableID reports whether the resource implements IDFromState and StableID.
-func (a *Adapter) HasStableID() bool {
-	return a.stableID != nil
+// HasInternalID reports whether the resource implements IDFromState and InternalID.
+func (a *Adapter) HasInternalID() bool {
+	return a.internalID != nil
 }
 
 // IDFromState returns the ID the state gives the resource; see IResource.IDFromState.
@@ -774,17 +774,13 @@ func (a *Adapter) IDFromState(state any) (string, error) {
 	return outs[0].(string), nil
 }
 
-// StableID returns the rename-proof ID of the object in remoteState; see IResource.StableID.
-// It is empty for a resource type without one and for a nil remote state.
-func (a *Adapter) StableID(remoteState any) string {
-	if a.stableID == nil || remoteState == nil || reflect.ValueOf(remoteState).IsNil() {
-		return ""
-	}
-	outs, err := a.stableID.Call(remoteState)
+// InternalID returns the backend's own ID recorded in state; see IResource.InternalID.
+func (a *Adapter) InternalID(state any) (string, error) {
+	outs, err := a.internalID.Call(state)
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return outs[0].(string)
+	return outs[0].(string), nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

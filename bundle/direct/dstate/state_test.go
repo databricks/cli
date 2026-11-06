@@ -38,23 +38,6 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	mustFinalize(t, &db2)
 }
 
-func TestSaveStateWithStableIDRoundTrip(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "state.json")
-
-	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
-	require.NoError(t, db.SaveStateWithStableID(t.Context(), "schemas.foo", "main.foo", map[string]string{"name": "foo"}, nil, "uuid-1"))
-	mustFinalize(t, &db)
-
-	var db2 DeploymentState
-	require.NoError(t, db2.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
-	entry, ok := db2.GetResourceEntry("schemas.foo")
-	require.True(t, ok)
-	assert.Equal(t, "main.foo", entry.ID)
-	assert.Equal(t, "uuid-1", entry.StableID)
-	mustFinalize(t, &db2)
-}
-
 func TestFinalizeWithoutResourceWrites(t *testing.T) {
 	for _, mode := range []Mode{WritingFile, WritingDeploymentHistoryShadow} {
 		path := filepath.Join(t.TempDir(), "state.json")
