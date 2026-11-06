@@ -15,10 +15,20 @@ trace $CLI bundle init ./urls --profile workspace_custom_host --config-file inpu
 cat urls.txt
 rm urls.txt
 
+# A default that fails, here because the profile has no workspace ID, doesn't
+# matter when the input has a value: init doesn't use it, and the schema keeps
+# it as written. Without a value, the schema still fails.
+title "Failing default of an input with a value\n"
+trace $CLI bundle debug render-template-schema ./supplied --profile no_workspace_id --input-file input.supplied.json | schema_fields
+trace $CLI bundle init ./supplied --profile no_workspace_id --config-file input.supplied.json
+cat value.txt
+rm value.txt
+trace musterr $CLI bundle debug render-template-schema ./supplied --profile no_workspace_id
+
 title "Invalid URL paths\n"
-trace musterr $CLI bundle init ./urls --profile workspace_custom_host --config-file input.absolute-url.json
-trace musterr $CLI bundle init ./urls --profile workspace_custom_host --config-file input.workspace-selector.json
-trace musterr $CLI bundle init ./urls --profile workspace_custom_host --config-file input.semicolon.json
+for input in absolute-url protocol-relative workspace-selector selector-w selector-workspace-id semicolon; do
+  trace musterr $CLI bundle init ./urls --profile workspace_custom_host --config-file input.$input.json
+done
 
 # No profile, so that only the environment variable sets the ID.
 title "Workspace ID from environment variables\n"
