@@ -64,7 +64,8 @@ func (i sandboxFileInfo) Size() int64 {
 // Mode reports symlinks as [fs.ModeSymlink] without following them, matching
 // [os.Lstat]: the metadata and listing APIs describe the link itself, and
 // reporting the link's own type keeps recursive walks from following links out
-// of the tree. Read and Write still follow links, because the server does.
+// of the tree. Read and Write still follow links, because the server does
+// (per the API docs for download and upload).
 // Only the permission bits of the Unix mode are kept; setuid, setgid and sticky
 // use different bits in [fs.FileMode].
 func (i sandboxFileInfo) Mode() fs.FileMode {
@@ -114,8 +115,8 @@ type SandboxClient struct {
 // NewSandboxClient returns a [Filer] for the filesystem of sandbox sandboxID,
 // rooted at root, an absolute path inside the sandbox. Names are joined to root,
 // and a name that would resolve outside it is rejected (see
-// [WorkspaceRootPath.Join]). A stopped sandbox starts automatically on the first
-// call, which makes that call slow.
+// [WorkspaceRootPath.Join]). Per the API docs, a stopped sandbox starts
+// automatically on the first call, which makes that call slow.
 func NewSandboxClient(w *databricks.WorkspaceClient, sandboxID, root string) (Filer, error) {
 	// The ID becomes a path segment of every request URL, so it can't contain "/" or be a
 	// relative segment that the URL would resolve away.
@@ -158,7 +159,15 @@ func (c *SandboxClient) Write(ctx context.Context, name string, reader io.Reader
 	}
 
 	if slices.Contains(mode, OverwriteIfExists) {
-		return c.upload(ctx, absPath, reader)
+		err := c.upload(ctx, absPath, reader)
+		// The server returns 409 when the target is a directory, and also when a
+		// parent path component is a file. Stat to tell them apart.
+		if sandboxStatus(err) == http.StatusConflict {
+			if info, serr := c.stat(ctx, absPath); serr == nil && info.IsDir() {
+				return notAFile{absPath}
+			}
+		}
+		return err
 	}
 
 	// Fail fast if the target exists, so that rerunning a copy that skips
@@ -177,10 +186,11 @@ func (c *SandboxClient) Write(ctx context.Context, name string, reader io.Reader
 
 // createExclusive writes a file that must not already exist, and guarantees
 // that only one of several concurrent writers creates it. The libs/locker lock
-// file relies on this guarantee.
+// file relies on this guarantee from filers.
 //
-// The upload API can't do this: it always replaces the target and rejects
-// conditional headers (If-None-Match) with 400. The rename API can: it returns
+// The upload API can't do this: it always replaces the target (observed), and
+// per its docs rejects conditional headers such as If-None-Match with 400. The
+// rename API can: it returns
 // 409 ALREADY_EXISTS if the destination exists, and of several concurrent
 // renames onto the same absent destination, exactly one succeeds. That
 // atomicity is observed behavior (consistent with renameat(2) with
@@ -267,9 +277,10 @@ func (c *SandboxClient) Read(ctx context.Context, name string) (io.ReadCloser, e
 	}
 
 	// The server returns 409 for a directory, and also when a parent path
-	// component is a file. Stat to tell them apart.
+	// component is a file. Stat to tell them apart. Download follows symlinks
+	// but stat doesn't, so a 409 for a symlink means it points at a directory.
 	if sandboxStatus(err) == http.StatusConflict {
-		if info, serr := c.stat(ctx, absPath); serr == nil && info.IsDir() {
+		if info, serr := c.stat(ctx, absPath); serr == nil && (info.IsDir() || info.Mode()&fs.ModeSymlink != 0) {
 			return nil, notAFile{absPath}
 		}
 	}

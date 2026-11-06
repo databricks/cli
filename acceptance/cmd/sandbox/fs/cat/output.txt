@@ -1,4 +1,23 @@
 
+=== Help
+>>> [CLI] sandbox fs cat --help
+Show file content. Use SANDBOX:/absolute/path for sandbox paths.
+
+Usage:
+  databricks sandbox fs cat FILE_PATH [flags]
+
+Examples:
+  databricks sandbox fs cat my-sandbox:/tmp/file
+
+Flags:
+  -h, --help   help for cat
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
 === cat a file
 >>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
 hello world!

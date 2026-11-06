@@ -1,3 +1,6 @@
+title "Help"
+trace $CLI sandbox fs mkdir --help
+
 title "Create nested directories"
 trace $CLI sandbox fs mkdir $SANDBOX_ROOT/a/b/c
 trace $CLI sandbox fs ls $SANDBOX_ROOT/a/b

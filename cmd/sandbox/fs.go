@@ -24,7 +24,20 @@ const sandboxCpLong = `Copy files and directories between your local filesystem 
 
   When copying a file, if TARGET_PATH is a directory, the file will be created
   inside the directory, otherwise the file is created at TARGET_PATH.
+
+  Files that already exist at the target are skipped unless --overwrite is set.
 `
+
+// sandboxFsExamples are shown in each command's help.
+var sandboxFsExamples = map[string]string{
+	"cp": `  databricks sandbox fs cp ./file my-sandbox:/tmp/file
+  databricks sandbox fs cp --overwrite ./file my-sandbox:/tmp/file
+  databricks sandbox fs cp -r my-sandbox:/tmp/dir ./local/dir`,
+	"ls":    `  databricks sandbox fs ls my-sandbox:/tmp`,
+	"cat":   `  databricks sandbox fs cat my-sandbox:/tmp/file`,
+	"mkdir": `  databricks sandbox fs mkdir my-sandbox:/tmp/a/b`,
+	"rm":    `  databricks sandbox fs rm -r my-sandbox:/tmp/dir`,
+}
 
 func newFsCommand() *cobra.Command {
 	cmd := filesystem.NewWithPathResolver(sandboxFilerForPath)
@@ -41,6 +54,7 @@ sandbox prefix refer to the local filesystem.`
 		if sub.Name() == "cp" {
 			sub.Long = sandboxCpLong
 		}
+		sub.Example = sandboxFsExamples[sub.Name()]
 		sub.ValidArgsFunction = completeSandboxPaths(sub.ValidArgsFunction)
 	}
 	cmd.Example = `  databricks sandbox fs cp -r my-sandbox:/foo/bar ./local/output

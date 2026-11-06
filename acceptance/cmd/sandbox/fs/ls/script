@@ -1,3 +1,6 @@
+title "Help"
+trace $CLI sandbox fs ls --help
+
 $CLI sandbox fs cp hello.txt $SANDBOX_ROOT/hello.txt > /dev/null
 $CLI sandbox fs mkdir $SANDBOX_ROOT/dir
 

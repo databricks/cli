@@ -83,6 +83,13 @@ func TestSandboxFilesUploadRejectsUnknownParameters(t *testing.T) {
 	assert.ErrorIs(t, err, apierr.ErrInvalidParameterValue)
 }
 
+func TestSandboxFilesUploadAfterDeletingRoot(t *testing.T) {
+	api := newSandboxAPI(t)
+	_, err := api.DeletePath(t.Context(), sandbox.DeletePathRequest{Parent: sandboxParent, Path: "/", Recursive: true})
+	require.NoError(t, err)
+	require.NoError(t, upload(t, api, "/tmp/file", ""))
+}
+
 func TestSandboxFilesRenameIsExclusive(t *testing.T) {
 	api := newSandboxAPI(t)
 	const n = 8

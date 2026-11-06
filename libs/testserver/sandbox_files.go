@@ -146,6 +146,10 @@ func (sfs *fakeSandboxFs) mkdirAll(p string) bool {
 			break
 		}
 		missing = append(missing, dir)
+		// A recursive delete of "/" removes the root entry too.
+		if dir == "/" {
+			break
+		}
 	}
 	for _, dir := range missing {
 		sfs.entries[dir] = newSandboxDirEntry()

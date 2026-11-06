@@ -126,6 +126,8 @@ func TestSandboxClientGenericErrors(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrInvalid, "list of a file")
 	assert.ErrorIs(t, f.Delete(ctx, "dir"), fs.ErrInvalid, "delete of a non-empty directory")
 	assert.ErrorIs(t, f.Mkdir(ctx, "dir/file"), fs.ErrExist, "mkdir onto a file")
+	err = f.Write(ctx, "dir", strings.NewReader("x"), filer.OverwriteIfExists)
+	assert.ErrorIs(t, err, fs.ErrInvalid, "overwrite of a directory")
 }
 
 func TestSandboxClientPermissionDenied(t *testing.T) {
