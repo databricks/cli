@@ -116,7 +116,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	}
 }
 
-// moveSchemaChildren mirrors UC, where the volumes and registered models of a renamed schema move with it.
+// moveSchemaChildren mirrors UC, where the volumes, registered models and secrets of a renamed schema move with it.
 func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchemaName string) {
 	for key, volume := range s.Volumes {
 		if volume.CatalogName != catalogName || volume.SchemaName != oldSchemaName {
@@ -134,9 +134,18 @@ func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchema
 		model.SchemaName = newSchemaName
 		s.moveRegisteredModel(key, model)
 	}
+	for key, secret := range s.UCSecrets {
+		if secret.CatalogName != catalogName || secret.SchemaName != oldSchemaName {
+			continue
+		}
+		delete(s.UCSecrets, key)
+		secret.SchemaName = newSchemaName
+		secret.FullName = catalogName + "." + newSchemaName + "." + secret.Name
+		s.UCSecrets[secret.FullName] = secret
+	}
 }
 
-// SchemasDelete mirrors UC, where deleting a schema with force deletes the volumes and registered models in it too.
+// SchemasDelete mirrors UC, where deleting a schema with force deletes the volumes, registered models and secrets in it too.
 func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
 	defer s.LockUnlock()()
 
@@ -155,6 +164,11 @@ func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
 			if model.CatalogName == schema.CatalogName && model.SchemaName == schema.Name {
 				delete(s.RegisteredModels, key)
 				delete(s.RegisteredModelVersions, key)
+			}
+		}
+		for key, secret := range s.UCSecrets {
+			if secret.CatalogName == schema.CatalogName && secret.SchemaName == schema.Name {
+				delete(s.UCSecrets, key)
 			}
 		}
 	}
