@@ -25,6 +25,7 @@ Hostname: [DATABRICKS_HOST]
 URL: [DATABRICKS_URL]
 URL "/jobs": [DATABRICKS_URL]/jobs
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list#top
+URLID: ""
 jobs_url: [DATABRICKS_URL]/jobs
 Root keys: jobs_url path workspace
 Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace:{[DATABRICKS_HOST] [DATABRICKS_URL] [WORKSPACE_ID] }]
@@ -55,6 +56,7 @@ Hostname: [DATABRICKS_HOST]
 URL: [DATABRICKS_URL]?w=[WORKSPACE_ID]
 URL "/jobs": [DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list&w=[WORKSPACE_ID]#top
+URLID: "[WORKSPACE_ID]"
 jobs_url: [DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]
 Root keys: jobs_url path workspace
 Root data: map[jobs_url:[DATABRICKS_URL]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list#top workspace:{[DATABRICKS_HOST] [DATABRICKS_URL] [WORKSPACE_ID] [WORKSPACE_ID]}]
@@ -85,6 +87,7 @@ Hostname: [CUSTOM_HOSTNAME]
 URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 URL "/jobs": [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [CUSTOM_HOST]/jobs?view=list&w=[WORKSPACE_ID]#top
+URLID: "[WORKSPACE_ID]"
 jobs_url: [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 Root keys: jobs_url path workspace
 Root data: map[jobs_url:[CUSTOM_HOST]/jobs?w=[WORKSPACE_ID] path:/jobs?view=list#top workspace:{[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
@@ -115,6 +118,7 @@ Hostname: [DATABRICKS_HOST]
 URL: [DATABRICKS_URL]
 URL "/jobs": [DATABRICKS_URL]/jobs
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list#top
+URLID: ""
 jobs_url: [DATABRICKS_URL]/jobs
 Root keys: jobs_url path workspace
 Root data: map[jobs_url:[DATABRICKS_URL]/jobs path:/jobs?view=list#top workspace:{[DATABRICKS_HOST] [DATABRICKS_URL]  }]
@@ -145,9 +149,31 @@ Hostname: [CUSTOM_HOSTNAME]
 URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 URL "/jobs": [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 URL "/pipelines?tab=all": [CUSTOM_HOST]/pipelines?tab=all&w=[WORKSPACE_ID]
+URLID: "[WORKSPACE_ID]"
 jobs_url: https://example.test/my-jobs
 Root keys: jobs_url path workspace
 Root data: map[jobs_url:https://example.test/my-jobs path:/pipelines?tab=all workspace:{[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}]
+
+=== Failing default of an input with a value
+
+>>> [CLI] bundle debug render-template-schema ./supplied --profile no_workspace_id --input-file input.supplied.json
+{
+  "welcome_message": null,
+  "success_message": null,
+  "properties": {
+    "value": {
+      "description": "Value",
+      "default": "{{ .workspace.ID }}"
+    }
+  }
+}
+
+>>> [CLI] bundle init ./supplied --profile no_workspace_id --config-file input.supplied.json
+✨ Successfully initialized template
+value: set by user
+
+>>> musterr [CLI] bundle debug render-template-schema ./supplied --profile no_workspace_id
+Error: property value default: failed to render template "{{ .workspace.ID }}": template: base:1:13: executing "base" at <.workspace.ID>: error calling ID: cannot determine workspace ID, please set workspace_id in the configuration profile, the DATABRICKS_WORKSPACE_ID environment variable, or workspace.workspace_id in the bundle
 
 === Invalid URL paths
 
@@ -155,9 +181,21 @@ Root data: map[jobs_url:https://example.test/my-jobs path:/pipelines?tab=all wor
 Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
 Error: failed to compute file content for urls.txt.tmpl. template: :6:25: executing "" at <$ws.URL>: error calling URL: workspace URL path "https://other.test/jobs" must be relative to the workspace host
 
+>>> musterr [CLI] bundle init ./urls --profile workspace_custom_host --config-file input.protocol-relative.json
+Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
+Error: failed to compute file content for urls.txt.tmpl. template: :6:25: executing "" at <$ws.URL>: error calling URL: workspace URL path "//other.test/jobs" must be relative to the workspace host
+
 >>> musterr [CLI] bundle init ./urls --profile workspace_custom_host --config-file input.workspace-selector.json
 Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
 Error: failed to compute file content for urls.txt.tmpl. template: :6:25: executing "" at <$ws.URL>: error calling URL: workspace URL path "/jobs?o=123" must not set the "o" query parameter, the workspace is selected by the profile
+
+>>> musterr [CLI] bundle init ./urls --profile workspace_custom_host --config-file input.selector-w.json
+Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
+Error: failed to compute file content for urls.txt.tmpl. template: :6:25: executing "" at <$ws.URL>: error calling URL: workspace URL path "/jobs?w=123" must not set the "w" query parameter, the workspace is selected by the profile
+
+>>> musterr [CLI] bundle init ./urls --profile workspace_custom_host --config-file input.selector-workspace-id.json
+Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
+Error: failed to compute file content for urls.txt.tmpl. template: :6:25: executing "" at <$ws.URL>: error calling URL: workspace URL path "/jobs?workspace_id=123" must not set the "workspace_id" query parameter, the workspace is selected by the profile
 
 >>> musterr [CLI] bundle init ./urls --profile workspace_custom_host --config-file input.semicolon.json
 Initializing for [CUSTOM_HOST]?w=[WORKSPACE_ID]
@@ -171,6 +209,7 @@ Open [CUSTOM_HOST]/jobs?view=list&w=[WORKSPACE_ID]#top
 URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 URL "/jobs": [CUSTOM_HOST]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [CUSTOM_HOST]/jobs?view=list&w=[WORKSPACE_ID]#top
+URLID: "[WORKSPACE_ID]"
 
 === Workspace ID from the bundle in the working directory
 
@@ -180,6 +219,7 @@ Open [DATABRICKS_URL]/jobs?view=list&w=[WORKSPACE_ID]#top
 URL: [DATABRICKS_URL]?w=[WORKSPACE_ID]
 URL "/jobs": [DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list&w=[WORKSPACE_ID]#top
+URLID: "[WORKSPACE_ID]"
 
 === ID
 
@@ -192,6 +232,6 @@ ID: [WORKSPACE_ID]
 ID: [WORKSPACE_ID]
 
 >>> musterr [CLI] bundle init ./id --profile no_workspace_id
-Error: failed to compute file content for id.txt.tmpl. template: :1:17: executing "" at <.workspace.ID>: error calling ID: cannot determine workspace ID, please set workspace_id in the configuration profile or the DATABRICKS_WORKSPACE_ID environment variable
+Error: failed to compute file content for id.txt.tmpl. template: :1:17: executing "" at <.workspace.ID>: error calling ID: cannot determine workspace ID, please set workspace_id in the configuration profile, the DATABRICKS_WORKSPACE_ID environment variable, or workspace.workspace_id in the bundle
 
 >>> print_requests.py --get --oneline ^//telemetry-ext
