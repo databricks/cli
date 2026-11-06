@@ -433,7 +433,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
-	uvCache := getUVDefaultCacheDir(t)
+	uvCache := getUVCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	// UV_CACHE_DIR only applies to packages but not Python installations.
@@ -1811,17 +1811,14 @@ func ListDir(t *testing.T, src string) []string {
 	return files
 }
 
-func getUVDefaultCacheDir(t *testing.T) string {
-	// According to uv docs https://docs.astral.sh/uv/concepts/cache/#caching-in-continuous-integration
-	// the default cache directory is
-	// "A system-appropriate cache directory, e.g., $XDG_CACHE_HOME/uv or $HOME/.cache/uv on Unix and %LOCALAPPDATA%\uv\cache on Windows"
-	cacheDir, err := os.UserCacheDir()
-	require.NoError(t, err)
-	if runtime.GOOS == "windows" {
-		return cacheDir + "\\uv\\cache"
-	} else {
-		return cacheDir + "/uv"
-	}
+// getUVCacheDir returns uv's effective cache directory. Must be called before
+// HOME is overridden in tests. Asking uv, rather than deriving the default from
+// HOME, honors UV_CACHE_DIR (CI's setup-uv points it at a per-job directory),
+// so test scripts read the cache that PrefetchRuff filled.
+func getUVCacheDir(t *testing.T) string {
+	out, err := exec.Command("uv", "cache", "dir").Output()
+	require.NoError(t, err, "uv cache dir")
+	return strings.TrimSpace(string(out))
 }
 
 // getUVPythonInstallDir returns the directory where uv stores managed Python installations.
