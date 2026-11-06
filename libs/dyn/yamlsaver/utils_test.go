@@ -34,23 +34,23 @@ func TestConvertToMap(t *testing.T) {
 	result, err := ConvertToMapValue(v, nil, []string{"format"}, map[string]dyn.Value{})
 	assert.NoError(t, err)
 	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
-		"list": dyn.V(
+		"list": dyn.NewValue(
 			[]dyn.Value{
 				dyn.V("a"),
 				dyn.V("b"),
 				dyn.V("c"),
 			},
+			[]diag.Location{{Line: 1}},
 		),
-		"long_name_field": dyn.V("long name goes here"),
-		"map": dyn.V(
+		"long_name_field": dyn.NewValue("long name goes here", []diag.Location{{Line: 2}}),
+		"map": dyn.NewValue(
 			map[string]dyn.Value{
 				"key1": dyn.V("value1"),
 				"key2": dyn.V("value2"),
 			},
+			[]diag.Location{{Line: 3}},
 		),
-		"name": dyn.V(
-			"test",
-		),
+		"name": dyn.NewValue("test", []diag.Location{{Line: 4}}),
 	}), result)
 }
 
