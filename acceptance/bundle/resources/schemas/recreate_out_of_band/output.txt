@@ -1,0 +1,91 @@
+
+=== Deploy a schema with a volume in it
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Created volumes.volume1
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Out of band, drop the schema and create another one under a new name, with a volume of the same name
+>>> [CLI] schemas delete main.test-schema-[UNIQUE_NAME] --force
+
+=== With the config renamed to match, the plan finds a schema and a volume at the new names, but their ids differ, so it plans creates
+>>> update_file.py databricks.yml test-schema- test-schema-renamed-
+
+>>> print_state.py
+{
+  "resources.schemas.schema1": {
+    "__id__": "main.test-schema-[UNIQUE_NAME]",
+    "stable_id": "[SCHEMA_ID]"
+  },
+  "resources.volumes.volume1": {
+    "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
+    "stable_id": "[VOLUME_ID]"
+  }
+}
+
+>>> [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "schema_id": "[NEW_SCHEMA_ID]"
+}
+
+>>> [CLI] volumes read main.test-schema-renamed-[UNIQUE_NAME].myvolume
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
+  "volume_id": "[NEW_VOLUME_ID]"
+}
+
+>>> [CLI] bundle plan --output json
+{
+  "resources.schemas.schema1": {
+    "action": "create",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "test-schema-renamed-[UNIQUE_NAME]"
+      }
+    },
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]"
+      }
+    }
+  },
+  "resources.volumes.volume1": {
+    "depends_on": [
+      {
+        "node": "resources.schemas.schema1",
+        "label": "${resources.schemas.schema1.name}"
+      }
+    ],
+    "action": "create",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "myvolume",
+        "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
+        "volume_type": "MANAGED"
+      }
+    },
+    "changes": {
+      "schema_name": {
+        "action": "recreate",
+        "reason": "id_field",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
+
+>>> [CLI] schemas delete main.test-schema-renamed-[UNIQUE_NAME] --force
