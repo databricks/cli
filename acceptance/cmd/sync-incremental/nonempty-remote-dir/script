@@ -1,0 +1,13 @@
+title "New file in nested folders\n"
+mkdir -p src/dir1/dir2/dir3
+touch src/dir1/dir2/dir3/foo.txt
+sync_once
+trace remote_tree
+
+title "Write a file to dir1 directly in the workspace\n"
+trace $CLI workspace import "$remote_dir/dir1/foo.txt" --format RAW --content "$(printf contents | base64)"
+
+title "Delete the local file: sync removes dir2 and dir3 but keeps dir1, which is not empty\n"
+rm src/dir1/dir2/dir3/foo.txt
+sync_once
+trace remote_tree

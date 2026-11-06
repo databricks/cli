@@ -1,0 +1,7 @@
+Cloud = true
+
+Ignore = ["src"]
+
+# Stops Git Bash on Windows from rewriting /Users/... and /Repos/... arguments
+# into Windows paths (e.g. C:/Program Files/Git/Users/...) before the CLI sees them.
+Env.MSYS_NO_PATHCONV = "1"

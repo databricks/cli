@@ -1,0 +1,30 @@
+
+=== New file in nested folders
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Initial Sync Complete
+Uploaded dir1/dir2/dir3
+Uploaded dir1/dir2/dir3/foo.txt
+
+>>> remote_tree
+DIRECTORY dir1
+DIRECTORY dir1/dir2
+DIRECTORY dir1/dir2/dir3
+FILE dir1/dir2/dir3/foo.txt
+
+=== Write a file to dir1 directly in the workspace
+
+>>> [CLI] workspace import /Users/[USERNAME]/sync-[UNIQUE_NAME]/dir1/foo.txt --format RAW --content Y29udGVudHM=
+
+=== Delete the local file: sync removes dir2 and dir3 but keeps dir1, which is not empty
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Deleted dir1
+Deleted dir1/dir2
+Deleted dir1/dir2/dir3
+Deleted dir1/dir2/dir3/foo.txt
+Initial Sync Complete
+
+>>> remote_tree
+DIRECTORY dir1
+FILE dir1/foo.txt
