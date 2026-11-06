@@ -46,8 +46,8 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			})
 			continue
 		}
-		b.Telemetry.ArtifactBuildCommandIsSet = append(b.Telemetry.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
-		b.Telemetry.ArtifactFilesIsSet = append(b.Telemetry.ArtifactFilesIsSet, len(artifact.Files) != 0)
+		b.Telemetry.ArtifactBuildCommandIsSet.SetBool(artifact.BuildCommand != "")
+		b.Telemetry.ArtifactFilesIsSet.SetBool(len(artifact.Files) != 0)
 
 		// A `tgz` artifact with `include`/`git` is built by DABs itself in the build
 		// phase (see artifacts.Build). `build` and `git`/`include` are mutually

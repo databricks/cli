@@ -34,7 +34,7 @@ The deploy payload is declared twice: the proto in the universe repo (`proto/log
 
 Other things worth knowing:
 
-- A one-off boolean needs no proto change: add a field to `bundle.Telemetry` (`bundle/telemetry.go`) with a snake_case `metric:"..."` tag and set it. Pick the type by what is measured: `bool` for a flag reported only when true, `*bool` for a measured value (nil when not measured), `[]bool` for one value per item. It lands in `experimental.bool_values` and in the bundle bitmap; run `./task generate-bitmap-schema` to append it to the bitmap schema.
+- A one-off boolean needs no proto change: add a field to `bundle.Telemetry` (`bundle/telemetry.go`) with a snake_case `metric:"..."` tag and set it. Pick the type by what is measured: `bool` for a flag reported only when true, `*bool` for a measured value (nil when not measured), `BoolSet` for a measurement taken several times (e.g. once per artifact; record each with `SetBool`, and each value taken is reported once). It lands in `experimental.bool_values` and in the bundle bitmap; run `./task generate-bitmap-schema` to append it to the bitmap schema.
 - Metrics that may be removed later belong in `BundleDeployExperimental`, which carries no compatibility guarantees.
 - Positional encodings such as the `upload_file_sizes` histogram are frozen once the metric has adoption: changing a bucket bound silently changes the meaning of every previously reported entry.
 - Per-resource state sizes come from the direct engine's state in `resources.json`.

@@ -14,7 +14,8 @@ import (
 // The field type says what was measured:
 //   - bool: a flag reported only when true; absence means "not seen".
 //   - *bool: a measured value; nil when the measurement did not run.
-//   - []bool: one value per measurement (e.g. per artifact), or each value seen.
+//   - BoolSet: a measurement taken several times (e.g. once per artifact);
+//     each value it took is reported once.
 //
 // The `metric` tag is the key in bool_values. Fields have no json tags: the
 // bitmap uses the Go field names (e.g. "telemetry.SelectUsed").
@@ -24,19 +25,17 @@ import (
 // which describe the local user cache rather than the bundle. Both are written
 // to Metrics.BoolValues directly.
 type Telemetry struct {
-	PythonWheelWrapperIsSet     *bool  `metric:"python_wheel_wrapper_is_set"`
-	ArtifactDynamicVersionIsSet []bool `metric:"artifact_dynamic_version_is_set"`
-	ArtifactBuildCommandIsSet   []bool `metric:"artifact_build_command_is_set"`
-	ArtifactFilesIsSet          []bool `metric:"artifact_files_is_set"`
-	PresetsNamePrefixIsSet      *bool  `metric:"presets_name_prefix_is_set"`
-	// The *LifecycleStarted fields hold the lifecycle.started values set across
-	// the resources of that type, each value once: true if any resource sets
-	// true, false if any sets false.
-	AppLifecycleStarted          []bool `metric:"app_lifecycle_started"`
-	ClusterLifecycleStarted      []bool `metric:"cluster_lifecycle_started"`
-	DeploymentHistoryEnabled     *bool  `metric:"deployment_history_enabled"`
-	SqlWarehouseLifecycleStarted []bool `metric:"sql_warehouse_lifecycle_started"`
-	SelectUsed                   bool   `metric:"select_used"`
+	PythonWheelWrapperIsSet     *bool   `metric:"python_wheel_wrapper_is_set"`
+	ArtifactDynamicVersionIsSet BoolSet `metric:"artifact_dynamic_version_is_set"`
+	ArtifactBuildCommandIsSet   BoolSet `metric:"artifact_build_command_is_set"`
+	ArtifactFilesIsSet          BoolSet `metric:"artifact_files_is_set"`
+	PresetsNamePrefixIsSet      *bool   `metric:"presets_name_prefix_is_set"`
+	// The lifecycle.started values set across the resources of each type.
+	AppLifecycleStarted          BoolSet `metric:"app_lifecycle_started"`
+	ClusterLifecycleStarted      BoolSet `metric:"cluster_lifecycle_started"`
+	DeploymentHistoryEnabled     *bool   `metric:"deployment_history_enabled"`
+	SqlWarehouseLifecycleStarted BoolSet `metric:"sql_warehouse_lifecycle_started"`
+	SelectUsed                   bool    `metric:"select_used"`
 
 	// Whether the deploy registered an immutable snapshot. Derived from the snapshot
 	// resource, not from experimental.immutable_folder: the flag may change, and the
@@ -156,7 +155,7 @@ type Telemetry struct {
 }
 
 // BoolValues returns the flags as deploy-event entries, in field order: a true
-// bool, the value of a non-nil *bool, and every element of a []bool.
+// bool, the value of a non-nil *bool, and each value a BoolSet took.
 func (t *Telemetry) BoolValues() []protos.BoolMapEntry {
 	var out []protos.BoolMapEntry
 	v := reflect.ValueOf(t).Elem()
@@ -171,11 +170,38 @@ func (t *Telemetry) BoolValues() []protos.BoolMapEntry {
 			if f != nil {
 				out = append(out, protos.BoolMapEntry{Key: key, Value: *f})
 			}
-		case []bool:
-			for _, value := range f {
+		case BoolSet:
+			for _, value := range f.Values() {
 				out = append(out, protos.BoolMapEntry{Key: key, Value: value})
 			}
 		}
 	}
 	return out
+}
+
+// BoolSet is a measurement that can be taken several times, e.g. once per
+// artifact. It records which values it took: true, false, or both.
+type BoolSet struct { //nolint:recvcheck // pointer receiver for SetBool, value for Values: reflection reads Telemetry by value
+	seenTrue, seenFalse bool
+}
+
+// SetBool records that the measurement took value v.
+func (s *BoolSet) SetBool(v bool) {
+	if v {
+		s.seenTrue = true
+	} else {
+		s.seenFalse = true
+	}
+}
+
+// Values returns the values the measurement took, true before false.
+func (s BoolSet) Values() []bool {
+	var values []bool
+	if s.seenTrue {
+		values = append(values, true)
+	}
+	if s.seenFalse {
+		values = append(values, false)
+	}
+	return values
 }
