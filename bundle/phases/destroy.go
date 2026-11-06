@@ -33,21 +33,6 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-var destroyApprovalGroups = []approvalGroup{
-	{group: "schemas", message: deleteSchemaMessage},
-	// Pipelines are handled separately in approvalForDestroy so the message reflects each
-	// pipeline's cascade_on_destroy setting; see logPipelineDeleteApproval.
-	{group: "volumes", message: deleteVolumeMessage},
-	{group: "database_instances", message: deleteDatabaseInstanceMessage},
-	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
-	{group: "postgres_projects", message: deletePostgresProjectMessage},
-	{group: "postgres_branches", message: deletePostgresBranchMessage},
-	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
-	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
-	{group: "genie_spaces", message: deleteGenieSpaceMessage},
-	{group: "features", message: deleteFeatureMessage},
-}
-
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
 // a note that datasets will be deleted as well.
 func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, quiet bool) error {
