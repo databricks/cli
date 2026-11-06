@@ -143,7 +143,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	return Response{}
 }
 
-func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
+func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Response {
 	defer s.LockUnlock()()
 
 	_, exists := s.Pipelines[pipelineId]
@@ -154,8 +154,25 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 		}
 	}
 
+	var start pipelines.StartUpdate
+	if err := json.Unmarshal(req.Body, &start); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+
 	updateId := nextUUID()
-	s.PipelineUpdates[updateId] = true
+	// GetUpdate echoes selectors; the execution engine resolves paths to tables.
+	s.PipelineUpdates[updateId] = pipelines.UpdateInfo{
+		UpdateId:                   updateId,
+		State:                      pipelines.UpdateInfoStateCompleted,
+		FullRefresh:                start.FullRefresh,
+		RefreshSelection:           start.RefreshSelection,
+		FullRefreshSelection:       start.FullRefreshSelection,
+		RefreshSelectionByPath:     start.RefreshSelectionByPath,
+		FullRefreshSelectionByPath: start.FullRefreshSelectionByPath,
+	}
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
@@ -194,7 +211,7 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 	}
 
 	// Check if the update exists
-	_, updateExists := s.PipelineUpdates[updateId]
+	update, updateExists := s.PipelineUpdates[updateId]
 	if !updateExists {
 		return Response{
 			StatusCode: 404,
@@ -204,10 +221,7 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 
 	return Response{
 		Body: pipelines.GetUpdateResponse{
-			Update: &pipelines.UpdateInfo{
-				UpdateId: updateId,
-				State:    pipelines.UpdateInfoStateCompleted,
-			},
+			Update: &update,
 		},
 	}
 }
