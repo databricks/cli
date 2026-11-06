@@ -108,12 +108,6 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diag.FromErr(err)
 	}
 
-	// Target permissions follow root permissions when SelectTarget merges the lists.
-	targetPermissionsStart := len(b.Config.Permissions)
-	if b.Target != nil {
-		targetPermissionsStart -= len(b.Target.Permissions)
-	}
-
 	for _, group := range b.Config.Resources.AllResources() {
 		key := group.Description.PluralName
 		lm, ok := levelsMap[key]
@@ -130,7 +124,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 				permissions,
 				key,
 				lm,
-				targetPermissionsStart,
+				b.Config.TargetPermissionsStart(),
 			)...)
 			writePermissions(field, permissions)
 		}
@@ -205,13 +199,14 @@ func convertPermissions(
 			continue
 		}
 
-		if i >= targetPermissionsStart && resourceName == "jobs" && p.GroupName != "" {
-			// A job-level group permission takes precedence over the target-level one.
-			overlap, _ := isPermissionOverlap(p, resourcePermissions, resourceName)
-			if overlap {
-				continue
+		overlap, diagnostics := isPermissionOverlap(p, resourcePermissions, resourceName)
+		if i < targetPermissionsStart {
+			for _, d := range diagnostics {
+				logdiag.LogDiag(ctx, d)
 			}
-		} else if notifyForPermissionOverlap(ctx, p, resourcePermissions, resourceName) {
+		}
+		if overlap {
+			// Resource permissions override target-wide defaults without a warning.
 			continue
 		}
 
@@ -253,18 +248,4 @@ func isPermissionOverlap(
 	}
 
 	return len(diagnostics) > 0, diagnostics
-}
-
-func notifyForPermissionOverlap(
-	ctx context.Context,
-	permission resources.Permission,
-	resourcePermissions []resources.Permission,
-	resourceName string,
-) bool {
-	isOverlap, diagnostics := isPermissionOverlap(permission, resourcePermissions, resourceName)
-	for _, d := range diagnostics {
-		logdiag.LogDiag(ctx, d)
-	}
-
-	return isOverlap
 }

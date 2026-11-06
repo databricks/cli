@@ -1,0 +1,4 @@
+for target in literal complex; do
+    trace $CLI bundle validate --strict -t "$target" -o json > config.$target.json
+    jq '.resources | map_values(map_values(.permissions))' config.$target.json
+done

@@ -68,6 +68,7 @@ type Target struct {
 
 	Sync *Sync `json:"sync,omitempty"`
 
+	// Permissions supplies target-wide defaults; explicit resource permissions take precedence.
 	Permissions []resources.Permission `json:"permissions,omitempty"`
 }
 

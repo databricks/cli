@@ -3,6 +3,7 @@ package resourcemutator
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/permissions"
@@ -224,54 +225,119 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
 }
 
-func TestTargetGroupPermissionOverridesJobWithoutWarning(t *testing.T) {
+func TestTargetPermissionsOverrideWithoutWarning(t *testing.T) {
+	for resourceType, lm := range levelsMap {
+		for _, resourceLayer := range []string{"root", "target"} {
+			for _, withRootPermissions := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/%s/root_permissions=%t", resourceType, resourceLayer, withRootPermissions), func(t *testing.T) {
+					resourceConfig := fmt.Sprintf(`
+resources:
+  %s:
+    test:
+      permissions:
+        - {group_name: principal, level: %s}
+        - {user_name: principal, level: %s}
+        - {service_principal_name: principal, level: %s}
+`, resourceType, lm[permissions.CAN_MANAGE], lm[permissions.CAN_MANAGE], lm[permissions.CAN_MANAGE])
+					rootConfig := ""
+					if withRootPermissions {
+						rootConfig = "permissions:\n  - {group_name: principal, level: CAN_VIEW}\n"
+					}
+					targetConfig := `permissions:
+  - {group_name: principal, level: CAN_VIEW}
+  - {user_name: principal, level: CAN_VIEW}
+  - {service_principal_name: principal, level: CAN_VIEW}
+  - {group_name: inherited, level: CAN_VIEW}
+`
+					if resourceLayer == "root" {
+						rootConfig += resourceConfig
+					} else {
+						targetConfig += resourceConfig
+					}
+					yaml := rootConfig + "\ntargets:\n  test:\n" + "    " + strings.ReplaceAll(strings.TrimSpace(targetConfig), "\n", "\n    ") + "\n"
+					root, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+					require.Empty(t, diags)
+					b := &bundle.Bundle{Config: *root}
+					diags = bundle.ApplySeq(t.Context(), b, mutator.SelectTarget("test"), ApplyBundlePermissions())
+					if withRootPermissions {
+						require.Equal(t, diag.Warningf("'%s' already has permissions set for 'principal' group", resourceType), diags)
+					} else {
+						require.Empty(t, diags)
+					}
+					actual := b.Config.Value().Get("resources").Get(resourceType).Get("test").Get("permissions").AsAny()
+					assert.Equal(t, []any{
+						map[string]any{"group_name": "principal", "level": lm[permissions.CAN_MANAGE]},
+						map[string]any{"user_name": "principal", "level": lm[permissions.CAN_MANAGE]},
+						map[string]any{"service_principal_name": "principal", "level": lm[permissions.CAN_MANAGE]},
+						map[string]any{"group_name": "inherited", "level": lm[permissions.CAN_VIEW]},
+					}, actual)
+				})
+			}
+		}
+	}
+}
+
+func TestTargetPermissionsVariableResolution(t *testing.T) {
 	for _, tc := range []struct {
-		name            string
-		rootPermissions []resources.Permission
-		wantWarnings    int
+		name   string
+		root   string
+		target string
+		warn   bool
 	}{
-		{name: "target only"},
-		{
-			name: "root and target",
-			rootPermissions: []resources.Permission{
-				{Level: permissions.CAN_VIEW, GroupName: "TestGroup"},
-			},
-			wantWarnings: 1,
-		},
+		{name: "target literal", target: `[{group_name: "${var.group}", level: CAN_VIEW}]`},
+		{name: "target reference", target: "${var.acl}"},
+		{name: "null root", root: "null", target: "${var.acl}"},
+		{name: "resource narrows target", target: `[{group_name: developers, level: CAN_MANAGE}]`},
+		{name: "target entry reference", target: "[\"${var.acl_entry}\"]"},
+		{name: "root reference", root: "${var.acl}", warn: true},
+		{name: "root literal", root: `[{group_name: "${var.group}", level: CAN_VIEW}]`, warn: true},
+		{name: "both literals", root: `[{group_name: "${var.group}", level: CAN_VIEW}]`, target: `[{group_name: "${var.group}", level: CAN_VIEW}]`, warn: true},
+		{name: "reference overrides reference", root: "${var.unused_acl}", target: "${var.acl}"},
+		{name: "null target", root: "${var.acl}", target: "null", warn: true},
+		{name: "empty target", root: `[{group_name: "${var.group}", level: CAN_VIEW}]`, target: "[]", warn: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			b := &bundle.Bundle{
-				Config: config.Root{
-					Permissions: tc.rootPermissions,
-					Targets: map[string]*config.Target{
-						"dev-ci": {
-							Permissions: []resources.Permission{
-								{Level: permissions.CAN_VIEW, GroupName: "TestGroup"},
-							},
-							Resources: &config.Resources{
-								Jobs: map[string]*resources.Job{
-									"job_1": {
-										JobSettings: jobs.JobSettings{Name: "job_1"},
-										Permissions: []resources.JobPermission{
-											{Level: "CAN_MANAGE_RUN", GroupName: "TestGroup"},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+			yaml := `
+variables:
+  group:
+    default: developers
+  acl:
+    type: complex
+    default:
+      - {group_name: "${var.group}", level: CAN_VIEW}
+  acl_entry:
+    type: complex
+    default: {group_name: "${var.group}", level: CAN_VIEW}
+  unused_acl:
+    type: complex
+    default:
+      - {group_name: overridden, level: CAN_MANAGE}
+resources:
+  jobs:
+    test:
+      permissions:
+        - {group_name: developers, level: CAN_MANAGE_RUN}
+`
+			if tc.root != "" {
+				yaml += "permissions: " + tc.root + "\n"
 			}
-
-			diags := bundle.ApplySeq(t.Context(), b, mutator.SelectTarget("dev-ci"), ApplyBundlePermissions())
-			require.Len(t, diags, tc.wantWarnings)
-			if tc.wantWarnings > 0 {
-				require.Equal(t, diag.Warning, diags[0].Severity)
-				require.Equal(t, "'jobs' already has permissions set for 'TestGroup' group", diags[0].Summary)
+			yaml += "targets:\n  test:\n    default: true\n"
+			if tc.target != "" {
+				yaml += "    permissions: " + tc.target + "\n"
 			}
-			require.Equal(t, []resources.JobPermission{
-				{Level: "CAN_MANAGE_RUN", GroupName: "TestGroup"},
-			}, b.Config.Resources.Jobs["job_1"].Permissions)
+			root, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.Empty(t, diags)
+			b := &bundle.Bundle{Config: *root}
+			diags = bundle.ApplySeq(t.Context(), b,
+				mutator.SelectTarget("test"), mutator.SetVariables(),
+				mutator.ResolveVariableReferencesWithoutResources(), ApplyBundlePermissions(),
+			)
+			if tc.warn {
+				require.Equal(t, diag.Warningf("'jobs' already has permissions set for 'developers' group"), diags)
+			} else {
+				require.Empty(t, diags)
+			}
+			assert.Equal(t, []resources.JobPermission{{GroupName: "developers", Level: "CAN_MANAGE_RUN"}}, b.Config.Resources.Jobs["test"].Permissions)
 		})
 	}
 }
