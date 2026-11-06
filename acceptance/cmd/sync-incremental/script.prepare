@@ -5,7 +5,7 @@ remote_dir="/Users/$CURRENT_USER_NAME/sync-$UNIQUE_NAME"
 mkdir -p src
 
 cleanup_remote_dir() {
-    $CLI workspace delete --recursive "$remote_dir" &>> LOG.cleanup || true
+    $CLI workspace delete --recursive "$remote_dir" >> LOG.cleanup 2>&1 || true
 }
 trap cleanup_remote_dir EXIT
 
@@ -24,7 +24,8 @@ _list_remote() {
     local entries
     entries=$($CLI workspace list "$1" -o json)
     echo "$entries" | jq -r --arg root "$remote_dir/" '.[] | [.object_type, (.path | ltrimstr($root)), (.language // empty)] | join(" ")'
-    echo "$entries" | jq -r '.[] | select(.object_type == "DIRECTORY") | .path' | while IFS= read -r dir; do
+    # jq on Windows ends lines with CRLF; strip the CR so it does not end up in the path.
+    echo "$entries" | jq -r '.[] | select(.object_type == "DIRECTORY") | .path' | tr -d '\r' | while IFS= read -r dir; do
         _list_remote "$dir"
     done
 }
