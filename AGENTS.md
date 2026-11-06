@@ -90,6 +90,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 - Use `./task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
+- Adding a new bundle resource type: follow `.agents/skills/author-new-resource/SKILL.md`, which starts with an API readiness gate and ends with a one-PR checklist. Reviewing such a PR: use `.agents/skills/review-new-resource/SKILL.md`.
 
 **Stale golangci-lint cache across worktrees.** Triggered by `task lint` or a direct `go tool ... golangci-lint` run reporting issues in files under a *different* or deleted worktree, often with `no such file or directory` warnings. Fix — clear the cache and re-run, don't investigate the reported issues:
 

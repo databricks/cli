@@ -1,12 +1,16 @@
 # Guidelines on implementing a resource
 
+Adding a new resource type? Follow `.agents/skills/author-new-resource/SKILL.md`: it starts with an
+API readiness check, then walks every registration point, generator and test with a verification
+command. Reviewers use `.agents/skills/review-new-resource/SKILL.md`. This README is the contract
+those skills apply.
+
 ## Core constraints
 
  - See adapter.go on what methods are needed and what constraints are present.
  - Return SDK errors directly, no need to wrap them. Things like current operation, resource key, id are already added by the caller and will be part of the error message.
  - Although the arguments to resource methods like DoCreate are pointers, they are never nil, so nil checks are not needed. The passed id argument is never empty string.
- - When returning id from DoCreate() and from DoUpdateWithID() there is no need to check that returned id is non-empty, this will be done by the framework and converted to error.
-   An exception could be made if default error message lacks the necessary context.
+ - DoCreate() and DoUpdateWithID() must return a non-empty id. An empty id would be saved as state and the next plan would create the resource again. Take the id from the create response or operation metadata; if the API can complete without returning one, return an error that says so.
  - The arguments point to actual struct that will be persisted in state, any changes to it will affect what is stored in state. Usually there is no need to change it, but if there is, there should always be detailed explanation.
  - Each Create/Update/Delete method should correspond to one API call. We persist state right after, so there is minimum chance of having orphaned resources.
  - We should calculate the update type during plan phase. This means it should be configured via the resource's YAML file as much as possible, falling back to OverrideChangeDesc(). The DoUpdate() implementation should be as predictable as possible based on the plan. In particular, avoid reading remote state in DoUpdate() to decide what kind of update to dod.
@@ -41,11 +45,21 @@ If a resource has fields that must not be sent in updates (deploy-only, lifecycl
 
 ## Async APIs: WaitAfterCreate / WaitAfterUpdate
 
-For resources whose create or update is asynchronous (the resource is not immediately ready after the call returns), implement `WaitAfterCreate` and/or `WaitAfterUpdate` instead of polling inline inside DoCreate/DoUpdate. These are the correct extension points in the framework, and polling inline bypasses state persistence timing.
+For resources whose create or update is asynchronous (the resource is not immediately ready after the call returns), implement `WaitAfterCreate` and/or `WaitAfterUpdate` instead of polling inline inside DoCreate/DoUpdate. These are the correct extension points in the framework, and polling inline bypasses state persistence timing: state is saved when DoCreate returns, so an interrupted inline wait leaves an untracked resource.
+
+Some older resources wait inline because their API returns the id only when the operation completes. Do not copy them. If the API you are onboarding has that shape, ask for the id in the operation metadata, and if you must wait inline in the meantime, say so in a comment on the method.
+
+## No update, or a partial update
+
+If the API has no update call, do not implement `DoUpdate`; declare every settable field under `recreate_on_changes` (or `provided_id_fields`) so any change plans a recreate. `TestNoUpdateResourcesCoverAllFields` enforces this.
+
+If the API's update can change only a subset of what create accepts, the rest must be `IMMUTABLE` upstream so the generated rules classify them. An update path that needs code to decide which changes it can apply is a sign the annotations are missing; fix them rather than classifying in Go.
 
 ## Slice ordering: KeyedSlices
 
 If the API may return a slice's elements in a different order between calls (e.g., `depends_on` in job tasks, `privileges` in grants), implement `KeyedSlices` to compare elements by a natural key rather than by index. Without this, every deploy after any reordering shows phantom diffs.
+
+The key function returns `(fieldName, value)`, and `fieldName` must be a real field of the element: the planner resolves the resulting paths (`tasks[task_key='x'].field`) by looking that field up in the state and remote values. A key assembled from several fields, or a field name that does not exist on the element, pairs elements for the diff but can never be looked up, so every generated rule under that list stops applying. If the API gives list elements no single client-settable identity, the fix is a key field in the API (the pattern of `task_key` on job tasks), not a composite key here and not an engine change.
 
 ## Empty states: IsEmptyState
 
@@ -107,6 +121,8 @@ in normal drift detection and is no longer subject to the `missing_in_remote` su
 
 Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` settings cannot express the needed logic. Skipping an action with `change.Action = deployplan.Skip` in `OverrideChangeDesc` creates a silent no-op: the plan shows no change even if the user's config differs from remote. Document the skip reason clearly in both the comment and `change.Reason`.
 
+A new resource should not need it. When one seems to, the cause is almost always upstream: a missing `IMMUTABLE`, `OUTPUT_ONLY` or `INPUT_ONLY` annotation, an update endpoint that cannot replace the resource, or list elements without a key field. Raise those with the API team before writing an override, and if an override still lands, the PR description must say which yml rule it replaces and why that rule could not be written.
+
 ## Nice to have
  - Add link to corresponding API documentation before each method.
  - Add link to corresponding terraform resource implementation at the top of the file.
@@ -114,14 +130,15 @@ Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` se
 ## Testing
 
  - Make sure to implement CRUD for testserver in libs/testserver
+   - Model what the CLI's plan and apply depend on: create with server-assigned fields, get, update with the mask the adapter sends, delete, and JSON error bodies with `error_code`. Do not model backend validation policy; cover service behaviour with the cloud test. Recent resource fakes are 70 to 100 lines.
  - Test first with go test ./bundle/direct/dresources
-   - You might need to add test fixture in all\_test.go
+   - Add a `testConfig` fixture in all\_test.go with every field populated; without one the CRUD test runs with a zero config and proves nothing.
  - Implement acceptance tests in acceptance/bundle/resources/<resource>/<subtest>
-   - See acceptance/bundle/resources/volumes
-   - Prefer smaller tests for each operation.
-   - Make sure bundle deploy/plan/debug plan/summary/destroy are covered
+   - Canonical set: `basic`, `lifecycle` (with `Cloud = true`), `remote-delete`, plus one directory per plan behaviour the resource adds. Copy the most recent resource's directories.
+   - Make sure bundle deploy/plan/debug plan/summary/destroy are covered, and that an immutable change is deployed with `--auto-approve`, not only planned.
  - Add an invariant test config in acceptance/bundle/invariant/configs/<resource>.yml.tmpl
    - See existing configs in that directory for the format.
+   - Register the file under `EnvMatrix.INPUT_CONFIG` in acceptance/bundle/invariant/test.toml, add exclusions for legs it cannot run (`DMS=true` if the type is not in the deployment-history allowlist, cloud if prerequisites are missing), and exclude it in `invariant/migrate` and `invariant/auto-migrate`. A config that is not in the matrix never runs; prove it ran with `go test ./acceptance -run 'TestAccept/bundle/invariant/no_drift' -v -count=1 | grep INPUT_CONFIG=<resource>`.
  - Add bind/unbind tests in acceptance/bundle/deployment/bind/<resource>/
    - These verify that binding an existing resource and then deploying/destroying works correctly.
- - For new resource types, run at least one test on a live cloud environment.
+ - For new resource types, run at least one test on a live cloud environment, and say in the PR which test and which environment.
