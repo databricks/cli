@@ -136,7 +136,7 @@ func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchema
 	}
 }
 
-// SchemasDelete mirrors UC, where deleting a schema with force deletes the volumes in it too.
+// SchemasDelete mirrors UC, where deleting a schema with force deletes the volumes and registered models in it too.
 func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
 	defer s.LockUnlock()()
 
@@ -149,6 +149,12 @@ func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
 		for key, volume := range s.Volumes {
 			if volume.CatalogName == schema.CatalogName && volume.SchemaName == schema.Name {
 				delete(s.Volumes, key)
+			}
+		}
+		for key, model := range s.RegisteredModels {
+			if model.CatalogName == schema.CatalogName && model.SchemaName == schema.Name {
+				delete(s.RegisteredModels, key)
+				delete(s.RegisteredModelVersions, key)
 			}
 		}
 	}
