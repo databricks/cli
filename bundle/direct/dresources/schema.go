@@ -2,14 +2,32 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// SchemaState is the schema's config plus its schema_id. The backend assigns schema_id and a
+// rename keeps it, so recording it lets the plan recognize the schema under a new name (see
+// InternalID).
+type SchemaState struct {
+	catalog.CreateSchema
+	SchemaId string `json:"schema_id,omitempty"`
+}
+
+func (s *SchemaState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s SchemaState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourceSchema struct {
 	client *databricks.WorkspaceClient
@@ -19,12 +37,15 @@ func (*ResourceSchema) New(client *databricks.WorkspaceClient) *ResourceSchema {
 	return &ResourceSchema{client: client}
 }
 
-func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSchema {
-	return &input.CreateSchema
+func (*ResourceSchema) PrepareState(input *resources.Schema) *SchemaState {
+	return &SchemaState{
+		CreateSchema: input.CreateSchema,
+		SchemaId:     "", // Recorded from the backend when the schema is created or updated.
+	}
 }
 
-func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchema {
-	return &catalog.CreateSchema{
+func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *SchemaState {
+	return &SchemaState{
 		CatalogName:             info.CatalogName,
 		Comment:                 info.Comment,
 		CustomMaxRetentionHours: info.CustomMaxRetentionHours,
@@ -32,6 +53,7 @@ func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchem
 		Properties:              info.Properties,
 		StorageRoot:             info.StorageRoot,
 		ForceSendFields:         utils.FilterFields[catalog.CreateSchema](info.ForceSendFields),
+		SchemaId:                info.SchemaId,
 	}
 }
 
@@ -39,11 +61,12 @@ func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*catalog.Schema
 	return r.client.Schemas.GetByFullName(ctx, id)
 }
 
-func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSchema) (string, *catalog.SchemaInfo, error) {
-	response, err := r.client.Schemas.Create(ctx, *config)
+func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (string, *catalog.SchemaInfo, error) {
+	response, err := r.client.Schemas.Create(ctx, config.CreateSchema)
 	if err != nil || response == nil {
 		return "", nil, err
 	}
+	config.SchemaId = response.SchemaId
 	return response.FullName, response, nil
 }
 
@@ -78,21 +101,22 @@ func makeUpdateSchema(id, newName string, config *catalog.CreateSchema) catalog.
 }
 
 // DoUpdate updates the schema in place and returns remote state.
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
-	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(id, "", config))
-	if err != nil {
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *SchemaState, _ *PlanEntry) (*catalog.SchemaInfo, error) {
+	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(id, "", &config.CreateSchema))
+	if err != nil || response == nil {
 		return nil, err
 	}
 
-	if response != nil && response.FullName != id {
+	if response.FullName != id {
 		log.Warnf(ctx, "schemas: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
+	config.SchemaId = response.SchemaId
 	return response, nil
 }
 
 // DoUpdateWithID renames the schema in place when the name changes; the ID is the full name, so it changes too.
-func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateSchema, entry *PlanEntry) (string, *catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *SchemaState, entry *PlanEntry) (string, *catalog.SchemaInfo, error) {
 	nameFromID, err := getNameFromID(id)
 	if err != nil {
 		return "", nil, err
@@ -109,28 +133,34 @@ func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *
 
 	if entry.Changes.OnlyParentRenamed() {
 		// UC already moved the schema with its catalog; only the ID changes.
+		remote, ok := entry.RemoteState.(*catalog.SchemaInfo)
+		if !ok {
+			return "", nil, fmt.Errorf("internal error: unexpected remote state type %T", entry.RemoteState)
+		}
+		config.SchemaId = remote.SchemaId
 		return fullName, nil, nil
 	}
 
-	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(fullName, newName, config))
+	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(fullName, newName, &config.CreateSchema))
 	if err != nil || response == nil {
 		return "", nil, err
 	}
 
+	config.SchemaId = response.SchemaId
 	return response.FullName, response, nil
 }
 
 // IDFromState returns the full name, which is the ID.
-func (*ResourceSchema) IDFromState(state *catalog.CreateSchema) string {
+func (*ResourceSchema) IDFromState(state *SchemaState) string {
 	return state.CatalogName + "." + state.Name
 }
 
-// StableID returns the schema_id, which a rename keeps.
-func (*ResourceSchema) StableID(remote *catalog.SchemaInfo) string {
-	return remote.SchemaId
+// InternalID returns the schema_id.
+func (*ResourceSchema) InternalID(state *SchemaState) string {
+	return state.SchemaId
 }
 
-func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *catalog.CreateSchema) error {
+func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *SchemaState) error {
 	return r.client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 		FullName:        id,
 		Force:           true,

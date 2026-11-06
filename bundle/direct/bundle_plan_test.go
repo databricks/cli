@@ -55,8 +55,8 @@ func TestDynPathToStructPath(t *testing.T) {
 func TestExtractReferences_ExcludesReadonlyFields(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
-	// The volume state type is catalog.CreateVolumeRequestContent, which has
-	// comment but not volume_path.
+	// The volume state type is VolumeState, which has comment but not
+	// volume_path.
 	stateType := adapters["volumes"].StateType()
 
 	const yml = `
@@ -852,4 +852,19 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
+}
+
+// TestDropChanges: a drop_changes field (volumes' volume_id, which config never sets) leaves the
+// plan entirely, while the volume's other changes stay.
+func TestDropChanges(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	changes := deployplan.Changes{
+		"volume_id": {Old: "uuid-1", New: nil, Remote: "uuid-1"},
+		"comment":   {Old: "a", New: "b", Remote: "a"},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["volumes"], changes, nil, nil))
+	assert.NotContains(t, changes, "volume_id")
+	assert.Equal(t, deployplan.Update, changes["comment"].Action)
 }

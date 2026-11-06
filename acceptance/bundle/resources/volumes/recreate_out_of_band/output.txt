@@ -16,7 +16,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_state.py
 {
   "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
-  "stable_id": "[VOLUME_ID]"
+  "volume_id": "[VOLUME_ID]"
 }
 
 >>> [CLI] volumes read main.test-schema-[UNIQUE_NAME].myvolume2

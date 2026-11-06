@@ -249,9 +249,9 @@
         "__id__": "mycatalog.myschema",
         "state": {
           "catalog_name": "mycatalog",
-          "name": "myschema"
-        },
-        "stable_id": "[UUID]"
+          "name": "myschema",
+          "schema_id": "[UUID]"
+        }
       }
     }
   }

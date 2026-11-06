@@ -15,14 +15,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_state.py
 {
-  "resources.schemas.schema1": {
-    "__id__": "main.test-schema-[UNIQUE_NAME]",
-    "stable_id": "[SCHEMA_ID]"
-  },
-  "resources.volumes.volume1": {
-    "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
-    "stable_id": "[VOLUME_ID]"
-  }
+  "__id__": "main.test-schema-[UNIQUE_NAME]",
+  "schema_id": "[SCHEMA_ID]"
+}
+
+>>> print_state.py
+{
+  "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
+  "volume_id": "[VOLUME_ID]"
 }
 
 >>> [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]

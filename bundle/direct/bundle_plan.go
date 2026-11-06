@@ -335,7 +335,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 		if remoteState == nil {
-			entry.ID, remoteState, err = findMoved(ctx, adapter, sv, dbentry)
+			entry.ID, remoteState, err = findMoved(ctx, adapter, sv, dbentry.ID, savedState)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -499,6 +499,13 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		path, err := structpath.ParsePath(pathString)
 		if err != nil {
 			return err
+		}
+
+		if cfg != nil {
+			if _, ok := findMatchingRule(path, cfg.DropChanges); ok {
+				toDrop = append(toDrop, pathString)
+				continue
+			}
 		}
 
 		// RemoteAlreadySet only holds when ch.Remote is a real remote value we can compare
@@ -742,15 +749,19 @@ func (b *DeploymentBundle) renameChange(resourceKey, field string) (*deployplan.
 
 // findMoved looks for a resource missing from its recorded ID at the ID its config gives it, where a
 // rename can have moved it: the resource or its parent renamed out of band, or by a deploy that
-// stopped before re-keying it. What is found there is taken only if its stable ID matches the
-// recorded one, so an unrelated object with the same name is never adopted; the create then fails
+// stopped before re-keying it. What is found there is taken only if its internal ID matches the one
+// in savedState, so an unrelated object with the same name is never adopted; the create then fails
 // on it instead.
-func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.StructVar, dbentry dstate.ResourceEntry) (string, any, error) {
-	if !adapter.HasStableID() || !adapter.HasDoUpdateWithID() || dbentry.StableID == "" || hasUnresolvedIDField(adapter, sv) {
+func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.StructVar, storedID string, savedState any) (string, any, error) {
+	if !adapter.HasInternalID() || !adapter.HasDoUpdateWithID() || hasUnresolvedIDField(adapter, sv) {
 		return "", nil, nil
 	}
+	savedInternalID, err := adapter.InternalID(savedState)
+	if err != nil || savedInternalID == "" {
+		return "", nil, err
+	}
 	id, err := adapter.IDFromState(sv.Value)
-	if err != nil || id == dbentry.ID {
+	if err != nil || id == storedID {
 		return "", nil, err
 	}
 	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
@@ -762,8 +773,13 @@ func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.S
 	if err != nil {
 		return "", nil, fmt.Errorf("reading id=%q: %w", id, err)
 	}
-	if adapter.StableID(remote) != dbentry.StableID {
-		return "", nil, nil
+	found, err := adapter.RemapState(remote)
+	if err != nil {
+		return "", nil, err
+	}
+	foundInternalID, err := adapter.InternalID(found)
+	if err != nil || foundInternalID != savedInternalID {
+		return "", nil, err
 	}
 	return id, remote, nil
 }

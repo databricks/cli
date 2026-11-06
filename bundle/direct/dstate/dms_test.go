@@ -45,19 +45,6 @@ func TestApplyDMSState(t *testing.T) {
 			},
 		},
 		{
-			name: "stable_id comes back from the envelope",
-			recorded: []dms.Resource{
-				{Key: "resources.schemas.foo", ID: "main.foo", State: `{"state":{"name":"foo"},"stable_id":"uuid-1"}`},
-			},
-			want: map[string]ResourceEntry{
-				"resources.schemas.foo": {
-					ID:       "main.foo",
-					State:    json.RawMessage(`{"name":"foo"}`),
-					StableID: "uuid-1",
-				},
-			},
-		},
-		{
 			// Nil is what a list holding nothing returns, and it means a successful deploy of
 			// nothing rather than missing data.
 			name: "nothing recorded leaves the state empty",
