@@ -15,7 +15,7 @@ trace $CLI bundle deploy --auto-approve
 trace print_state.py | gron.py | grep __id__ | contains.py "$NEW_PIPELINE_ID"
 
 title "Without the bind block, a storage change plans a recreate"
-update_file.py databricks.yml "/old/storage/path" "/new/storage/path"
+update_file.py databricks.yml "storage: /old/storage/path" "storage: /new/storage/path"
 trace $CLI bundle plan
 
 # Cleanup

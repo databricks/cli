@@ -2,5 +2,3 @@
 >>> musterr [CLI] bundle plan
 Error: cannot bind resources.jobs.foo: resource with ID "999999999" does not exist in workspace
 
-Error: planning failed
-

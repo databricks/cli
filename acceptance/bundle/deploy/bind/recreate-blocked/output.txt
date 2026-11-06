@@ -1,11 +1,42 @@
 
 >>> musterr [CLI] bundle plan
-Error: cannot bind resources.pipelines.foo: cannot recreate resource with lifecycle.bind
+Error: cannot plan resources.pipelines.foo: lifecycle.bind prevents recreating the bound resource
 
 Fields requiring resource recreation:
   - storage (immutable)
 
-Match these fields to the existing resource to preserve its ID; remove lifecycle.bind to create a new resource instead of adopting this one
+Match these fields to the existing resource to preserve its ID; remove lifecycle.bind to allow the ID to change
 
 Error: planning failed
 
+
+=== Deploy commits the bind phase before rejecting recreation
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-recreate-[UNIQUE_NAME]/default/files...
+Bound pipelines.foo
+Error: cannot plan resources.pipelines.foo: lifecycle.bind prevents recreating the bound resource
+
+Fields requiring resource recreation:
+  - storage (immutable)
+
+Match these fields to the existing resource to preserve its ID; remove lifecycle.bind to allow the ID to change
+
+Error: planning failed
+
+Files: 2 uploaded, 0 deleted
+
+>>> print_state.py
+json.state.resources.pipelines.foo.__id__ = "[NEW_PIPELINE_ID]";
+
+=== Destroy still deletes the adopted resource
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.foo
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-recreate-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

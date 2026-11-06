@@ -1,8 +1,9 @@
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure-[UNIQUE_NAME]/default/files...
-Bound and updated jobs.foo
+Bound jobs.foo
 Created jobs.foo.permissions
+Updated jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 
@@ -30,16 +31,25 @@ Warning: resources.jobs.foo.lifecycle.bind re-binds the resource on the next dep
 
 === The job now matches the config, so this is a pure bind
 >>> [CLI] bundle plan
-bind jobs.foo (id: [NEW_JOB_ID])
-create jobs.foo.permissions
+Bind:
+  jobs.foo (id: [NEW_JOB_ID])
 
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged, 1 to bind
+Deploy:
+  create jobs.foo.permissions
+
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged, 1 to bind
 
 >>> [CLI] bundle plan -o json
-json.plan.resources.jobs.foo.bind_id = "[NEW_JOB_ID]";
-json.plan.resources.jobs.foo.action = "bind";
+json.bind.resources.jobs.foo.id = "[NEW_JOB_ID]";
+json.plan.resources.jobs.foo.id = "[NEW_JOB_ID]";
+json.plan.resources.jobs.foo.action = "skip";
+json.plan.resources.jobs.foo.permissions.depends_on[0].label = "${resources.jobs.foo.id}";
 
 >>> print_requests.py --get --oneline //jobs/get
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
@@ -53,10 +63,13 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-pure-[UN
 Bound jobs.foo
 Created jobs.foo.permissions
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 1 bound
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged, 1 bound
 
-=== The re-bind deploy reads the job once, at plan time
+=== Binding and deployment both verify that the job exists
 >>> print_requests.py --get --oneline //jobs/get
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
+{"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 {"method": "GET", "path": "/api/2.2/jobs/get", "q": {"job_id": "[NEW_JOB_ID]"}}
 
 >>> print_state.py

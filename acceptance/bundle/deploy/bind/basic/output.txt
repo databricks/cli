@@ -1,14 +1,18 @@
 
 >>> [CLI] bundle plan
-bind experiments.foo (id: [NEW_EXPERIMENT_ID])
+Bind:
+  experiments.foo (id: [NEW_EXPERIMENT_ID])
 
-Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged, 1 to bind
+Deploy:
+  No changes
+
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-basic-[UNIQUE_NAME]/default/files...
 Bound experiments.foo
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 bound
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 bound
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

@@ -36,15 +36,8 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
 	ctx = d.withResourceKey(ctx)
-	switch actionType {
-	case deployplan.Create:
+	if actionType == deployplan.Create {
 		return d.Create(ctx, db, newState)
-	case deployplan.Bind:
-		return d.Bind(ctx, db, planEntry.BindID, newState, planEntry)
-	case deployplan.BindAndUpdate:
-		return d.BindAndUpdate(ctx, db, planEntry.BindID, newState, planEntry)
-	default:
-		// The remaining actions operate on the ID recorded in state.
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)
@@ -64,49 +57,6 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
-}
-
-// Bind brings an existing workspace resource under bundle management by persisting
-// its ID to state, without modifying the remote resource.
-func (d *DeploymentUnit) Bind(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
-	// The remote resource was read during planning and is unchanged by a pure bind;
-	// reuse it so dependents (permissions, grants) do not trigger a second read.
-	err := d.SetRemoteState(planEntry.RemoteState)
-	if err != nil {
-		return err
-	}
-
-	err = d.saveState(ctx, db, id, newState, d.DependsOn)
-	if err != nil {
-		return fmt.Errorf("saving state id=%s: %w", id, err)
-	}
-
-	log.Infof(ctx, "Bound %s id=%s", d.ResourceKey, id)
-	return nil
-}
-
-// BindAndUpdate binds an existing workspace resource and applies the configured
-// field changes to it. It dispatches on the planned action so the change goes
-// through the same path a normal deploy would: Resize for running-cluster
-// worker/autoscale drift, Update otherwise. Recreate / UpdateWithID are rejected
-// at plan time, so only Update and Resize can reach here.
-func (d *DeploymentUnit) BindAndUpdate(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
-	action := getMaxAction(planEntry.Changes)
-	switch action {
-	case deployplan.Resize:
-		if err := d.Resize(ctx, db, id, newState, planEntry); err != nil {
-			return err
-		}
-	case deployplan.Update:
-		if err := d.Update(ctx, db, id, newState, planEntry); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("internal error: unexpected action %q during bind_and_update", action)
-	}
-
-	log.Infof(ctx, "Bound and updated %s id=%s", d.ResourceKey, id)
-	return nil
 }
 
 // Create creates the resource and records its state.
@@ -384,14 +334,22 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 // smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
 // placeholder value so secrets are never written to disk in plaintext.
 func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
+	compacted, err := compactStateForSave(d.Adapter, state)
 	if err != nil {
-		return fmt.Errorf("compacting state: %w", err)
-	}
-	if err := zeroSensitiveFields(d.Adapter, compacted); err != nil {
-		return fmt.Errorf("redacting state: %w", err)
+		return err
 	}
 	return db.SaveState(ctx, d.ResourceKey, newID, compacted, dependsOn)
+}
+
+func compactStateForSave(adapter *dresources.Adapter, state any) (any, error) {
+	compacted, err := dresources.CompactState(adapter.ResourceConfig(), state)
+	if err != nil {
+		return nil, fmt.Errorf("compacting state: %w", err)
+	}
+	if err := zeroSensitiveFields(adapter, compacted); err != nil {
+		return nil, fmt.Errorf("redacting state: %w", err)
+	}
+	return compacted, nil
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

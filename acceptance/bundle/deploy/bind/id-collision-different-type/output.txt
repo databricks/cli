@@ -8,8 +8,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> musterr [CLI] bundle plan
 Error: cannot bind resources.experiments.exp: resource with ID "[FOO_ID]" does not exist in workspace
 
-Error: planning failed
-
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

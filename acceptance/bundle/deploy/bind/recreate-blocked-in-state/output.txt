@@ -1,7 +1,8 @@
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-recreate-in-state-[UNIQUE_NAME]/default/files...
-Bound and updated pipelines.foo
+Bound pipelines.foo
+Updated pipelines.foo
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 

@@ -1,7 +1,11 @@
 
 >>> [CLI] bundle plan
-create jobs.bar
-bind_and_update jobs.foo (id: [NEW_JOB_ID])
+Bind:
+  jobs.foo (id: [NEW_JOB_ID])
+
+Deploy:
+  create jobs.bar
+  update jobs.foo
 
 Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
@@ -11,8 +15,9 @@ json.plan.resources.jobs.bar.new_state.value.tasks[0].run_job_task.job_id = [NEW
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-ref-to-bound-[UNIQUE_NAME]/default/files...
-Bound and updated jobs.foo
+Bound jobs.foo
 Created jobs.bar
+Updated jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 

@@ -18,7 +18,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-const currentPlanVersion = 2
+const currentPlanVersion = 3
 
 type Plan struct {
 	PlanVersion int    `json:"plan_version,omitempty"`
@@ -31,6 +31,8 @@ type Plan struct {
 	// deploy --plan rejects a plan whose features differ from the target's (see process.go).
 	Features map[string]struct{} `json:"features,omitempty"`
 
+	// Bind commits existing resources to state before the resource actions in Plan.
+	Bind map[string]*BindEntry `json:"bind,omitempty"`
 	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
 	// NotSelected is the number of resources removed by FilterToSelected via the
@@ -49,15 +51,13 @@ type ActionCounts struct {
 	Change    int
 	Delete    int
 	Unchanged int
-	// Bind counts bind and bind_and_update actions; a bind_and_update also
-	// counts as a change, since it applies config to the adopted resource.
-	Bind int
+	Bind      int
 }
 
 // CountActions tallies the plan's actions by category. Order is irrelevant to a
 // tally, so it iterates the plan map directly rather than the sorted GetActions.
 func (p *Plan) CountActions() ActionCounts {
-	var c ActionCounts
+	c := ActionCounts{Bind: len(p.Bind)}
 	for _, entry := range p.Plan {
 		switch entry.Action {
 		case Create:
@@ -77,11 +77,6 @@ func (p *Plan) CountActions() ActionCounts {
 			// A recreate counts as both a delete and a create.
 			c.Delete++
 			c.Create++
-		case Bind:
-			c.Bind++
-		case BindAndUpdate:
-			c.Bind++
-			c.Change++
 		case Skip, Undefined:
 			c.Unchanged++
 		}
@@ -126,11 +121,17 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 	return &plan, nil
 }
 
-type PlanEntry struct {
-	ID        string           `json:"id,omitempty"`
-	BindID    string           `json:"bind_id,omitempty"`
+type BindEntry struct {
+	ID        string           `json:"id"`
+	State     json.RawMessage  `json:"state"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
-	Action    ActionType       `json:"action,omitempty"`
+}
+
+type PlanEntry struct {
+	ID              string           `json:"id,omitempty"`
+	DependsOn       []DependsOnEntry `json:"depends_on,omitempty"`
+	Action          ActionType       `json:"action,omitempty"`
+	PreventIDChange bool             `json:"prevent_id_change,omitempty"`
 	// Gone is set on Delete entries when planning confirmed the resource no longer
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
@@ -425,6 +426,11 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	for key := range p.Plan {
 		if _, ok := reachable[key]; !ok {
 			delete(p.Plan, key)
+		}
+	}
+	for key := range p.Bind {
+		if _, ok := reachable[key]; !ok {
+			delete(p.Bind, key)
 		}
 	}
 

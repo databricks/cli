@@ -1,7 +1,7 @@
 update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
 
-# Create a job in the workspace and bind it; the first deploy is a bind_and_update
-# because the bundle sets fields such as deployment and edit_mode on every job.
+# Create a job in the workspace and bind it; deployment then updates fields such
+# as deployment and edit_mode that the bundle sets on every job.
 NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-bind-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
 add_repl.py $NEW_JOB_ID NEW_JOB_ID
 update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
@@ -17,12 +17,12 @@ trace $CLI bundle deployment unbind foo
 
 title "The job now matches the config, so this is a pure bind"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | gron.py | grep -E 'jobs\.foo\.(action|bind_id)'
+trace $CLI bundle plan -o json | gron.py | grep -E 'jobs\.foo\.(action|id)'
 
 trace print_requests.py --get --oneline //jobs/get
 trace $CLI bundle deploy --auto-approve
 
-title "The re-bind deploy reads the job once, at plan time"
+title "Binding and deployment both verify that the job exists"
 trace print_requests.py --get --oneline //jobs/get
 trace print_state.py | gron.py | grep __id__
 

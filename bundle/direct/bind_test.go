@@ -10,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -21,7 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,13 +63,17 @@ func TestPureBindSanitizesPersistedState(t *testing.T) {
 				if mode != dstate.WritingFile {
 					stateDB.InitializeOperationBuffer(ctx, "123", 1, 1)
 				}
-				adapter, err := dresources.NewAdapter(dresources.SupportedResources[resourceType], resourceType, client)
-				require.NoError(t, err)
-				unit := direct.DeploymentUnit{
-					ResourceKey: "resources." + resourceType + ".test",
-					Adapter:     adapter,
-				}
+				resourceKey := "resources." + resourceType + ".test"
 				var newState any = &catalog.Secret{Name: "test", Value: secret, EffectiveValue: secret}
+				server.Handle("GET", "/api/2.1/unity-catalog/secrets/remote-id", func(req testserver.Request) any {
+					return &catalog.Secret{Name: "test", EffectiveValue: secret}
+				})
+				server.Handle("GET", "/api/2.0/lakeview/dashboards/remote-id", func(req testserver.Request) any {
+					return &dashboards.Dashboard{DashboardId: "remote-id", SerializedDashboard: content}
+				})
+				server.Handle("GET", "/api/2.0/lakeview/dashboards/remote-id/published", func(req testserver.Request) any {
+					return &dashboards.PublishedDashboard{}
+				})
 				rawContent := secret
 				if resourceType == "dashboards" {
 					newState = &dresources.DashboardState{
@@ -79,8 +81,23 @@ func TestPureBindSanitizesPersistedState(t *testing.T) {
 					}
 					rawContent = content
 				}
-				require.NoError(t, unit.Bind(ctx, &stateDB, "remote-id", newState, &deployplan.PlanEntry{}))
-				assert.Equal(t, "remote-id", stateDB.GetResourceID(unit.ResourceKey))
+				definitionJSON, err := json.Marshal(newState)
+				require.NoError(t, err)
+				var definition map[string]any
+				require.NoError(t, json.Unmarshal(definitionJSON, &definition))
+				delete(definition, "effective_value")
+				delete(definition, "published")
+				definition["lifecycle"] = map[string]any{"bind": map[string]string{"id": "remote-id"}}
+				configJSON, err := json.Marshal(map[string]any{"resources": map[string]any{resourceType: map[string]any{"test": definition}}})
+				require.NoError(t, err)
+				root, diagnostics := config.LoadFromBytes("databricks.yml", configJSON)
+				require.Empty(t, diagnostics)
+				var deployment direct.DeploymentBundle
+				deployment.StateDB.OpenWithData(statePath, dstate.NewDatabase("", 0))
+				bindings, err := deployment.PrepareBindings(ctx, client, root, nil)
+				require.NoError(t, err)
+				require.NoError(t, stateDB.Bind(ctx, bindings))
+				assert.Equal(t, "remote-id", stateDB.GetResourceID(resourceKey))
 				if mode != dstate.WritingDeploymentHistoryOnly {
 					wal, err := os.ReadFile(statePath + ".wal")
 					require.NoError(t, err)
@@ -104,60 +121,6 @@ func TestPureBindSanitizesPersistedState(t *testing.T) {
 					}
 				}
 			})
-		}
-	}
-}
-
-func TestBindResolvesStableParentOutputs(t *testing.T) {
-	for _, parentAction := range []deployplan.ActionType{deployplan.Bind, deployplan.BindAndUpdate} {
-		for _, managedChild := range []bool{false, true} {
-			for _, parent := range []string{"projects/p", "${resources.postgres_projects.project.name}"} {
-				t.Run(fmt.Sprintf("%s/managed=%t/%s", parentAction, managedChild, parent), func(t *testing.T) {
-					server, client := bindTestClient(t)
-					server.Handle("GET", "/api/2.0/postgres/projects/p", func(req testserver.Request) any {
-						return postgres.Project{
-							Name:      "projects/p",
-							ProjectId: "p",
-							Spec:      &postgres.ProjectSpec{DisplayName: "existing project"},
-						}
-					})
-					server.Handle("GET", "/api/2.0/postgres/projects/p/branches/b", func(req testserver.Request) any {
-						return postgres.Branch{Name: "projects/p/branches/b", BranchId: "b", Parent: "projects/p"}
-					})
-					source := `{"resources":{"postgres_projects":{"project":{"project_id":"p","display_name":"existing project","lifecycle":{"bind":{"id":"projects/p"}}}},"postgres_branches":{"branch":{"parent":"PARENT","branch_id":"b","lifecycle":{"bind":{"id":"projects/p/branches/b"}}}}}}`
-					if parentAction == deployplan.BindAndUpdate {
-						source = strings.ReplaceAll(source, "existing project", "updated project")
-					}
-					if managedChild {
-						source = strings.ReplaceAll(source, `,"lifecycle":{"bind":{"id":"projects/p/branches/b"}}`, "")
-					}
-					root, diagnostics := config.LoadFromBytes("databricks.yml", []byte(strings.ReplaceAll(source, "PARENT", parent)))
-					require.Empty(t, diagnostics)
-					ctx := logdiag.InitContext(t.Context())
-					logdiag.SetCollect(ctx, true)
-					var deployment direct.DeploymentBundle
-					statePath := filepath.Join(t.TempDir(), "resources.json")
-					if managedChild {
-						require.NoError(t, deployment.StateDB.Open(ctx, statePath, dstate.WritingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}))
-						require.NoError(t, deployment.StateDB.SaveState(ctx, "resources.postgres_branches.branch", "projects/p/branches/b", &resources.PostgresBranchConfig{Parent: "projects/p", BranchId: "b"}, nil))
-						_, err := deployment.StateDB.Finalize(ctx)
-						require.NoError(t, err)
-					}
-					require.NoError(t, deployment.StateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}))
-					t.Cleanup(func() {
-						_, err := deployment.StateDB.Finalize(ctx)
-						assert.NoError(t, err)
-					})
-					plan, err := deployment.CalculatePlan(ctx, client, root)
-					require.NoError(t, err, "%v", logdiag.FlushCollected(ctx))
-					assert.Equal(t, parentAction, plan.Plan["resources.postgres_projects.project"].Action)
-					expected := deployplan.Bind
-					if managedChild {
-						expected = deployplan.Skip
-					}
-					assert.Equal(t, expected, plan.Plan["resources.postgres_branches.branch"].Action)
-				})
-			}
 		}
 	}
 }

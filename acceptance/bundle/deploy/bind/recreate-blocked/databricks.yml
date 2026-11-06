@@ -1,5 +1,5 @@
 bundle:
-  name: test-bind-recreate
+  name: test-bind-recreate-UNIQUE_NAME
 
 resources:
   pipelines:

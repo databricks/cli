@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+JOB_ID=$($CLI jobs create --json '{"name":"before-bind"}' | jq -r .job_id)
+add_repl "$JOB_ID" JOB_ID
+export BUNDLE_VAR_job_id=$JOB_ID
+if [[ "$MODE" == authoritative ]]; then
+    mkdir -p .databricks/bundle/default
+    cp resources.dms.json .databricks/bundle/default/resources.json
+fi
+
+title "Planning neither records a version nor binds a resource"
+trace $CLI bundle plan -o json > tmp.plan.json
+trace print_requests.py --dms //api/2.0/bundle
+
+title "Bind completes before a failing apply starts its own version"
+fault.py 'POST /api/2.2/jobs/reset' 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle deploy --plan tmp.plan.json --auto-approve
+trace print_state.py | gron.py | grep -E '__id__|\.name ='
+trace print_requests.py --dms --keep --method PATCH //api/2.0/bundle/deployments ^//versions
+trace print_requests.py --dms //versions //api/2.2/jobs/reset | jq '{method, path, version: .q.version_id, operations: .body.operations, status: .body.status, completion_reason: .body.completion_reason, state_name: (if .body.state then (.body.state | fromjson | .state.name) else null end)}'
+
+title "Retrying plans only the unapplied update"
+trace $CLI bundle plan -o json > tmp.retry.json
+trace jq '{has_bind: has("bind"), action: .plan["resources.jobs.existing"].action}' tmp.retry.json
+trace $CLI bundle deploy --plan tmp.retry.json --auto-approve
+trace $CLI jobs get "$JOB_ID" | jq '.settings | {name, version: .deployment.version_id}'
+trace print_requests.py --dms //versions //api/2.2/jobs/reset | jq '{method, path, version: .q.version_id, operations: .body.operations, status: .body.status, completion_reason: .body.completion_reason}'
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

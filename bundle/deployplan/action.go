@@ -43,45 +43,35 @@ type ActionType string
 // In case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	Undefined     ActionType = ""
-	Skip          ActionType = "skip"
-	Resize        ActionType = "resize"
-	Update        ActionType = "update"
-	UpdateWithID  ActionType = "update_id"
-	Bind          ActionType = "bind"
-	BindAndUpdate ActionType = "bind_and_update"
-	Create        ActionType = "create"
-	Recreate      ActionType = "recreate"
-	Delete        ActionType = "delete"
+	Undefined    ActionType = ""
+	Skip         ActionType = "skip"
+	Resize       ActionType = "resize"
+	Update       ActionType = "update"
+	UpdateWithID ActionType = "update_id"
+	Create       ActionType = "create"
+	Recreate     ActionType = "recreate"
+	Delete       ActionType = "delete"
 )
 
 var actionOrder = map[ActionType]int{
-	Undefined:     0,
-	Skip:          1,
-	Resize:        2,
-	Update:        3,
-	UpdateWithID:  4,
-	Bind:          5,
-	BindAndUpdate: 6,
-	Create:        7,
-	Recreate:      8,
-	Delete:        9,
+	Undefined:    0,
+	Skip:         1,
+	Resize:       2,
+	Update:       3,
+	UpdateWithID: 4,
+	Create:       5,
+	Recreate:     6,
+	Delete:       7,
 }
 
 // KeepsID reports whether the action preserves an ID already recorded in deployment state.
-// Bind actions have a remote ID but no existing state entry.
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case Create, UpdateWithID, Recreate, Delete, Bind, BindAndUpdate:
+	case Create, UpdateWithID, Recreate, Delete:
 		return false
 	default:
 		return true
 	}
-}
-
-// IsBind returns true if the action is a bind action.
-func (a ActionType) IsBind() bool {
-	return a == Bind || a == BindAndUpdate
 }
 
 // StringShort short version of action string, without suffix
@@ -97,16 +87,8 @@ func (a ActionType) StringShort() string {
 // so the two are still distinguishable at a glance.
 func AppliedLine(resourceKey string, action ActionType) string {
 	key := strings.TrimPrefix(resourceKey, "resources.")
-	// "bind" does not follow the "+d" rule, and bind_and_update names both halves.
-	switch action {
-	case Bind:
-		return "Bound " + key
-	case BindAndUpdate:
-		return "Bound and updated " + key
-	default:
-		verb := action.StringShort() + "d"
-		return strings.ToUpper(verb[:1]) + verb[1:] + " " + key
-	}
+	verb := action.StringShort() + "d"
+	return strings.ToUpper(verb[:1]) + verb[1:] + " " + key
 }
 
 // GetHigherAction returns the action with higher severity between a and b.

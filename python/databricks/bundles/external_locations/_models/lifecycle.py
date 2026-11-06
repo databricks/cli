@@ -22,7 +22,7 @@ class Lifecycle:
 
     bind: VariableOrOptional[Bind] = None
     """
-    Existing workspace resource to adopt into the deployment state instead of creating a new one. The first deploy binds it (`bind`) and applies the configuration if it differs (`bind_and_update`), including target settings such as `mode: development`. While the block is present the resource cannot be recreated; removing the resource or the block ends that protection, and `bundle destroy` deletes bound resources like any other. Nothing is recorded in the state about the adoption.
+    Existing workspace resource to adopt before deployment. Deploy first records its ID and configuration in remote state, then applies normal updates, including target settings such as `mode: development`. Binding remains recorded if deployment fails. While present, this block prevents creation, recreation, and ID changes; removing it does not unbind the resource. `bundle destroy` still deletes bound resources. No bind marker is stored in resource state.
     """
 
     depends_on: VariableOrList[DependsOn] = field(default_factory=list)
@@ -48,7 +48,7 @@ class LifecycleDict(TypedDict, total=False):
 
     bind: VariableOrOptional[BindParam]
     """
-    Existing workspace resource to adopt into the deployment state instead of creating a new one. The first deploy binds it (`bind`) and applies the configuration if it differs (`bind_and_update`), including target settings such as `mode: development`. While the block is present the resource cannot be recreated; removing the resource or the block ends that protection, and `bundle destroy` deletes bound resources like any other. Nothing is recorded in the state about the adoption.
+    Existing workspace resource to adopt before deployment. Deploy first records its ID and configuration in remote state, then applies normal updates, including target settings such as `mode: development`. Binding remains recorded if deployment fails. While present, this block prevents creation, recreation, and ID changes; removing it does not unbind the resource. `bundle destroy` still deletes bound resources. No bind marker is stored in resource state.
     """
 
     depends_on: VariableOrList[DependsOnParam]

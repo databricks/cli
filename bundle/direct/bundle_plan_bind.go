@@ -1,10 +1,13 @@
 package direct
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -14,8 +17,10 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -117,100 +122,250 @@ func typeAndID(resourceKey, bindID string) string {
 	return resourceType + ":" + bindID
 }
 
-// handleBindPlan reads the remote resource for a resource that is being bound for
-// the first time, computes the change set against the local config, and selects
-// either Bind (no changes) or BindAndUpdate (config drift can be applied).
-//
-// Recreate / UpdateWithID actions imply destroying or replacing the workspace
-// resource — incompatible with bind — so they surface as actionable errors.
-// Returns false if an error was logged.
-func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter) bool {
-	bindID := entry.BindID
-	errorPrefix := "cannot bind " + resourceKey
-
-	remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
-		return adapter.DoRead(ctx, bindID)
-	})
+// PrepareBindings reads and validates resources to adopt without modifying deployment state.
+func (b *DeploymentBundle) PrepareBindings(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, selected []string) (map[string]*deployplan.BindEntry, error) {
+	b.StateDB.AssertOpenedForRead()
+	bindIDs := lifecycleBindIDs(configRoot)
+	if len(bindIDs) == 0 {
+		return nil, nil
+	}
+	if !b.validateBindConfig(ctx, configRoot, bindIDs) {
+		return nil, errors.New("bind validation failed")
+	}
+	if err := b.init(client); err != nil {
+		return nil, err
+	}
+	configured, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
 	if err != nil {
-		if apierr.IsMissing(err) {
-			logdiag.LogError(ctx, fmt.Errorf("%s: resource with ID %q does not exist in workspace", errorPrefix, bindID))
-		} else {
-			logdiag.LogError(ctx, fmt.Errorf("%s: reading remote resource id=%q: %w", errorPrefix, bindID, err))
+		return nil, err
+	}
+	if len(selected) > 0 {
+		if err := configured.FilterToSelected(ctx, selected); err != nil {
+			return nil, err
 		}
-		return false
 	}
-
-	entry.RemoteState = remoteState
-	b.RemoteStateCache.Store(resourceKey, remoteState)
-
-	sv, ok := b.StateCache.Load(resourceKey)
-	if !ok {
-		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry", errorPrefix))
-		return false
-	}
-
-	remoteStateComparable, err := adapter.RemapState(remoteState)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state: %w", errorPrefix, err))
-		return false
-	}
-
-	// Compact both sides on the same fields, so a hashed_fields field is a hash on
-	// both sides of the diff. sv.Value keeps the full contents for the deploy.
-	remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state: %w", errorPrefix, err))
-		return false
-	}
-	localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
-		return false
-	}
-
-	remoteDiff, err := structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
-		return false
-	}
-
-	// No "saved state" exists for a first-time bind; the diff is purely remote vs. config.
-	entry.Changes, err = prepareChanges(ctx, adapter, nil, remoteDiff, nil, remoteStateComparable)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-		return false
-	}
-
-	err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
-		return false
-	}
-
-	switch maxAction := getMaxAction(entry.Changes); maxAction {
-	case deployplan.Skip, deployplan.Undefined:
-		entry.Action = deployplan.Bind
-	case deployplan.Update, deployplan.Resize:
-		// Same guard as the in-state path: an update can only be applied if the
-		// resource implements DoUpdate.
-		if maxAction == deployplan.Update && !adapter.HasDoUpdate() {
-			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
-			return false
+	bindings := make(map[string]*deployplan.BindEntry)
+	for _, resourceKey := range slices.Sorted(maps.Keys(bindIDs)) {
+		entry := configured.Plan[resourceKey]
+		if entry == nil || b.StateDB.GetResourceID(resourceKey) != "" {
+			continue
 		}
-		entry.Action = deployplan.BindAndUpdate
-	case deployplan.Recreate, deployplan.UpdateWithID:
-		logdiag.LogError(ctx, buildBindConflictError(resourceKey, maxAction, entry.Changes, true))
-		return false
-	default:
-		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: unexpected action %q during bind planning", errorPrefix, maxAction))
-		return false
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return nil, err
+		}
+		remote, err := readBoundResource(ctx, adapter, resourceKey, bindIDs[resourceKey])
+		if err != nil {
+			return nil, err
+		}
+		state, err := adapter.RemapState(remote)
+		if err != nil {
+			return nil, fmt.Errorf("reading binding state for %s: %w", resourceKey, err)
+		}
+		configuredState, _ := b.StateCache.Load(resourceKey)
+		state, err = prepareBindingState(adapter, state, configuredState.Value)
+		if err != nil {
+			return nil, fmt.Errorf("preparing binding for %s: %w", resourceKey, err)
+		}
+		encoded, err := json.Marshal(state)
+		if err != nil {
+			return nil, fmt.Errorf("serializing binding for %s: %w", resourceKey, err)
+		}
+		bindings[resourceKey] = &deployplan.BindEntry{
+			ID: bindIDs[resourceKey], State: encoded, DependsOn: entry.DependsOn,
+		}
 	}
-	return true
+	return bindings, nil
 }
 
-// buildBindConflictError names the incompatible fields and distinguishes creating a
-// new resource before adoption from replacing an already-managed resource.
-func buildBindConflictError(resourceKey string, action deployplan.ActionType, changes deployplan.Changes, firstBind bool) error {
+// prepareBindingState imports the remote values of configured fields. Importing
+// backend-only fields would claim ownership of defaults the bundle never set;
+// importing desired values would hide changes that have not been applied yet.
+func prepareBindingState(adapter *dresources.Adapter, remote, configured any) (any, error) {
+	diff, err := structdiff.GetStructDiff(remote, configured, adapter.KeyedSlices())
+	if err != nil {
+		return nil, err
+	}
+	encoded, err := json.Marshal(remote)
+	if err != nil {
+		return nil, err
+	}
+	var state any
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	decoder.UseNumber()
+	if err := decoder.Decode(&state); err != nil {
+		return nil, err
+	}
+	// Remove positional array entries from the end so earlier indices stay valid.
+	for _, change := range slices.Backward(diff) {
+		value := reflect.ValueOf(change.New)
+		if value.IsValid() {
+			switch value.Kind() {
+			case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface:
+				if !value.IsNil() {
+					continue
+				}
+			default:
+				continue
+			}
+		}
+		// Dashboards and Genie spaces persist the remote etag for drift detection.
+		if change.Path.String() == "etag" {
+			continue
+		}
+		if change.Path.IsRoot() {
+			return nil, errors.New("cannot bind an empty resource configuration")
+		}
+		state, err = removeBindingField(state, change.Path.AsSlice())
+		if err != nil {
+			return nil, fmt.Errorf("removing unconfigured field %s: %w", change.Path, err)
+		}
+	}
+	encoded, err = json.Marshal(state)
+	if err != nil {
+		return nil, err
+	}
+	typed, err := parseState(adapter.StateType(), encoded)
+	if err != nil {
+		return nil, err
+	}
+	return compactStateForSave(adapter, typed)
+}
+
+// removeBindingField removes a field from a JSON value, including keyed array
+// elements such as tasks[task_key='main']. The paths come from structdiff.
+func removeBindingField(value any, path []*structpath.PathNode) (any, error) {
+	node := path[0]
+	if key, ok := node.StringKey(); ok {
+		object, ok := value.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("expected an object at %s", node.Parent())
+		}
+		if len(path) == 1 {
+			delete(object, key)
+			return object, nil
+		}
+		child, err := removeBindingField(object[key], path[1:])
+		if err != nil {
+			return nil, err
+		}
+		object[key] = child
+		return object, nil
+	}
+	sequence, ok := value.([]any)
+	if !ok {
+		return nil, fmt.Errorf("expected an array at %s", node.Parent())
+	}
+	index, indexed := node.Index()
+	if !indexed {
+		key, match, _ := node.KeyValue()
+		index = slices.IndexFunc(sequence, func(element any) bool {
+			field, _ := structaccess.GetByString(element, key)
+			return field == match
+		})
+	}
+	if index < 0 || index >= len(sequence) {
+		return nil, fmt.Errorf("array element %s does not exist", node)
+	}
+	if len(path) == 1 {
+		return slices.Delete(sequence, index, index+1), nil
+	}
+	child, err := removeBindingField(sequence[index], path[1:])
+	if err != nil {
+		return nil, err
+	}
+	sequence[index] = child
+	return sequence, nil
+}
+
+func readBoundResource(ctx context.Context, adapter *dresources.Adapter, resourceKey, id string) (any, error) {
+	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+		return adapter.DoRead(ctx, id)
+	})
+	if apierr.IsMissing(err) || (err == nil && adapter.IsGone(remote)) {
+		return nil, fmt.Errorf("cannot bind %s: resource with ID %q does not exist in workspace", resourceKey, id)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("cannot bind %s: reading remote resource id=%q: %w", resourceKey, id, err)
+	}
+	return remote, nil
+}
+
+// CheckBindings verifies that resources from a saved bind phase still exist.
+func (b *DeploymentBundle) CheckBindings(ctx context.Context, client *databricks.WorkspaceClient, bindings map[string]*deployplan.BindEntry) error {
+	if err := b.init(client); err != nil {
+		return err
+	}
+	for _, key := range slices.Sorted(maps.Keys(bindings)) {
+		adapter, err := b.getAdapterForKey(key)
+		if err != nil {
+			return err
+		}
+		if _, err := readBoundResource(ctx, adapter, key, bindings[key].ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *DeploymentBundle) checkBoundResource(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter) error {
+	if !entry.Action.KeepsID() {
+		return fmt.Errorf("cannot %s %s: lifecycle.bind requires preserving resource ID %q", entry.Action, resourceKey, entry.ID)
+	}
+	id := b.StateDB.GetResourceID(resourceKey)
+	if id != entry.ID {
+		return fmt.Errorf("cannot deploy %s: bound resource ID %q does not match state ID %q", resourceKey, entry.ID, id)
+	}
+	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+		return adapter.DoRead(ctx, id)
+	})
+	if apierr.IsMissing(err) || (err == nil && adapter.IsGone(remote)) {
+		return fmt.Errorf("cannot deploy %s: bound resource with ID %q no longer exists in the workspace; remove lifecycle.bind to create a new resource", resourceKey, id)
+	}
+	if err != nil {
+		return fmt.Errorf("reading bound resource %s: %w", resourceKey, err)
+	}
+	configured, ok := b.StateCache.Load(resourceKey)
+	if !ok {
+		return fmt.Errorf("cannot deploy %s: missing configured state for bound resource", resourceKey)
+	}
+	local, err := dresources.CompactState(adapter.ResourceConfig(), configured.Value)
+	if err != nil {
+		return err
+	}
+	comparable, err := adapter.RemapState(remote)
+	if err != nil {
+		return err
+	}
+	comparable, err = dresources.CompactState(adapter.ResourceConfig(), comparable)
+	if err != nil {
+		return err
+	}
+	diff, err := structdiff.GetStructDiff(comparable, local, adapter.KeyedSlices())
+	if err != nil {
+		return err
+	}
+	saved, _ := b.StateDB.GetResourceEntry(resourceKey)
+	old, err := parseState(adapter.StateType(), saved.State)
+	if err != nil {
+		return err
+	}
+	changes, err := prepareChanges(ctx, adapter, nil, diff, old, comparable)
+	if err != nil {
+		return err
+	}
+	if err := addPerFieldActions(ctx, adapter, changes, configured.Value, remote); err != nil {
+		return err
+	}
+	action := getMaxAction(changes)
+	if action == deployplan.Recreate || action == deployplan.UpdateWithID {
+		return fmt.Errorf("cannot deploy %s: %w", resourceKey, buildBindConflictError(action, changes))
+	}
+	return nil
+}
+
+// buildBindConflictError names the fields that would change the bound resource's ID.
+func buildBindConflictError(action deployplan.ActionType, changes deployplan.Changes) error {
 	problematicFields := make([]string, 0, len(changes))
 	for fieldPath, change := range changes {
 		if change.Action == action {
@@ -222,15 +377,11 @@ func buildBindConflictError(resourceKey string, action deployplan.ActionType, ch
 	var headline string
 	// buildBindConflictError is only invoked for Recreate / UpdateWithID; other
 	// action types are guarded by the caller.
-	switch { //nolint:exhaustive
-	case action == deployplan.Recreate && firstBind:
-		headline = "cannot bind " + resourceKey + ": cannot recreate resource with lifecycle.bind"
-	case action == deployplan.Recreate:
-		headline = "cannot plan " + resourceKey + ": lifecycle.bind prevents recreating the bound resource"
-	case action == deployplan.UpdateWithID && firstBind:
-		headline = "cannot bind " + resourceKey + ": cannot update resource ID with lifecycle.bind"
-	case action == deployplan.UpdateWithID:
-		headline = "cannot plan " + resourceKey + ": lifecycle.bind prevents changing the ID of the bound resource"
+	switch action { //nolint:exhaustive
+	case deployplan.Recreate:
+		headline = "lifecycle.bind prevents recreating the bound resource"
+	case deployplan.UpdateWithID:
+		headline = "lifecycle.bind prevents changing the ID of the bound resource"
 	}
 
 	var msg strings.Builder
@@ -249,11 +400,7 @@ func buildBindConflictError(resourceKey string, action deployplan.ActionType, ch
 		}
 	}
 	msg.WriteString("\nMatch these fields to the existing resource to preserve its ID")
-	if firstBind {
-		msg.WriteString("; remove lifecycle.bind to create a new resource instead of adopting this one")
-	} else {
-		msg.WriteString("; remove lifecycle.bind to allow the ID to change")
-	}
+	msg.WriteString("; remove lifecycle.bind to allow the ID to change")
 
 	return errors.New(msg.String())
 }

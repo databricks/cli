@@ -1,12 +1,17 @@
 
 >>> [CLI] bundle plan --var job_id=[NEW_JOB_ID]
-bind_and_update jobs.foo (id: [NEW_JOB_ID])
+Bind:
+  jobs.foo (id: [NEW_JOB_ID])
+
+Deploy:
+  update jobs.foo
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve --var job_id=[NEW_JOB_ID]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-variable-id-[UNIQUE_NAME]/default/files...
-Bound and updated jobs.foo
+Bound jobs.foo
+Updated jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
 
