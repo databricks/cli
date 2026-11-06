@@ -967,6 +967,12 @@ tasks:
   bump-sdk-post:
     desc: Regenerate everything downstream of an SDK bump and refresh acceptance goldens
     cmds:
+      # The acceptance tests run uv offline, so the managed interpreters they
+      # pin (3.10 for bundle tests, 3.9-3.13 in one template matrix) must exist
+      # up front. CI installs them in setup-build-environment; the SDK bumper's
+      # image ships only Python 3.12, and a missing version would otherwise be
+      # baked into the goldens as a uv error.
+      - task: install-pythons
       - task: generate-check
       - task: test-update
 
