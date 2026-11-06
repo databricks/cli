@@ -3,6 +3,9 @@ Databricks CLI
 Usage:
   databricks [command]
 
+Lakewatch
+  lakewatch                              *Beta* Manage Lakewatch: security-analytics data sources, detection rules, and per-catalog configuration.
+
 Databricks Workspace
   fs                                     Filesystem related commands
   git-credentials                        Registers personal access token for Databricks to do operations on behalf of the user.
@@ -20,9 +23,6 @@ Compute
   policy-compliance-for-clusters         The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.
   policy-families                        View available policy families.
 
-Sandbox
-  sandbox                                *Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.
-
 Lakeflow
   jobs                                   The Jobs API allows you to create, edit, and delete jobs.
   pipelines                              The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.
@@ -30,7 +30,7 @@ Lakeflow
 
 Machine Learning
   experiments                            Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.
-  feature-engineering                    *Public Preview* Feature Engineering provides APIs for managing features and materialized features.
+  feature-engineering                    Feature Engineering provides APIs for managing features and materialized features.
   model-registry                         Note: This API reference documents APIs for the Workspace Model Registry.
 
 Real-time Serving
@@ -55,7 +55,7 @@ Identity and Access Management
   service-principals-v2                  *Public Preview* Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   users                                  User identities recognized by Databricks and represented by email addresses.
   users-v2                               *Public Preview* User identities recognized by Databricks and represented by email addresses.
-  workspace-iam-v2                       *Beta* These APIs are used to manage identities and the workspace access of these identities in Databricks.
+  workspace-iam-v2                       These APIs are used to manage identities and the workspace access of these identities in Databricks.
 
 Databricks SQL
   alerts                                 The alerts API can be used to perform CRUD operations on alerts.
@@ -125,18 +125,18 @@ OAuth
   service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
 
 Marketplace
-  consumer-fulfillments                  *Public Preview* Fulfillments are entities that allow consumers to preview installations.
-  consumer-installations                 *Public Preview* Installations are entities that allow consumers to interact with Databricks Marketplace listings.
-  consumer-listings                      *Public Preview* Listings are the core entities in the Marketplace.
-  consumer-personalization-requests      *Public Preview* Personalization Requests allow customers to interact with the individualized Marketplace listing flow.
-  consumer-providers                     *Public Preview* Providers are the entities that publish listings to the Marketplace.
-  provider-exchange-filters              *Public Preview* Marketplace exchanges filters curate which groups can access an exchange.
-  provider-exchanges                     *Public Preview* Marketplace exchanges allow providers to share their listings with a curated set of customers.
-  provider-files                         *Public Preview* Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.
-  provider-listings                      *Public Preview* Listings are the core entities in the Marketplace.
-  provider-personalization-requests      *Public Preview* Personalization requests are an alternate to instantly available listings.
-  provider-provider-analytics-dashboards *Public Preview* Manage templated analytics solution for providers.
-  provider-providers                     *Public Preview* Providers are entities that manage assets in Marketplace.
+  consumer-fulfillments                  Fulfillments are entities that allow consumers to preview installations.
+  consumer-installations                 Installations are entities that allow consumers to interact with Databricks Marketplace listings.
+  consumer-listings                      Listings are the core entities in the Marketplace.
+  consumer-personalization-requests      Personalization Requests allow customers to interact with the individualized Marketplace listing flow.
+  consumer-providers                     Providers are the entities that publish listings to the Marketplace.
+  provider-exchange-filters              Marketplace exchanges filters curate which groups can access an exchange.
+  provider-exchanges                     Marketplace exchanges allow providers to share their listings with a curated set of customers.
+  provider-files                         Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.
+  provider-listings                      Listings are the core entities in the Marketplace.
+  provider-personalization-requests      Personalization requests are an alternate to instantly available listings.
+  provider-provider-analytics-dashboards Manage templated analytics solution for providers.
+  provider-providers                     Providers are entities that manage assets in Marketplace.
 
 Clean Rooms
   clean-room-asset-revisions             *Beta* Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
@@ -149,18 +149,19 @@ Quality Monitor
   quality-monitor-v2                     *Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).
 
 Data Classification
-  data-classification                    *Public Preview* Manage data classification for Unity Catalog catalogs.
+  data-classification                    Manage data classification for Unity Catalog catalogs.
 
 Data Quality Monitoring
-  data-quality                           *Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).
+  data-quality                           Manage the data quality of Unity Catalog objects (currently support schema and table).
 
 Database Instances
   database                               *Public Preview* Database Instances provide access to a database via REST API or direct SQL.
   psql                                   Connect to a Lakebase Postgres database
 
 Agent Bricks
-  knowledge-assistants                   *Beta* Manage Knowledge Assistants and related resources.
-  supervisor-agents                      *Beta* Manage Supervisor Agents and related resources.
+  agent-kit                              *Beta* APIs for managing agent memory and durable session state.
+  knowledge-assistants                   *Beta* Manage legacy Knowledge Assistants and related resources.
+  supervisor-agents                      *Beta* Manage legacy Supervisor Agents and related resources.
 
 AI Functions
   ai-functions                           Transform and enrich data with AI on Databricks.
@@ -181,6 +182,7 @@ Domains
 Developer Tools
   air                                    *Public Preview* Run and manage AI Runtime training workloads
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
+  sandbox                                *Beta* Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

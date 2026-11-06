@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -305,6 +304,10 @@ func (a *PersistentAuth) loadToken() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cache: %w", err)
 	}
+	// An entry that holds a pending login has no token yet.
+	if e.Token == nil {
+		return nil, fmt.Errorf("cache: %w", storage.ErrNotFound)
+	}
 	return e.Token, nil
 }
 
@@ -390,7 +393,7 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 		}
 
 		cached, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
-		if err == nil && isFreshReplacement(old, candidate, cached.Token) {
+		if err == nil && cached.Token != nil && isFreshReplacement(old, candidate, cached.Token) {
 			return cached.Token
 		}
 	}
@@ -413,7 +416,7 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	if oldToken.RefreshToken == "" {
 		return nil, ErrMissingRefreshToken
 	}
-	cfg, err := a.oauth2Config()
+	cfg, err := a.oauth2Config(a.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -426,38 +429,12 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	expired.Expiry = time.Now().Add(-time.Minute)
 	t, err := cfg.TokenSource(ctx, &expired).Token()
 	if err != nil {
-		// The default RoundTripper of our httpclient.ApiClient returns an error
-		// if the response status code is not 2xx. This isn't compliant with the
-		// RoundTripper interface, so this error isn't handled by the oauth2
-		// library. We need to handle it here.
-		if internalHttpError, ok := errors.AsType[*httpclient.HttpError](err); ok {
-			// error fields
-			// https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
-			var errResponse struct {
-				Error            string `json:"error"`
-				ErrorDescription string `json:"error_description"`
-			}
-			if unmarshalErr := json.Unmarshal([]byte(internalHttpError.Message), &errResponse); unmarshalErr != nil {
-				return nil, fmt.Errorf("unmarshal: %w", unmarshalErr)
-			}
-			// Invalid refresh tokens get their own error type so they can be
-			// better presented to users.
-			if errResponse.ErrorDescription == "Refresh token is invalid" {
-				return nil, &InvalidRefreshTokenError{err}
-			}
-			return nil, fmt.Errorf("%s (error code: %s)", errResponse.ErrorDescription, errResponse.Error)
+		// Invalid refresh tokens get their own error type so they can be
+		// better presented to users.
+		if _, _, description := oauthErrorResponse(err); description == "Refresh token is invalid" {
+			return nil, &InvalidRefreshTokenError{err}
 		}
-
-		// Handle responses from well-behaved *http.Client implementations.
-		if httpErr, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
-			// Invalid refresh tokens get their own error type so they can be
-			// better presented to users.
-			if httpErr.ErrorDescription == "Refresh token is invalid" {
-				return nil, &InvalidRefreshTokenError{err}
-			}
-			return nil, fmt.Errorf("%s (error code: %s)", httpErr.ErrorDescription, httpErr.ErrorCode)
-		}
-		return nil, err
+		return nil, oauthError(err)
 	}
 	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
 	if err != nil {
@@ -487,7 +464,7 @@ func (a *PersistentAuth) Challenge() (*oauth2.Token, error) {
 	// the callback server is not created, we need to close the listener manually.
 	defer a.Close()
 
-	cfg, err := a.oauth2Config()
+	cfg, err := a.oauth2Config(a.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching oauth config: %w", err)
 	}
@@ -618,20 +595,20 @@ func (a *PersistentAuth) resolveScopes() []string {
 }
 
 // oauth2Config returns the OAuth2 configuration for the given OAuthArgument.
-func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
+func (a *PersistentAuth) oauth2Config(ctx context.Context) (*oauth2.Config, error) {
 	scopes := a.resolveScopes()
 
 	var endpoints *OAuthAuthorizationServer
 	var err error
 	switch argg := a.oAuthArgument.(type) {
 	case WorkspaceOAuthArgument:
-		endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(a.ctx, argg.GetWorkspaceHost())
+		endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(ctx, argg.GetWorkspaceHost())
 	case AccountOAuthArgument:
 		endpoints, err = a.endpointSupplier.GetAccountOAuthEndpoints(
-			a.ctx, argg.GetAccountHost(), argg.GetAccountId(),
+			ctx, argg.GetAccountHost(), argg.GetAccountId(),
 		)
 	case UnifiedOAuthArgument:
-		endpoints, err = a.endpointSupplier.GetUnifiedOAuthEndpoints(a.ctx, argg.GetHost(), argg.GetAccountId())
+		endpoints, err = a.endpointSupplier.GetUnifiedOAuthEndpoints(ctx, argg.GetHost(), argg.GetAccountId())
 	case DiscoveryOAuthArgument:
 		return nil, fmt.Errorf("discovery OAuthArgument %T is only supported with WithDiscoveryLogin during Challenge; after discovery, construct a WorkspaceOAuthArgument with the discovered host", a.oAuthArgument)
 	default:
@@ -647,9 +624,10 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	return &oauth2.Config{
 		ClientID: a.clientID,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:   authURL,
-			TokenURL:  endpoints.TokenEndpoint,
-			AuthStyle: oauth2.AuthStyleInParams,
+			AuthURL:       authURL,
+			TokenURL:      endpoints.TokenEndpoint,
+			DeviceAuthURL: endpoints.DeviceAuthorizationEndpoint,
+			AuthStyle:     oauth2.AuthStyleInParams,
 		},
 		RedirectURL: "http://" + a.redirectAddr,
 		Scopes:      scopes,

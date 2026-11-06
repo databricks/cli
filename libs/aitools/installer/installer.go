@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/versioncheck"
 	"golang.org/x/mod/semver"
 	"golang.org/x/sync/errgroup"
 )
@@ -141,7 +142,7 @@ func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref
 }
 
 func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", skillsRepoOwner, skillsRepoName)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", versioncheck.GitHubAPIURL(ctx), skillsRepoOwner, skillsRepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)

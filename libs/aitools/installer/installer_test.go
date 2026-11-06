@@ -456,11 +456,11 @@ func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string)
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
-	cacheDir := t.TempDir()
-	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
-	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), build.CLICompatManifestJSON, 0o600))
+	withCachedCompat(t, skillsLatestSentinel)
 	stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
-	fallbackRef := "v" + build.AgentSkillsFallbackVersion
+	fallbackVersion, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
+	require.NoError(t, err)
+	fallbackRef := "v" + fallbackVersion
 	body, err := json.Marshal(testManifest())
 	require.NoError(t, err)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1343,9 +1343,9 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 		{version: "1.20.0"},
 		{version: "1.21.0"},
 		{version: "1.21.9"},
-		{version: "1.22.0", latest: true},
-		{version: "1.23.0", latest: true},
-		{version: "0.0.0-dev+test", latest: true},
+		{version: "1.22.0"},
+		{version: "1.23.0"},
+		{version: "0.0.0-dev+test"},
 	}
 	for _, tc := range tests {
 		entry, err := clicompat.Resolve(m, tc.version)
@@ -1362,7 +1362,7 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 				wantRef := pinnedRef
 				var latestErr error
 				if offline {
-					latestErr = errors.New("network down")
+					latestErr = errors.New("HTTP 403 fetching latest skills release")
 				}
 				switch {
 				case tc.latest && offline:
@@ -1401,7 +1401,9 @@ func TestGetSkillsRefLatestReleaseLookupFails(t *testing.T) {
 func TestFetchSkillsManifestWithFallback(t *testing.T) {
 	const missingRef = "v9.9.9"
 	setBuildVersion(t, "1.22.0")
-	fallbackRef := "v" + build.AgentSkillsFallbackVersion
+	fallbackVersion, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
+	require.NoError(t, err)
+	fallbackRef := "v" + fallbackVersion
 
 	tests := []struct {
 		name          string

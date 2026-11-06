@@ -8,7 +8,23 @@
 >>> jq -r select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category [OUTPUT_DIR]/out.requests.txt
 DRIVER_PROXY_FORBIDDEN
 
->>> print_requests.py //api/2.2/jobs/runs/cancel
+=== Each release archive is uploaded once, and the submitted run is cancelled
+
+>>> print_requests.py --del-field raw_body //api/2.0/workspace-files/import-file //api/2.2/jobs/runs/cancel
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/databricks_cli_linux_amd64/databricks.zip",
+  "q": {
+    "overwrite": "true"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/databricks_cli_linux_arm64/databricks.zip",
+  "q": {
+    "overwrite": "true"
+  }
+}
 {
   "method": "POST",
   "path": "/api/2.2/jobs/runs/cancel",

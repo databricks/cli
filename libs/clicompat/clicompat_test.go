@@ -23,6 +23,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+const pinnedAgentSkillsVersion = "0.2.32"
+
 // roundTripFunc adapts a function into an http.RoundTripper.
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
@@ -337,8 +339,8 @@ func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
 		want    string
 	}{
 		{version: "1.0.0", want: "0.2.10"},
-		{version: "1.22.0", want: build.AgentSkillsFallbackVersion},
-		{version: "0.0.0-dev+test", want: build.AgentSkillsFallbackVersion},
+		{version: "1.22.0", want: pinnedAgentSkillsVersion},
+		{version: "0.0.0-dev+test", want: pinnedAgentSkillsVersion},
 	} {
 		t.Run(tc.version, func(t *testing.T) {
 			original := build.GetInfo().Version
@@ -373,8 +375,8 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 
 	// Pinning the newest range (e.g. after a breaking skills release) must
 	// update this assertion in the same change.
-	assert.Equal(t, AgentSkillsLatest, m[keys[len(keys)-1]].AgentSkills,
-		"the newest CLI range must track the latest skills release")
+	assert.Equal(t, pinnedAgentSkillsVersion, m[keys[len(keys)-1]].AgentSkills,
+		"the newest CLI range must stay pinned until all callers support latest-release fallback")
 	assert.True(t, semver.IsValid("v"+build.AgentSkillsFallbackVersion),
 		"compiled skills fallback must be a concrete version")
 

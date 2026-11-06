@@ -1,0 +1,43 @@
+
+=== Deploying only a job that does not use the snapshot records no snapshot in the metadata
+>>> [CLI] bundle deploy --select jobs.other_job
+Created jobs.other_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
+
+>>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-select-[UNIQUE_NAME]/default/state/metadata.json
+null
+
+=== Deploy the immutable snapshot
+>>> [CLI] bundle deploy
+Created internal_immutable_snapshots.immutable
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 1 unchanged
+Metadata snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot
+OK: metadata points at the deployed snapshot
+
+=== Deploying only that job after a content change keeps the deployed snapshot in the metadata
+>>> [CLI] bundle deploy --select jobs.other_job
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 2 not selected
+Metadata snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot
+OK: metadata still points at the deployed snapshot
+
+=== A full deploy moves the metadata to the new snapshot
+>>> [CLI] bundle deploy
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 1 unchanged
+Metadata snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot
+OK: metadata points at the new snapshot
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.jobs.other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-select-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

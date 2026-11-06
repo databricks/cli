@@ -1,2 +1,3 @@
 trace $CLI bundle debug refschema --help
-trace $CLI bundle debug refschema > out.fields.txt
+
+$CLI bundle debug refschema | python3 split.py

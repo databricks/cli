@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -157,9 +158,6 @@ workspace: { current_user: { userName: test }}`)
 	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, int64(2), b.Metrics.PythonAddedResourcesCount)
-	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
-
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
 	assert.Equal(t, []diag.Location{
@@ -237,9 +235,24 @@ resources:
 		return v, nil
 	})
 	assert.NoError(t, err)
+}
 
-	assert.Equal(t, int64(0), b.Metrics.PythonAddedResourcesCount)
-	assert.Equal(t, int64(1), b.Metrics.PythonUpdatedResourcesCount)
+func TestPythonConfigSection(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		expected protos.PydabsConfigSection
+	}{
+		{"none", `bundle: {name: test}`, protos.PydabsConfigSectionUnspecified},
+		{"both", `
+python: {resources: ["resources:load"]}
+experimental: {python: {resources: ["resources:load"]}}`, protos.PydabsConfigSectionBoth},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, pythonConfigSection(loadYaml("databricks.yml", tc.yaml)))
+		})
+	}
 }
 
 func TestPythonMutator_badOutput(t *testing.T) {

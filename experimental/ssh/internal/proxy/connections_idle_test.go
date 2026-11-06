@@ -18,8 +18,7 @@ func TestConnectionsManagerExtendIdleTimeout(t *testing.T) {
 		assert.True(t, <-connections.TimedOut)
 		require.True(t, connections.TryAdd("connected", nil))
 		connections.ExtendIdleTimeout(time.Second)
-		time.Sleep(time.Minute)
-		synctest.Wait()
+		synctest.Sleep(time.Minute)
 		select {
 		case <-connections.TimedOut:
 			t.Fatal("extended timeout fired while a client was connected")

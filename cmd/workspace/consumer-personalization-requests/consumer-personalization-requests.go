@@ -21,18 +21,16 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-personalization-requests",
-		Short: `*Public Preview* Personalization Requests allow customers to interact with the individualized Marketplace listing flow.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-Personalization Requests allow customers to interact with the individualized
+		Short: `Personalization Requests allow customers to interact with the individualized Marketplace listing flow.`,
+		Long: `Personalization Requests allow customers to interact with the individualized
   Marketplace listing flow.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -72,16 +70,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`)
 
 	cmd.Use = "create LISTING_ID"
-	cmd.Short = `*Public Preview* Create a personalization request.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a personalization request.
+	cmd.Short = `Create a personalization request.`
+	cmd.Long = `Create a personalization request.
 
   Create a personalization request for a listing.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -144,17 +140,15 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetPersonalizationRequestRequest
 
 	cmd.Use = "get LISTING_ID"
-	cmd.Short = `*Public Preview* Get the personalization request for a listing.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get the personalization request for a listing.
+	cmd.Short = `Get the personalization request for a listing.`
+	cmd.Long = `Get the personalization request for a listing.
 
   Get the personalization request for a listing. Each consumer can make at
   *most* one personalization request for a listing.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -216,16 +210,14 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `*Public Preview* List all personalization requests.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List all personalization requests.
+	cmd.Short = `List all personalization requests.`
+	cmd.Long = `List all personalization requests.
 
   List personalization requests for a consumer across all listings.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

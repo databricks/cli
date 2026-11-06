@@ -1,7 +1,7 @@
 
 === Missing pnpm fails before creating files, and the same name can be retried
 >>> [CLI] apps init --name retry-app --template pnpm-template
-Error: pnpm is unavailable; use --package-manager npm, install pnpm with corepack enable pnpm or npx get-pnpm, or use --skip-install: exec: "pnpm": executable file not found in PATH
+Error: pnpm is unavailable; use databricks apps init --package-manager npm, install pnpm with corepack enable pnpm or npx get-pnpm, or use databricks apps init --skip-install: exec: "pnpm": executable file not found in PATH
 
 >>> [CLI] apps init --name retry-app --template pnpm-template --skip-install
 ✔ Creating project
@@ -20,7 +20,7 @@ Error: pnpm is unavailable; use --package-manager npm, install pnpm with corepac
 
 === Missing npm also fails before creating files
 >>> [CLI] apps init --name missing-npm --template npm-only-template
-Error: npm is unavailable; install it and retry, or use --skip-install to scaffold without running setup: exec: "npm": executable file not found in PATH
+Error: npm is unavailable; install it and retry, or use databricks apps init --skip-install to scaffold without running setup: exec: "npm": executable file not found in PATH
 
 === Explicit manager values must be nonempty and supported
 >>> [CLI] apps init --name invalid-manager --package-manager= --skip-install

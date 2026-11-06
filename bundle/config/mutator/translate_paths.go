@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -329,12 +328,12 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 		if loc := b.Config.GetLocation("workspace.file_path"); loc.File != "" {
 			return diag.Diagnostics{{
 				Severity:  diag.Error,
-				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is enabled",
+				Summary:   "workspace.file_path cannot be configured when workspace.sync_mode is immutable",
 				Locations: []diag.Location{loc},
 			}}
 		}
 		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
-	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
+	case t.b.IsSourceLinkedDeployment():
 		t.remoteRoot = t.b.SyncRootPath
 	default:
 		t.remoteRoot = t.b.Config.Workspace.FilePath

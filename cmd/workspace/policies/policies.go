@@ -75,6 +75,7 @@ func newCreatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Comment, "comment", createPolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
 	// TODO: complex arg: deny
 	// TODO: array: except_principals
+	// TODO: array: governed_tags
 	// TODO: complex arg: grant
 	// TODO: array: match_columns
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Name, "name", createPolicyReq.PolicyInfo.Name, `Name of the policy.`)
@@ -87,6 +88,7 @@ func newCreatePolicy() *cobra.Command {
   CREDENTIAL,
   EXTERNAL_LOCATION,
   EXTERNAL_METADATA,
+  FEATURE,
   FUNCTION,
   MCP_SERVICE,
   METASTORE,
@@ -127,6 +129,7 @@ func newCreatePolicy() *cobra.Command {
         CREDENTIAL,
         EXTERNAL_LOCATION,
         EXTERNAL_METADATA,
+        FEATURE,
         FUNCTION,
         MCP_SERVICE,
         METASTORE,
@@ -456,6 +459,7 @@ func newUpdatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Comment, "comment", updatePolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
 	// TODO: complex arg: deny
 	// TODO: array: except_principals
+	// TODO: array: governed_tags
 	// TODO: complex arg: grant
 	// TODO: array: match_columns
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Name, "name", updatePolicyReq.PolicyInfo.Name, `Name of the policy.`)
@@ -468,6 +472,7 @@ func newUpdatePolicy() *cobra.Command {
   CREDENTIAL,
   EXTERNAL_LOCATION,
   EXTERNAL_METADATA,
+  FEATURE,
   FUNCTION,
   MCP_SERVICE,
   METASTORE,
@@ -511,6 +516,7 @@ func newUpdatePolicy() *cobra.Command {
         CREDENTIAL,
         EXTERNAL_LOCATION,
         EXTERNAL_METADATA,
+        FEATURE,
         FUNCTION,
         MCP_SERVICE,
         METASTORE,

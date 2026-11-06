@@ -91,7 +91,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	waitRemoteState, err := waitCapped(ctx, d.MaxWait, "creation of "+d.ResourceKey, func(ctx context.Context) (any, error) {
-		return retry.With(ctx, retry.IsTransient, func() (any, error) {
+		return retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 			return d.Adapter.WaitAfterCreate(ctx, newID, newState)
 		})
 	})
@@ -189,7 +189,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		}
 	}
 
-	waitRemoteState, err := retry.With(ctx, retry.IsTransient, func() (any, error) {
+	waitRemoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return d.Adapter.WaitAfterUpdate(ctx, id, newState)
 	})
 	if err != nil {
@@ -233,7 +233,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := retry.With(ctx, retry.IsTransient, func() (any, error) {
+	waitRemoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return d.Adapter.WaitAfterUpdate(ctx, newID, newState)
 	})
 	if err != nil {
@@ -265,7 +265,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else if d.deleteConfirmedGone(ctx, oldID) {
 			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
-		} else if db.IsDeploymentMetadataService() {
+		} else if db.RecordsHistory() {
 			// When using the deployment metadata service, record the error.
 			err = fmt.Errorf("deleting id=%s: %w", oldID, err)
 			db.RecordFailure(d.ResourceKey, oldID, err)
@@ -375,7 +375,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-	remoteState, err := retry.With(ctx, retry.IsTransient, func() (any, error) {
+	remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return d.Adapter.DoRead(ctx, id)
 	})
 	if err != nil {

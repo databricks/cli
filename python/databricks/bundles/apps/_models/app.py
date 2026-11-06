@@ -3,10 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.apps._models.app_config import (
-    AppConfig,
-    AppConfigParam,
-)
+from databricks.bundles.apps._models.app_config import AppConfig, AppConfigParam
 from databricks.bundles.apps._models.app_permission import (
     AppPermission,
     AppPermissionParam,
@@ -114,7 +111,7 @@ class App(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the space this app belongs to.
+    [Beta] Name of the space this app belongs to.
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestination] = field(
@@ -213,7 +210,7 @@ class AppDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the space this app belongs to.
+    [Beta] Name of the space this app belongs to.
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestinationParam]

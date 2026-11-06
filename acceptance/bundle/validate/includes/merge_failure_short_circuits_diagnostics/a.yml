@@ -1,0 +1,3 @@
+variables:
+  x:
+    default: incompatible-scalar

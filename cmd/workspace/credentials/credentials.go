@@ -567,15 +567,11 @@ func newValidateCredential() *cobra.Command {
 
   Validates a credential.
 
-  For service credentials (purpose is **SERVICE**), either the
-  __credential_name__ or the cloud-specific credential must be provided.
-
   For storage credentials (purpose is **STORAGE**), at least one of
   __external_location_name__ and __url__ need to be provided. If only one of
   them is provided, it will be used for validation. And if both are provided,
   the __url__ will be used for validation, and __external_location_name__ will
-  be ignored when checking overlapping urls. Either the __credential_name__ or
-  the cloud-specific credential must be provided.
+  be ignored when checking overlapping urls.
 
   The caller must be a metastore admin or the credential owner or have the
   required permission on the metastore and the credential (e.g.,

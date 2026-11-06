@@ -18,8 +18,7 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigCustomProviderConfig:
     """
-    Custom OpenAI-compatible provider configuration with bearer-token
-    authentication.
+    Custom OpenAI-compatible provider configuration.
     """
 
     direct: VariableOrOptional[ModelProviderServiceConfigCustomProviderDirectConfig] = (

@@ -25,7 +25,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -70,9 +70,100 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.five": {
+   "__id__": "[FIVE_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "five",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.four": {
+   "__id__": "[FOUR_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "four",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.one": {
+   "__id__": "[ONE_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "one",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.three": {
+   "__id__": "[THREE_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "three",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.two": {
+   "__id__": "[TWO_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "two",
+    "queue": {
+     "enabled": true
+    }
+   }
+  }
+ }
 }
 
 === Redeploy with no changes: nothing is applied, so no version is created at all - the deployment's version tracks state changes, like serial
@@ -91,7 +182,7 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -136,7 +227,98 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.five": {
+   "__id__": "[FIVE_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "five",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.four": {
+   "__id__": "[FOUR_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "four",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.one": {
+   "__id__": "[ONE_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "one",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.three": {
+   "__id__": "[THREE_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "three",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.two": {
+   "__id__": "[TWO_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "two",
+    "queue": {
+     "enabled": true
+    }
+   }
+  }
+ }
 }

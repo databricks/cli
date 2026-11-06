@@ -43,7 +43,9 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 	// No get-status first: a missing file is the common first-deploy case and export's 404
 	// reports it in one round trip. A directory at a state path is not a state file; its
 	// export fails to parse as one.
-	r, err := s.workspaceClient.Workspace.Download(ctx, absPath)
+	r, err := retry.With(ctx, retry.IsTransientRead, func() (io.ReadCloser, error) {
+		return s.workspaceClient.Workspace.Download(ctx, absPath)
+	})
 	if errors.Is(err, apierr.ErrNotFound) {
 		return nil, fmt.Errorf("file does not exist: %s: %w", absPath, fs.ErrNotExist)
 	}

@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"fmt"
+	"uuid"
 
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 

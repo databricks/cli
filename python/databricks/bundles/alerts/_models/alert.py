@@ -63,19 +63,19 @@ class Alert(Resource):
 
     custom_description: VariableOrOptional[str] = None
     """
-    Custom description for the alert. support mustache template.
+    Custom description for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_summary: VariableOrOptional[str] = None
     """
-    Custom summary for the alert. support mustache template.
+    Custom summary for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_template_format: VariableOrOptional[CustomTemplateFormat] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
@@ -97,7 +97,7 @@ class Alert(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
+    [Beta] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
     
     Reference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.
     Each parameter consists of a name, a value, and optionally a type. To represent a NULL
@@ -168,19 +168,19 @@ class AlertDict(TypedDict, total=False):
 
     custom_description: VariableOrOptional[str]
     """
-    Custom description for the alert. support mustache template.
+    Custom description for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_summary: VariableOrOptional[str]
     """
-    Custom summary for the alert. support mustache template.
+    Custom summary for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_template_format: VariableOrOptional[CustomTemplateFormatParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
@@ -202,7 +202,7 @@ class AlertDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
+    [Beta] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
     
     Reference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.
     Each parameter consists of a name, a value, and optionally a type. To represent a NULL

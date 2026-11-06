@@ -1,0 +1,1 @@
+Badness = "A valid config fails with an internal conversion error: the nested timestamp cannot be converted back to the dynamic configuration."

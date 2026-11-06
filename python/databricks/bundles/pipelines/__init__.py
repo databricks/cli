@@ -53,6 +53,9 @@ __all__ = [
     "DbfsStorageInfo",
     "DbfsStorageInfoDict",
     "DbfsStorageInfoParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "EbsVolumeType",
     "EbsVolumeTypeParam",
     "EventLogSpec",
@@ -165,6 +168,11 @@ __all__ = [
     "Notifications",
     "NotificationsDict",
     "NotificationsParam",
+    "OneDriveOptions",
+    "OneDriveOptionsDict",
+    "OneDriveOptionsOneDriveEntityType",
+    "OneDriveOptionsOneDriveEntityTypeParam",
+    "OneDriveOptionsParam",
     "OperationTimeWindow",
     "OperationTimeWindowDict",
     "OperationTimeWindowParam",
@@ -374,6 +382,11 @@ from databricks.bundles.pipelines._models.dbfs_storage_info import (
     DbfsStorageInfoDict,
     DbfsStorageInfoParam,
 )
+from databricks.bundles.pipelines._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
+)
 from databricks.bundles.pipelines._models.ebs_volume_type import (
     EbsVolumeType,
     EbsVolumeTypeParam,
@@ -565,6 +578,15 @@ from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsDict,
     NotificationsParam,
+)
+from databricks.bundles.pipelines._models.one_drive_options import (
+    OneDriveOptions,
+    OneDriveOptionsDict,
+    OneDriveOptionsParam,
+)
+from databricks.bundles.pipelines._models.one_drive_options_one_drive_entity_type import (
+    OneDriveOptionsOneDriveEntityType,
+    OneDriveOptionsOneDriveEntityTypeParam,
 )
 from databricks.bundles.pipelines._models.operation_time_window import (
     OperationTimeWindow,

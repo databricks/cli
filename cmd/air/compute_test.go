@@ -17,6 +17,7 @@ func TestParseGPUType(t *testing.T) {
 		{"GPU_8xH100", gpuType8xH100},
 		{"GPU_1xH100", gpuType1xH100},
 		{"GPU_8xB300", gpuType8xB300},
+		{"GPU_1xRTX6000", gpuType1xRTX6000},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
@@ -30,7 +31,7 @@ func TestParseGPUType(t *testing.T) {
 func TestParseGPUTypeInvalid(t *testing.T) {
 	// Wrong casing is rejected rather than fixed up; legacy types (h100_80gb, a10)
 	// can no longer be submitted; unknown types are rejected.
-	for _, in := range []string{"gpu_1xa10", "GPU_1XA10", "gpu_8xb300", "GPU_2xH100", "h100_80gb", "a10", "b200", ""} {
+	for _, in := range []string{"gpu_1xa10", "GPU_1XA10", "gpu_8xb300", "gpu_1xrtx6000", "GPU_1XRTX6000", "RTX6000", "GPU_8xRTX6000", "GPU_2xH100", "h100_80gb", "a10", "b200", ""} {
 		t.Run(in, func(t *testing.T) {
 			_, err := parseGPUType(in)
 			require.Error(t, err)
@@ -48,6 +49,7 @@ func TestGPUsPerNode(t *testing.T) {
 		{gpuType1xH100, 1},
 		{gpuType8xH100, 8},
 		{gpuType8xB300, 8},
+		{gpuType1xRTX6000, 1},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.in), func(t *testing.T) {
@@ -64,13 +66,13 @@ func TestGPUsPerNode(t *testing.T) {
 func TestParsePriorityClass(t *testing.T) {
 	// Case-insensitive: mixed/lower case and surrounding whitespace normalize to
 	// the enum's contract value.
-	for _, in := range []string{"CRITICAL", "critical", "Critical", "  critical  "} {
+	for _, in := range []string{"NORMAL", "normal", "Normal", "  normal  "} {
 		got, err := parsePriorityClass(in)
 		require.NoError(t, err)
-		assert.Equal(t, priorityClassCritical, got)
+		assert.Equal(t, priorityClassNormal, got)
 	}
 
-	for _, in := range []string{"urgent", "", "high"} {
+	for _, in := range []string{"urgent", "", "high", "CRITICAL"} {
 		_, err := parsePriorityClass(in)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "valid values are")
@@ -80,9 +82,9 @@ func TestParsePriorityClass(t *testing.T) {
 func TestComputeConfigValidateNormalizesPriorityClass(t *testing.T) {
 	// A lower-case value is upper-cased in place so the submitted payload carries
 	// the enum's contract value.
-	cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("critical")}
+	cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("best_effort")}
 	require.NoError(t, cfg.validate())
-	assert.Equal(t, "CRITICAL", *cfg.PriorityClass)
+	assert.Equal(t, "BEST_EFFORT", *cfg.PriorityClass)
 }
 
 func TestComputeConfigValidate(t *testing.T) {
@@ -101,6 +103,9 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"legacy type rejected", computeConfig{NumAccelerators: 8, AcceleratorType: "h100_80gb"}, "accelerator_type"},
 		{"non-positive count", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_1xH100"}, "must be positive"},
 		{"count not a multiple", computeConfig{NumAccelerators: 4, AcceleratorType: "GPU_8xH100"}, "multiple of 8"},
+		{"RTX6000 single node", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xRTX6000"}, ""},
+		{"RTX6000 multiple nodes", computeConfig{NumAccelerators: 3, AcceleratorType: "GPU_1xRTX6000"}, ""},
+		{"RTX6000 zero", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_1xRTX6000"}, "must be positive"},
 		{"B300 single node", computeConfig{NumAccelerators: 8, AcceleratorType: "GPU_8xB300"}, ""},
 		{"B300 two nodes", computeConfig{NumAccelerators: 16, AcceleratorType: "GPU_8xB300"}, ""},
 		{"B300 three nodes", computeConfig{NumAccelerators: 24, AcceleratorType: "GPU_8xB300"}, ""},
@@ -109,7 +114,7 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"B300 count twelve", computeConfig{NumAccelerators: 12, AcceleratorType: "GPU_8xB300"}, "multiple of 8"},
 		{"B300 zero", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_8xB300"}, "must be positive"},
 		{"B300 negative", computeConfig{NumAccelerators: -8, AcceleratorType: "GPU_8xB300"}, "must be positive"},
-		{"priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("critical")}, ""},
+		{"priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("normal")}, ""},
 		{"priority class requires reservation", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PriorityClass: new("NORMAL")}, "requires compute.pool_id"},
 		{"invalid priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("urgent")}, "invalid priority_class"},
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/fs"
 	"net/http"
 	"strings"
 	"testing"
@@ -80,4 +81,88 @@ func TestFilerDoesNotRetryWithoutOverwrite(t *testing.T) {
 	err := Filer(f).Write(testContext(t), "a", strings.NewReader("x"))
 	require.Error(t, err)
 	assert.Len(t, f.bodies, 1)
+}
+
+// readFiler fails the first `failures` calls of every read-side method with err.
+type readFiler struct {
+	filer.Filer
+	failures int
+	err      error
+	calls    int
+}
+
+func (f *readFiler) next() error {
+	f.calls++
+	if f.calls <= f.failures {
+		return f.err
+	}
+	return nil
+}
+
+func (f *readFiler) Read(ctx context.Context, path string) (io.ReadCloser, error) {
+	return io.NopCloser(strings.NewReader("x")), f.next()
+}
+
+func (f *readFiler) ReadDir(ctx context.Context, path string) ([]fs.DirEntry, error) {
+	return nil, f.next()
+}
+
+func (f *readFiler) Stat(ctx context.Context, path string) (fs.FileInfo, error) {
+	return nil, f.next()
+}
+
+func (f *readFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
+	return f.next()
+}
+
+func TestFilerRetriesReads(t *testing.T) {
+	ctx := testContext(t)
+	calls := map[string]func(filer.Filer) error{
+		"Read":    func(f filer.Filer) error { _, err := f.Read(ctx, "a"); return err },
+		"ReadDir": func(f filer.Filer) error { _, err := f.ReadDir(ctx, "a"); return err },
+		"Stat":    func(f filer.Filer) error { _, err := f.Stat(ctx, "a"); return err },
+	}
+	for name, call := range calls {
+		t.Run(name, func(t *testing.T) {
+			f := &readFiler{failures: 1, err: errTransient}
+			require.NoError(t, call(Filer(f)))
+			assert.Equal(t, 2, f.calls)
+		})
+	}
+}
+
+func TestFilerDoesNotRetryNotExist(t *testing.T) {
+	f := &readFiler{failures: 1, err: fs.ErrNotExist}
+	_, err := Filer(f).Stat(testContext(t), "a")
+	require.ErrorIs(t, err, fs.ErrNotExist)
+	assert.Equal(t, 1, f.calls)
+}
+
+func TestFilerDeleteRetries(t *testing.T) {
+	f := &readFiler{failures: 1, err: errTransient}
+	require.NoError(t, Filer(f).Delete(testContext(t), "a"))
+	assert.Equal(t, 2, f.calls)
+}
+
+func TestFilerDeleteMissingAfterRetryIsSuccess(t *testing.T) {
+	// The first attempt hits a transient error, the retry finds the file gone.
+	f := &sequenceFiler{errs: []error{errTransient, fs.ErrNotExist}}
+	require.NoError(t, Filer(f).Delete(testContext(t), "a"))
+}
+
+func TestFilerDeleteMissingOnFirstAttemptIsError(t *testing.T) {
+	f := &sequenceFiler{errs: []error{fs.ErrNotExist}}
+	require.ErrorIs(t, Filer(f).Delete(testContext(t), "a"), fs.ErrNotExist)
+}
+
+// sequenceFiler returns errs from successive Delete calls.
+type sequenceFiler struct {
+	filer.Filer
+	errs []error
+}
+
+func (f *sequenceFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
+	err := f.errs[0]
+	f.errs = f.errs[1:]
+	return err
 }

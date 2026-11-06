@@ -11,15 +11,16 @@ import (
 type gpuType string
 
 const (
-	gpuType1xA10  gpuType = "GPU_1xA10"
-	gpuType8xH100 gpuType = "GPU_8xH100"
-	gpuType1xH100 gpuType = "GPU_1xH100"
-	gpuType8xB300 gpuType = "GPU_8xB300"
+	gpuType1xA10     gpuType = "GPU_1xA10"
+	gpuType8xH100    gpuType = "GPU_8xH100"
+	gpuType1xH100    gpuType = "GPU_1xH100"
+	gpuType8xB300    gpuType = "GPU_8xB300"
+	gpuType1xRTX6000 gpuType = "GPU_1xRTX6000"
 )
 
 // gpuTypes lists every accelerator type understood by this CLI.
 // Workspace availability is enforced by the server.
-var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300}
+var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300, gpuType1xRTX6000}
 
 func validGPUTypesHint() string {
 	names := make([]string, len(gpuTypes))
@@ -33,7 +34,7 @@ func validGPUTypesHint() string {
 // exact: the server's lookup is case-sensitive.
 func parseGPUType(value string) (gpuType, error) {
 	switch gpuType(value) {
-	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300:
+	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300, gpuType1xRTX6000:
 		return gpuType(value), nil
 	}
 	return "", fmt.Errorf("invalid GPU type %q: %s", value, validGPUTypesHint())
@@ -47,12 +48,11 @@ type priorityClass string
 const (
 	priorityClassBestEffort priorityClass = "BEST_EFFORT"
 	priorityClassNormal     priorityClass = "NORMAL"
-	priorityClassCritical   priorityClass = "CRITICAL"
 )
 
 // priorityClasses lists every valid value, low to high. Used for validation
 // error messages.
-var priorityClasses = []priorityClass{priorityClassBestEffort, priorityClassNormal, priorityClassCritical}
+var priorityClasses = []priorityClass{priorityClassBestEffort, priorityClassNormal}
 
 func validPriorityClassesHint() string {
 	names := make([]string, len(priorityClasses))
@@ -64,10 +64,10 @@ func validPriorityClassesHint() string {
 
 // parsePriorityClass normalizes a YAML priority_class to the enum's contract
 // value. Unlike accelerator_type, the match is case-insensitive: the input is
-// trimmed and upper-cased, so `critical` and `CRITICAL` both resolve.
+// trimmed and upper-cased, so `normal` and `NORMAL` both resolve.
 func parsePriorityClass(value string) (priorityClass, error) {
 	switch p := priorityClass(strings.ToUpper(strings.TrimSpace(value))); p {
-	case priorityClassBestEffort, priorityClassNormal, priorityClassCritical:
+	case priorityClassBestEffort, priorityClassNormal:
 		return p, nil
 	}
 	return "", fmt.Errorf("invalid priority_class %q: %s", value, validPriorityClassesHint())
@@ -78,7 +78,7 @@ func parsePriorityClass(value string) (priorityClass, error) {
 // round multiple of this since accelerators are allocated in whole nodes.
 func gpusPerNode(g gpuType) (int, error) {
 	switch g {
-	case gpuType1xA10, gpuType1xH100:
+	case gpuType1xA10, gpuType1xH100, gpuType1xRTX6000:
 		return 1, nil
 	case gpuType8xH100, gpuType8xB300:
 		return 8, nil
@@ -94,7 +94,7 @@ type computeConfig struct {
 	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
 	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
 	PoolID          *string `yaml:"pool_id" help:"GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air pools list'."`
-	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires pool_id."`
+	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires pool_id."`
 }
 
 // validate checks the compute block against the backend's constraints.

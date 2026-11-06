@@ -6,8 +6,9 @@ Usage: fault.py [--after-handler] [--body-contains SUBSTR] PATTERN STATUS_CODE O
   --after-handler  run the handler first; keep its effect and replace only the response
   --body-contains  only fire when the request body contains SUBSTR, e.g. to target one
                    file's /workspace/import upload (all uploads share that path)
-  PATTERN     HTTP method and path, supports trailing * wildcard,
-              e.g. "PUT /api/2.0/permissions/pipelines/*"
+  PATTERN     HTTP method and path; * matches within one path segment, ** spans /,
+              e.g. "POST /api/2.0/bundle/deployments/*/versions/*/complete"
+              or "PATCH /api/2.0/bundle/**"
   STATUS_CODE HTTP status code to return, e.g. 504
   OFFSET      number of requests to let through before fault starts
   TIMES       number of times to return the fault response

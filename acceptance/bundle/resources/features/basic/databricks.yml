@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle
+
+resources:
+  features:
+    feature1:
+      full_name: main.myschema.myfeature
+      description: DESCRIPTION1
+      source:
+        delta_table_source:
+          full_name: main.myschema.mysource
+      function:
+        aggregation_function:
+          count_function:
+            input: amount
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: account_id
+      timeseries_column:
+        name: event_ts

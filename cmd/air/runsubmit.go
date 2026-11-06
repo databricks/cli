@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -20,7 +21,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -275,7 +275,7 @@ func effectiveIdempotencyToken(flag string, cfg *runConfig) string {
 		token = *cfg.IdempotencyToken
 	}
 	if token == "" {
-		token = uuid.NewString()
+		token = uuid.New().String()
 	}
 	return token
 }

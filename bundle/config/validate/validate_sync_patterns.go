@@ -46,7 +46,9 @@ func checkPatterns(ctx context.Context, patterns []string, path *structpath.Path
 		// it means: do not include these files into result set
 		p := strings.TrimPrefix(pattern, "!")
 		errs.Go(func() error {
-			fs, err := fileset.NewGlobSet(b.BundleRoot, []string{p})
+			// SyncInferRoot rewrites patterns to be relative to the sync root,
+			// which can be an ancestor of the bundle root.
+			fs, err := fileset.NewGlobSet(b.SyncRoot, []string{p})
 			if err != nil {
 				return err
 			}

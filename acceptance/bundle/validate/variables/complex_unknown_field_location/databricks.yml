@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+variables:
+  job_config:
+    type: complex
+    default:
+      name: test
+      misspelled_field: value
+
+resources:
+  jobs:
+    j: ${var.job_config}

@@ -71,9 +71,10 @@ class ModelProviderServiceConfig:
 
     allow_all_targets: VariableOrOptional[bool] = None
     """
-    When true, accepts any model exposed by the upstream provider; `targets`
-    is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable. Defaults to false.
+    When true, allows models from the provider's built-in model catalog in
+    addition to explicit `targets`. When false, only models listed in `targets`
+    are routable. Defaults to false. CUSTOM providers have no built-in model
+    catalog and must leave this false and list their models in `targets`.
     """
 
     amazon_bedrock: VariableOrOptional[
@@ -102,15 +103,12 @@ class ModelProviderServiceConfig:
         ModelProviderServiceConfigAmazonBedrockProviderConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Amazon Bedrock provider configuration.
+    Amazon Bedrock provider configuration.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfig] = None
     """
-    Custom OpenAI-compatible provider configuration with bearer-token
-    authentication.
+    Custom OpenAI-compatible provider configuration.
     """
 
     forward_headers: VariableOrOptional[bool] = None
@@ -134,7 +132,9 @@ class ModelProviderServiceConfig:
     provider-native API types. Defaults to false. When true, these paths are
     forwarded unchanged to the upstream provider. When false, only
     recognized API paths are served. Enabling this broadens the upstream API
-    surface exposed through the provider service.
+    surface exposed through the provider service. AI Gateway cannot evaluate
+    Service Policies on opaque unmanaged requests, so unmanaged requests are
+    rejected whenever Service Policies are attached to this securable.
     """
 
     gemini_enterprise: VariableOrOptional[
@@ -165,9 +165,7 @@ class ModelProviderServiceConfig:
 
     pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Pricing configuration for this provider service. An explicitly empty
+    Pricing configuration for this provider service. An explicitly empty
     configuration is retained on Create and Update and applies no adjustment.
     """
 
@@ -194,8 +192,9 @@ class ModelProviderServiceConfig:
     entry must include at least one `native_api_types` value. When
     `allow_all_targets` is false, at least one entry is required and model
     service destinations can reference only listed models. When
-    `allow_all_targets` is true, any upstream model is routable; entries in
-    this list provide API-type metadata without restricting other models.
+    `allow_all_targets` is true, models from the provider's built-in model
+    catalog are also routable. CUSTOM providers must explicitly list their
+    models here and cannot enable `allow_all_targets`.
     """
 
     @classmethod
@@ -211,9 +210,10 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
 
     allow_all_targets: VariableOrOptional[bool]
     """
-    When true, accepts any model exposed by the upstream provider; `targets`
-    is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable. Defaults to false.
+    When true, allows models from the provider's built-in model catalog in
+    addition to explicit `targets`. When false, only models listed in `targets`
+    are routable. Defaults to false. CUSTOM providers have no built-in model
+    catalog and must leave this false and list their models in `targets`.
     """
 
     amazon_bedrock: VariableOrOptional[
@@ -242,15 +242,12 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
         ModelProviderServiceConfigAmazonBedrockProviderConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Amazon Bedrock provider configuration.
+    Amazon Bedrock provider configuration.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfigParam]
     """
-    Custom OpenAI-compatible provider configuration with bearer-token
-    authentication.
+    Custom OpenAI-compatible provider configuration.
     """
 
     forward_headers: VariableOrOptional[bool]
@@ -274,7 +271,9 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
     provider-native API types. Defaults to false. When true, these paths are
     forwarded unchanged to the upstream provider. When false, only
     recognized API paths are served. Enabling this broadens the upstream API
-    surface exposed through the provider service.
+    surface exposed through the provider service. AI Gateway cannot evaluate
+    Service Policies on opaque unmanaged requests, so unmanaged requests are
+    rejected whenever Service Policies are attached to this securable.
     """
 
     gemini_enterprise: VariableOrOptional[
@@ -305,9 +304,7 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
 
     pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Pricing configuration for this provider service. An explicitly empty
+    Pricing configuration for this provider service. An explicitly empty
     configuration is retained on Create and Update and applies no adjustment.
     """
 
@@ -332,8 +329,9 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
     entry must include at least one `native_api_types` value. When
     `allow_all_targets` is false, at least one entry is required and model
     service destinations can reference only listed models. When
-    `allow_all_targets` is true, any upstream model is routable; entries in
-    this list provide API-type metadata without restricting other models.
+    `allow_all_targets` is true, models from the provider's built-in model
+    catalog are also routable. CUSTOM providers must explicitly list their
+    models here and cannot enable `allow_all_targets`.
     """
 
 

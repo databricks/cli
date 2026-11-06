@@ -1,0 +1,16 @@
+
+=== Device code login is disabled by default
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Error: --use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it
+
+=== Inputs device code login cannot honor are rejected
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --resource https://resource.test
+Error: --use-device-code cannot be combined with --resource
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --skip-workspace
+Error: --use-device-code cannot be combined with --skip-workspace
+
+>>> musterr [CLI] auth login --profile scoped --use-device-code
+Error: --use-device-code cannot be used with profile scoped because its login is scoped to resources. Log in without --use-device-code

@@ -25,8 +25,7 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/acceptance/internal/selection"
@@ -152,6 +151,10 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	if RegrMain || RegrRelease {
+		runRegression(t)
+		return
+	}
 	testAccept(t, InprocessMode, nil, false)
 }
 
@@ -272,6 +275,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		"KIRO",
 		"OPENCLAW_SHELL",
 		"OPENCODE",
+		"PI_CODING_AGENT",
 		"VSCODE_AGENT",
 		"WINDSURF_AGENT",
 	} {
@@ -620,6 +624,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				extraVars = append(extraVars, "CONFIG_Cloud=true")
 			}
 
+			if _, ok := config.EnvMatrix["DATABRICKS_BUNDLE_ENGINE"]; ok {
+				t.Fatalf("%s: EnvMatrix.DATABRICKS_BUNDLE_ENGINE is not needed, the direct engine is the only engine; remove it from test.toml", dir)
+			}
+
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
 				expanded = internal.SubsetExpanded(expanded, dir)
@@ -633,24 +641,27 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				}
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
+				matched := false
 				for ind, envset := range expanded {
+					// Under selection.EnvVar, an invariant dir re-enabled by a
+					// specific config change runs only its matching variants.
+					if selectChanged && !selection.MatchesFilters(envset, changedTests[dir]) {
+						continue
+					}
+					matched = true
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if runParallel {
 							t.Parallel()
-						}
-						// Under selection.EnvVar, an invariant dir re-enabled by a
-						// specific config change runs only its matching variants.
-						if selectChanged {
-							if variantFilters := changedTests[dir]; variantFilters != nil {
-								checkEnvFilters(t, envset, variantFilters)
-							}
 						}
 						if reason := subset.skipReason(dir, envset); reason != "" {
 							t.Skip(reason)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
+				}
+				if selectChanged && !matched {
+					t.Skip("No environment matrix variants match changed-test selection")
 				}
 			}
 		})
@@ -1065,13 +1076,14 @@ func runTest(t *testing.T,
 
 	pathFilter := preparePathFilter(config, customEnv)
 	sortLines := compileSortLines(t, config)
+	suppressLines := compileSuppressLines(t, config)
 
 	// output.txt lives in outputDir, not tmpDir, so the bundle sync never uploads it;
 	// compare it from there. Every run produces it, so compare it explicitly rather
 	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
 	// stays in outputDir and is never compared: tests assert on recorded requests
 	// through print_requests.py, not by committing the raw recording.
-	doComparison(t, repls, sortLines, dir, outputDir, "output.txt", &printedRepls)
+	doComparison(t, repls, sortLines, suppressLines, dir, outputDir, "output.txt", &printedRepls)
 
 	// Compare expected outputs
 	for relPath := range outputs {
@@ -1083,7 +1095,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, sortLines, suppressLines, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1115,7 +1127,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, sortLines, suppressLines, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -1232,7 +1244,25 @@ func compileSortLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp
 	return result
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
+// compileSuppressLines compiles the non-empty SuppressLines patterns from the test config.
+// Patterns are returned in name order so the result does not depend on map iteration.
+func compileSuppressLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 0, len(config.SuppressLines))
+	for _, name := range slices.Sorted(maps.Keys(config.SuppressLines)) {
+		pattern := config.SuppressLines[name]
+		if pattern == "" {
+			continue
+		}
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			t.Fatalf("Invalid SuppressLines pattern %s = %#v: %s", name, pattern, err)
+		}
+		result = append(result, re)
+	}
+	return result
+}
+
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines, suppressLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1249,6 +1279,17 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines []
 	// The reference value is stored after applying replacements.
 	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
+	}
+
+	// Move lines the test does not pin (e.g. retry warnings) from the compared output to the log.
+	// Applied to the reference too, so a golden that still contains them compares the same way.
+	for _, re := range suppressLines {
+		var removed []string
+		valueNew, removed = testdiff.RemoveLines(valueNew, re)
+		valueRef, _ = testdiff.RemoveLines(valueRef, re)
+		if len(removed) > 0 {
+			t.Logf("Suppressed from %s:\n%s", relPath, strings.Join(removed, "\n"))
+		}
 	}
 
 	// Canonicalize line runs whose order the command does not guarantee. Applied to
@@ -1504,7 +1545,13 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 	}
 
 	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, nil)
+	require.NoError(t, err)
+	// Unauthenticated requests from shared CI runner IPs hit the GitHub API rate limit.
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to fetch %s: %s", url, resp.Status)

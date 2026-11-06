@@ -3,7 +3,7 @@
 Successfully bound dashboard with an id '[DASHBOARD_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
->>> print_state.py
+>>> print_state.py --no-dms
 [ETAG]
 
 >>> [CLI] bundle plan

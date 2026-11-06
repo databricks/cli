@@ -2,37 +2,45 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Setup (LOG.setup): reconstruct full version 1 without a history marker, then deploy version 2"
 {
-    $CLI bundle deploy
+    DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
     DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py > .databricks/resources.v1.json
     DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true replace_ids.py
     update_file.py databricks.yml 'name: foo' 'name: updated'
-    $CLI bundle deploy
+    DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
     cp .databricks/bundle/default/resources.json .databricks/resources.v2.json
     deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-stale-local-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | jq -r '.object_id')
     add_repl "$deployment_id" DEPLOYMENT_ID
 } &> LOG.setup
+# The environment flag records best-effort history; YAML selects the same mode.
+update_file.py databricks.yml 'bundle:' 'experimental:
+  deployment_history: true
+
+bundle:'
 trace jq -c '{serial, features}' .databricks/resources.v1.json
 trace jq -c '{serial, features}' .databricks/resources.v2.json
 
-title "Local recorded serial 3 ahead of DMS version 2 is rejected"
+title "File serial 3 ahead of DMS version 2 is allowed"
 trace update_file.py .databricks/bundle/default/resources.json '"serial": 2' '"serial": 3'
-trace musterr $CLI bundle deploy
+trace $CLI bundle plan
 
 rm -f "$OUT_REQUESTS"
 
-title "1. Config false and env false: newer remote state replaces the local copy and reads DMS"
+title "1. Config false and env false: newer remote file state replaces the local copy"
 update_file.py databricks.yml 'deployment_history: true' 'deployment_history: false'
 trace cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle summary --force-pull -o json | jq -c '{job_id: .resources.jobs.foo.id}'
 trace cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
 trace print_requests.py --dms //resources --get --oneline
 
-title "2. Config removed and env false: restore the same snapshot, then read remote DMS state"
+title "2. Config removed and env false: restore the same snapshot, then read the remote file state"
 update_file.py databricks.yml $'experimental:\n  deployment_history: false\n\n' ''
 trace cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle summary --force-pull -o json | jq -c '{job_id: .resources.jobs.foo.id}'
 trace cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
 trace print_requests.py --dms //resources --get --oneline
 
-DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve &> LOG.cleanup
+title "Destroy follows newer local state even when configuration enables history"
+jq 'del(.features) | .serial = 3' .databricks/resources.v2.json > .databricks/bundle/default/resources.json
+trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle --oneline
 rm -f "$OUT_REQUESTS"

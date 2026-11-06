@@ -25,7 +25,12 @@ func New() *cobra.Command {
 		Short: `*Public Preview* Database Instances provide access to a database via REST API or direct SQL.`,
 		Long: `This command is in Public Preview and may change without notice.
 
-Database Instances provide access to a database via REST API or direct SQL.`,
+Database Instances provide access to a database via REST API or direct SQL.
+
+  For new workloads, Databricks recommends the [Postgres API], which supports
+  the latest Lakebase features.
+
+  [Postgres API]: https://docs.databricks.com/api/postgres/v1/postgres`,
 		GroupID: "database",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -93,6 +98,13 @@ func newCreateDatabaseCatalog() *cobra.Command {
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Create a Database Catalog.
+
+  Create a Database Catalog.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Create
+  a catalog].
+
+  [Create a catalog]: https://docs.databricks.com/api/postgres/v1/create-catalog
 
   Arguments:
     NAME: The name of the catalog in UC.
@@ -204,6 +216,13 @@ func newCreateDatabaseInstance() *cobra.Command {
 
 Create a Database Instance.
 
+  Create a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Create
+  a project].
+
+  [Create a project]: https://docs.databricks.com/api/postgres/v1/create-project
+
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.`
 
@@ -304,6 +323,13 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.Use = "create-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Create a role for a Database Instance.`
 	cmd.Long = `Create a role for a Database Instance.
+
+  Create a role for a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Create
+  a role].
+
+  [Create a role]: https://docs.databricks.com/api/postgres/v1/create-role
 
   Arguments:
     INSTANCE_NAME:
@@ -491,6 +517,13 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 
 Create a Synced Database Table.
 
+  Create a Synced Database Table.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Create
+  a synced table].
+
+  [Create a synced table]: https://docs.databricks.com/api/postgres/v1/create-synced-table
+
   Arguments:
     NAME: Full three-part (catalog, schema, table) name of the table.`
 
@@ -569,7 +602,14 @@ func newDeleteDatabaseCatalog() *cobra.Command {
 	cmd.Short = `*Public Preview* Delete a Database Catalog.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Delete a Database Catalog.`
+Delete a Database Catalog.
+
+  Delete a Database Catalog.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Delete
+  a catalog].
+
+  [Delete a catalog]: https://docs.databricks.com/api/postgres/v1/delete-catalog`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -628,6 +668,13 @@ func newDeleteDatabaseInstance() *cobra.Command {
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Delete a Database Instance.
+
+  Delete a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Delete
+  a project].
+
+  [Delete a project]: https://docs.databricks.com/api/postgres/v1/delete-project
 
   Arguments:
     NAME: Name of the instance to delete.`
@@ -688,7 +735,12 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 	cmd.Short = `Delete a role for a Database Instance.`
 	cmd.Long = `Delete a role for a Database Instance.
 
-  Deletes a role for a Database Instance.`
+  Deletes a role for a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Delete
+  a role].
+
+  [Delete a role]: https://docs.databricks.com/api/postgres/v1/delete-role`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -804,7 +856,14 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 	cmd.Short = `*Public Preview* Delete a Synced Database Table.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Delete a Synced Database Table.`
+Delete a Synced Database Table.
+
+  Delete a Synced Database Table.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Delete
+  a synced table].
+
+  [Delete a synced table]: https://docs.databricks.com/api/postgres/v1/delete-synced-table`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -922,7 +981,14 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	cmd.Short = `*Public Preview* Generates a credential that can be used to access database instances.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Generates a credential that can be used to access database instances.`
+Generates a credential that can be used to access database instances.
+
+  Generates a credential that can be used to access database instances.
+
+  For new workloads, Databricks recommends the Postgres API equivalent:
+  [Generate a database credential].
+
+  [Generate a database credential]: https://docs.databricks.com/api/postgres/v1/generate-database-credential`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -989,7 +1055,14 @@ func newGetDatabaseCatalog() *cobra.Command {
 	cmd.Short = `*Public Preview* Get a Database Catalog.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Get a Database Catalog.`
+Get a Database Catalog.
+
+  Get a Database Catalog.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Get a
+  catalog].
+
+  [Get a catalog]: https://docs.databricks.com/api/postgres/v1/get-catalog`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1046,6 +1119,13 @@ func newGetDatabaseInstance() *cobra.Command {
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Get a Database Instance.
+
+  Get a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Get a
+  project].
+
+  [Get a project]: https://docs.databricks.com/api/postgres/v1/get-project
 
   Arguments:
     NAME: Name of the cluster to get.`
@@ -1104,7 +1184,12 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 	cmd.Short = `Get a role for a Database Instance.`
 	cmd.Long = `Get a role for a Database Instance.
 
-  Gets a role for a Database Instance.`
+  Gets a role for a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Get a
+  role].
+
+  [Get a role]: https://docs.databricks.com/api/postgres/v1/get-role`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -1220,7 +1305,14 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 	cmd.Short = `*Public Preview* Get a Synced Database Table.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Get a Synced Database Table.`
+Get a Synced Database Table.
+
+  Get a Synced Database Table.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [Get a
+  synced table].
+
+  [Get a synced table]: https://docs.databricks.com/api/postgres/v1/get-synced-table`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1367,11 +1459,12 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd.Short = `List roles for a Database Instance.`
 	cmd.Long = `List roles for a Database Instance.
 
-  START OF PG ROLE APIs Section These APIs are marked a PUBLIC with stage <
-  PUBLIC_PREVIEW. With more recent Lakebase V2 plans, we don't plan to ever
-  advance these to PUBLIC_PREVIEW. These APIs will remain effectively
-  undocumented/UI-only and we'll aim for a new public roles API as part of V2
-  PuPr.`
+  List roles for a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [List
+  roles].
+
+  [List roles]: https://docs.databricks.com/api/postgres/v1/list-roles`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -1446,7 +1539,14 @@ func newListDatabaseInstances() *cobra.Command {
 	cmd.Short = `*Public Preview* List Database Instances.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-List Database Instances.`
+List Database Instances.
+
+  List Database Instances.
+
+  For new workloads, Databricks recommends the Postgres API equivalent: [List
+  projects].
+
+  [List projects]: https://docs.databricks.com/api/postgres/v1/list-projects`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1695,6 +1795,14 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Update a Database Instance.
+
+  Update a Database Instance.
+
+  For new workloads, Databricks recommends the Postgres API equivalents: [Update
+  a project] and [Update an endpoint].
+
+  [Update a project]: https://docs.databricks.com/api/postgres/v1/update-project
+  [Update an endpoint]: https://docs.databricks.com/api/postgres/v1/update-endpoint
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.

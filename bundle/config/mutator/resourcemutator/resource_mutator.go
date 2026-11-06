@@ -149,6 +149,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Expands glob patterns in pipeline library paths to include all matching files
 		ExpandPipelineGlobPaths(),
 
+		// Reads (typed): resources.materialization_sets.*.materialized_features
+		// Rejects a set listing two materialized features with the same member key
+		NormalizeMaterializationSetMaterializedFeatureMembers(),
+
 		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
 		// Updates (dynamic): resources.jobs.*.job_clusters (merges job clusters with the same job_cluster_key)
 		MergeJobClusters(),
