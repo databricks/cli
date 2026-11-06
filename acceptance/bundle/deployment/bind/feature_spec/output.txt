@@ -1,0 +1,53 @@
+
+>>> [CLI] schemas create fspec_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.fspec_[UNIQUE_NAME]"
+}
+
+>>> create_feature_spec_fixtures.py main.fspec_[UNIQUE_NAME]
+
+=== Create the feature spec outside the bundle
+>>> [CLI] api post /api/2.0/feature-engineering/feature-specs --json {
+  "name": "main.fspec_[UNIQUE_NAME].boundspec",
+  "features": [{"feature_lookup": {"table": "main.fspec_[UNIQUE_NAME].user_features", "lookup_keys": ["user_id"], "feature_names": ["age"]}}]
+}
+{
+  "name": "main.fspec_[UNIQUE_NAME].boundspec"
+}
+
+>>> [CLI] bundle deployment bind spec1 main.fspec_[UNIQUE_NAME].boundspec --auto-approve
+Successfully bound feature_spec with an id 'main.fspec_[UNIQUE_NAME].boundspec'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bind-feature-spec-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-feature-spec-[UNIQUE_NAME]/default
+Resources:
+  Feature Specs:
+    spec1:
+      Name: main.fspec_[UNIQUE_NAME].boundspec
+      URL:  [DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/boundspec?w=[WORKSPACE_ID]
+
+=== The bound feature spec matches the config, so there is nothing to change
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deployment unbind spec1
+
+>>> [CLI] bundle summary
+Name: test-bind-feature-spec-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-feature-spec-[UNIQUE_NAME]/default
+Resources:
+  Feature Specs:
+    spec1:
+      Name: main.fspec_[UNIQUE_NAME].boundspec
+      URL:  (not deployed)
+
+>>> [CLI] api delete /api/2.0/feature-engineering/feature-specs/main.fspec_[UNIQUE_NAME].boundspec
+{}

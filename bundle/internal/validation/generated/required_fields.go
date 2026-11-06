@@ -93,6 +93,16 @@ var RequiredFields = map[string][]string{
 	"resources.external_locations.*":                         {"credential_name", "name", "url"},
 	"resources.external_locations.*.lifecycle.depends_on[*]": {"resource"},
 
+	"resources.feature_specs.*":                                                {"name"},
+	"resources.feature_specs.*.extra_pip_requirements":                         {"requirements"},
+	"resources.feature_specs.*.features[*].declarative_feature":                {"feature"},
+	"resources.feature_specs.*.features[*].feature_function":                   {"udf"},
+	"resources.feature_specs.*.features[*].feature_function.input_bindings[*]": {"bound_feature", "parameter"},
+	"resources.feature_specs.*.features[*].feature_lookup":                     {"lookup_keys", "table"},
+	"resources.feature_specs.*.features[*].feature_lookup.default_values[*]":   {"feature"},
+	"resources.feature_specs.*.features[*].feature_lookup.rename_outputs[*]":   {"feature", "output"},
+	"resources.feature_specs.*.lifecycle.depends_on[*]":                        {"resource"},
+
 	"resources.features.*":             {"full_name", "function", "source"},
 	"resources.features.*.entities[*]": {"name"},
 	"resources.features.*.function.aggregation_function.approx_count_distinct":  {"input"},
