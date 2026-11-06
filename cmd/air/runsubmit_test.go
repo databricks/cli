@@ -505,8 +505,8 @@ func TestSubmitWorkloadValidatesWhileStaging(t *testing.T) {
 }
 
 // A validation failure must cancel in-flight staging and surface the validation
-// error, not the cancellation. The upload handler stalls, so without the
-// cancellation submitWorkload would block until the stall ends.
+// error, not the cancellation. The upload handler stalls until cleanup, so
+// without the cancellation submitWorkload would hit the test deadline instead.
 func TestSubmitWorkloadValidationFailureCancelsStaging(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -533,8 +533,11 @@ func TestSubmitWorkloadValidationFailureCancelsStaging(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	_, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
 	require.ErrorContains(t, err, "task.experiment: is invalid")
+	require.NoError(t, ctx.Err(), "staging was not cancelled by the validation failure")
 	assert.Zero(t, submissions.Load())
 }
 

@@ -327,8 +327,9 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 	return snap, err
 }
 
-// submitWorkload runs the submit happy path: ensure the experiment directory,
-// upload the launch artifacts, assemble the Jobs payload, and submit it. It
+// submitWorkload runs the submit happy path: validate the config while uploading
+// the launch artifacts, ensure the experiment directory, assemble the Jobs
+// payload, and submit it. It
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
