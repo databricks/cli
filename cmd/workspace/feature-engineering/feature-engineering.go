@@ -2394,9 +2394,12 @@ func newUpdateMaterializationSet() *cobra.Command {
 	cmd.Short = `Update a materialization set.`
 	cmd.Long = `Update a materialization set.
 
-  Update the materialization set's state to match the supplied materialization
-  set. Changes are applied member by member and are not atomic: when one member
-  fails, the error reports which members were already changed.
+  Updates a materialization set. Supports changing pause settings and deleting
+  materialized features from the set.
+
+  Changes are not atomic. Some updates or deletions may succeed even if the
+  operation fails. Individual outcomes are available in
+  MaterializationSetUpdateProgress.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2405,7 +2408,18 @@ func newUpdateMaterializationSet() *cobra.Command {
 
   Arguments:
     MATERIALIZATION_SET_ID: Server-assigned unique identifier for the materialization set.
-    UPDATE_MASK: The fields to update. Only 'materialized_features' or '*' is supported.`
+    UPDATE_MASK: The fields to update, relative to the materialization set. Supported
+      values are materialized_features and *.
+
+      The materialized_features mask updates retained members and deletes
+      omitted materialized features. The * mask selects all fields of the set
+      and follows the same membership rules. Adding members is not supported.
+
+      To change pause settings without changing membership, include every member
+      of the set. An omitted paused is reset to false.
+
+      Fields outside the mask are unchanged. Trigger types and settings other
+      than paused must remain unchanged.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

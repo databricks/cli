@@ -15346,6 +15346,15 @@
       }
     },
     "catalog.UnassignResponse": {},
+    "catalog.UndropMetastoreByIdRequest": {
+      "description": "Request to restore a soft-deleted metastore by ID.",
+      "fields": {
+        "id": {
+          "description": "Required. Id of the metastore to undrop.",
+          "launch_stage": "PUBLIC_PREVIEW"
+        }
+      }
+    },
     "catalog.UpdateAccessRequestDestinationsRequest": {
       "fields": {
         "access_request_destinations": {
@@ -26649,6 +26658,7 @@
           "description": "Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
           "launch_stage": "GA",
           "behaviors": [
+            "IMMUTABLE",
             "OPTIONAL"
           ]
         },
@@ -31265,7 +31275,7 @@
         "direct_group_member": {
           "description": "Required. The group membership to create.",
           "ref": "iamv2.DirectGroupMember",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31274,7 +31284,7 @@
         "direct_group_member": {
           "description": "Required. The direct group member to be added to the group.",
           "ref": "iamv2.DirectGroupMember",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31283,11 +31293,11 @@
         "group": {
           "description": "Required. Group to be created in Databricks",
           "ref": "iamv2.Group",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "parent": {
           "description": "The resource name of the account to create the group in, `accounts/{account_id}`.\nOptional: defaults to the account of the calling workspace, and any other account is\nrejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31299,7 +31309,7 @@
         "group": {
           "description": "Required. Group to be created in Databricks",
           "ref": "iamv2.Group",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31323,7 +31333,7 @@
       "fields": {
         "parent": {
           "description": "The resource name of the account to create the service principal in, `accounts/{account_id}`.\nOptional: defaults to the account of the calling workspace, and any other account is\nrejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31331,7 +31341,7 @@
         "service_principal": {
           "description": "Required. Service principal to be created in Databricks",
           "ref": "iamv2.ServicePrincipal",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31340,7 +31350,7 @@
         "service_principal": {
           "description": "Required. Service principal to be created in Databricks",
           "ref": "iamv2.ServicePrincipal",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31348,7 +31358,7 @@
       "fields": {
         "parent": {
           "description": "The resource name of the account to create the user in, `accounts/{account_id}`.\nOptional: defaults to the account of the calling workspace, and any other account is\nrejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31356,7 +31366,7 @@
         "user": {
           "description": "Required. User to be created in Databricks",
           "ref": "iamv2.User",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31365,7 +31375,7 @@
         "user": {
           "description": "Required. User to be created in Databricks",
           "ref": "iamv2.User",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31391,7 +31401,7 @@
       "fields": {
         "parent": {
           "description": "The resource name of the workspace to assign the principal to,\n`accounts/{account_id}/workspaces/{workspace_id}`. Optional: defaults to the calling workspace,\nand any other workspace is rejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31399,7 +31409,7 @@
         "workspace_assignment": {
           "description": "Required. Workspace assignment to be created in Databricks.",
           "ref": "iamv2.WorkspaceAssignment",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31408,7 +31418,7 @@
         "workspace_assignment": {
           "description": "Required. Workspace assignment to be created in Databricks.",
           "ref": "iamv2.WorkspaceAssignment",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31430,21 +31440,21 @@
       "fields": {
         "display_name": {
           "description": "Display name of the principal.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "external_id": {
           "description": "The external ID of the principal in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "group_id": {
           "description": "The internal ID of the group this member belongs to.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL",
             "OUTPUT_ONLY"
@@ -31453,18 +31463,18 @@
         "membership_source": {
           "description": "The source of group membership (internal or from identity provider).",
           "ref": "iamv2.GroupMembershipSource",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The resource name of the group membership. The format depends on the API that returned it:\n- Account-scoped: accounts/{account_id}/groups/{group_id}/direct-members/{principal_id}\n- Workspace-scoped: groups/{group_id}/direct-members/{principal_id}",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "parent": {
           "description": "The resource name of the group that contains the membership. The format depends on the API\nthat returned it:\n- Account-scoped: accounts/{account_id}/groups/{group_id}\n- Workspace-scoped: groups/{group_id}",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -31472,7 +31482,7 @@
         },
         "principal_id": {
           "description": "Internal ID of the principal in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE"
           ]
@@ -31480,7 +31490,7 @@
         "principal_type": {
           "description": "The type of the principal (user/service principal/group).",
           "ref": "iamv2.PrincipalType",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31497,12 +31507,12 @@
         "ALLOW_INSTANCE_POOL_CREATE"
       ],
       "enum_launch_stages": {
-        "ALLOW_CLUSTER_CREATE": "PUBLIC_BETA",
-        "ALLOW_INSTANCE_POOL_CREATE": "PUBLIC_BETA",
-        "DATABRICKS_SQL_ACCESS": "PUBLIC_BETA",
-        "WORKSPACE_ACCESS": "PUBLIC_BETA",
-        "WORKSPACE_ADMIN": "PUBLIC_BETA",
-        "WORKSPACE_CONSUME": "PUBLIC_BETA"
+        "ALLOW_CLUSTER_CREATE": "GA",
+        "ALLOW_INSTANCE_POOL_CREATE": "GA",
+        "DATABRICKS_SQL_ACCESS": "GA",
+        "WORKSPACE_ACCESS": "GA",
+        "WORKSPACE_ADMIN": "GA",
+        "WORKSPACE_CONSUME": "GA"
       }
     },
     "iamv2.ExactMatchRule": {
@@ -31522,35 +31532,35 @@
       "fields": {
         "account_id": {
           "description": "The parent account ID, from Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "display_name": {
           "description": "Display name of the group from the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "external_group_id": {
           "description": "The external ID of the group in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "internal_id": {
           "description": "Internal groupId of the group in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The resource name of the external group. The format depends on the API that\nreturned it:\n- Account-scoped: accounts/{account_id}/external-groups/{external_group_id}\n- Workspace-scoped: external-groups/{external_group_id}",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31562,7 +31572,7 @@
       "fields": {
         "account_id": {
           "description": "The parent account ID, from Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31570,42 +31580,42 @@
         "account_sp_status": {
           "description": "The activity status of the service principal in the Databricks account.",
           "ref": "iamv2.State",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "application_id": {
           "description": "Application ID of the service principal, from the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "display_name": {
           "description": "Display name of the service principal, from the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "external_service_principal_id": {
           "description": "The external ID of the service principal in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "internal_id": {
           "description": "Internal servicePrincipalId of the service principal in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The resource name of the external service principal. The format depends on\nthe API that returned it:\n- Account-scoped: accounts/{account_id}/external-service-principals/{external_service_principal_id}\n- Workspace-scoped: external-service-principals/{external_service_principal_id}",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31617,7 +31627,7 @@
       "fields": {
         "account_id": {
           "description": "The parent account ID, from Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31625,21 +31635,21 @@
         "account_user_status": {
           "description": "The activity status of the user in the Databricks account.",
           "ref": "iamv2.State",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "display_name": {
           "description": "Display name of the user from the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "external_user_id": {
           "description": "The external ID of the user in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31647,28 +31657,28 @@
         "full_name": {
           "description": "The full name of the user, from the customer's IdP.",
           "ref": "iamv2.FullName",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "internal_id": {
           "description": "Internal userId of the user in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The resource name of the external user. The format depends on the API that\nreturned it:\n- Account-scoped: accounts/{account_id}/external-users/{external_user_id}\n- Workspace-scoped: external-users/{external_user_id}",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "username": {
           "description": "Username/email of the user, from Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31680,14 +31690,14 @@
       "fields": {
         "family_name": {
           "description": "The family (last) name of the user, from the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "given_name": {
           "description": "The given (first) name of the user, from the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -31743,7 +31753,7 @@
       "fields": {
         "account_id": {
           "description": "The parent account ID for group in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -31751,14 +31761,14 @@
         },
         "external_id": {
           "description": "ExternalId of the group in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "group_id": {
           "description": "Internal group ID of the group in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -31766,18 +31776,18 @@
         },
         "group_name": {
           "description": "Display name of the group.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "name": {
           "description": "The resource name of the group. The format depends on the API that returned it:\n- Account-scoped: accounts/{account_id}/groups/{group_id}\n- Workspace-scoped: groups/{group_id}",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "parent": {
           "description": "The resource name of the account that contains the group, `accounts/{account_id}`. Both the\naccount-scoped and workspace-scoped APIs return it.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -31792,8 +31802,8 @@
         "IDENTITY_PROVIDER"
       ],
       "enum_launch_stages": {
-        "IDENTITY_PROVIDER": "PUBLIC_BETA",
-        "INTERNAL": "PUBLIC_BETA"
+        "IDENTITY_PROVIDER": "GA",
+        "INTERNAL": "GA"
       }
     },
     "iamv2.IdentityVisibilityFilter": {
@@ -31846,14 +31856,14 @@
       "fields": {
         "page_size": {
           "description": "The maximum number of members to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31864,14 +31874,14 @@
       "fields": {
         "page_size": {
           "description": "The maximum number of members to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListDirectGroupMembers call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31883,11 +31893,11 @@
       "fields": {
         "direct_group_members": {
           "description": "The list of direct group members with their membership source type.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "next_page_token": {
           "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31895,28 +31905,28 @@
       "fields": {
         "filter": {
           "description": "Optional. Allows filtering groups by group name or external id.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
           "description": "The maximum number of groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListGroups call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "parent": {
           "description": "The resource name of the account to list groups in, `accounts/{account_id}`. Optional:\ndefaults to the account of the calling workspace, and any other account is rejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31927,21 +31937,21 @@
       "fields": {
         "filter": {
           "description": "Optional. Allows filtering groups by group name or external id.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
           "description": "The maximum number of groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListGroups call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -31952,11 +31962,11 @@
       "description": "Response message containing a page of groups in the account.",
       "fields": {
         "groups": {
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "next_page_token": {
           "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -31995,28 +32005,28 @@
       "fields": {
         "filter": {
           "description": "Optional. Allows filtering service principals by application id or external id.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
           "description": "The maximum number of SPs to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListServicePrincipals call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "parent": {
           "description": "The resource name of the account to list service principals in, `accounts/{account_id}`. Optional:\ndefaults to the account of the calling workspace, and any other account is rejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32027,21 +32037,21 @@
       "fields": {
         "filter": {
           "description": "Optional. Allows filtering service principals by application id or external id.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
           "description": "The maximum number of service principals to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListServicePrincipals call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32053,10 +32063,10 @@
       "fields": {
         "next_page_token": {
           "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "service_principals": {
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32064,14 +32074,14 @@
       "fields": {
         "page_size": {
           "description": "The maximum number of parent groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListTransitiveParentGroups call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32082,14 +32092,14 @@
       "fields": {
         "page_size": {
           "description": "The maximum number of parent groups to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListTransitiveParentGroups call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32101,11 +32111,11 @@
       "fields": {
         "next_page_token": {
           "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "transitive_parent_groups": {
           "description": "The list of transitive parent groups.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32113,28 +32123,28 @@
       "fields": {
         "filter": {
           "description": "Optional. Allows filtering users by username or external id.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
           "description": "The maximum number of users to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListUsers call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "parent": {
           "description": "The resource name of the account to list users in, `accounts/{account_id}`. Optional:\ndefaults to the account of the calling workspace, and any other account is rejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32145,21 +32155,21 @@
       "fields": {
         "filter": {
           "description": "Optional. Allows filtering users by username or external id.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
           "description": "The maximum number of users to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListUsers call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32170,10 +32180,10 @@
       "fields": {
         "next_page_token": {
           "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "users": {
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32229,21 +32239,21 @@
       "fields": {
         "page_size": {
           "description": "The maximum number of workspace assignments to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "parent": {
           "description": "The resource name of the workspace to list assignments of,\n`accounts/{account_id}/workspaces/{workspace_id}`. Optional: defaults to the calling workspace,\nand any other workspace is rejected.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32254,14 +32264,14 @@
       "fields": {
         "page_size": {
           "description": "The maximum number of workspace assignments to return. The service may return fewer than this value.\nIf not provided, defaults to 1000, which is also the maximum allowed. Requests for more than the maximum are clamped to 1000.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "A page token, received from a previous ListWorkspaceAssignments call. Provide this to retrieve the subsequent page.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32273,10 +32283,10 @@
       "fields": {
         "next_page_token": {
           "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "workspace_assignments": {
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32400,7 +32410,7 @@
       "fields": {
         "account_id": {
           "description": "The parent account ID for the service principal in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32409,11 +32419,11 @@
         "account_sp_status": {
           "description": "The activity status of a service principal in a Databricks account.",
           "ref": "iamv2.State",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "application_id": {
           "description": "Application ID of the service principal. Set at creation time and cannot be changed\nafterwards; when omitted, the server generates one.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OPTIONAL"
@@ -32421,22 +32431,22 @@
         },
         "display_name": {
           "description": "Display name of the service principal.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "external_id": {
           "description": "ExternalId of the service principal in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "name": {
           "description": "The resource name of the service principal. The format depends on the API that returned it:\n- Account-scoped: accounts/{account_id}/service-principals/{service_principal_id}\n- Workspace-scoped: service-principals/{service_principal_id}",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "parent": {
           "description": "The resource name of the account that contains the service principal,\n`accounts/{account_id}`. Both the account-scoped and workspace-scoped APIs return it.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32444,7 +32454,7 @@
         },
         "service_principal_id": {
           "description": "Internal service principal ID of the service principal in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32459,8 +32469,8 @@
         "INACTIVE"
       ],
       "enum_launch_stages": {
-        "ACTIVE": "PUBLIC_BETA",
-        "INACTIVE": "PUBLIC_BETA"
+        "ACTIVE": "GA",
+        "INACTIVE": "GA"
       }
     },
     "iamv2.TransitiveParentGroup": {
@@ -32468,28 +32478,28 @@
       "fields": {
         "account_id": {
           "description": "The parent account ID for group in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "external_id": {
           "description": "ExternalId of the group in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "group_id": {
           "description": "Internal group ID of the group in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The resource name of the transitive parent group. The format depends on the API that\nreturned it:\n- Account-scoped: accounts/{account_id}/principals/{principal_id}/transitive-parent-groups/{group_id}\n- Workspace-scoped: principals/{principal_id}/transitive-parent-groups/{group_id}",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32498,11 +32508,11 @@
         "group": {
           "description": "Required. Group to be updated in Databricks",
           "ref": "iamv2.Group",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32511,11 +32521,11 @@
         "group": {
           "description": "Required. Group to be updated in Databricks",
           "ref": "iamv2.Group",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32524,11 +32534,11 @@
         "service_principal": {
           "description": "Required. Service principal to be updated in Databricks",
           "ref": "iamv2.ServicePrincipal",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32537,11 +32547,11 @@
         "service_principal": {
           "description": "Required. Service Principal to be updated in Databricks",
           "ref": "iamv2.ServicePrincipal",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32549,12 +32559,12 @@
       "fields": {
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "user": {
           "description": "Required. User to be updated in Databricks",
           "ref": "iamv2.User",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32562,12 +32572,12 @@
       "fields": {
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "user": {
           "description": "Required. User to be updated in Databricks",
           "ref": "iamv2.User",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32601,12 +32611,12 @@
       "fields": {
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "workspace_assignment": {
           "description": "Required. Workspace assignment to be updated in Databricks.",
           "ref": "iamv2.WorkspaceAssignment",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32614,12 +32624,12 @@
       "fields": {
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "workspace_assignment": {
           "description": "Required. Workspace assignment to be updated in Databricks.",
           "ref": "iamv2.WorkspaceAssignment",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32627,12 +32637,12 @@
       "fields": {
         "update_mask": {
           "description": "Required. The list of fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "workspace_identity_detail": {
           "description": "Required. Workspace identity detail to be updated in Databricks.",
           "ref": "iamv2.WorkspaceIdentityDetail",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         }
       }
     },
@@ -32641,7 +32651,7 @@
       "fields": {
         "account_id": {
           "description": "The accountId parent of the user in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32650,26 +32660,26 @@
         "account_user_status": {
           "description": "The activity status of a user in a Databricks account.",
           "ref": "iamv2.State",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "external_id": {
           "description": "ExternalId of the user in the customer's IdP.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "full_name": {
           "ref": "iamv2.UserFullName",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "name": {
           "description": "The resource name of the user. The format depends on the API that returned it:\n- Account-scoped: accounts/{account_id}/users/{user_id}\n- Workspace-scoped: users/{user_id}",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "parent": {
           "description": "The resource name of the account that contains the user, `accounts/{account_id}`. Both the\naccount-scoped and workspace-scoped APIs return it.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32677,7 +32687,7 @@
         },
         "user_id": {
           "description": "Internal userId of the user in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32685,7 +32695,7 @@
         },
         "username": {
           "description": "Username/email of the user.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE"
           ]
@@ -32695,13 +32705,13 @@
     "iamv2.UserFullName": {
       "fields": {
         "family_name": {
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "given_name": {
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32794,7 +32804,7 @@
       "fields": {
         "account_id": {
           "description": "The account ID parent of the workspace where the principal is assigned",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32802,7 +32812,7 @@
         },
         "effective_entitlements": {
           "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY",
             "UNORDERED_LIST"
@@ -32810,7 +32820,7 @@
         },
         "entitlements": {
           "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL",
             "UNORDERED_LIST"
@@ -32818,11 +32828,11 @@
         },
         "name": {
           "description": "The resource name of the workspace assignment. The format depends on the API that returned it:\n- Account-scoped: accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}\n- Workspace-scoped: workspace-assignments/{principal_id}",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "parent": {
           "description": "The resource name of the workspace that contains the assignment,\n`accounts/{account_id}/workspaces/{workspace_id}`. Both the account-scoped and workspace-scoped\nAPIs return it.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OUTPUT_ONLY"
@@ -32830,7 +32840,7 @@
         },
         "principal_id": {
           "description": "The internal ID of the principal (user/sp/group) in Databricks. Set when the assignment is\ncreated and cannot be changed afterwards; to assign a different principal, create a new\nassignment.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE"
           ]
@@ -32838,14 +32848,14 @@
         "principal_type": {
           "description": "The type of the principal (user/service principal/group) that is assigned.",
           "ref": "iamv2.PrincipalType",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "workspace_id": {
           "description": "The workspace ID where the principal is assigned.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
             "OPTIONAL",
@@ -32907,18 +32917,18 @@
         "assignment_type": {
           "description": "The type of assignment the principal has to the workspace (direct or indirect).",
           "ref": "iamv2.WorkspaceIdentityDetailAssignmentType",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The resource name of the workspace identity detail.\nFormat: principals/{principal_id}/workspace-identity-detail",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "principal_id": {
           "description": "The internal ID of the principal (user/sp/group) in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -32926,7 +32936,7 @@
         "principal_type": {
           "description": "The type of the principal (user/service principal/group).",
           "ref": "iamv2.PrincipalType",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -32934,7 +32944,7 @@
         "workspace_identity_status": {
           "description": "The activity status of an identity in a Databricks workspace.",
           "ref": "iamv2.State",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -32948,8 +32958,8 @@
         "INDIRECT"
       ],
       "enum_launch_stages": {
-        "DIRECT": "PUBLIC_BETA",
-        "INDIRECT": "PUBLIC_BETA"
+        "DIRECT": "GA",
+        "INDIRECT": "GA"
       }
     },
     "iamv2.WorkspacePermission": {
@@ -44128,7 +44138,7 @@
       }
     },
     "ml.CronSchedule": {
-      "description": "A cron-based schedule trigger for the materialization pipeline.",
+      "description": "A cron-based schedule trigger for batch materialization.",
       "fields": {
         "cron_expression": {
           "description": "The cron expression defining the schedule (e.g., \"0 0 * * *\" for daily at midnight). The\nschedule is interpreted in timezone_id (defaults to UTC). Required when mode is MANUAL (or\nunset). Left empty when mode is DERIVED, where the service computes it (aligned to UTC) from\nthe features' window timing and fills it in on the response.",
@@ -46952,7 +46962,7 @@
           ]
         },
         "materialized_features": {
-          "description": "The materialized features in this set. Order is not significant.\nUpdating the set with a materialized feature removed from this set will cause it to be deleted.",
+          "description": "The materialized features in this set. Order is not significant.\nAn `UpdateMaterializationSet` request with `materialized_features` or `*`\nin its update mask deletes omitted materialized features.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -47049,18 +47059,18 @@
       }
     },
     "ml.MaterializationSetUpdateProgress": {
-      "description": "What a partly failed UpdateMaterializationSet got through, attached to the error so a caller can\ntell which materialized feature members already changed and which ones did not and why it failed.",
+      "description": "Progress and outcomes of an `UpdateMaterializationSet` operation.",
       "fields": {
         "deleted_materialized_feature_ids": {
-          "description": "Materialized feature members that were deleted from the materialization set.",
+          "description": "IDs of materialized features that were deleted.",
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "failed_materialized_features": {
-          "description": "Materialized feature members that could not be updated, one entry each.",
+          "description": "Materialized features that could not be updated or deleted, one entry each.",
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "updated_materialized_feature_ids": {
-          "description": "Materialized feature members whose mutable state was updated.",
+          "description": "IDs of materialized features whose mutable state was updated.",
           "launch_stage": "PRIVATE_PREVIEW"
         }
       }
@@ -47102,7 +47112,7 @@
           ]
         },
         "cron_schedule_trigger": {
-          "description": "A cron-based schedule trigger for the materialization pipeline.",
+          "description": "A cron-based schedule trigger for batch materialization.",
           "ref": "ml.CronSchedule",
           "launch_stage": "GA",
           "behaviors": [
@@ -47214,7 +47224,7 @@
           ]
         },
         "table_trigger": {
-          "description": "A trigger that fires when the upstream source table changes.",
+          "description": "A trigger that starts batch materialization when the upstream source table changes.",
           "ref": "ml.TableTrigger",
           "launch_stage": "GA",
           "behaviors": [
@@ -49526,7 +49536,7 @@
       }
     },
     "ml.TableTrigger": {
-      "description": "A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an\nSdpSource's input_tables.",
+      "description": "A trigger that starts batch materialization when the feature's source table changes:\na DeltaTableSource's table, or an SdpSource's input_tables.",
       "fields": {
         "condition": {
           "description": "Which source table updates trigger a materialization run. If not set, any source table update\ntriggers a run.",
@@ -49851,7 +49861,7 @@
     "ml.UpdateMaterializationSetRequest": {
       "fields": {
         "materialization_set": {
-          "description": "The desired state of the updated materialization set. materialization_set_id selects the set.",
+          "description": "The desired state of the materialization set. `materialization_set_id`\nidentifies the set.\n\nA request that changes pause settings must request the same `paused`\nvalue for all retained members with a cron schedule or table trigger.",
           "ref": "ml.MaterializationSet",
           "launch_stage": "PRIVATE_PREVIEW"
         },
@@ -49863,7 +49873,7 @@
           ]
         },
         "update_mask": {
-          "description": "The fields to update. Only 'materialized_features' or '*' is supported.",
+          "description": "The fields to update, relative to the materialization set.\nSupported values are `materialized_features` and `*`.\n\nThe `materialized_features` mask updates retained members and deletes\nomitted materialized features. The `*` mask selects all fields of the\nset and follows the same membership rules. Adding members is not\nsupported.\n\nTo change pause settings without changing membership, include every\nmember of the set. An omitted `paused` is reset to `false`.\n\nFields outside the mask are unchanged. Trigger types and settings\nother than `paused` must remain unchanged.",
           "launch_stage": "PRIVATE_PREVIEW"
         }
       }
@@ -142321,7 +142331,7 @@
               },
               {
                 "name": "materialized_features",
-                "description": "The materialized features in this set. Order is not significant.\nUpdating the set with a materialized feature removed from this set will cause it to be deleted.",
+                "description": "The materialized features in this set. Order is not significant.\nAn `UpdateMaterializationSet` request with `materialized_features` or `*`\nin its update mask deletes omitted materialized features.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "MaterializedFeatureList",
@@ -142503,7 +142513,7 @@
               },
               {
                 "name": "cron_schedule_trigger",
-                "description": "A cron-based schedule trigger for the materialization pipeline.",
+                "description": "A cron-based schedule trigger for batch materialization.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -142653,7 +142663,7 @@
               },
               {
                 "name": "table_trigger",
-                "description": "A trigger that fires when the upstream source table changes.",
+                "description": "A trigger that starts batch materialization when the upstream source table changes.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -145799,7 +145809,7 @@
           },
           {
             "name": "UpdateMaterializationSet",
-            "description": "Update the materialization set's state to match the supplied materialization set. Changes are\napplied member by member and are not atomic: when one member fails, the error reports which\nmembers were already changed.",
+            "description": "Updates a materialization set. Supports changing pause settings and\ndeleting materialized features from the set.\n\nChanges are not atomic. Some updates or deletions may succeed even if\nthe operation fails. Individual outcomes are available in\n`MaterializationSetUpdateProgress`.",
             "summary": "Update a materialization set.",
             "path": "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}",
             "can_use_json": true,
@@ -145824,7 +145834,7 @@
                 },
                 {
                   "name": "materialization_set",
-                  "description": "The desired state of the updated materialization set. materialization_set_id selects the set.",
+                  "description": "The desired state of the materialization set. `materialization_set_id`\nidentifies the set.\n\nA request that changes pause settings must request the same `paused`\nvalue for all retained members with a cron schedule or table trigger.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -145834,7 +145844,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "The fields to update. Only 'materialized_features' or '*' is supported.",
+                  "description": "The fields to update, relative to the materialization set.\nSupported values are `materialized_features` and `*`.\n\nThe `materialized_features` mask updates retained members and deletes\nomitted materialized features. The `*` mask selects all fields of the\nset and follows the same membership rules. Adding members is not\nsupported.\n\nTo change pause settings without changing membership, include every\nmember of the set. An omitted `paused` is reset to `false`.\n\nFields outside the mask are unchanged. Trigger types and settings\nother than `paused` must remain unchanged.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -145854,7 +145864,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "The fields to update. Only 'materialized_features' or '*' is supported.",
+                  "description": "The fields to update, relative to the materialization set.\nSupported values are `materialized_features` and `*`.\n\nThe `materialized_features` mask updates retained members and deletes\nomitted materialized features. The `*` mask selects all fields of the\nset and follows the same membership rules. Adding members is not\nsupported.\n\nTo change pause settings without changing membership, include every\nmember of the set. An omitted `paused` is reset to `false`.\n\nFields outside the mask are unchanged. Trigger types and settings\nother than `paused` must remain unchanged.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -145865,7 +145875,7 @@
               "required_request_body_fields": [
                 {
                   "name": "materialization_set",
-                  "description": "The desired state of the updated materialization set. materialization_set_id selects the set.",
+                  "description": "The desired state of the materialization set. `materialization_set_id`\nidentifies the set.\n\nA request that changes pause settings must request the same `paused`\nvalue for all retained members with a cron schedule or table trigger.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -145877,7 +145887,7 @@
             },
             "request_body_field": {
               "name": "materialization_set",
-              "description": "The desired state of the updated materialization set. materialization_set_id selects the set.",
+              "description": "The desired state of the materialization set. `materialization_set_id`\nidentifies the set.\n\nA request that changes pause settings must request the same `paused`\nvalue for all retained members with a cron schedule or table trigger.",
               "required": true,
               "is_request_body_field": true,
               "entity": {
@@ -145892,7 +145902,7 @@
             "all_fields": [
               {
                 "name": "materialization_set",
-                "description": "The desired state of the updated materialization set. materialization_set_id selects the set.",
+                "description": "The desired state of the materialization set. `materialization_set_id`\nidentifies the set.\n\nA request that changes pause settings must request the same `paused`\nvalue for all retained members with a cron schedule or table trigger.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -145919,7 +145929,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "The fields to update. Only 'materialized_features' or '*' is supported.",
+                "description": "The fields to update, relative to the materialization set.\nSupported values are `materialized_features` and `*`.\n\nThe `materialized_features` mask updates retained members and deletes\nomitted materialized features. The `*` mask selects all fields of the\nset and follows the same membership rules. Adding members is not\nsupported.\n\nTo change pause settings without changing membership, include every\nmember of the set. An omitted `paused` is reset to `false`.\n\nFields outside the mask are unchanged. Trigger types and settings\nother than `paused` must remain unchanged.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -145936,7 +145946,7 @@
               },
               {
                 "name": "materialized_features",
-                "description": "The materialized features in this set. Order is not significant.\nUpdating the set with a materialized feature removed from this set will cause it to be deleted.",
+                "description": "The materialized features in this set. Order is not significant.\nAn `UpdateMaterializationSet` request with `materialized_features` or `*`\nin its update mask deletes omitted materialized features.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "MaterializedFeatureList",
@@ -145969,7 +145979,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "The fields to update. Only 'materialized_features' or '*' is supported.",
+                "description": "The fields to update, relative to the materialization set.\nSupported values are `materialized_features` and `*`.\n\nThe `materialized_features` mask updates retained members and deletes\nomitted materialized features. The `*` mask selects all fields of the\nset and follows the same membership rules. Adding members is not\nsupported.\n\nTo change pause settings without changing membership, include every\nmember of the set. An omitted `paused` is reset to `false`.\n\nFields outside the mask are unchanged. Trigger types and settings\nother than `paused` must remain unchanged.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -146193,7 +146203,7 @@
               },
               {
                 "name": "cron_schedule_trigger",
-                "description": "A cron-based schedule trigger for the materialization pipeline.",
+                "description": "A cron-based schedule trigger for batch materialization.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -146343,7 +146353,7 @@
               },
               {
                 "name": "table_trigger",
-                "description": "A trigger that fires when the upstream source table changes.",
+                "description": "A trigger that starts batch materialization when the upstream source table changes.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -158230,10 +158240,8 @@
             "path": "/api/2.0/identity/{parent=accounts/*/groups/*}/direct-members",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateDirectGroupMemberRequest",
               "is_object": true,
@@ -158505,10 +158513,8 @@
             "path": "/api/2.0/identity/{parent=accounts/*}/groups",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateGroupRequest",
               "is_object": true,
@@ -158990,10 +158996,8 @@
             "path": "/api/2.0/identity/{parent=accounts/*}/service-principals",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateServicePrincipalRequest",
               "is_object": true,
@@ -159372,10 +159376,8 @@
             "path": "/api/2.0/identity/{parent=accounts/*}/users",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateUserRequest",
               "is_object": true,
@@ -159817,10 +159819,8 @@
             "path": "/api/2.0/identity/{parent=accounts/*/workspaces/*}/workspace-assignments",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateWorkspaceAssignmentRequest",
               "is_object": true,
@@ -160421,10 +160421,8 @@
             "summary": "Delete a direct group membership.",
             "path": "/api/2.0/identity/{name=accounts/*/groups/*/direct-members/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteDirectGroupMemberRequest",
               "is_object": true,
@@ -160483,10 +160481,8 @@
             "summary": "Delete a group in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/groups/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteGroupRequest",
               "is_object": true,
@@ -160605,10 +160601,8 @@
             "summary": "Delete a service principal in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/service-principals/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteServicePrincipalRequest",
               "is_object": true,
@@ -160667,10 +160661,8 @@
             "summary": "Delete a user in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/users/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteUserRequest",
               "is_object": true,
@@ -160729,10 +160721,8 @@
             "summary": "Delete a workspace assignment.",
             "path": "/api/2.0/identity/{name=accounts/*/workspaces/*/workspace-assignments/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteWorkspaceAssignmentRequest",
               "is_object": true,
@@ -160888,10 +160878,8 @@
             "summary": "Get a direct group member.",
             "path": "/api/2.0/identity/{name=accounts/*/groups/*/direct-members/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetDirectGroupMemberRequest",
               "is_object": true,
@@ -160974,10 +160962,8 @@
             "summary": "Get an external group in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/external-groups/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetExternalGroupRequest",
               "is_object": true,
@@ -161037,10 +161023,8 @@
             "summary": "Get an external service principal in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/external-service-principals/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetExternalServicePrincipalRequest",
               "is_object": true,
@@ -161100,10 +161084,8 @@
             "summary": "Get an external user in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/external-users/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetExternalUserRequest",
               "is_object": true,
@@ -161163,10 +161145,8 @@
             "summary": "Get a group in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/groups/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetGroupRequest",
               "is_object": true,
@@ -161332,10 +161312,8 @@
             "summary": "Get a service principal in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/service-principals/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetServicePrincipalRequest",
               "is_object": true,
@@ -161452,10 +161430,8 @@
             "summary": "Get a user in the account.",
             "path": "/api/2.0/identity/{name=accounts/*/users/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetUserRequest",
               "is_object": true,
@@ -161669,10 +161645,8 @@
             "summary": "Get a workspace assignment for a principal.",
             "path": "/api/2.0/identity/{name=accounts/*/workspaces/*/workspace-assignments/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetWorkspaceAssignmentRequest",
               "is_object": true,
@@ -161876,10 +161850,8 @@
             "summary": "List direct group members.",
             "path": "/api/2.0/identity/{parent=accounts/*/groups/*}/direct-members",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListDirectGroupMembersRequest",
               "is_object": true,
@@ -161967,10 +161939,8 @@
             "summary": "List groups in the account.",
             "path": "/api/2.0/identity/{parent=accounts/*}/groups",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListGroupsRequest",
               "is_object": true,
@@ -162155,10 +162125,8 @@
             "summary": "List service principals in the account.",
             "path": "/api/2.0/identity/{parent=accounts/*}/service-principals",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListServicePrincipalsRequest",
               "is_object": true,
@@ -162254,10 +162222,8 @@
             "summary": "List all transitive parent groups of a principal.",
             "path": "/api/2.0/identity/{parent=accounts/*/principals/*}/transitive-parent-groups",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListTransitiveParentGroupsRequest",
               "is_object": true,
@@ -162333,10 +162299,8 @@
             "summary": "List users in the account.",
             "path": "/api/2.0/identity/{parent=accounts/*}/users",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListUsersRequest",
               "is_object": true,
@@ -162522,10 +162486,8 @@
             "summary": "List workspace assignments for a workspace.",
             "path": "/api/2.0/identity/{parent=accounts/*/workspaces/*}/workspace-assignments",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListWorkspaceAssignmentsRequest",
               "is_object": true,
@@ -162809,10 +162771,8 @@
             "path": "/api/2.0/identity/{name=accounts/*/groups/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateGroupRequest",
               "is_object": true,
@@ -163003,10 +162963,8 @@
             "path": "/api/2.0/identity/{name=accounts/*/service-principals/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateServicePrincipalRequest",
               "is_object": true,
@@ -163421,10 +163379,8 @@
             "path": "/api/2.0/identity/{name=accounts/*/users/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateUserRequest",
               "is_object": true,
@@ -163902,10 +163858,8 @@
             "path": "/api/2.0/identity/{name=accounts/*/workspaces/*/workspace-assignments/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateWorkspaceAssignmentRequest",
               "is_object": true,
@@ -183942,6 +183896,71 @@
                 "description": "Query for the ID of the metastore to delete.",
                 "required": true,
                 "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          },
+          {
+            "name": "UndropMetastoreById",
+            "description": "Restores a soft-deleted metastore identified by its ID. The caller must be an account admin.\nA metastore may be eligible for restoration for up to five days after deletion. Restoration\nmay become unavailable earlier once permanent deletion begins. Returns the restored metastore.",
+            "summary": "Restore a metastore.",
+            "path": "/api/2.1/unity-catalog/metastores:undropById",
+            "can_use_json": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
+            "request": {
+              "pascal_name": "UndropMetastoreByIdRequest",
+              "is_object": true,
+              "has_required_request_body_fields": true,
+              "required_fields": [
+                {
+                  "name": "id",
+                  "description": "Required. Id of the metastore to undrop.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_request_body_fields": [
+                {
+                  "name": "id",
+                  "description": "Required. Id of the metastore to undrop.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "pascal_name": "MetastoreInfo",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "id",
+                "description": "Required. Id of the metastore to undrop.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "id",
+                "description": "Required. Id of the metastore to undrop.",
+                "required": true,
+                "is_request_body_field": true,
                 "entity": {
                   "is_string": true
                 }
@@ -246586,10 +246605,8 @@
             "path": "/api/2.0/identity/{parent=groups/*}/direct-members",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateDirectGroupMemberProxyRequest",
               "is_object": true,
@@ -246861,10 +246878,8 @@
             "path": "/api/2.0/identity/groups",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateGroupProxyRequest",
               "is_object": true,
@@ -246987,10 +247002,8 @@
             "path": "/api/2.0/identity/service-principals",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateServicePrincipalProxyRequest",
               "is_object": true,
@@ -247339,10 +247352,8 @@
             "path": "/api/2.0/identity/users",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateUserProxyRequest",
               "is_object": true,
@@ -248009,10 +248020,8 @@
             "path": "/api/2.0/identity/workspace-assignments",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateWorkspaceAssignmentProxyRequest",
               "is_object": true,
@@ -248290,10 +248299,8 @@
             "summary": "Delete a direct group membership.",
             "path": "/api/2.0/identity/{name=groups/*/direct-members/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteDirectGroupMemberProxyRequest",
               "is_object": true,
@@ -248352,10 +248359,8 @@
             "summary": "Delete a group in the account.",
             "path": "/api/2.0/identity/{name=groups/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteGroupProxyRequest",
               "is_object": true,
@@ -248414,10 +248419,8 @@
             "summary": "Delete a service principal in the account.",
             "path": "/api/2.0/identity/{name=service-principals/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteServicePrincipalProxyRequest",
               "is_object": true,
@@ -248476,10 +248479,8 @@
             "summary": "Delete a user in the account.",
             "path": "/api/2.0/identity/{name=users/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteUserProxyRequest",
               "is_object": true,
@@ -248599,10 +248600,8 @@
             "summary": "Delete a workspace assignment for a workspace.",
             "path": "/api/2.0/identity/{name=workspace-assignments/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteWorkspaceAssignmentProxyRequest",
               "is_object": true,
@@ -248661,10 +248660,8 @@
             "summary": "Get a direct group member.",
             "path": "/api/2.0/identity/{name=groups/*/direct-members/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetDirectGroupMemberProxyRequest",
               "is_object": true,
@@ -248747,10 +248744,8 @@
             "summary": "Get an external group in the account.",
             "path": "/api/2.0/identity/{name=external-groups/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetExternalGroupProxyRequest",
               "is_object": true,
@@ -248810,10 +248805,8 @@
             "summary": "Get an external service principal in the account.",
             "path": "/api/2.0/identity/{name=external-service-principals/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetExternalServicePrincipalProxyRequest",
               "is_object": true,
@@ -248873,10 +248866,8 @@
             "summary": "Get an external user in the account.",
             "path": "/api/2.0/identity/{name=external-users/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetExternalUserProxyRequest",
               "is_object": true,
@@ -248936,10 +248927,8 @@
             "summary": "Get a group in the account.",
             "path": "/api/2.0/identity/{name=groups/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetGroupProxyRequest",
               "is_object": true,
@@ -248999,10 +248988,8 @@
             "summary": "Get a service principal in the account.",
             "path": "/api/2.0/identity/{name=service-principals/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetServicePrincipalProxyRequest",
               "is_object": true,
@@ -249119,10 +249106,8 @@
             "summary": "Get a user in the account.",
             "path": "/api/2.0/identity/{name=users/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetUserProxyRequest",
               "is_object": true,
@@ -249421,10 +249406,8 @@
             "summary": "Get a workspace assignment for a principal.",
             "path": "/api/2.0/identity/{name=workspace-assignments/*}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetWorkspaceAssignmentProxyRequest",
               "is_object": true,
@@ -249507,10 +249490,8 @@
             "summary": "Get workspace identity details for a principal.",
             "path": "/api/2.0/identity/{name=principals/*/workspace-identity-detail}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetWorkspaceIdentityDetailRequest",
               "is_object": true,
@@ -249570,10 +249551,8 @@
             "summary": "List direct group members.",
             "path": "/api/2.0/identity/{parent=groups/*}/direct-members",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListDirectGroupMembersProxyRequest",
               "is_object": true,
@@ -249661,10 +249640,8 @@
             "summary": "List groups in the account.",
             "path": "/api/2.0/identity/groups",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListGroupsProxyRequest",
               "is_object": true
@@ -249726,10 +249703,8 @@
             "summary": "List service principals in the account.",
             "path": "/api/2.0/identity/service-principals",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListServicePrincipalsProxyRequest",
               "is_object": true
@@ -249791,10 +249766,8 @@
             "summary": "List all transitive parent groups of a principal.",
             "path": "/api/2.0/identity/{parent=principals/*}/transitive-parent-groups",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListTransitiveParentGroupsProxyRequest",
               "is_object": true,
@@ -249870,10 +249843,8 @@
             "summary": "List users in the account.",
             "path": "/api/2.0/identity/users",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListUsersProxyRequest",
               "is_object": true
@@ -249983,10 +249954,8 @@
             "summary": "List workspace assignments for a workspace.",
             "path": "/api/2.0/identity/workspace-assignments",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListWorkspaceAssignmentsProxyRequest",
               "is_object": true
@@ -250236,10 +250205,8 @@
             "path": "/api/2.0/identity/{name=groups/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateGroupProxyRequest",
               "is_object": true,
@@ -250430,10 +250397,8 @@
             "path": "/api/2.0/identity/{name=service-principals/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateServicePrincipalProxyRequest",
               "is_object": true,
@@ -250848,10 +250813,8 @@
             "path": "/api/2.0/identity/{name=users/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateUserProxyRequest",
               "is_object": true,
@@ -251659,10 +251622,8 @@
             "path": "/api/2.0/identity/{name=workspace-assignments/*}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateWorkspaceAssignmentProxyRequest",
               "is_object": true,
@@ -252008,10 +251969,8 @@
             "path": "/api/2.0/identity/{name=principals/*/workspace-identity-detail}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateWorkspaceIdentityDetailRequest",
               "is_object": true,
