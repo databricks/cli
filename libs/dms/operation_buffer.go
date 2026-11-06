@@ -40,13 +40,18 @@ type BufferOptions struct {
 
 // OperationBufferStats describes one deployment version's history uploads.
 type OperationBufferStats struct {
-	StagedOperationCount           int
-	PeakPendingUpdateCount         int
-	QueuedUpdateCountAtTimeout     int
-	RecordingAttemptFailureCount   int
-	RecordingAttemptSuccessCount   int
+	StagedOperationCount         int
+	PeakPendingUpdateCount       int
+	QueuedUpdateCountAtTimeout   int
+	RecordingAttemptFailureCount int
+	// Successful history uploads. Intermediate and repeated updates count separately.
+	RecordingAttemptSuccessCount int
+	// Resource operations whose latest final history update uploaded successfully.
 	OperationRecordingSuccessCount int
+	// Resource operations whose latest final history update failed to build or upload.
 	OperationRecordingFailureCount int
+	// Staged resource operations whose latest final history update has not completed,
+	// including queued, in-flight, and never-queued updates.
 	OperationRecordingPendingCount int
 }
 
