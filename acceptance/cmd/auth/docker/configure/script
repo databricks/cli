@@ -63,3 +63,15 @@ trace print_requests.py --get //api
 title "Configure with the installation directory absent from PATH\n"
 PATH="$path_without_cli" trace command "$HOME/bin/databricks" auth docker configure docker-test
 trace print_requests.py --get //api
+
+title "Profiles sharing the workspace\n"
+cat >> "$HOME/.databrickscfg" <<ENDCFG
+
+[shared]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+workspace_id = 900800700600
+ENDCFG
+trace databricks auth docker configure docker-test
+trace print_requests.py --get //api
+printf '%s\n' "$registry_host" | trace docker-credential-databricks get | jq -S .

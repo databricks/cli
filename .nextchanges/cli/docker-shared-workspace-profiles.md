@@ -1,0 +1,1 @@
+* Allow `databricks auth docker configure` when multiple profiles match the same workspace. It now prints a warning, and the Docker credential helper uses the first logged-in profile, checking `[DEFAULT]` first and then the others in `.databrickscfg` order. ([#7383](https://github.com/databricks/cli/pull/7383))
