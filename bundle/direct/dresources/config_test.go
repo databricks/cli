@@ -91,6 +91,7 @@ func categoryRules(c ResourceLifecycleConfig) []struct {
 	}{
 		{"ignore_remote_changes", c.IgnoreRemoteChanges},
 		{"ignore_local_changes", c.IgnoreLocalChanges},
+		{"drop_changes", c.DropChanges},
 		{"recreate_on_changes", c.RecreateOnChanges},
 		{"provided_id_fields", c.ProvidedIDFields},
 		{"updatable_id_fields", c.UpdatableIDFields},

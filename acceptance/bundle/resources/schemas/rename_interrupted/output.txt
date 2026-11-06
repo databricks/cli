@@ -33,7 +33,7 @@ Exit code: [KILLED]
 >>> print_state.py
 {
   "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
-  "stable_id": "[VOLUME_ID]"
+  "volume_id": "[VOLUME_ID]"
 }
 
 >>> [CLI] bundle plan --output json
