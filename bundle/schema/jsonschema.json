@@ -1783,7 +1783,7 @@
                         "doNotSuggest": true
                       },
                       "materialized_features": {
-                        "description": "[Private Preview] The materialized features in this set. Order is not significant.\nUpdating the set with a materialized feature removed from this set will cause it to be deleted.",
+                        "description": "[Private Preview] The materialized features in this set. Order is not significant.\nAn `UpdateMaterializationSet` request with `materialized_features` or `*`\nin its update mask deletes omitted materialized features.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
@@ -13922,7 +13922,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "A cron-based schedule trigger for the materialization pipeline.",
+                  "description": "A cron-based schedule trigger for batch materialization.",
                   "properties": {
                     "cron_expression": {
                       "description": "The cron expression defining the schedule (e.g., \"0 0 * * *\" for daily at midnight). The\nschedule is interpreted in timezone_id (defaults to UTC). Required when mode is MANUAL (or\nunset). Left empty when mode is DERIVED, where the service computes it (aligned to UTC) from\nthe features' window timing and fills it in on the response.",
@@ -14812,7 +14812,7 @@
                       "deprecated": true
                     },
                     "cron_schedule_trigger": {
-                      "description": "A cron-based schedule trigger for the materialization pipeline.",
+                      "description": "A cron-based schedule trigger for batch materialization.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -14850,7 +14850,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "table_trigger": {
-                      "description": "A trigger that fires when the upstream source table changes.",
+                      "description": "A trigger that starts batch materialization when the upstream source table changes.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -15455,7 +15455,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an\nSdpSource's input_tables.",
+                  "description": "A trigger that starts batch materialization when the feature's source table changes:\na DeltaTableSource's table, or an SdpSource's input_tables.",
                   "properties": {
                     "condition": {
                       "description": "[Private Preview] Which source table updates trigger a materialization run. If not set, any source table update\ntriggers a run.",
