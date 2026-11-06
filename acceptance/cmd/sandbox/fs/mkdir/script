@@ -1,0 +1,10 @@
+title "Create nested directories"
+trace $CLI sandbox fs mkdir $SANDBOX_ROOT/a/b/c
+trace $CLI sandbox fs ls $SANDBOX_ROOT/a/b
+
+title "Creating an existing directory succeeds"
+trace $CLI sandbox fs mkdir $SANDBOX_ROOT/a/b/c
+
+title "Creating a directory over a file fails"
+$CLI sandbox fs cp hello.txt $SANDBOX_ROOT/hello.txt > /dev/null
+errcode trace $CLI sandbox fs mkdir $SANDBOX_ROOT/hello.txt

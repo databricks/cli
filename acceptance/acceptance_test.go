@@ -190,6 +190,7 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 		"TEST_DEFAULT_WAREHOUSE_ID",
 		"TEST_DEFAULT_CLUSTER_ID",
 		"TEST_INSTANCE_POOL_ID",
+		"TEST_SANDBOX_ID",
 	}
 	for _, envVar := range envVars {
 		if value := os.Getenv(envVar); value != "" {
@@ -448,6 +449,9 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		}
 		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
 			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
+		}
+		if os.Getenv("TEST_SANDBOX_ID") == "" {
+			t.Setenv("TEST_SANDBOX_ID", testserver.TestDefaultSandboxId)
 		}
 	}
 

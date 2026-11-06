@@ -1,0 +1,15 @@
+
+=== cat a file
+>>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+hello world!
+
+=== cat a directory, then a missing path
+>>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]
+Error: not a file: /tmp/sandbox-fs-[UNIQUE_NAME]
+
+Exit code: 1
+
+>>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing
+Error: file does not exist: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
+
+Exit code: 1

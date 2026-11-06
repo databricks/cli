@@ -1,0 +1,27 @@
+
+=== Remove a file
+>>> [CLI] sandbox fs rm [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+>>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+Error: file does not exist: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+Exit code: 1
+
+=== Removing a non-empty directory needs -r
+>>> [CLI] sandbox fs rm [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir
+Error: directory not empty: /tmp/sandbox-fs-[UNIQUE_NAME]/dir
+
+Exit code: 1
+
+>>> [CLI] sandbox fs rm -r [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir
+
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir
+Error: no such directory: /tmp/sandbox-fs-[UNIQUE_NAME]/dir
+
+Exit code: 1
+
+=== Removing a missing path fails
+>>> [CLI] sandbox fs rm [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing
+Error: file does not exist: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
+
+Exit code: 1

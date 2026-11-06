@@ -1,0 +1,16 @@
+title "Upload a file"
+trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/file.txt
+trace $CLI sandbox fs cat $SANDBOX_ROOT/file.txt
+
+title "Writing over an existing file needs --overwrite"
+trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/file.txt
+trace $CLI sandbox fs cp --overwrite local.txt $SANDBOX_ROOT/file.txt
+
+title "Writing into a directory that does not exist fails"
+errcode trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/missing/file.txt
+
+title "Copy a directory recursively, and back"
+trace $CLI sandbox fs cp -r localdir $SANDBOX_ROOT/dir 2>&1 | sort
+trace $CLI sandbox fs cp -r $SANDBOX_ROOT/dir downloaded 2>&1 | sort
+trace cat downloaded/file1.txt downloaded/file2.txt
+rm -r downloaded

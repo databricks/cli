@@ -1,0 +1,20 @@
+
+=== List a directory
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]
+dir
+hello.txt
+
+>>> [CLI] sandbox fs ls --absolute [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]
+[TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir
+[TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+=== List a file, then a missing path
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+Error: not a directory: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+Exit code: 1
+
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing
+Error: no such directory: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
+
+Exit code: 1

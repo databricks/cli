@@ -1,0 +1,15 @@
+
+=== Create nested directories
+>>> [CLI] sandbox fs mkdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/a/b/c
+
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/a/b
+c
+
+=== Creating an existing directory succeeds
+>>> [CLI] sandbox fs mkdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/a/b/c
+
+=== Creating a directory over a file fails
+>>> [CLI] sandbox fs mkdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+Error: file already exists: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+Exit code: 1

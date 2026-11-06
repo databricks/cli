@@ -1,0 +1,8 @@
+$CLI sandbox fs cp hello.txt $SANDBOX_ROOT/hello.txt > /dev/null
+
+title "cat a file"
+trace $CLI sandbox fs cat $SANDBOX_ROOT/hello.txt
+
+title "cat a directory, then a missing path"
+errcode trace $CLI sandbox fs cat $SANDBOX_ROOT
+errcode trace $CLI sandbox fs cat $SANDBOX_ROOT/missing
