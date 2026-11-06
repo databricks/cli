@@ -88,7 +88,7 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Duplicate local library names: " + lib,
-				Detail:    "Local library names must be unique but found libraries with the same name: " + lv.fullPath + ", " + strings.Join(lv.otherPaths, ", "),
+				Detail:    "Local library names must be unique but found libraries with the same name: " + filepath.ToSlash(lv.fullPath) + ", " + filepath.ToSlash(strings.Join(lv.otherPaths, ", ")),
 				Locations: lv.locations,
 				Paths:     lv.paths,
 			})

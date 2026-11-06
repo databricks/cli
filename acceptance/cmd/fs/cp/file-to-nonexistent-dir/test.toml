@@ -1,6 +1,1 @@
 Cloud = true
-
-# Local paths in errors use the OS separator.
-[[Repls]]
-Old = 'local\\nonexistent\\mydir'
-New = 'local/nonexistent/mydir'

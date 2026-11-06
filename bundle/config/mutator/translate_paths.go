@@ -155,7 +155,7 @@ func (t *translateContext) rewritePath(
 		return "", err
 	}
 	if !opts.AllowPathOutsideSyncRoot && !filepath.IsLocal(localRelPath) {
-		return "", fmt.Errorf("path %s is not contained in sync root path", localPath)
+		return "", fmt.Errorf("path %s is not contained in sync root path", filepath.ToSlash(localPath))
 	}
 
 	// Normalize paths to separated by forward slashes.
