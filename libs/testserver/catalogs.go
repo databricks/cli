@@ -171,7 +171,7 @@ func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName strin
 	}
 }
 
-// CatalogsDelete mirrors UC, where deleting a catalog with force deletes its schemas, volumes and registered models too.
+// CatalogsDelete mirrors UC, where deleting a catalog with force deletes its schemas, volumes, registered models and secrets too.
 func (s *FakeWorkspace) CatalogsDelete(req Request, name string) Response {
 	defer s.LockUnlock()()
 
@@ -194,6 +194,11 @@ func (s *FakeWorkspace) CatalogsDelete(req Request, name string) Response {
 			if model.CatalogName == name {
 				delete(s.RegisteredModels, key)
 				delete(s.RegisteredModelVersions, key)
+			}
+		}
+		for key, secret := range s.UCSecrets {
+			if secret.CatalogName == name {
+				delete(s.UCSecrets, key)
 			}
 		}
 	}
