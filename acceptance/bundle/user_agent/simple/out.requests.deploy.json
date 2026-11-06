@@ -250,7 +250,8 @@
         "state": {
           "catalog_name": "mycatalog",
           "name": "myschema"
-        }
+        },
+        "stable_id": "[UUID]"
       }
     }
   }
