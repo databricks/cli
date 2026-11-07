@@ -1,0 +1,8 @@
+# Malformed -L specs are rejected before any API call, so no [[Server]] stub is needed.
+musterr $CLI sandbox port-forward happy-panda-1234 -L 8080
+
+# Remote ports outside 10000-65535 are refused up front.
+musterr $CLI sandbox port-forward happy-panda-1234 -L 8080:8080
+
+# At least one -L is required.
+musterr $CLI sandbox port-forward happy-panda-1234
