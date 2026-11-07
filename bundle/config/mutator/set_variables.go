@@ -140,6 +140,10 @@ func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			return setVariable(ctx, variable, v, name, fileDefault)
 		}))
 	})
+	if err != nil {
+		return diags.Extend(diag.FromErr(err))
+	}
 
+	err = b.Config.MergeDeferredTaskOverrides()
 	return diags.Extend(diag.FromErr(err))
 }

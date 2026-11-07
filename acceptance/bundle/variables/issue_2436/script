@@ -1,1 +1,1 @@
-$CLI bundle validate -o json
+trace $CLI bundle validate -o json | jq '{job_one: [.resources.jobs.job_one.tasks[] | {task_key, job_cluster_key}], job_two: [.resources.jobs.job_two.tasks[] | {task_key, job_cluster_key}]}'
