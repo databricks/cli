@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/set"
@@ -29,14 +31,15 @@ func (m *permissionDiagnostics) Name() string {
 }
 
 func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := runAsAccessDiagnostics(b)
+	// Only recommend deployment-identity access when top-level permissions are explicit.
 	if len(b.Config.Permissions) == 0 {
-		// Only warn if there is an explicit top-level permissions section
-		return nil
+		return diags
 	}
 
 	canManageBundle, _ := analyzeBundlePermissions(b)
 	if canManageBundle {
-		return nil
+		return diags
 	}
 
 	me := b.Config.Workspace.CurrentUser.User
@@ -45,7 +48,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		identityType = "service_principal_name"
 	}
 
-	return diag.Diagnostics{{
+	return diags.Append(diag.Diagnostic{
 		Severity: diag.Recommendation,
 		Summary: fmt.Sprintf("permissions section should explicitly include the current deployment identity '%s' or one of its groups\n"+
 			"If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.\n\n"+
@@ -60,6 +63,62 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		),
 		Locations: []diag.Location{b.Config.GetLocation("permissions")},
 		ID:        diag.PermissionNotIncluded,
+	})
+}
+
+func runAsAccessDiagnostics(b *bundle.Bundle) diag.Diagnostics {
+	runAs := b.Config.RunAs
+	if runAs == nil {
+		return nil
+	}
+
+	identityType, identity := "user_name", runAs.UserName
+	if runAs.ServicePrincipalName != "" {
+		identityType, identity = "service_principal_name", runAs.ServicePrincipalName
+	} else if runAs.GroupName != "" {
+		identityType, identity = "group_name", runAs.GroupName
+	}
+
+	if identityType != "group_name" && identity == b.Config.Workspace.CurrentUser.UserName {
+		return nil
+	}
+
+	if b.IsSourceLinkedDeployment() {
+		return diag.Diagnostics{{
+			Severity:  diag.Warning,
+			Summary:   fmt.Sprintf("run_as identity %q may not be able to read source-linked files", identity),
+			Detail:    "Source-linked deployments read files from the source workspace folder. Grant the run_as identity CAN_READ access to that folder; top-level bundle permissions do not manage source-linked files.",
+			Locations: []diag.Location{b.Config.GetLocation("run_as")},
+		}}
+	}
+	if libraries.IsWorkspaceSharedPath(b.Config.Workspace.FilePath) {
+		return diag.Diagnostics{{
+			Severity:  diag.Warning,
+			Summary:   fmt.Sprintf("run_as identity %q may not be able to read files in /Workspace/Shared", identity),
+			Detail:    fmt.Sprintf("Check that the run_as identity has CAN_READ access to %s. Top-level bundle permissions do not manage files in /Workspace/Shared.", b.Config.Workspace.FilePath),
+			Locations: []diag.Location{b.Config.GetLocation("run_as")},
+		}}
+	}
+
+	runAsPermission := resources.Permission{
+		UserName:             runAs.UserName,
+		ServicePrincipalName: runAs.ServicePrincipalName,
+		GroupName:            runAs.GroupName,
+	}
+	for _, permission := range b.Config.Permissions {
+		if samePrincipal(permission, runAsPermission) {
+			return nil
+		}
+	}
+
+	return diag.Diagnostics{{
+		Severity: diag.Warning,
+		Summary:  fmt.Sprintf("run_as identity %q is not in bundle top-level permissions", identity),
+		Detail: fmt.Sprintf("Add a top-level permission so this identity can access deployed files and resources:\n"+
+			"  permissions:\n"+
+			"    - %s: %s\n"+
+			"      level: CAN_VIEW", identityType, identity),
+		Locations: []diag.Location{b.Config.GetLocation("run_as")},
 	}}
 }
 
