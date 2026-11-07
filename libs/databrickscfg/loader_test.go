@@ -1,15 +1,32 @@
 package databrickscfg
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func stubUnavailableLoaderMetadata(t *testing.T, hosts ...string) {
+	t.Helper()
+	previous := config.DefaultHostMetadataResolverFactory
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		return func(_ context.Context, host string) (*config.HostMetadata, error) {
+			if !slices.Contains(hosts, host) {
+				t.Error("unexpected fixture metadata host")
+				return nil, errors.New("unexpected fixture metadata host")
+			}
+			return nil, nil
+		}
+	}
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = previous })
+}
 
 func TestLoaderSkipsEmptyHost(t *testing.T) {
 	cfg := config.Config{
@@ -24,6 +41,7 @@ func TestLoaderSkipsEmptyHost(t *testing.T) {
 }
 
 func TestLoaderSkipsExistingAuth(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://foo.test")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -68,6 +86,7 @@ func TestResolveNonAuthFromEnvSkipsHostAndAuth(t *testing.T) {
 }
 
 func TestProfileAuthLoadersProfileWinsOverSteeringEnv(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://default.test")
 	// A PAT profile plus auth-steering/routing env vars. The profile owns
 	// host/routing/auth-steering, so these env vars must not shadow it (#5096).
 	// In particular DATABRICKS_AUTH_TYPE=basic must not force basic auth over the
@@ -98,6 +117,7 @@ func TestProfileAuthLoadersProfileWinsOverSteeringEnv(t *testing.T) {
 }
 
 func TestProfileAuthLoadersGapFillsHostFromEnv(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://env.test")
 	// A selected profile that leaves the host empty falls back to the env host,
 	// mirroring the token gap-fill (#5096). Auth-steering env vars stay ignored.
 	dir := t.TempDir()
@@ -167,6 +187,7 @@ func TestEnvAlwaysSkipAttrsCoverSDKInternalEnvAttrs(t *testing.T) {
 }
 
 func TestLoaderSkipsExplicitAuthType(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://default.test")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -184,6 +205,7 @@ func TestLoaderSkipsExplicitAuthType(t *testing.T) {
 }
 
 func TestLoaderSkipsNonExistingConfigFile(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://default.test")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -211,6 +233,7 @@ func TestLoaderErrorsOnInvalidFile(t *testing.T) {
 }
 
 func TestLoaderSkipsNoMatchingHost(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://noneofthehostsmatch.test")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -225,6 +248,7 @@ func TestLoaderSkipsNoMatchingHost(t *testing.T) {
 }
 
 func TestLoaderMatchingHost(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://default.test")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -240,6 +264,7 @@ func TestLoaderMatchingHost(t *testing.T) {
 }
 
 func TestLoaderMatchingHostWithQuery(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://query.test")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -298,6 +323,7 @@ func TestAsMultipleProfilesReturnsFalseForNil(t *testing.T) {
 }
 
 func TestLoaderDisambiguatesByWorkspaceID(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://spog.databricks.com")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -314,6 +340,7 @@ func TestLoaderDisambiguatesByWorkspaceID(t *testing.T) {
 }
 
 func TestLoaderDisambiguatesByWorkspaceIDSecondProfile(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://spog.databricks.com")
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -404,6 +431,7 @@ func writeTestConfigFile(t *testing.T, contents string) string {
 }
 
 func TestStrictProfileLoader(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://classic.test", "https://custom.test")
 	profiles := writeTestConfigFile(t, strictProfiles)
 	ambiguous := writeTestConfigFile(t, "[DEFAULT]\nhost = https://classic.test\n\n[workspace_classic]\nhost = https://classic.test\n")
 	missing := filepath.Join(t.TempDir(), "missing")
@@ -466,6 +494,7 @@ func TestStrictProfileLoader(t *testing.T) {
 }
 
 func TestStrictProfileLoadersIgnoreEnvHost(t *testing.T) {
+	stubUnavailableLoaderMetadata(t, "https://custom.test")
 	// The env token reaches only the host of the selected profile, even when the
 	// env also sets a host.
 	t.Setenv("DATABRICKS_HOST", "https://env.test")

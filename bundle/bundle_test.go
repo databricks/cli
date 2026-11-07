@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
@@ -178,6 +179,10 @@ func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
 }
 
 func TestClearWorkspaceClient(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "databrickscfg")
+	testutil.WriteFile(t, configPath, "")
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
 	ctx := t.Context()
 
 	// First attempt: profile "profile-A" doesn't exist → error mentions "profile-A".

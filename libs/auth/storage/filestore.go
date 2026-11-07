@@ -99,17 +99,7 @@ func NewFileStore(ctx context.Context, opts ...FileStoreOption) (Store, error) {
 
 // Put implements the Store interface.
 func (c *fileStore) Put(key string, e Entry) error {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
-	if err != nil {
-		return fmt.Errorf("load: %w", err)
-	}
-	if f.Tokens == nil {
-		f.Tokens = map[string]*fileEntry{}
-	}
-	f.Tokens[key] = &fileEntry{Token: e.Token, PendingLogin: e.PendingLogin}
-	return c.write(f)
+	return PutWithContext(context.Background(), c, key, e) //nolint:gocritic // Legacy Store interface has no operation context.
 }
 
 // Lookup implements the Store interface.
@@ -121,7 +111,7 @@ func (c *fileStore) Lookup(key string) (Entry, error) {
 		return Entry{}, fmt.Errorf("load: %w", err)
 	}
 	fe, ok := f.Tokens[key]
-	if !ok {
+	if !ok || fe == nil {
 		return Entry{}, ErrNotFound
 	}
 	return Entry{Token: fe.Token, PendingLogin: fe.PendingLogin}, nil
@@ -129,17 +119,40 @@ func (c *fileStore) Lookup(key string) (Entry, error) {
 
 // Delete implements the Store interface. Removing a missing key is a no-op.
 func (c *fileStore) Delete(key string) error {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
+	return DeleteWithContext(context.Background(), c, key) //nolint:gocritic // Legacy Store interface has no operation context.
+}
+
+// WithFileTransaction publishes one staged map while holding the cache lease.
+func (c *fileStore) WithFileTransaction(ctx context.Context, update, cleanup func(Store) error) (bool, error) {
+	unlock, err := lockTokenStore(ctx, c.fileLocation+".lock")
 	if err != nil {
-		return fmt.Errorf("load: %w", err)
+		return true, fmt.Errorf("token store lock: %w", err)
 	}
-	if _, ok := f.Tokens[key]; !ok {
-		return nil
+	defer unlock()
+	file, err := c.load()
+	if err != nil {
+		return true, fmt.Errorf("load: %w", err)
 	}
-	delete(f.Tokens, key)
-	return c.write(f)
+	staged := &fileTransaction{file: cloneStoreFile(file)}
+	if err := update(staged); err != nil {
+		return true, err
+	}
+	if !staged.dirty {
+		return true, nil
+	}
+	if err := c.write(staged.file); err != nil {
+		err = fmt.Errorf("cache update: %w", err)
+		if cleanup == nil {
+			return true, err
+		}
+		rollback := &fileTransaction{file: cloneStoreFile(file)}
+		cleanupErr := cleanup(rollback)
+		if cleanupErr == nil && rollback.dirty {
+			cleanupErr = c.write(rollback.file)
+		}
+		return true, errors.Join(err, cleanupErr)
+	}
+	return true, nil
 }
 
 // write marshals f and atomically replaces the store file.
@@ -165,14 +178,40 @@ func (c *fileStore) init(ctx context.Context) error {
 		}
 		c.fileLocation = filepath.Join(home, tokenStoreFilePath)
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	location, err := filepath.Abs(c.fileLocation)
+	if err != nil {
+		return fmt.Errorf("resolve file location: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(location), ownerExecReadWrite); err != nil {
+		return fmt.Errorf("mkdir: %w", err)
+	}
+	parent, err := filepath.EvalSymlinks(filepath.Dir(location))
+	if err != nil {
+		return fmt.Errorf("resolve store directory: %w", err)
+	}
+	c.fileLocation = filepath.Join(parent, filepath.Base(location))
+	if target, err := filepath.EvalSymlinks(c.fileLocation); err == nil {
+		c.fileLocation = target
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("resolve store file: %w", err)
+	}
 	// Create the store file if it does not exist.
 	if _, err := os.Stat(c.fileLocation); err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("stat file: %w", err)
 		}
-		// Create the parent directories if needed.
-		if err := os.MkdirAll(filepath.Dir(c.fileLocation), ownerExecReadWrite); err != nil {
-			return fmt.Errorf("mkdir: %w", err)
+		unlock, err := lockTokenStore(ctx, c.fileLocation+".lock")
+		if err != nil {
+			return fmt.Errorf("token store lock: %w", err)
+		}
+		defer unlock()
+		if _, err := os.Stat(c.fileLocation); err == nil {
+			return nil
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("stat file: %w", err)
 		}
 
 		// Create an empty store file.

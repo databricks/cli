@@ -123,6 +123,7 @@ func TestAuthArgumentsFromConfig(t *testing.T) {
 }
 
 func TestCLICredentialsConfigure(t *testing.T) {
+	stubUnavailableAuthArgumentMetadata(t, "https://myworkspace.cloud.databricks.com", "https://accounts.cloud.databricks.com")
 	testErr := errors.New("test error")
 
 	tests := []struct {
@@ -210,6 +211,7 @@ func TestCLICredentialsConfigure(t *testing.T) {
 // NewPersistentAuth defaults to an in-memory store, so it cannot see the token
 // persisted by auth login.
 func TestCLICredentialsConfigure_ThreadsResolvedTokenStore(t *testing.T) {
+	stubUnavailableAuthArgumentMetadata(t, "https://x.cloud.databricks.com")
 	hermeticAuthStorage(t)
 
 	var receivedOpts []u2m.PersistentAuthOption
@@ -232,6 +234,7 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenStore(t *testing.T) {
 }
 
 func TestCLICredentialsConfigure_ClientID(t *testing.T) {
+	stubUnavailableAuthArgumentMetadata(t, "https://workspace.test")
 	tests := []struct {
 		name     string
 		authType string
@@ -301,6 +304,7 @@ func TestCLICredentialsConfigure_ClientID(t *testing.T) {
 // silently falling back to the file cache. If Configure ever stops calling
 // storage.ResolveStore, this test will catch it.
 func TestCLICredentialsConfigure_PropagatesStorageResolutionError(t *testing.T) {
+	stubUnavailableAuthArgumentMetadata(t, "https://x.cloud.databricks.com")
 	hermeticAuthStorage(t)
 	t.Setenv(storage.EnvVar, "bogus")
 
@@ -334,6 +338,7 @@ func writeAuthStorageConfig(t *testing.T, mode string) {
 // but the PR's user-facing docs promise both work and nothing was asserting
 // that for this call site.
 func TestCLICredentialsConfigure_HonorsConfigFileSecureMode(t *testing.T) {
+	stubUnavailableAuthArgumentMetadata(t, "https://x.cloud.databricks.com")
 	writeAuthStorageConfig(t, "secure")
 
 	c := CLICredentials{

@@ -1,17 +1,37 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func stubUnavailableAuthArgumentMetadata(t *testing.T, hosts ...string) {
+	t.Helper()
+	previous := config.DefaultHostMetadataResolverFactory
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		return func(_ context.Context, host string) (*config.HostMetadata, error) {
+			if !slices.Contains(hosts, host) {
+				t.Error("unexpected fixture metadata host")
+				return nil, errors.New("unexpected fixture metadata host")
+			}
+			return nil, nil
+		}
+	}
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = previous })
+}
+
 func TestToOAuthArgument(t *testing.T) {
+	stubUnavailableAuthArgumentMetadata(t, "https://my-workspace.cloud.databricks.com", "https://accounts.cloud.databricks.com")
 	tests := []struct {
 		name         string
 		args         AuthArguments

@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -113,13 +114,9 @@ func TestProfileHostConflictTokenViaCobra(t *testing.T) {
 	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.test", which conflicts with --host "https://other.host.test"`)
 }
 
-// TestProfileHostCompatibleViaCobra verifies that matching --profile and --host
-// pass the conflict check (the command will fail later for other reasons, but
-// NOT with a conflict error).
+// Matching flags reach the stubbed run boundary after the real conflict check.
 func TestProfileHostCompatibleViaCobra(t *testing.T) {
-	// Copy the fixture into a temp directory so the auth login flow's writes
-	// (e.g. silent plaintext-fallback persistence on CI runners without a
-	// usable keyring) cannot dirty the checked-in fixture.
+	// Keep Cobra's profile fixture in the owned test directory.
 	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
 	fixture, err := os.ReadFile("./testdata/.databrickscfg")
 	require.NoError(t, err)
@@ -129,6 +126,10 @@ func TestProfileHostCompatibleViaCobra(t *testing.T) {
 	ctx := cmdctx.GenerateExecId(t.Context())
 	cli := root.New(ctx)
 	cli.AddCommand(New())
+	login, _, err := cli.Find([]string{"auth", "login"})
+	require.NoError(t, err)
+	reachedRun := false
+	login.RunE = func(*cobra.Command, []string) error { reachedRun = true; return nil }
 
 	cli.SetArgs([]string{
 		"auth", "login",
@@ -137,8 +138,7 @@ func TestProfileHostCompatibleViaCobra(t *testing.T) {
 	})
 
 	_, err = cli.ExecuteContextC(ctx)
-	// The command may fail for other reasons (no browser, non-interactive, etc.)
-	// but it should NOT fail with a conflict error.
+	assert.True(t, reachedRun)
 	if err != nil {
 		assert.NotContains(t, err.Error(), "conflicts with --host")
 	}

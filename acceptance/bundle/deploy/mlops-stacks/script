@@ -36,7 +36,7 @@ if [ -z "$CLOUD_ENV" ]; then
 else
   trace $CLI bundle init mlops-stacks --config-file config.json
 fi
-trace cat test_repo_mlops_stacks/README.md | head -n 4
+trace cat test_repo_mlops_stacks/README.md | sed -n '1,4p'
 
 cd "test_repo_mlops_stacks/project_name_${UNIQUE_NAME}" || exit 1
 
