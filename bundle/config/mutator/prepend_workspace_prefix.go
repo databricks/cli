@@ -45,6 +45,10 @@ func prependWorkspacePrefixTo(path string) string {
 		return path
 	}
 
+	if path == "/Workspace" || path == "/Volumes" {
+		return path
+	}
+
 	for _, prefix := range skipPrefixes {
 		if strings.HasPrefix(path, prefix) {
 			return path

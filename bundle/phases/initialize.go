@@ -137,6 +137,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Resolves variable references in configuration (except resources) using bundle, workspace,
 		// and variables prefixes
 		mutator.ResolveVariableReferencesWithoutResources(),
+		// Variable-based workspace paths can become absolute only after resolution.
+		mutator.PrependWorkspacePrefix(),
 
 		// Check for invalid use of /Volumes in workspace paths
 		validate.ValidateVolumePath(),

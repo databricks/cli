@@ -106,3 +106,38 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/state", b.Config.Workspace.StatePath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/resources", b.Config.Workspace.ResourcePath)
 }
+
+func TestFactory96162B875C12(t *testing.T) {
+	for _, root := range []string{"/Users/jane@doe.com", "/Shared"} {
+		t.Run(root, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Bundle: config.Bundle{Name: root},
+					Workspace: config.Workspace{
+						RootPath: "${bundle.name}/path/to/root",
+					},
+				},
+			}
+
+			diags := bundle.ApplySeq(t.Context(), b,
+				DefineDefaultWorkspacePaths(),
+				PrependWorkspacePrefix(),
+				ResolveVariableReferencesWithoutResources(),
+			)
+			require.NoError(t, diags.Error())
+			require.Equal(t, root+"/path/to/root", b.Config.Workspace.RootPath)
+
+			diags = bundle.Apply(t.Context(), b, PrependWorkspacePrefix())
+			require.NoError(t, diags.Error())
+			require.Equal(t, "/Workspace"+root+"/path/to/root", b.Config.Workspace.RootPath)
+			require.Equal(t, "/Workspace"+root+"/path/to/root/files", b.Config.Workspace.FilePath)
+			require.Equal(t, "/Workspace"+root+"/path/to/root/artifacts", b.Config.Workspace.ArtifactPath)
+			require.Equal(t, "/Workspace"+root+"/path/to/root/state", b.Config.Workspace.StatePath)
+			require.Equal(t, "/Workspace"+root+"/path/to/root/resources", b.Config.Workspace.ResourcePath)
+		})
+	}
+
+	for _, path := range []string{"/Workspace", "/Volumes"} {
+		require.Equal(t, path, prependWorkspacePrefixTo(path))
+	}
+}
