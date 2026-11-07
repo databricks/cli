@@ -858,10 +858,16 @@ tasks:
   # version bumps (go.mod/go.sum) are a manual `go get` step beforehand;
   # TestConsistentDatabricksSdkVersion asserts the two stay in sync.
   #
+  # The same run refreshes climod/.codegen/ in genkit's cli-mod mode:
+  # sdk-go-field-paths.txt maps each field of the modular Go SDK
+  # (github.com/databricks/sdk-go) to its JSON path, and cli.json holds the same
+  # mapping per message. That SDK's names differ from the classic SDK's, so the
+  # files come from its own proto view rather than from the OpenAPI spec.
+  #
   # No `sources:`/`generates:`: this task deliberately refreshes cli.json from
   # an external Universe checkout whenever it is invoked.
   generate-clijson:
-    desc: Produce .codegen/cli.json from its pinned Universe commit via genkit
+    desc: Produce .codegen/cli.json and climod/.codegen/ from their pinned Universe commit via genkit
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
@@ -898,15 +904,21 @@ tasks:
         fi
         git -C "$BUILD_DIR/universe" checkout --quiet --detach "$OPENAPI_SHA"
 
-        echo "Building genkit and OpenAPI spec at ${OPENAPI_SHA}..."
+        echo "Building genkit, OpenAPI spec, and Go SDK descriptor set at ${OPENAPI_SHA}..."
         cd "$BUILD_DIR/universe"
-        ./tools/bazel build //deco/genkit //openapi:all-internal.json
+        ./tools/bazel build //deco/genkit //openapi:all-internal.json \
+          //deco/public_proto:public_proto_sdk_go_descriptor_set_with_source_info
 
         echo "Generating CLI code..."
         "$BUILD_DIR/universe/bazel-bin/deco/genkit/genkit_/genkit" update-sdk \
           --dir "{{.ROOT_DIR}}" \
           --openapi-spec-file "$BUILD_DIR/universe/bazel-bin/openapi/all-internal.json" \
           --openapi-spec-sha "$OPENAPI_SHA"
+
+        echo "Generating the modular Go SDK's CLI spec..."
+        "$BUILD_DIR/universe/bazel-bin/deco/genkit/genkit_/genkit" experimental-update-sdk \
+          --dir "{{.ROOT_DIR}}/climod" \
+          --descriptor-set "$BUILD_DIR/universe/bazel-bin/deco/public_proto/public_proto_sdk_go_with_source_info.pb"
       # The SDK-version consistency check runs here for fast feedback when
       # generate-clijson is invoked manually. Cleanup of genkit's output is
       # delegated to generate-clijson-post so the SDK bumper can reuse it.
