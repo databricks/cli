@@ -44,6 +44,8 @@ resources.synced_database_tables.*.effective_database_instance_name	string	ALL
 resources.synced_database_tables.*.effective_logical_database_name	string	ALL
 resources.synced_database_tables.*.id	string	INPUT
 resources.synced_database_tables.*.lifecycle	resources.Lifecycle	INPUT
+resources.synced_database_tables.*.lifecycle.bind	*resources.Bind	INPUT
+resources.synced_database_tables.*.lifecycle.bind.id	string	INPUT
 resources.synced_database_tables.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.synced_database_tables.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.synced_database_tables.*.lifecycle.depends_on[*].resource	string	INPUT

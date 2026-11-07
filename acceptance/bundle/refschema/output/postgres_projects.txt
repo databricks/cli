@@ -27,6 +27,8 @@ resources.postgres_projects.*.initial_endpoint_spec.group.min	int	REMOTE
 resources.postgres_projects.*.initial_endpoint_spec.no_suspension	bool	REMOTE
 resources.postgres_projects.*.initial_endpoint_spec.suspend_timeout_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_projects.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_projects.*.lifecycle.bind.id	string	INPUT
 resources.postgres_projects.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_projects.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_projects.*.lifecycle.depends_on[*].resource	string	INPUT

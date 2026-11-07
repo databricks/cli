@@ -15,6 +15,7 @@ var RequiredFields = map[string][]string{
 	"resources.alerts.*.evaluation":                  {"comparison_operator", "source"},
 	"resources.alerts.*.evaluation.source":           {"name"},
 	"resources.alerts.*.evaluation.threshold.column": {"name"},
+	"resources.alerts.*.lifecycle.bind":              {"id"},
 	"resources.alerts.*.lifecycle.depends_on[*]":     {"resource"},
 	"resources.alerts.*.parameters[*]":               {"name"},
 	"resources.alerts.*.permissions[*]":              {"level"},
@@ -26,6 +27,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.default_git_source.git_repository":              {"provider", "url"},
 	"resources.apps.*.git_repository":                                 {"provider", "url"},
 	"resources.apps.*.git_source.git_repository":                      {"provider", "url"},
+	"resources.apps.*.lifecycle.bind":                                 {"id"},
 	"resources.apps.*.lifecycle.depends_on[*]":                        {"resource"},
 	"resources.apps.*.pending_deployment.git_source.git_repository":   {"provider", "url"},
 	"resources.apps.*.permissions[*]":                                 {"level"},
@@ -41,12 +43,14 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.telemetry_export_destinations[*].unity_catalog": {"logs_table", "metrics_table", "traces_table"},
 
 	"resources.catalogs.*":                                                       {"name"},
+	"resources.catalogs.*.lifecycle.bind":                                        {"id"},
 	"resources.catalogs.*.lifecycle.depends_on[*]":                               {"resource"},
 	"resources.catalogs.*.managed_encryption_settings.azure_encryption_settings": {"azure_tenant_id"},
 
 	"resources.cluster_policies.*.libraries[*].cran":       {"package"},
 	"resources.cluster_policies.*.libraries[*].maven":      {"coordinates"},
 	"resources.cluster_policies.*.libraries[*].pypi":       {"package"},
+	"resources.cluster_policies.*.lifecycle.bind":          {"id"},
 	"resources.cluster_policies.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.cluster_policies.*.permissions[*]":          {"level"},
 
@@ -63,10 +67,12 @@ var RequiredFields = map[string][]string{
 	"resources.clusters.*.libraries[*].cran":         {"package"},
 	"resources.clusters.*.libraries[*].maven":        {"coordinates"},
 	"resources.clusters.*.libraries[*].pypi":         {"package"},
+	"resources.clusters.*.lifecycle.bind":            {"id"},
 	"resources.clusters.*.lifecycle.depends_on[*]":   {"resource"},
 	"resources.clusters.*.permissions[*]":            {"level"},
 	"resources.clusters.*.workload_type":             {"clients"},
 
+	"resources.dashboards.*.lifecycle.bind":          {"id"},
 	"resources.dashboards.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.dashboards.*.permissions[*]":          {"level"},
 
@@ -76,21 +82,26 @@ var RequiredFields = map[string][]string{
 	"resources.data_quality_monitors.*.data_profiling_config.inference_log":     {"granularities", "model_id_column", "prediction_column", "problem_type", "timestamp_column"},
 	"resources.data_quality_monitors.*.data_profiling_config.schedule":          {"quartz_cron_expression", "timezone_id"},
 	"resources.data_quality_monitors.*.data_profiling_config.time_series":       {"granularities", "timestamp_column"},
+	"resources.data_quality_monitors.*.lifecycle.bind":                          {"id"},
 	"resources.data_quality_monitors.*.lifecycle.depends_on[*]":                 {"resource"},
 
 	"resources.database_catalogs.*":                         {"database_instance_name", "database_name", "name"},
+	"resources.database_catalogs.*.lifecycle.bind":          {"id"},
 	"resources.database_catalogs.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.database_instances.*":                         {"name"},
+	"resources.database_instances.*.lifecycle.bind":          {"id"},
 	"resources.database_instances.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.database_instances.*.permissions[*]":          {"level"},
 
 	"resources.experiments.*":                                  {"name"},
+	"resources.experiments.*.lifecycle.bind":                   {"id"},
 	"resources.experiments.*.lifecycle.depends_on[*]":          {"resource"},
 	"resources.experiments.*.permissions[*]":                   {"level"},
 	"resources.experiments.*.trace_location.uc_trace_location": {"catalog", "schema"},
 
 	"resources.external_locations.*":                         {"credential_name", "name", "url"},
+	"resources.external_locations.*.lifecycle.bind":          {"id"},
 	"resources.external_locations.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.features.*":             {"full_name", "function", "source"},
@@ -119,6 +130,7 @@ var RequiredFields = map[string][]string{
 	"resources.features.*.function.custom_udf":                                  {"function_path"},
 	"resources.features.*.function.custom_udf.input_bindings[*]":                {"column", "parameter"},
 	"resources.features.*.function.extra_parameters[*]":                         {"key", "value"},
+	"resources.features.*.lifecycle.bind":                                       {"id"},
 	"resources.features.*.lifecycle.depends_on[*]":                              {"resource"},
 	"resources.features.*.source.delta_table_source":                            {"full_name"},
 	"resources.features.*.source.feature_view_source.feature_references[*]":     {"feature"},
@@ -133,14 +145,17 @@ var RequiredFields = map[string][]string{
 	"resources.features.*.time_window.tumbling":                                 {"window_duration"},
 	"resources.features.*.timeseries_column":                                    {"name"},
 
+	"resources.genie_spaces.*.lifecycle.bind":          {"id"},
 	"resources.genie_spaces.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.genie_spaces.*.permissions[*]":          {"level"},
 
 	"resources.instance_pools.*":                         {"instance_pool_name", "node_type_id"},
+	"resources.instance_pools.*.lifecycle.bind":          {"id"},
 	"resources.instance_pools.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.instance_pools.*.permissions[*]":          {"level"},
 
 	"resources.job_runs.*":                         {"job_id"},
+	"resources.job_runs.*.lifecycle.bind":          {"id"},
 	"resources.job_runs.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.job_runs.*.queue":                   {"enabled"},
 
@@ -163,6 +178,7 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.job_clusters[*].new_cluster.init_scripts[*].volumes":                                           {"destination"},
 	"resources.jobs.*.job_clusters[*].new_cluster.init_scripts[*].workspace":                                         {"destination"},
 	"resources.jobs.*.job_clusters[*].new_cluster.workload_type":                                                     {"clients"},
+	"resources.jobs.*.lifecycle.bind":                                                                                {"id"},
 	"resources.jobs.*.lifecycle.depends_on[*]":                                                                       {"resource"},
 	"resources.jobs.*.parameters[*]":                                                                                 {"default", "name"},
 	"resources.jobs.*.permissions[*]":                                                                                {"level"},
@@ -299,6 +315,7 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*]":                                        {"id"},
 	"resources.jobs.*.webhook_notifications.on_success[*]":                                                           {"id"},
 
+	"resources.materialization_sets.*.lifecycle.bind":                                {"id"},
 	"resources.materialization_sets.*.lifecycle.depends_on[*]":                       {"resource"},
 	"resources.materialization_sets.*.materialized_features[*]":                      {"feature_name"},
 	"resources.materialization_sets.*.materialized_features[*].offline_store_config": {"catalog_name", "schema_name", "table_name_prefix"},
@@ -307,6 +324,7 @@ var RequiredFields = map[string][]string{
 	"resources.mcp_services.*":                          {"parent", "mcp_service_id"},
 	"resources.mcp_services.*.config.rate_limits[*]":    {"key", "renewal_period"},
 	"resources.mcp_services.*.config.source_connection": {"name"},
+	"resources.mcp_services.*.lifecycle.bind":           {"id"},
 	"resources.mcp_services.*.lifecycle.depends_on[*]":  {"resource"},
 
 	"resources.model_provider_services.*": {"parent", "model_provider_service_id"},
@@ -329,6 +347,7 @@ var RequiredFields = map[string][]string{
 	"resources.model_provider_services.*.config.openai.direct.api_key.secret_reference":                                          {"name"},
 	"resources.model_provider_services.*.config.rate_limits[*]":                                                                  {"key", "renewal_period"},
 	"resources.model_provider_services.*.config.targets[*]":                                                                      {"model"},
+	"resources.model_provider_services.*.lifecycle.bind":                                                                         {"id"},
 	"resources.model_provider_services.*.lifecycle.depends_on[*]":                                                                {"resource"},
 
 	"resources.model_services.*":                                                                       {"parent", "model_service_id"},
@@ -344,6 +363,7 @@ var RequiredFields = map[string][]string{
 	"resources.model_services.*.config.routing.fallback.destinations[*].external_model_config.target":  {"model"},
 	"resources.model_services.*.config.routing.fallback.destinations[*].pay_per_token_config":          {"model"},
 	"resources.model_services.*.config.routing.fallback.destinations[*].provisioned_throughput_config": {"model_serving_endpoint"},
+	"resources.model_services.*.lifecycle.bind":                                                        {"id"},
 	"resources.model_services.*.lifecycle.depends_on[*]":                                               {"resource"},
 
 	"resources.model_serving_endpoints.*":                                                                              {"name"},
@@ -357,12 +377,14 @@ var RequiredFields = map[string][]string{
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config":       {"project_id", "region"},
 	"resources.model_serving_endpoints.*.config.served_models[*]":                                                      {"model_name", "model_version", "scale_to_zero_enabled"},
 	"resources.model_serving_endpoints.*.config.traffic_config.routes[*]":                                              {"traffic_percentage"},
+	"resources.model_serving_endpoints.*.lifecycle.bind":                                                               {"id"},
 	"resources.model_serving_endpoints.*.lifecycle.depends_on[*]":                                                      {"resource"},
 	"resources.model_serving_endpoints.*.permissions[*]":                                                               {"level"},
 	"resources.model_serving_endpoints.*.rate_limits[*]":                                                               {"calls", "renewal_period"},
 	"resources.model_serving_endpoints.*.tags[*]":                                                                      {"key"},
 
 	"resources.models.*":                         {"name"},
+	"resources.models.*.lifecycle.bind":          {"id"},
 	"resources.models.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.models.*.permissions[*]":          {"level"},
 
@@ -397,34 +419,43 @@ var RequiredFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy":                  {"enabled"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy":                                   {"enabled"},
 	"resources.pipelines.*.libraries[*].maven":                                                                                  {"coordinates"},
+	"resources.pipelines.*.lifecycle.bind":                                                                                      {"id"},
 	"resources.pipelines.*.lifecycle.depends_on[*]":                                                                             {"resource"},
 	"resources.pipelines.*.permissions[*]":                                                                                      {"level"},
 	"resources.pipelines.*.restart_window":                                                                                      {"start_hour"},
 
 	"resources.postgres_branches.*":                         {"branch_id", "parent"},
+	"resources.postgres_branches.*.lifecycle.bind":          {"id"},
 	"resources.postgres_branches.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.postgres_catalogs.*":                         {"postgres_database", "catalog_id"},
+	"resources.postgres_catalogs.*.lifecycle.bind":          {"id"},
 	"resources.postgres_catalogs.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.postgres_data_apis.*":                         {"parent"},
+	"resources.postgres_data_apis.*.lifecycle.bind":          {"id"},
 	"resources.postgres_data_apis.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.postgres_databases.*":                         {"role", "database_id", "parent"},
+	"resources.postgres_databases.*.lifecycle.bind":          {"id"},
 	"resources.postgres_databases.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.postgres_endpoints.*":                         {"endpoint_type", "endpoint_id", "parent"},
 	"resources.postgres_endpoints.*.group":                   {"max", "min"},
+	"resources.postgres_endpoints.*.lifecycle.bind":          {"id"},
 	"resources.postgres_endpoints.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.postgres_projects.*":                         {"project_id"},
+	"resources.postgres_projects.*.lifecycle.bind":          {"id"},
 	"resources.postgres_projects.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.postgres_projects.*.permissions[*]":          {"level"},
 
 	"resources.postgres_roles.*":                         {"role_id", "parent"},
+	"resources.postgres_roles.*.lifecycle.bind":          {"id"},
 	"resources.postgres_roles.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.postgres_snapshot_schedules.*":                              {"branch"},
+	"resources.postgres_snapshot_schedules.*.lifecycle.bind":               {"id"},
 	"resources.postgres_snapshot_schedules.*.lifecycle.depends_on[*]":      {"resource"},
 	"resources.postgres_snapshot_schedules.*.schedule[*]":                  {"retention"},
 	"resources.postgres_snapshot_schedules.*.schedule[*].monthly_schedule": {"day"},
@@ -432,44 +463,55 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_synced_tables.*":                         {"synced_table_id"},
 	"resources.postgres_synced_tables.*.extra_columns[*]":        {"column_name", "column_type"},
+	"resources.postgres_synced_tables.*.lifecycle.bind":          {"id"},
 	"resources.postgres_synced_tables.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.postgres_synced_tables.*.type_overrides[*]":       {"column_name", "pg_type"},
 
 	"resources.quality_monitors.*":                         {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]":       {"definition", "input_columns", "name", "output_data_type", "type"},
 	"resources.quality_monitors.*.inference_log":           {"granularities", "model_id_col", "prediction_col", "problem_type", "timestamp_col"},
+	"resources.quality_monitors.*.lifecycle.bind":          {"id"},
 	"resources.quality_monitors.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.quality_monitors.*.schedule":                {"quartz_cron_expression", "timezone_id"},
 	"resources.quality_monitors.*.time_series":             {"granularities", "timestamp_col"},
 
+	"resources.registered_models.*.lifecycle.bind":          {"id"},
 	"resources.registered_models.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.schemas.*":                         {"catalog_name", "name"},
+	"resources.schemas.*.lifecycle.bind":          {"id"},
 	"resources.schemas.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.secret_scopes.*":                         {"name"},
 	"resources.secret_scopes.*.keyvault_metadata":       {"dns_name", "resource_id"},
+	"resources.secret_scopes.*.lifecycle.bind":          {"id"},
 	"resources.secret_scopes.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.secret_scopes.*.permissions[*]":          {"level"},
 
 	"resources.secrets.*":                         {"catalog_name", "name", "schema_name", "value"},
+	"resources.secrets.*.lifecycle.bind":          {"id"},
 	"resources.secrets.*.lifecycle.depends_on[*]": {"resource"},
 
+	"resources.sql_warehouses.*.lifecycle.bind":          {"id"},
 	"resources.sql_warehouses.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.sql_warehouses.*.permissions[*]":          {"level"},
 
 	"resources.synced_database_tables.*":                         {"name"},
+	"resources.synced_database_tables.*.lifecycle.bind":          {"id"},
 	"resources.synced_database_tables.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.synced_database_tables.*.spec.type_overrides[*]":  {"column_name", "pg_type"},
 
 	"resources.vector_search_endpoints.*":                         {"endpoint_type", "name"},
+	"resources.vector_search_endpoints.*.lifecycle.bind":          {"id"},
 	"resources.vector_search_endpoints.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.vector_search_endpoints.*.permissions[*]":          {"level"},
 
 	"resources.vector_search_indexes.*":                         {"endpoint_name", "index_type", "name", "primary_key"},
+	"resources.vector_search_indexes.*.lifecycle.bind":          {"id"},
 	"resources.vector_search_indexes.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.volumes.*":                         {"catalog_name", "name", "schema_name", "volume_type"},
+	"resources.volumes.*.lifecycle.bind":          {"id"},
 	"resources.volumes.*.lifecycle.depends_on[*]": {"resource"},
 
 	"scripts.*": {"content"},

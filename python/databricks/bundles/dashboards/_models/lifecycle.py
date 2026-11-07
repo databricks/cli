@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.dashboards._models.bind import Bind, BindParam
 from databricks.bundles.dashboards._models.depends_on import DependsOn, DependsOnParam
 
 if TYPE_CHECKING:
@@ -15,6 +16,11 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Lifecycle:
     """"""
+
+    bind: VariableOrOptional[Bind] = None
+    """
+    Existing workspace resource to adopt before deployment. Deploy first records its ID and configuration in remote state, then applies normal updates, including target settings such as `mode: development`. Binding remains recorded if deployment fails. While present, this block prevents creation, recreation, and ID changes; removing it does not unbind the resource. `bundle destroy` still deletes bound resources. No bind marker is stored in resource state.
+    """
 
     depends_on: VariableOrList[DependsOn] = field(default_factory=list)
     """
@@ -36,6 +42,11 @@ class Lifecycle:
 
 class LifecycleDict(TypedDict, total=False):
     """"""
+
+    bind: VariableOrOptional[BindParam]
+    """
+    Existing workspace resource to adopt before deployment. Deploy first records its ID and configuration in remote state, then applies normal updates, including target settings such as `mode: development`. Binding remains recorded if deployment fails. While present, this block prevents creation, recreation, and ID changes; removing it does not unbind the resource. `bundle destroy` still deletes bound resources. No bind marker is stored in resource state.
+    """
 
     depends_on: VariableOrList[DependsOnParam]
     """

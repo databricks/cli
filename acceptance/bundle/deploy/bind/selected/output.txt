@@ -1,0 +1,61 @@
+
+=== Selecting a child includes its binding dependency
+>>> [CLI] bundle plan --select child -o json
+
+>>> jq {bind: (.bind | keys), plan: (.plan | keys), not_selected} tmp.plan.json
+{
+  "bind": [
+    "resources.jobs.parent"
+  ],
+  "plan": [
+    "resources.jobs.child",
+    "resources.jobs.parent"
+  ],
+  "not_selected": 1
+}
+
+=== Applying the selection leaves the unrelated resource unbound
+>>> [CLI] bundle deploy --plan tmp.plan.json --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-selected-[UNIQUE_NAME]/default/files...
+Bound jobs.parent
+Created jobs.child
+Updated jobs.parent
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 bound, 1 not selected
+
+>>> print_state.py
+json.state.resources.jobs.child.__id__ = "[CHILD_ID]";
+json.state.resources.jobs.parent.__id__ = "[PARENT_ID]";
+
+=== A fresh selected deploy also leaves it unbound
+>>> [CLI] bundle deploy --select child --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-selected-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged, 1 not selected
+
+>>> print_state.py
+json.state.resources.jobs.child.__id__ = "[CHILD_ID]";
+json.state.resources.jobs.parent.__id__ = "[PARENT_ID]";
+
+=== The remaining binding can be applied separately
+>>> [CLI] bundle deploy --select other --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-selected-[UNIQUE_NAME]/default/files...
+Bound jobs.other
+Updated jobs.other
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound, 2 not selected
+
+>>> print_state.py
+json.state.resources.jobs.child.__id__ = "[CHILD_ID]";
+json.state.resources.jobs.other.__id__ = "[OTHER_ID]";
+json.state.resources.jobs.parent.__id__ = "[PARENT_ID]";
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.child
+  delete resources.jobs.other
+  delete resources.jobs.parent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-selected-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

@@ -1,0 +1,42 @@
+
+>>> [CLI] bundle plan
+Bind:
+  experiments.foo (id: [NEW_EXPERIMENT_ID])
+
+Deploy:
+  No changes
+
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged, 1 to bind
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-basic-[UNIQUE_NAME]/default/files...
+Bound experiments.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 bound
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_state.py
+{
+ "state_version": 3,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 1,
+ "state": {
+  "resources.experiments.foo": {
+   "__id__": "[NEW_EXPERIMENT_ID]",
+   "state": {
+    "name": "/Shared/test-bind-basic-[UNIQUE_NAME]"
+   }
+  }
+ }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.experiments.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-basic-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

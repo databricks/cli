@@ -13,6 +13,9 @@ __all__ = [
     "AvgFunction",
     "AvgFunctionDict",
     "AvgFunctionParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "ColumnSelection",
     "ColumnSelectionDict",
     "ColumnSelectionParam",
@@ -161,6 +164,7 @@ from databricks.bundles.features._models.avg_function import (
     AvgFunctionDict,
     AvgFunctionParam,
 )
+from databricks.bundles.features._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.features._models.column_selection import (
     ColumnSelection,
     ColumnSelectionDict,

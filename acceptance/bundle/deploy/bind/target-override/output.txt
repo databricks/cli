@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "bind": {
+    "id": "[NEW_JOB_ID]"
+  }
+}
+
+>>> [CLI] bundle plan
+Bind:
+  jobs.foo (id: [NEW_JOB_ID])
+
+Deploy:
+  update jobs.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind

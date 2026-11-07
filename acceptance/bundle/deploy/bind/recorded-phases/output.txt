@@ -1,0 +1,167 @@
+
+=== Planning neither records a version nor binds a resource
+>>> [CLI] bundle plan -o json
+
+>>> print_requests.py --dms //api/2.0/bundle
+
+=== Bind completes before a failing apply starts its own version
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-phases-[UNIQUE_NAME]/default/files...
+Bound jobs.existing
+Error: cannot update resources.jobs.existing: updating id=[JOB_ID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/reset
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+Files: 4 uploaded, 0 deleted
+
+>>> print_state.py
+json.state.resources.jobs.existing.__id__ = "[JOB_ID]";
+json.state.resources.jobs.existing.state.name = "before-bind";
+
+>>> print_requests.py --dms --keep --method PATCH //api/2.0/bundle/deployments ^//versions
+
+>>> print_requests.py --dms //versions //api/2.2/jobs/reset
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "version": "1",
+  "operations": [
+    {
+      "action_type": "OPERATION_ACTION_TYPE_BIND",
+      "resource_key": "jobs.existing"
+    }
+  ],
+  "status": null,
+  "completion_reason": null,
+  "state_name": null
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.existing",
+  "version": null,
+  "operations": null,
+  "status": "OPERATION_STATUS_SUCCEEDED",
+  "completion_reason": null,
+  "state_name": "before-bind"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/complete",
+  "version": null,
+  "operations": null,
+  "status": null,
+  "completion_reason": "VERSION_COMPLETE_SUCCESS",
+  "state_name": null
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "version": "2",
+  "operations": [
+    {
+      "action_type": "OPERATION_ACTION_TYPE_UPDATE",
+      "resource_key": "jobs.existing"
+    }
+  ],
+  "status": null,
+  "completion_reason": null,
+  "state_name": null
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "version": null,
+  "operations": null,
+  "status": null,
+  "completion_reason": null,
+  "state_name": null
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/jobs.existing",
+  "version": null,
+  "operations": null,
+  "status": "OPERATION_STATUS_FAILED",
+  "completion_reason": null,
+  "state_name": "before-bind"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/complete",
+  "version": null,
+  "operations": null,
+  "status": null,
+  "completion_reason": "VERSION_COMPLETE_FAILURE",
+  "state_name": null
+}
+
+=== Retrying plans only the unapplied update
+>>> [CLI] bundle plan -o json
+
+>>> jq {has_bind: has("bind"), action: .plan["resources.jobs.existing"].action} tmp.retry.json
+{
+  "has_bind": false,
+  "action": "update"
+}
+
+>>> [CLI] bundle deploy --plan tmp.retry.json --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-phases-[UNIQUE_NAME]/default/files...
+Updated jobs.existing
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [JOB_ID]
+{
+  "name": "after-bind",
+  "version": "3"
+}
+
+>>> print_requests.py --dms //versions //api/2.2/jobs/reset
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "version": "3",
+  "operations": [
+    {
+      "action_type": "OPERATION_ACTION_TYPE_UPDATE",
+      "resource_key": "jobs.existing"
+    }
+  ],
+  "status": null,
+  "completion_reason": null
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "version": null,
+  "operations": null,
+  "status": null,
+  "completion_reason": null
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/operations/jobs.existing",
+  "version": null,
+  "operations": null,
+  "status": "OPERATION_STATUS_SUCCEEDED",
+  "completion_reason": null
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/complete",
+  "version": null,
+  "operations": null,
+  "status": null,
+  "completion_reason": "VERSION_COMPLETE_SUCCESS"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.existing
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-phases-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

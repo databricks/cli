@@ -29,6 +29,8 @@ resources.instance_pools.*.idle_instance_autotermination_minutes	int	ALL
 resources.instance_pools.*.instance_pool_id	string	REMOTE
 resources.instance_pools.*.instance_pool_name	string	ALL
 resources.instance_pools.*.lifecycle	resources.Lifecycle	INPUT
+resources.instance_pools.*.lifecycle.bind	*resources.Bind	INPUT
+resources.instance_pools.*.lifecycle.bind.id	string	INPUT
 resources.instance_pools.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.instance_pools.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.instance_pools.*.lifecycle.depends_on[*].resource	string	INPUT

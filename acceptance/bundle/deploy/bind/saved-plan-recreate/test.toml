@@ -1,0 +1,4 @@
+# The fake server lets this test simulate an immutable field changing after planning.
+Cloud = false
+RecordRequests = true
+Ignore = ["tmp.*.json"]

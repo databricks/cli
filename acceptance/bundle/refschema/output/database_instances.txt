@@ -27,6 +27,8 @@ resources.database_instances.*.enable_pg_native_login	bool	ALL
 resources.database_instances.*.enable_readable_secondaries	bool	ALL
 resources.database_instances.*.id	string	INPUT
 resources.database_instances.*.lifecycle	resources.Lifecycle	INPUT
+resources.database_instances.*.lifecycle.bind	*resources.Bind	INPUT
+resources.database_instances.*.lifecycle.bind.id	string	INPUT
 resources.database_instances.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.database_instances.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.database_instances.*.lifecycle.depends_on[*].resource	string	INPUT

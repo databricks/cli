@@ -91,6 +91,8 @@ resources.apps.*.id	string	ALL
 resources.apps.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.apps.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
+resources.apps.*.lifecycle.bind	*resources.Bind	INPUT
+resources.apps.*.lifecycle.bind.id	string	INPUT
 resources.apps.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.apps.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.apps.*.lifecycle.depends_on[*].resource	string	INPUT

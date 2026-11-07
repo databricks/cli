@@ -4,6 +4,8 @@ resources.postgres_catalogs.*.create_database_if_missing	bool	ALL
 resources.postgres_catalogs.*.create_time	*time.Time	REMOTE
 resources.postgres_catalogs.*.id	string	INPUT
 resources.postgres_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_catalogs.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_catalogs.*.lifecycle.bind.id	string	INPUT
 resources.postgres_catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_catalogs.*.lifecycle.depends_on[*].resource	string	INPUT

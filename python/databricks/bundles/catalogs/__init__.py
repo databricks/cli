@@ -4,6 +4,9 @@ __all__ = [
     "AzureEncryptionSettings",
     "AzureEncryptionSettingsDict",
     "AzureEncryptionSettingsParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "Catalog",
     "CatalogDict",
     "CatalogGrant",
@@ -34,6 +37,7 @@ from databricks.bundles.catalogs._models.azure_encryption_settings import (
     AzureEncryptionSettingsDict,
     AzureEncryptionSettingsParam,
 )
+from databricks.bundles.catalogs._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.catalogs._models.catalog import (
     Catalog,
     CatalogDict,

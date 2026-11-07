@@ -1,0 +1,24 @@
+update_file.py databricks.yml UNIQUE_NAME "$UNIQUE_NAME"
+PARENT_ID=$($CLI jobs create --json '{"name":"parent"}' | jq -r .job_id)
+OTHER_ID=$($CLI jobs create --json '{"name":"other"}' | jq -r .job_id)
+add_repl "$PARENT_ID" PARENT_ID
+add_repl "$OTHER_ID" OTHER_ID
+export BUNDLE_VAR_parent_id=$PARENT_ID BUNDLE_VAR_other_id=$OTHER_ID
+
+title "Selecting a child includes its binding dependency"
+trace $CLI bundle plan --select child -o json > tmp.plan.json
+trace jq '{bind: (.bind | keys), plan: (.plan | keys), not_selected}' tmp.plan.json
+
+title "Applying the selection leaves the unrelated resource unbound"
+trace $CLI bundle deploy --plan tmp.plan.json --auto-approve
+add_repl "$(read_id.py child)" CHILD_ID
+trace print_state.py | gron.py | grep __id__
+
+title "A fresh selected deploy also leaves it unbound"
+trace $CLI bundle deploy --select child --auto-approve
+trace print_state.py | gron.py | grep __id__
+
+title "The remaining binding can be applied separately"
+trace $CLI bundle deploy --select other --auto-approve
+trace print_state.py | gron.py | grep __id__
+trace $CLI bundle destroy --auto-approve

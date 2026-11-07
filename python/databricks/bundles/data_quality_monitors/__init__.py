@@ -6,6 +6,9 @@ __all__ = [
     "AnomalyDetectionConfig",
     "AnomalyDetectionConfigDict",
     "AnomalyDetectionConfigParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "CronSchedule",
     "CronScheduleDict",
     "CronScheduleParam",
@@ -54,6 +57,11 @@ from databricks.bundles.data_quality_monitors._models.anomaly_detection_config i
     AnomalyDetectionConfig,
     AnomalyDetectionConfigDict,
     AnomalyDetectionConfigParam,
+)
+from databricks.bundles.data_quality_monitors._models.bind import (
+    Bind,
+    BindDict,
+    BindParam,
 )
 from databricks.bundles.data_quality_monitors._models.cron_schedule import (
     CronSchedule,

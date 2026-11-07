@@ -34,6 +34,8 @@ resources.alerts.*.evaluation.threshold.value.string_value	string	ALL
 resources.alerts.*.file_path	string	INPUT
 resources.alerts.*.id	string	ALL
 resources.alerts.*.lifecycle	resources.Lifecycle	INPUT
+resources.alerts.*.lifecycle.bind	*resources.Bind	INPUT
+resources.alerts.*.lifecycle.bind.id	string	INPUT
 resources.alerts.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.alerts.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.alerts.*.lifecycle.depends_on[*].resource	string	INPUT

@@ -4,6 +4,9 @@ __all__ = [
     "AzureKeyVaultSecretScopeMetadata",
     "AzureKeyVaultSecretScopeMetadataDict",
     "AzureKeyVaultSecretScopeMetadataParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "DependsOn",
     "DependsOnDict",
     "DependsOnParam",
@@ -28,6 +31,7 @@ from databricks.bundles.secret_scopes._models.azure_key_vault_secret_scope_metad
     AzureKeyVaultSecretScopeMetadataDict,
     AzureKeyVaultSecretScopeMetadataParam,
 )
+from databricks.bundles.secret_scopes._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.secret_scopes._models.depends_on import (
     DependsOn,
     DependsOnDict,

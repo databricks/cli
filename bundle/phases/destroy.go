@@ -322,6 +322,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
+	// Planned without config, so lifecycle.bind plays no role: naming destroy explicitly
+	// captures the intent to tear the deployment down, bound resources included. The
+	// block only guards against a recreate during a normal deploy.
 	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 	if err != nil {
 		logdiag.LogError(ctx, err)

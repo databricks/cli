@@ -1,0 +1,25 @@
+# Bundle names carry $UNIQUE_NAME so concurrent runs on the same workspace do not share
+# a root path and its deployment lock.
+update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+
+# Create an experiment whose configuration already matches the bundle.
+NEW_EXPERIMENT_ID=$(MSYS_NO_PATHCONV=1 $CLI experiments create-experiment "/Shared/test-bind-basic-$UNIQUE_NAME" | jq -r .experiment_id)
+add_repl "$NEW_EXPERIMENT_ID" NEW_EXPERIMENT_ID
+
+# Update the databricks.yml with the actual experiment ID
+update_file.py databricks.yml 'PLACEHOLDER_EXPERIMENT_ID' "$NEW_EXPERIMENT_ID"
+
+# Run plan - should show import action
+trace $CLI bundle plan
+
+# Deploy with auto-approve
+trace $CLI bundle deploy --auto-approve
+
+# Plan again - should show no changes (skip)
+trace $CLI bundle plan
+
+# Verify state file contains the imported ID
+trace print_state.py | contains.py "$NEW_EXPERIMENT_ID"
+
+# Cleanup: destroy is allowed even with an active bind block
+trace $CLI bundle destroy --auto-approve

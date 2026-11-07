@@ -1,0 +1,21 @@
+update_file.py databricks.yml UNIQUE_NAME "$UNIQUE_NAME"
+PIPELINE_ID=$($CLI pipelines create --json '{"name":"existing-pipeline","storage":"/old/storage","libraries":[{"notebook":{"path":"/Workspace/test"}}]}' | jq -r .pipeline_id)
+add_repl "$PIPELINE_ID" PIPELINE_ID
+export BUNDLE_VAR_pipeline_id=$PIPELINE_ID
+
+title "Save a plan that preserves the resource"
+trace $CLI bundle plan -o json > tmp.plan.json
+trace jq '.plan | with_entries(.value |= {action, prevent_id_change})' tmp.plan.json
+edit_resource.py pipelines "$PIPELINE_ID" < change_storage.py
+print_requests.py //api/2.0/pipelines > LOG.setup
+
+title "Deploy binds, then rejects a newly required recreation"
+trace musterr $CLI bundle deploy --plan tmp.plan.json --auto-approve
+trace print_state.py | gron.py | grep __id__
+trace print_requests.py //api/2.0/pipelines
+
+title "The committed binding survives pulling state again"
+rm .databricks/bundle/default/resources.json
+trace $CLI bundle summary -o json | gron.py | grep 'pipelines.existing.id'
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

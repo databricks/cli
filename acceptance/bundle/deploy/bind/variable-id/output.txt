@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle plan --var job_id=[NEW_JOB_ID]
+Bind:
+  jobs.foo (id: [NEW_JOB_ID])
+
+Deploy:
+  update jobs.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
+
+>>> [CLI] bundle deploy --auto-approve --var job_id=[NEW_JOB_ID]
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-variable-id-[UNIQUE_NAME]/default/files...
+Bound jobs.foo
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
+
+>>> print_state.py
+json.state.resources.jobs.foo.__id__ = "[NEW_JOB_ID]";
+
+>>> [CLI] bundle destroy --auto-approve --var job_id=[NEW_JOB_ID]
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-variable-id-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

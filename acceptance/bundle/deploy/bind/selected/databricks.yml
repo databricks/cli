@@ -1,0 +1,27 @@
+bundle:
+  name: test-bind-selected-UNIQUE_NAME
+
+variables:
+  parent_id:
+    description: Existing parent job
+  other_id:
+    description: Existing unrelated job
+
+resources:
+  jobs:
+    parent:
+      name: selected-parent
+      lifecycle:
+        bind:
+          id: ${var.parent_id}
+    child:
+      name: selected-child
+      tasks:
+        - task_key: parent
+          run_job_task:
+            job_id: ${resources.jobs.parent.id}
+    other:
+      name: unselected
+      lifecycle:
+        bind:
+          id: ${var.other_id}

@@ -1,0 +1,14 @@
+bundle:
+  name: test-missing-after-bind-UNIQUE_NAME
+
+variables:
+  experiment_id:
+    description: Existing experiment to bind
+
+resources:
+  experiments:
+    existing:
+      name: /Shared/test-missing-after-bind-UNIQUE_NAME
+      lifecycle:
+        bind:
+          id: ${var.experiment_id}

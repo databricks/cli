@@ -1,0 +1,17 @@
+bundle:
+  name: test-bind-phases-$UNIQUE_NAME
+
+experimental:
+  deployment_history: true
+
+variables:
+  job_id:
+    description: Existing job
+
+resources:
+  jobs:
+    existing:
+      name: after-bind
+      lifecycle:
+        bind:
+          id: ${var.job_id}

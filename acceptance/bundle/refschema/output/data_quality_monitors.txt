@@ -74,6 +74,8 @@ resources.data_quality_monitors.*.data_profiling_config.time_series.timestamp_co
 resources.data_quality_monitors.*.data_profiling_config.warehouse_id	string	ALL
 resources.data_quality_monitors.*.id	string	INPUT
 resources.data_quality_monitors.*.lifecycle	resources.Lifecycle	INPUT
+resources.data_quality_monitors.*.lifecycle.bind	*resources.Bind	INPUT
+resources.data_quality_monitors.*.lifecycle.bind.id	string	INPUT
 resources.data_quality_monitors.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.data_quality_monitors.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.data_quality_monitors.*.lifecycle.depends_on[*].resource	string	INPUT

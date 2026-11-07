@@ -36,6 +36,8 @@ resources.vector_search_indexes.*.id	string	INPUT
 resources.vector_search_indexes.*.index_subtype	vectorsearch.IndexSubtype	ALL
 resources.vector_search_indexes.*.index_type	vectorsearch.VectorIndexType	ALL
 resources.vector_search_indexes.*.lifecycle	resources.Lifecycle	INPUT
+resources.vector_search_indexes.*.lifecycle.bind	*resources.Bind	INPUT
+resources.vector_search_indexes.*.lifecycle.bind.id	string	INPUT
 resources.vector_search_indexes.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.vector_search_indexes.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.vector_search_indexes.*.lifecycle.depends_on[*].resource	string	INPUT

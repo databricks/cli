@@ -1,0 +1,10 @@
+bundle:
+  name: test-bind-basic-UNIQUE_NAME
+
+resources:
+  experiments:
+    foo:
+      name: /Shared/test-bind-basic-UNIQUE_NAME
+      lifecycle:
+        bind:
+          id: "PLACEHOLDER_EXPERIMENT_ID"

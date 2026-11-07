@@ -7,6 +7,9 @@ __all__ = [
     "AzureQueueStorage",
     "AzureQueueStorageDict",
     "AzureQueueStorageParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "DependsOn",
     "DependsOnDict",
     "DependsOnParam",
@@ -48,6 +51,7 @@ from databricks.bundles.external_locations._models.azure_queue_storage import (
     AzureQueueStorageDict,
     AzureQueueStorageParam,
 )
+from databricks.bundles.external_locations._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.external_locations._models.depends_on import (
     DependsOn,
     DependsOnDict,

@@ -334,14 +334,22 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 // smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
 // placeholder value so secrets are never written to disk in plaintext.
 func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
+	compacted, err := compactStateForSave(d.Adapter, state)
 	if err != nil {
-		return fmt.Errorf("compacting state: %w", err)
-	}
-	if err := zeroSensitiveFields(d.Adapter, compacted); err != nil {
-		return fmt.Errorf("redacting state: %w", err)
+		return err
 	}
 	return db.SaveState(ctx, d.ResourceKey, newID, compacted, dependsOn)
+}
+
+func compactStateForSave(adapter *dresources.Adapter, state any) (any, error) {
+	compacted, err := dresources.CompactState(adapter.ResourceConfig(), state)
+	if err != nil {
+		return nil, fmt.Errorf("compacting state: %w", err)
+	}
+	if err := zeroSensitiveFields(adapter, compacted); err != nil {
+		return nil, fmt.Errorf("redacting state: %w", err)
+	}
+	return compacted, nil
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

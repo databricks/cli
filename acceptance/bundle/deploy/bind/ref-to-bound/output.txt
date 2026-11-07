@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle plan
+Bind:
+  jobs.foo (id: [NEW_JOB_ID])
+
+Deploy:
+  create jobs.bar
+  update jobs.foo
+
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
+
+=== The bound ID is known at plan time, so the reference is already resolved in the plan
+>>> [CLI] bundle plan -o json
+json.plan.resources.jobs.bar.new_state.value.tasks[0].run_job_task.job_id = [NEW_JOB_ID];
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-ref-to-bound-[UNIQUE_NAME]/default/files...
+Bound jobs.foo
+Created jobs.bar
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 bound
+
+>>> [CLI] jobs get [BAR_ID]
+[NEW_JOB_ID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-ref-to-bound-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

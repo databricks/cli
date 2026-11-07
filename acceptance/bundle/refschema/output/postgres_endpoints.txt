@@ -10,6 +10,8 @@ resources.postgres_endpoints.*.group.max	int	ALL
 resources.postgres_endpoints.*.group.min	int	ALL
 resources.postgres_endpoints.*.id	string	INPUT
 resources.postgres_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_endpoints.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_endpoints.*.lifecycle.bind.id	string	INPUT
 resources.postgres_endpoints.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_endpoints.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_endpoints.*.lifecycle.depends_on[*].resource	string	INPUT

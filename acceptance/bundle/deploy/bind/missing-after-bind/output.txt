@@ -1,0 +1,53 @@
+
+=== Missing after binding: fresh deployment
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-missing-after-bind-[UNIQUE_NAME]/default/files...
+Bound experiments.existing
+Error: cannot deploy resources.experiments.existing: bound resource with ID "[EXPERIMENT_ID]" no longer exists in the workspace; remove lifecycle.bind to create a new resource
+
+Files: 2 uploaded, 0 deleted
+
+>>> print_state.py
+json.state.resources.experiments.existing.__id__ = "[EXPERIMENT_ID]";
+
+=== The failed deployment has already uploaded its binding
+>>> [CLI] bundle summary -o json
+json.resources.experiments.existing.id = "[EXPERIMENT_ID]";
+
+>>> [CLI] bundle deployment unbind existing
+Warning: resources.experiments.existing.lifecycle.bind re-binds the resource on the next deploy; remove it to keep the resource unbound
+  at resources.experiments.existing.lifecycle.bind
+  in databricks.yml:14:11
+
+
+=== Missing after binding: saved deployment plan with a skip action
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(.value |= {action, prevent_id_change}) tmp.plan.json
+{
+  "resources.experiments.existing": {
+    "action": "skip",
+    "prevent_id_change": true
+  }
+}
+
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-missing-after-bind-[UNIQUE_NAME]/default/files...
+Bound experiments.existing
+Error: cannot deploy resources.experiments.existing: bound resource with ID "[EXPERIMENT_ID]" no longer exists in the workspace; remove lifecycle.bind to create a new resource
+
+Files: 1 uploaded, 0 deleted
+
+>>> print_state.py
+json.state.resources.experiments.existing.__id__ = "[EXPERIMENT_ID]";
+
+=== Neither failed deploy creates or deletes an experiment
+>>> print_requests.py //api/2.0/mlflow/experiments/create //api/2.0/mlflow/experiments/delete
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.experiments.existing
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-missing-after-bind-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

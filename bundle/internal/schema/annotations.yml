@@ -629,6 +629,9 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "bind":
+              "description": |-
+                Existing workspace resource to adopt before deployment. Deploy first records its ID and configuration in remote state, then applies normal updates, including target settings such as `mode: development`. Binding remains recorded if deployment fails. While present, this block prevents creation, recreation, and ID changes; removing it does not unbind the resource. `bundle destroy` still deletes bound resources. No bind marker is stored in resource state.
             "depends_on":
               "description": |-
                 Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
@@ -1117,6 +1120,9 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
           "$fields":
+            "bind":
+              "description": |-
+                Existing workspace resource to adopt before deployment. Deploy first records its ID and configuration in remote state, then applies normal updates, including target settings such as `mode: development`. Binding remains recorded if deployment fails. While present, this block prevents creation, recreation, and ID changes; removing it does not unbind the resource. `bundle destroy` still deletes bound resources. No bind marker is stored in resource state.
             "depends_on":
               "description": |-
                 Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
@@ -1200,6 +1206,13 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "bind":
+              "description": |-
+                Existing workspace resource to adopt before deployment. Deploy first records its ID and configuration in remote state, then applies normal updates, including target settings such as `mode: development`. Binding remains recorded if deployment fails. While present, this block prevents creation, recreation, and ID changes; removing it does not unbind the resource. `bundle destroy` still deletes bound resources. No bind marker is stored in resource state.
+              "$fields":
+                "id":
+                  "description": |-
+                    The ID of the existing workspace resource, as used by its API (for example a job ID, or the full name of a schema or volume). Set it per target through a target override of the resource; variable references are resolved.
             "depends_on":
               "description": |-
                 Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.

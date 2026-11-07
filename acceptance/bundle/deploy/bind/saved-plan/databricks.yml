@@ -1,0 +1,22 @@
+bundle:
+  name: test-bind-saved-plan-UNIQUE_NAME
+
+variables:
+  job_id:
+    description: Existing job to bind
+  experiment_id:
+    description: Existing experiment to bind
+
+resources:
+  jobs:
+    updated:
+      name: saved-plan-job
+      lifecycle:
+        bind:
+          id: ${var.job_id}
+  experiments:
+    unchanged:
+      name: /Shared/test-bind-saved-plan-UNIQUE_NAME
+      lifecycle:
+        bind:
+          id: ${var.experiment_id}

@@ -1,0 +1,18 @@
+update_file.py databricks.yml UNIQUE_NAME "$UNIQUE_NAME"
+
+# Create a pipeline with a different storage path
+NEW_PIPELINE_ID=$($CLI pipelines create --json '{"name": "test-pipeline", "storage": "/old/storage/path", "allow_duplicate_names": true, "libraries": [{"notebook": {"path": "/Workspace/test"}}]}' | jq -r .pipeline_id)
+add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID
+
+# Update the databricks.yml with the actual pipeline ID
+update_file.py databricks.yml 'PLACEHOLDER_PIPELINE_ID' "$NEW_PIPELINE_ID"
+
+# Run plan - should fail because changing storage requires recreate which is blocked for binds
+trace musterr $CLI bundle plan
+
+title "Deploy commits the bind phase before rejecting recreation"
+trace musterr $CLI bundle deploy --auto-approve
+trace print_state.py | gron.py | grep __id__
+
+title "Destroy still deletes the adopted resource"
+trace $CLI bundle destroy --auto-approve

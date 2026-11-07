@@ -26,6 +26,9 @@ __all__ = [
     "AzureAttributesParam",
     "AzureAvailability",
     "AzureAvailabilityParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "ClusterLogConf",
     "ClusterLogConfDict",
     "ClusterLogConfParam",
@@ -338,6 +341,7 @@ from databricks.bundles.pipelines._models.azure_availability import (
     AzureAvailability,
     AzureAvailabilityParam,
 )
+from databricks.bundles.pipelines._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.pipelines._models.cluster_log_conf import (
     ClusterLogConf,
     ClusterLogConfDict,
