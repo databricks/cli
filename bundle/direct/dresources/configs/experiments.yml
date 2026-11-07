@@ -3,9 +3,6 @@ recreate_on_changes:
   - field: artifact_location
     reason: immutable
 ignore_remote_changes:
-  # Tags updates are not supported by TF. This mirrors that behaviour.
+  # The backend adds tags that the bundle does not manage.
   - field: tags
-    reason: terraform_compat
-ignore_local_changes:
-  - field: tags
-    reason: terraform_compat
+    reason: backend_generated

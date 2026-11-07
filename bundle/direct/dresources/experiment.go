@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -60,14 +61,38 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 	return result.ExperimentId, nil, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *PlanEntry) (*ml.Experiment, error) {
-	updateReq := ml.UpdateExperiment{
-		ExperimentId:    id,
-		NewName:         config.Name,
-		ForceSendFields: utils.FilterFields[ml.UpdateExperiment](config.ForceSendFields),
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, entry *PlanEntry) (*ml.Experiment, error) {
+	if entry.Changes.HasChange(structpath.MustParsePath("name")) {
+		updateReq := ml.UpdateExperiment{
+			ExperimentId:    id,
+			NewName:         config.Name,
+			ForceSendFields: utils.FilterFields[ml.UpdateExperiment](config.ForceSendFields),
+		}
+		if err := r.client.Experiments.UpdateExperiment(ctx, updateReq); err != nil {
+			return nil, err
+		}
 	}
 
-	return nil, r.client.Experiments.UpdateExperiment(ctx, updateReq)
+	if entry.Changes.HasChange(structpath.MustParsePath("tags")) {
+		remoteTags := make(map[string]string)
+		for _, tag := range entry.RemoteState.(*ml.Experiment).Tags {
+			remoteTags[tag.Key] = tag.Value
+		}
+		for _, tag := range config.Tags {
+			if remoteValue, exists := remoteTags[tag.Key]; exists && remoteValue == tag.Value {
+				continue
+			}
+			if err := r.client.Experiments.SetExperimentTag(ctx, ml.SetExperimentTag{
+				ExperimentId: id,
+				Key:          tag.Key,
+				Value:        tag.Value,
+			}); err != nil {
+				return nil, fmt.Errorf("failed to set experiment %s tag %q: %w", id, tag.Key, err)
+			}
+		}
+	}
+
+	return nil, nil
 }
 
 func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *ml.CreateExperiment) error {

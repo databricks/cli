@@ -133,7 +133,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
   ]
 }
 
-=== adding a new tag should be a no-op
+=== adding a new tag updates the existing experiment
 >>> envsubst
 
 >>> [CLI] bundle plan
@@ -150,24 +150,28 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
       "value": "v1"
     },
     {
-      "key": "mlflow.ownerId",
-      "value": "[USERID]"
+      "key": "k2",
+      "value": "v2"
     },
     {
       "key": "mlflow.experiment.sourceName",
       "value": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]"
     },
     {
-      "key": "mlflow.ownerId",
-      "value": "[USERID]"
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
     },
     {
       "key": "mlflow.ownerEmail",
       "value": "[USERNAME]"
     },
     {
-      "key": "mlflow.experimentType",
-      "value": "MLFLOW_EXPERIMENT"
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
     }
   ]
 }
