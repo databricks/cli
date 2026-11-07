@@ -127,7 +127,13 @@ func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage
 	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
 	key := arg.GetCacheKey()
 	handled, err := storage.WithFileTransaction(ctx, tokenStore,
-		func(view storage.Store) error { return view.Put(key, storage.Entry{Token: token}) },
+		func(view storage.Store) error {
+			entry := storage.Entry{Token: token}
+			if err := storage.RecordFileLoginResult(view, key, entry); err != nil {
+				return err
+			}
+			return view.Put(key, entry)
+		},
 		func(view storage.Store) error { return view.Delete(key) },
 	)
 	if handled {

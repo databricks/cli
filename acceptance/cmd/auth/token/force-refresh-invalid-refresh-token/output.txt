@@ -2,5 +2,5 @@ Error: A new access token could not be retrieved because the refresh token is in
   $ databricks auth login --profile test-profile
 {
   "error_code": "UNAUTHENTICATED",
-  "message": "A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:\n  $ databricks auth login --profile test-profile"
+  "message": "A previous OAuth refresh has an uncertain outcome; automatic refresh is blocked. To reauthenticate, run the following command:\n  $ databricks auth login --profile test-profile"
 }

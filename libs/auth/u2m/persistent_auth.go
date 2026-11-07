@@ -419,8 +419,23 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token, force bool) (*oauth2.To
 		if current.RefreshToken == "" {
 			return ErrMissingRefreshToken
 		}
-		token, err = a.exchangeAndStore(current, view, false)
-		return err
+		cfg, err := a.oauth2Config(a.ctx)
+		if err != nil {
+			return err
+		}
+		attempt, err := storage.BeginFileRefresh(a.ctx, view, a.oAuthArgument.GetCacheKey(), storage.RefreshRequestDigest(cfg.Endpoint.TokenURL, cfg.ClientID))
+		if err != nil {
+			return err
+		}
+		token, err = a.exchangeConfigured(current, cfg)
+		if err != nil {
+			return err
+		}
+		entry := storage.Entry{Token: token}
+		if err := attempt.RecordResponse(entry); err != nil {
+			return err
+		}
+		return view.Put(a.oAuthArgument.GetCacheKey(), entry)
 	}, nil)
 	if handled {
 		return token, err
@@ -437,6 +452,22 @@ func (a *PersistentAuth) exchangeAndStore(current *oauth2.Token, store storage.S
 	if err != nil {
 		return nil, err
 	}
+	t, err := a.exchangeConfigured(current, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if err := store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t}); err != nil {
+		if recoverWrite {
+			if cached := a.recoverStoreUpdate(current, t); cached != nil {
+				return cached, nil
+			}
+		}
+		return nil, fmt.Errorf("cache update: %w", err)
+	}
+	return t, nil
+}
+
+func (a *PersistentAuth) exchangeConfigured(current *oauth2.Token, cfg *oauth2.Config) (*oauth2.Token, error) {
 	ctx := a.setOAuthContext(a.ctx)
 	// Force the oauth2 library to refresh by ensuring the token appears
 	// expired. PersistentAuth owns the refresh decision (including the
@@ -453,15 +484,7 @@ func (a *PersistentAuth) exchangeAndStore(current *oauth2.Token, store storage.S
 		}
 		return nil, oauthError(err)
 	}
-	err = store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
-	if err != nil {
-		if recoverWrite {
-			if cached := a.recoverStoreUpdate(current, t); cached != nil {
-				return cached, nil
-			}
-		}
-		return nil, fmt.Errorf("cache update: %w", err)
-	}
+
 	return t, nil
 }
 

@@ -75,6 +75,8 @@ type fileStore struct {
 
 	// locker protects the token store file from concurrent reads and writes.
 	locker sync.Mutex
+
+	beforeIntentCompletion func()
 }
 
 // NewFileStore creates a new file-backed Store. By default, tokens are stored
@@ -133,34 +135,44 @@ func (c *fileStore) WithFileTransaction(ctx context.Context, update, cleanup fun
 	if err != nil {
 		return true, fmt.Errorf("load: %w", err)
 	}
-	staged := &fileTransaction{file: cloneStoreFile(file)}
+	raw, err := os.ReadFile(c.fileLocation)
+	if err != nil {
+		return true, fmt.Errorf("load: %w", err)
+	}
+	journal, err := c.loadRefreshJournal(ctx)
+	if err != nil {
+		return true, err
+	}
+	if err := c.reconcileRefreshJournal(ctx, journal, raw); err != nil {
+		return true, err
+	}
+	staged := newFileTransaction(ctx, c, file, raw, journal)
+	defer func() { staged.live = false }()
 	if err := update(staged); err != nil {
 		return true, err
 	}
-	if !staged.dirty {
-		return true, nil
-	}
-	if err := c.write(staged.file); err != nil {
-		err = fmt.Errorf("cache update: %w", err)
-		if cleanup == nil {
-			return true, err
-		}
-		rollback := &fileTransaction{file: cloneStoreFile(file)}
-		cleanupErr := cleanup(rollback)
-		if cleanupErr == nil && rollback.dirty {
-			cleanupErr = c.write(rollback.file)
-		}
-		return true, errors.Join(err, cleanupErr)
-	}
-	return true, nil
+	staged.live = false
+	return true, c.publishFileTransaction(staged, cleanup)
 }
 
 // write marshals f and atomically replaces the store file.
-func (c *fileStore) write(f *tokenStoreFile) error {
-	raw, err := json.MarshalIndent(f, "", "  ")
+func encodeTokenStoreFile(file *tokenStoreFile) ([]byte, error) {
+	raw, err := json.MarshalIndent(file, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
+		return nil, fmt.Errorf("marshal: %w", err)
 	}
+	return raw, nil
+}
+
+func (c *fileStore) write(file *tokenStoreFile) error {
+	raw, err := encodeTokenStoreFile(file)
+	if err != nil {
+		return err
+	}
+	return c.writeTokenStoreBytes(raw)
+}
+
+func (c *fileStore) writeTokenStoreBytes(raw []byte) error {
 	if err := atomicfile.Write(c.fileLocation, raw, ownerReadWrite); err != nil {
 		return fmt.Errorf("error storing token in local cache: %w", err)
 	}

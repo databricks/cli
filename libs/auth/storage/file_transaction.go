@@ -50,11 +50,24 @@ func DeleteWithContext(ctx context.Context, store Store, key string) error {
 }
 
 type fileTransaction struct {
-	file  *tokenStoreFile
-	dirty bool
+	file              *tokenStoreFile
+	dirty             bool
+	owner             *fileStore
+	ctx               context.Context
+	original          *tokenStoreFile
+	originalRaw       []byte
+	journal           *refreshJournal
+	touched           map[string]bool
+	live              bool
+	attempt           *FileRefreshAttempt
+	beforeBindings    map[string]*refreshBinding
+	beforeGenerations map[string]*refreshGeneration
 }
 
 func (t *fileTransaction) Lookup(key string) (Entry, error) {
+	if !t.live {
+		return Entry{}, intentError(errRefreshOperation, nil)
+	}
 	entry, ok := t.file.Tokens[key]
 	if !ok || entry == nil {
 		return Entry{}, ErrNotFound
@@ -63,6 +76,10 @@ func (t *fileTransaction) Lookup(key string) (Entry, error) {
 }
 
 func (t *fileTransaction) Put(key string, entry Entry) error {
+	if !t.live {
+		return intentError(errRefreshOperation, nil)
+	}
+	t.touched[key] = true
 	entry = cloneEntry(entry)
 	if t.file.Tokens == nil {
 		t.file.Tokens = make(map[string]*fileEntry)
@@ -73,6 +90,10 @@ func (t *fileTransaction) Put(key string, entry Entry) error {
 }
 
 func (t *fileTransaction) Delete(key string) error {
+	if !t.live {
+		return intentError(errRefreshOperation, nil)
+	}
+	t.touched[key] = true
 	if _, ok := t.file.Tokens[key]; ok {
 		delete(t.file.Tokens, key)
 		t.dirty = true
