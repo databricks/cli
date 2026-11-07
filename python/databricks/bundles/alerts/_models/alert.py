@@ -87,6 +87,9 @@ class Alert(Resource):
     """
 
     file_path: VariableOrOptional[str] = None
+    """
+    The local path to a `.dbalert.json` file with the alert definition, or to a `.sql` file with the alert query. With a `.dbalert.json` file, only `warehouse_id`, `display_name`, `permissions` and `lifecycle` can also be set in the bundle configuration. With a `.sql` file, the file provides `query_text` and all other fields are set in the bundle configuration.
+    """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
@@ -192,6 +195,9 @@ class AlertDict(TypedDict, total=False):
     """
 
     file_path: VariableOrOptional[str]
+    """
+    The local path to a `.dbalert.json` file with the alert definition, or to a `.sql` file with the alert query. With a `.dbalert.json` file, only `warehouse_id`, `display_name`, `permissions` and `lifecycle` can also be set in the bundle configuration. With a `.sql` file, the file provides `query_text` and all other fields are set in the bundle configuration.
+    """
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """

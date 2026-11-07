@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -62,6 +63,13 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			return diag.FromErr(err)
 		}
 
+		if isAlertQueryFile(alert.FilePath) {
+			if diags := loadAlertQueryFile(b, alertKey, alert, alertV); diags.HasError() {
+				return diags
+			}
+			continue
+		}
+
 		// No other fields other than allowedInYAML should be set in the bundle YAML.
 		m, ok := alertV.AsMap()
 		if !ok {
@@ -92,15 +100,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			}
 		}
 
-		// NormalizePaths rewrote file_path to be relative to the bundle root, but the
-		// process working directory can be any directory within the bundle, so anchor
-		// the read to the bundle root. Absolute paths are kept as-is by NormalizePaths.
-		filePath := alert.FilePath
-		if !filepath.IsAbs(filePath) {
-			filePath = filepath.Join(b.BundleRootPath, filePath)
-		}
-
-		content, err := os.ReadFile(filePath)
+		content, err := os.ReadFile(alertFilePath(b, alert.FilePath))
 		if err != nil {
 			return diag.Diagnostics{
 				{
@@ -198,5 +198,88 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		b.Config.Resources.Alerts[alertKey].AlertV2 = newAlert
 	}
 
+	return nil
+}
+
+// alertFilePath anchors a file_path to the bundle root. NormalizePaths rewrote
+// file_path to be relative to the bundle root, but the process working directory
+// can be any directory within the bundle. Absolute paths are kept as-is by
+// NormalizePaths.
+func alertFilePath(b *bundle.Bundle, filePath string) string {
+	if filepath.IsAbs(filePath) {
+		return filePath
+	}
+	return filepath.Join(b.BundleRootPath, filePath)
+}
+
+// isAlertQueryFile reports whether file_path points to a .sql file holding only
+// the alert query, as opposed to a full .dbalert.json alert definition.
+func isAlertQueryFile(filePath string) bool {
+	return strings.EqualFold(filepath.Ext(filePath), ".sql")
+}
+
+// loadAlertQueryFile sets query_text from a .sql file. Unlike a .dbalert.json, the
+// file only holds the query, so all other alert fields stay in the bundle YAML.
+func loadAlertQueryFile(b *bundle.Bundle, alertKey string, alert *resources.Alert, alertV dyn.Value) diag.Diagnostics {
+	filePathV := alertV.Get("file_path")
+	filePathPaths := structpath.NewPathSlice("resources", "alerts", alertKey, "file_path")
+
+	if q := alertV.Get("query_text"); q.Kind() != dyn.KindInvalid && q.Kind() != dyn.KindNil {
+		return diag.Diagnostics{
+			{
+				ID:        "",
+				Severity:  diag.Error,
+				Summary:   "query_text cannot be set when file_path points to a .sql file",
+				Detail:    fmt.Sprintf("The alert query is read from %s. Remove either query_text or file_path.", alert.FilePath),
+				Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, "query_text"),
+				Locations: q.Locations(),
+			},
+		}
+	}
+
+	content, err := os.ReadFile(alertFilePath(b, alert.FilePath))
+	if err != nil {
+		return diag.Diagnostics{
+			{
+				ID:        "",
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("failed to read alert query file %s: %s", alert.FilePath, err),
+				Detail:    "",
+				Paths:     filePathPaths,
+				Locations: filePathV.Locations(),
+			},
+		}
+	}
+
+	query := string(content)
+	if strings.TrimSpace(query) == "" {
+		return diag.Diagnostics{
+			{
+				ID:        "",
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("alert query file %s is empty", alert.FilePath),
+				Detail:    "",
+				Paths:     filePathPaths,
+				Locations: filePathV.Locations(),
+			},
+		}
+	}
+
+	// The file is read after variables are resolved, so references in it would be
+	// sent to the backend verbatim. Reject them, like for .dbalert.json files.
+	if dynvar.ContainsVariableReference(query) {
+		return diag.Diagnostics{
+			{
+				ID:        "",
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("alert query file %s must not contain variable interpolations.", alert.FilePath),
+				Detail:    "Please set query_text inline in the bundle configuration to use variables",
+				Paths:     filePathPaths,
+				Locations: filePathV.Locations(),
+			},
+		}
+	}
+
+	alert.QueryText = query
 	return nil
 }

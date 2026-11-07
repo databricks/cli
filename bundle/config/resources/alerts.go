@@ -18,9 +18,9 @@ type Alert struct {
 
 	Permissions []Permission `json:"permissions,omitempty"`
 
-	// Filepath points to the local .dbalert.json file containing the alert definition.
-	// If specified, any fields that are part of the .dbalert.json file schema will not be allowed in
-	// the bundle config.
+	// Filepath points to a local file with the alert definition. It is either a .dbalert.json
+	// file, in which case any fields that are part of the .dbalert.json file schema are not
+	// allowed in the bundle config, or a .sql file that only provides query_text.
 	FilePath string `json:"file_path,omitempty"`
 }
 
