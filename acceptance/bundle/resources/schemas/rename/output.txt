@@ -1,0 +1,118 @@
+
+=== Deploy the schema
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "COMMENT1",
+    "name": "test-schema-[UNIQUE_NAME]"
+  }
+}
+
+=== Rename the schema
+>>> update_file.py databricks.yml test-schema- test-schema-renamed-
+
+=== The plan renames the schema in place instead of recreating it
+>>> [CLI] bundle plan --output json
+{
+  "resources.schemas.schema1": {
+    "action": "update_id",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "comment": "COMMENT1",
+        "name": "test-schema-renamed-[UNIQUE_NAME]"
+      }
+    },
+    "remote_state": {
+      "browse_only": false,
+      "catalog_name": "main",
+      "catalog_type": "MANAGED_CATALOG",
+      "comment": "COMMENT1",
+      "created_at": [UNIX_TIME_MILLIS],
+      "created_by": "[USERNAME]",
+      "enable_predictive_optimization": "INHERIT",
+      "full_name": "main.test-schema-[UNIQUE_NAME]",
+      "metastore_id": "[UUID]",
+      "name": "test-schema-[UNIQUE_NAME]",
+      "owner": "[USERNAME]",
+      "schema_id": "[SCHEMA_ID]"
+    },
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-[UNIQUE_NAME]"
+      }
+    }
+  }
+}
+
+=== Deploy renames the schema without a deletion prompt
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated schemas.schema1
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
+  "body": {
+    "comment": "COMMENT1",
+    "custom_max_retention_hours": 0,
+    "new_name": "test-schema-renamed-[UNIQUE_NAME]"
+  }
+}
+
+=== The schema is only reachable under the new name, with its original schema_id
+>>> musterr [CLI] schemas get main.test-schema-[UNIQUE_NAME]
+Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
+
+>>> [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "name": "test-schema-renamed-[UNIQUE_NAME]",
+  "comment": "COMMENT1",
+  "schema_id": "[SCHEMA_ID]"
+}
+
+=== The state and summary track the new name
+>>> [CLI] bundle summary --output json
+{
+  "id": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "name": "test-schema-renamed-[UNIQUE_NAME]"
+}
+
+=== Redeploy is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //unity-catalog
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

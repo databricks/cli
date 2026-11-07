@@ -27,6 +27,7 @@ Choose the right category:
    - `output_only` — the field is computed by the backend; the user never sets it
    - `input_only` — accepted on create/update but not returned by GET (e.g., write-only tokens, flags)
    - `managed` — managed by the cloud provider or platform, not by the user config
+ - **`drop_changes`**: Leave changes to this field out of the plan entirely. Use for fields that config never sets but the state records, like an internal ID recorded from the backend (see `InternalID`).
  - **`ignore_local_changes`**: Ignore changes the user makes to this field. Use for fields that cannot be updated via API — either they are immutable after creation or require a separate API that is not yet implemented. Must have a comment explaining why.
  - **`recreate_on_changes`**: Changing this field requires delete + create. Use for truly immutable fields (name, type, location). The reason should reference API docs or TF provider.
  - **`updatable_id_fields`**: Changing this field changes the resource's ID. Requires `DoUpdateWithID` to be implemented.
@@ -46,6 +47,10 @@ For resources whose create or update is asynchronous (the resource is not immedi
 ## Slice ordering: KeyedSlices
 
 If the API may return a slice's elements in a different order between calls (e.g., `depends_on` in job tasks, `privileges` in grants), implement `KeyedSlices` to compare elements by a natural key rather than by index. Without this, every deploy after any reordering shows phantom diffs.
+
+## Moved resources: IDFromState / InternalID
+
+If the ID is built from the resource's own fields (a UC full name) and the backend has its own ID that a rename keeps (a volume's `volume_id`), record that ID in the state type, set it from the API responses (and from `RemapState`), and implement `IDFromState` and `InternalID` together, along with `DoUpdateWithID`. When nothing is at the recorded ID, the plan reads at the ID the config gives the resource and takes what it finds only if its internal ID matches the one saved in state. This covers a rename done out of band, or by a deploy that stopped before re-keying the resource.
 
 ## Empty states: IsEmptyState
 

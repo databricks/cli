@@ -118,6 +118,17 @@ type IResource interface {
 	// (returned by GET, not 404) that rejects a second DELETE.
 	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
 	IsGone(remoteState any) bool
+
+	// [Optional] IDFromState returns the ID the state gives the resource, for resource types whose ID
+	// is built from their own fields (a UC full name). Implemented together with InternalID.
+	// Example: func (*ResourceVolume) IDFromState(state *VolumeState) string
+	IDFromState(state any) string
+
+	// [Optional] InternalID returns the backend's own ID recorded in the state, which a rename keeps
+	// (a volume's volume_id). When the resource is not at its recorded ID, the plan looks for it at the
+	// ID IDFromState gives it, and takes what it finds only if the internal IDs match.
+	// Example: func (*ResourceVolume) InternalID(state *VolumeState) string
+	InternalID(state any) string
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -141,6 +152,8 @@ type Adapter struct {
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 	isGone             *calladapt.BoundCaller
+	idFromState        *calladapt.BoundCaller
+	internalID         *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -182,6 +195,8 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		isGone:                  nil,
+		idFromState:             nil,
+		internalID:              nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -308,6 +323,16 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.idFromState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IDFromState")
+	if err != nil {
+		return err
+	}
+
+	a.internalID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "InternalID")
+	if err != nil {
+		return err
+	}
+
 	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
@@ -400,6 +425,14 @@ func (a *Adapter) validate() error {
 
 	if a.isGone != nil {
 		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
+	}
+
+	if (a.idFromState == nil) != (a.internalID == nil) {
+		return errors.New("IDFromState and InternalID must be implemented together")
+	}
+	if a.idFromState != nil {
+		validations = append(validations, "IDFromState state", a.idFromState.InTypes[0], stateType)
+		validations = append(validations, "InternalID state", a.internalID.InTypes[0], stateType)
 	}
 
 	if a.doUpdateWithID != nil {
@@ -725,6 +758,29 @@ func (a *Adapter) IsGone(remoteState any) bool {
 		return false
 	}
 	return outs[0].(bool)
+}
+
+// HasInternalID reports whether the resource implements IDFromState and InternalID.
+func (a *Adapter) HasInternalID() bool {
+	return a.internalID != nil
+}
+
+// IDFromState returns the ID the state gives the resource; see IResource.IDFromState.
+func (a *Adapter) IDFromState(state any) (string, error) {
+	outs, err := a.idFromState.Call(state)
+	if err != nil {
+		return "", err
+	}
+	return outs[0].(string), nil
+}
+
+// InternalID returns the backend's own ID recorded in state; see IResource.InternalID.
+func (a *Adapter) InternalID(state any) (string, error) {
+	outs, err := a.internalID.Call(state)
+	if err != nil {
+		return "", err
+	}
+	return outs[0].(string), nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

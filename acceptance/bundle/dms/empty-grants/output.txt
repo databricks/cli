@@ -52,7 +52,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "main.dms_empty_grants_[UNIQUE_NAME]",
     "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_empty_grants_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_empty_grants_[UNIQUE_NAME]\",\"schema_id\":\"[UUID]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -170,7 +170,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
    "__id__": "main.dms_empty_grants_[UNIQUE_NAME]",
    "state": {
     "catalog_name": "main",
-    "name": "dms_empty_grants_[UNIQUE_NAME]"
+    "name": "dms_empty_grants_[UNIQUE_NAME]",
+    "schema_id": "[UUID]"
    }
   }
  }

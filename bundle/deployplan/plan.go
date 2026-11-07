@@ -119,6 +119,8 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 }
 
 type PlanEntry struct {
+	// ID is set when the resource was found at another ID than the one in state: a rename
+	// moved it there (see findMoved). Applying the entry addresses the resource at ID.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
@@ -184,6 +186,10 @@ const (
 	// it and whatever the remote reports is not drift (e.g. cluster libraries without a libraries
 	// section, where job runs install their task libraries cluster-wide).
 	ReasonUnmanaged = "unmanaged"
+	// ReasonParentRenamed: an ID field that references the name of a parent being renamed in
+	// place. The backend moves the resource along with its parent, so it is re-keyed rather
+	// than recreated.
+	ReasonParentRenamed = "parent_renamed"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
@@ -229,6 +235,17 @@ func (c *Changes) HasChangeExcept(prefixes ...string) bool {
 		}
 	}
 	return false
+}
+
+// OnlyParentRenamed reports whether every actionable change follows a parent's rename
+// (ReasonParentRenamed). The backend has already moved such a resource, so only its ID changes.
+func (c *Changes) OnlyParentRenamed() bool {
+	for _, change := range *c {
+		if change.Action != Skip && change.Reason != ReasonParentRenamed {
+			return false
+		}
+	}
+	return true
 }
 
 func (p *Plan) GetActions() []Action {

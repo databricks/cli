@@ -33,7 +33,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "changes": {
       "name": {
         "action": "skip",
-        "reason": "id_field"
+        "reason": "id_changes"
       }
     }
   },

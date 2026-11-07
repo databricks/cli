@@ -1,0 +1,36 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_VOLUME="main.test-schema-${UNIQUE_NAME}.myvolume"
+NEW_VOLUME="main.test-schema-renamed-${UNIQUE_NAME}.myvolume"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve --force-lock
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI volumes read "$OLD_VOLUME" | jq -r .volume_id)" VOLUME_ID
+
+title "Rename the schema and change its storage_root, which recreates it. The CLI is killed on the volume's recreate, after the schema's"
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+trace update_file.py databricks.yml s3://mybucket/a s3://mybucket/b
+kill_after.py "DELETE /api/2.1/unity-catalog/volumes/$OLD_VOLUME" 0 1
+# -q: the per-resource lines race the kill signal.
+trace errcode $CLI bundle deploy -q --auto-approve
+trace print_requests.py //unity-catalog
+
+title "The volume went with the old schema. Nothing with its volume_id is at its new path, so the plan creates it"
+trace $CLI bundle plan --output json | jq '.plan["resources.volumes.volume1"]'
+
+title "The next deploy creates a new volume"
+trace $CLI bundle deploy --force-lock
+trace print_requests.py //unity-catalog
+trace $CLI volumes read "$NEW_VOLUME" | jq '{full_name, volume_id}'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

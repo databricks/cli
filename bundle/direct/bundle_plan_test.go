@@ -55,8 +55,8 @@ func TestDynPathToStructPath(t *testing.T) {
 func TestExtractReferences_ExcludesReadonlyFields(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
-	// The volume state type is catalog.CreateVolumeRequestContent, which has
-	// comment but not volume_path.
+	// The volume state type is VolumeState, which has comment but not
+	// volume_path.
 	stateType := adapters["volumes"].StateType()
 
 	const yml = `
@@ -267,6 +267,64 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 			} else {
 				assert.NotEqual(t, deployplan.ReasonRemoteAlreadySet, tt.ch.Reason, "a real local change must not be skipped as remote_already_set")
 			}
+		})
+	}
+}
+
+// TestFollowParentRenames pins when an ID field that references a renamed parent is
+// re-keyed (update_id) instead of recreated: only a provided_id_field of a resource with
+// DoUpdateWithID, and only if it was under that parent before the rename.
+func TestFollowParentRenames(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		resource       string
+		field          string
+		old            string
+		expectedAction deployplan.ActionType
+	}{
+		{
+			name:           "child of the renamed parent follows it",
+			resource:       "volumes",
+			field:          "schema_name",
+			old:            "s_old",
+			expectedAction: deployplan.UpdateWithID,
+		},
+		{
+			name:           "child moved from another parent is recreated",
+			resource:       "volumes",
+			field:          "schema_name",
+			old:            "other",
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			name:           "resource without DoUpdateWithID is recreated",
+			resource:       "registered_models",
+			field:          "schema_name",
+			old:            "s_old",
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			name:           "recreate_on_changes field is recreated",
+			resource:       "volumes",
+			field:          "storage_location",
+			old:            "s_old",
+			expectedAction: deployplan.Recreate,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			ch := &deployplan.ChangeDesc{Action: deployplan.Recreate, Reason: "id_field", Old: tt.old, New: "s_new", Remote: tt.old}
+			parentRenames := map[string]*deployplan.ChangeDesc{
+				tt.field: {Action: deployplan.UpdateWithID, Reason: "id_changes", Old: "s_old", New: "s_new", Remote: "s_old"},
+			}
+			require.NoError(t, followParentRenames(adapter, deployplan.Changes{tt.field: ch}, parentRenames))
+			assert.Equal(t, tt.expectedAction, ch.Action)
 		})
 	}
 }
@@ -794,4 +852,19 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
+}
+
+// TestDropChanges: a drop_changes field (volumes' volume_id, which config never sets) leaves the
+// plan entirely, while the volume's other changes stay.
+func TestDropChanges(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	changes := deployplan.Changes{
+		"volume_id": {Old: "uuid-1", New: nil, Remote: "uuid-1"},
+		"comment":   {Old: "a", New: "b", Remote: "a"},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["volumes"], changes, nil, nil))
+	assert.NotContains(t, changes, "volume_id")
+	assert.Equal(t, deployplan.Update, changes["comment"].Action)
 }

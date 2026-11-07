@@ -37,6 +37,16 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
+	if _, exists := s.Catalogs[createRequest.Name]; exists {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "CATALOG_ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Catalog '%s' already exists", createRequest.Name),
+			},
+		}
+	}
+
 	// Echo back every field create accepts: a dropped one makes the next plan see a
 	// phantom change.
 	catalogInfo := catalog.CatalogInfo{
@@ -110,6 +120,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 
 		// Delete the old entry and create with new name
 		delete(s.Catalogs, name)
+		s.moveCatalogChildren(name, updateRequest.NewName)
 		name = updateRequest.NewName
 	}
 
@@ -120,4 +131,49 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	return Response{
 		Body: existing,
 	}
+}
+
+// moveCatalogChildren mirrors UC, where the schemas and volumes of a renamed catalog move with it.
+func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName string) {
+	for key, schema := range s.Schemas {
+		if schema.CatalogName != oldCatalogName {
+			continue
+		}
+		delete(s.Schemas, key)
+		schema.CatalogName = newCatalogName
+		schema.FullName = newCatalogName + "." + schema.Name
+		s.Schemas[schema.FullName] = schema
+	}
+	for key, volume := range s.Volumes {
+		if volume.CatalogName != oldCatalogName {
+			continue
+		}
+		delete(s.Volumes, key)
+		volume.CatalogName = newCatalogName
+		volume.FullName = newCatalogName + "." + volume.SchemaName + "." + volume.Name
+		s.Volumes[volume.FullName] = volume
+	}
+}
+
+// CatalogsDelete mirrors UC, where deleting a catalog with force deletes its schemas and volumes too.
+func (s *FakeWorkspace) CatalogsDelete(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.Catalogs[name]; !ok {
+		return Response{StatusCode: http.StatusNotFound}
+	}
+	delete(s.Catalogs, name)
+	if req.URL.Query().Get("force") == "true" {
+		for key, schema := range s.Schemas {
+			if schema.CatalogName == name {
+				delete(s.Schemas, key)
+			}
+		}
+		for key, volume := range s.Volumes {
+			if volume.CatalogName == name {
+				delete(s.Volumes, key)
+			}
+		}
+	}
+	return Response{}
 }

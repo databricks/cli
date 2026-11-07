@@ -263,6 +263,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return true
 		}
 
+		// Collected before resolveReferences, which drops the references it resolves.
+		parentRenames, err := b.parentRenames(resourceKey)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+
 		// Process all references in the resource using Refs map
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
 		if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
@@ -327,6 +334,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 		}
+		if remoteState == nil {
+			entry.ID, remoteState, err = findMoved(ctx, adapter, sv, dbentry.ID, savedState)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
+		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
 		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
@@ -370,12 +384,22 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		err = followParentRenames(adapter, entry.Changes, parentRenames)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
+			return false
+		}
+
 		if remoteState == nil {
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
 		} else {
 			action = getMaxAction(entry.Changes)
+		}
+		if entry.ID != "" {
+			// Found at a new ID: the state has to follow it there.
+			action = deployplan.GetHigherAction(action, deployplan.UpdateWithID)
 		}
 
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
@@ -475,6 +499,13 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		path, err := structpath.ParsePath(pathString)
 		if err != nil {
 			return err
+		}
+
+		if cfg != nil {
+			if _, ok := findMatchingRule(path, cfg.DropChanges); ok {
+				toDrop = append(toDrop, pathString)
+				continue
+			}
 		}
 
 		// RemoteAlreadySet only holds when ch.Remote is a real remote value we can compare
@@ -664,6 +695,140 @@ func classifyIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.P
 		return deployplan.Skip, reason, true
 	}
 	return deployplan.Undefined, "", false
+}
+
+// parentRenames returns the fields of resourceKey whose whole value is a reference to a
+// field that the referenced resource renames in this plan (an update_id change), keyed by
+// field path, with the referenced change as the value.
+func (b *DeploymentBundle) parentRenames(resourceKey string) (map[string]*deployplan.ChangeDesc, error) {
+	sv, ok := b.StateCache.Load(resourceKey)
+	if !ok {
+		return nil, fmt.Errorf("internal error: no state cache entry found for %q", resourceKey)
+	}
+
+	result := make(map[string]*deployplan.ChangeDesc)
+	for fieldPath, refString := range sv.Refs {
+		ref, ok := dynvar.NewRef(dyn.V(refString))
+		if !ok || !ref.IsPure() {
+			continue
+		}
+		targetPath, err := structpath.ParsePath(ref.References()[0])
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse reference %q: %w", refString, err)
+		}
+		targetKey, targetField := splitResourcePath(targetPath)
+		change, err := b.renameChange(targetKey, targetField.String())
+		if err != nil {
+			return nil, err
+		}
+		if change != nil {
+			result[fieldPath] = change
+		}
+	}
+	return result, nil
+}
+
+// renameChange returns the change to field of resourceKey if it is part of an update_id, nil otherwise.
+func (b *DeploymentBundle) renameChange(resourceKey, field string) (*deployplan.ChangeDesc, error) {
+	entry, err := b.Plan.ReadLockEntry(resourceKey)
+	if err != nil {
+		return nil, err
+	}
+	defer b.Plan.ReadUnlockEntry(resourceKey)
+
+	// A missing entry is reported by resolveReferences.
+	if entry == nil || entry.Action != deployplan.UpdateWithID {
+		return nil, nil
+	}
+	change := entry.Changes[field]
+	if change == nil || change.Action != deployplan.UpdateWithID {
+		return nil, nil
+	}
+	return change, nil
+}
+
+// findMoved looks for a resource missing from its recorded ID at the ID its config gives it, where a
+// rename can have moved it: the resource or its parent renamed out of band, or by a deploy that
+// stopped before re-keying it. What is found there is taken only if its internal ID matches the one
+// in savedState, so an unrelated object with the same name is never adopted; the create then fails
+// on it instead.
+func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.StructVar, storedID string, savedState any) (string, any, error) {
+	if !adapter.HasInternalID() || !adapter.HasDoUpdateWithID() || hasUnresolvedIDField(adapter, sv) {
+		return "", nil, nil
+	}
+	savedInternalID, err := adapter.InternalID(savedState)
+	if err != nil || savedInternalID == "" {
+		return "", nil, err
+	}
+	id, err := adapter.IDFromState(sv.Value)
+	if err != nil || id == storedID {
+		return "", nil, err
+	}
+	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+		return adapter.DoRead(ctx, id)
+	})
+	if apierr.IsMissing(err) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("reading id=%q: %w", id, err)
+	}
+	found, err := adapter.RemapState(remote)
+	if err != nil {
+		return "", nil, err
+	}
+	foundInternalID, err := adapter.InternalID(found)
+	if err != nil || foundInternalID != savedInternalID {
+		return "", nil, err
+	}
+	return id, remote, nil
+}
+
+// hasUnresolvedIDField reports whether a field the ID is built from is still an unresolved reference.
+func hasUnresolvedIDField(adapter *dresources.Adapter, sv *structvar.StructVar) bool {
+	cfg := adapter.ResourceConfig()
+	for pathString := range sv.Refs {
+		path, err := structpath.ParsePath(pathString)
+		if err != nil {
+			return true
+		}
+		if _, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
+			return true
+		}
+		if _, ok := findMatchingRule(path, cfg.UpdatableIDFields); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// followParentRenames plans an update_id instead of a recreate for an ID field that changes
+// only because it references the name of a parent that is renamed in place. UC moves the
+// children of a renamed catalog or schema along with it, so recreating such a child fails
+// with "already exists"; its DoUpdateWithID addresses it under the new parent instead.
+//
+// The old values must match too: a child moved to the renamed parent from somewhere else
+// still has to be recreated.
+func followParentRenames(adapter *dresources.Adapter, changes deployplan.Changes, parentRenames map[string]*deployplan.ChangeDesc) error {
+	if !adapter.HasDoUpdateWithID() {
+		return nil
+	}
+	for pathString, parentChange := range parentRenames {
+		ch := changes[pathString]
+		if ch == nil || ch.Action != deployplan.Recreate || !structdiff.IsEqual(ch.Old, parentChange.Old) {
+			continue
+		}
+		path, err := structpath.ParsePath(pathString)
+		if err != nil {
+			return err
+		}
+		if _, ok := findMatchingRule(path, adapter.ResourceConfig().ProvidedIDFields); !ok {
+			continue
+		}
+		ch.Action = deployplan.UpdateWithID
+		ch.Reason = deployplan.ReasonParentRenamed
+	}
+	return nil
 }
 
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
