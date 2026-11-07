@@ -1,0 +1,95 @@
+
+>>> [CLI] bundle plan --exclude jobs.deferred
+create jobs.prerequisite
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged, 1 not selected
+
+>>> [CLI] bundle plan --exclude jobs.deferred --exclude deferred
+create jobs.prerequisite
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged, 1 not selected
+
+>>> [CLI] bundle plan --exclude jobs.prerequisite
+Error: cannot exclude jobs.prerequisite: jobs.deferred depends on it through ${resources.jobs.prerequisite.id}; also exclude jobs.deferred or remove the dependency
+
+
+>>> [CLI] bundle deploy --exclude jobs.missing
+Error: no such resource: jobs.missing
+
+
+>>> [CLI] bundle deploy --select jobs.deferred --exclude jobs.prerequisite
+Error: --select and --exclude cannot be used together
+
+>>> [CLI] bundle deploy --exclude jobs.deferred --plan plan.json
+Error: --exclude cannot be used with --plan; generate a filtered plan with bundle plan --exclude, then apply it with --plan
+
+>>> env DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan --exclude jobs.deferred
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+
+Unset the DATABRICKS_BUNDLE_ENGINE environment variable (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+=== Deploy prerequisites with --exclude
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/exclude-[UNIQUE_NAME]/default/files...
+Created jobs.prerequisite
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 1 not selected
+
+>>> [CLI] bundle summary
+Name: exclude-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/exclude-[UNIQUE_NAME]/default
+Resources:
+  Jobs:
+    deferred:
+      Name: deferred-[UNIQUE_NAME]
+      URL:  (not deployed)
+    prerequisite:
+      Name: prerequisite-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/jobs/[PREREQUISITE_ID]?w=[WORKSPACE_ID]
+
+>>> print_requests.py --nostamp --sort //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/exclude-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "prerequisite-[UNIQUE_NAME]",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+
+=== Deploy deferred resource with --select
+
+>>> [CLI] bundle deploy --select jobs.deferred
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/exclude-[UNIQUE_NAME]/default/files...
+Created jobs.deferred
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle plan --exclude jobs.deferred
+Error: cannot exclude jobs.deferred: deployed jobs.deferred still depends on jobs.prerequisite through ${resources.jobs.prerequisite.id}, which is planned for delete; also exclude jobs.prerequisite or update jobs.deferred first
+
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Destroy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.deferred
+  delete resources.jobs.prerequisite
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/exclude-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

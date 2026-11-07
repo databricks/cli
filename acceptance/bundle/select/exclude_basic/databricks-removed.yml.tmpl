@@ -1,0 +1,11 @@
+bundle:
+  name: exclude-$UNIQUE_NAME
+
+resources:
+  jobs:
+    deferred:
+      name: deferred-$UNIQUE_NAME
+      tasks:
+        - task_key: run_prerequisite
+          run_job_task:
+            job_id: 123
