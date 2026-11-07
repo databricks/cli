@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+job_id=$(read_id.py my_job)
+
+# Target overrides supply existing keys; new keys route to the null parents in the base config.
+edit_resource.py jobs "$job_id" <<'EOF'
+for jc in r["job_clusters"]:
+    cluster = jc["new_cluster"]
+    cluster["custom_tags"].update({"team": "analytics", "123": "numeric key"})
+    if jc["job_cluster_key"] == "shared":
+        cluster["spark_env_vars"]["ENV"] = "dev"
+        cluster["init_scripts"] = [{"workspace": {"destination": "/Workspace/init.sh"}}]
+        cluster["autoscale"]["max_workers"] = 2
+EOF
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+trace $CLI bundle config-remote-sync --save

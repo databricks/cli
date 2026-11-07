@@ -115,6 +115,16 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 				Value: fieldChange.Change.Value,
 			}})
 
+			if patchErr != nil {
+				patched, err := addThroughNullAncestor(content, fieldPathCandidate, fieldChange.Change.Value)
+				if err != nil {
+					return nil, err
+				}
+				if patched != nil {
+					modifiedContent, patchErr = patched, nil
+				}
+			}
+
 			// Collect parent path errors for later retry
 			if patchErr != nil && isParentPathError(patchErr) {
 				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
@@ -172,6 +182,67 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 	}
 
 	return content, nil
+}
+
+// addThroughNullAncestor applies an add by materializing its null ancestor.
+// It returns nil when no null ancestor can be replaced safely.
+func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return nil, err
+	}
+	if len(doc.Content) != 1 {
+		return nil, nil
+	}
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil, err
+	}
+	current := doc.Content[0]
+	var keyNode *yaml.Node
+	for depth, part := range pattern.AsSlice() {
+		// Replacing anchored content could alter aliases or leave dangling references.
+		if current.Anchor != "" {
+			return nil, nil
+		}
+		if current.Kind == yaml.ScalarNode && current.ShortTag() == "!!null" {
+			for node := pattern; node.Len() > depth; node = node.Parent() {
+				key, isKey := node.StringKey()
+				index, isIndex := node.Index()
+				switch {
+				case isKey:
+					value = map[string]any{key: value}
+				case node.BracketStar(), isIndex && index == 0:
+					value = []any{value}
+				default:
+					// Only the first element can be added to an empty sequence.
+					return nil, nil
+				}
+			}
+			var replacement yaml.Node
+			if err := replacement.Encode(value); err != nil {
+				return nil, err
+			}
+			replacement.HeadComment = current.HeadComment
+			replacement.FootComment = current.FootComment
+			// Block containers cannot carry the scalar's inline comment themselves.
+			if current.LineComment != "" {
+				if keyNode != nil {
+					keyNode.LineComment = strings.TrimSpace(keyNode.LineComment + "\n" + current.LineComment)
+				} else {
+					replacement.HeadComment = strings.TrimSpace(replacement.HeadComment + "\n" + current.LineComment)
+				}
+			}
+			*current = replacement
+			return encodeYAML(&doc)
+		}
+
+		current, keyNode = yamlChild(current, (*structpath.PathNode)(part))
+		if current == nil {
+			return nil, nil
+		}
+	}
+	return nil, nil
 }
 
 // isParentPathError checks if error indicates missing parent path.
@@ -289,13 +360,44 @@ func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, er
 			clearFlowStyleAlongPath(&doc, candidate)
 		}
 	}
+	return encodeYAML(&doc)
+}
+
+// encodeYAML uses the same indentation as the YAML patcher.
+func encodeYAML(doc *yaml.Node) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
-	if err := enc.Encode(&doc); err != nil {
+	if err := enc.Encode(doc); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), enc.Close()
+}
+
+// yamlChild returns the child and its mapping key so callers can preserve comments.
+// A nil child means the path component cannot be followed.
+func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *yaml.Node) {
+	switch current.Kind {
+	case yaml.MappingNode:
+		key, ok := part.StringKey()
+		if !ok {
+			return nil, nil
+		}
+		// current.Content: [key1, val1, key2, val2, ...]
+		for i := 0; i+1 < len(current.Content); i += 2 {
+			if current.Content[i].Value == key {
+				return current.Content[i+1], current.Content[i]
+			}
+		}
+	case yaml.SequenceNode:
+		index, ok := part.Index()
+		if ok && index >= 0 && index < len(current.Content) {
+			return current.Content[index], nil
+		}
+	default:
+		return nil, nil
+	}
+	return nil, nil
 }
 
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
@@ -313,35 +415,10 @@ func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
 
 	for _, n := range node.AsSlice() {
 		current.Style &^= yaml.FlowStyle
-
-		if key, ok := n.StringKey(); ok {
-			if current.Kind != yaml.MappingNode {
-				return
-			}
-			found := false
-			// current.Content: [key1, val1, key2, val2, ...]
-			for i := 0; i+1 < len(current.Content); i += 2 {
-				if current.Content[i].Value == key {
-					current = current.Content[i+1]
-					found = true
-					break
-				}
-			}
-			if !found {
-				return
-			}
-			continue
+		current, _ = yamlChild(current, n)
+		if current == nil {
+			return
 		}
-
-		if idx, ok := n.Index(); ok {
-			if current.Kind != yaml.SequenceNode || idx < 0 || idx >= len(current.Content) {
-				return
-			}
-			current = current.Content[idx]
-			continue
-		}
-
-		return
 	}
 
 	clearFlowStyleNodes(current)

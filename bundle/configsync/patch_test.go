@@ -438,3 +438,60 @@ func TestBuildNestedMaps(t *testing.T) {
 	}
 	assert.Equal(t, expected, result)
 }
+
+func TestApplyChangeScalarParents(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"string", "parent: text\n", "parent.key", ""},
+		{"quoted null", "parent: \"null\"\n", "parent.key", ""},
+		{"empty string", "parent: \"\"\n", "parent.key", ""},
+		{"boolean", "parent: false\n", "parent.key", ""},
+		{"anchored null", "parent: &shared null\nother: *shared\n", "parent.key", ""},
+		{"aliased null", "other: &shared null\nparent: *shared\n", "parent.key", ""},
+		{"anchored container", "parent: &shared {tags: null}\nother: *shared\n", "parent.tags.key", ""},
+		{"nonzero index", "parent: null\n", "parent[1].key", ""},
+		{"append", "parent: null\n", "parent[*]", "parent: [value]"},
+		{"nested sequence", "parent: ~\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			if tc.want == "" {
+				assert.ErrorContains(t, err, "scalar can not be a container")
+				return
+			}
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+		})
+	}
+}
+
+func TestApplyChangeNullParentComments(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"root", "# head\nnull # inline\n# foot\n", "key", "key: value"},
+		{"sequence item", "parent:\n  # head\n  - null # inline\n  # foot\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+			for _, comment := range []string{"# head", "# inline", "# foot"} {
+				assert.Equal(t, 1, strings.Count(string(result), comment), "%s in %s", comment, result)
+			}
+		})
+	}
+}
