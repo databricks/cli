@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newMkdirCommand() *cobra.Command {
+func newMkdirCommand(filerForPath PathResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "mkdir DIR_PATH",
 		// Alias `mkdirs` for this command exists for legacy purposes. This command
@@ -29,6 +29,7 @@ func newMkdirCommand() *cobra.Command {
 	}
 
 	v := newValidArgs()
+	v.filerForPathFunc = filerForPath
 	v.onlyDirs = true
 	cmd.ValidArgsFunction = v.Validate
 

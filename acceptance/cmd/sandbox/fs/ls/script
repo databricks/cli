@@ -1,0 +1,13 @@
+title "Help"
+trace $CLI sandbox fs ls --help
+
+$CLI sandbox fs cp hello.txt $SANDBOX_ROOT/hello.txt > /dev/null
+$CLI sandbox fs mkdir $SANDBOX_ROOT/dir
+
+title "List a directory"
+trace $CLI sandbox fs ls $SANDBOX_ROOT
+trace $CLI sandbox fs ls --absolute $SANDBOX_ROOT
+
+title "List a file, then a missing path"
+errcode trace $CLI sandbox fs ls $SANDBOX_ROOT/hello.txt
+errcode trace $CLI sandbox fs ls $SANDBOX_ROOT/missing

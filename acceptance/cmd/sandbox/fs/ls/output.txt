@@ -1,0 +1,41 @@
+
+=== Help
+>>> [CLI] sandbox fs ls --help
+Lists files. Use SANDBOX:/absolute/path for sandbox paths.
+
+Usage:
+  databricks sandbox fs ls DIR_PATH [flags]
+
+Examples:
+  databricks sandbox fs ls my-sandbox:/tmp
+
+Flags:
+      --absolute   Displays absolute paths.
+  -h, --help       help for ls
+  -l, --long       Displays full information including size, file type and modification time since Epoch in milliseconds.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+=== List a directory
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]
+dir
+hello.txt
+
+>>> [CLI] sandbox fs ls --absolute [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]
+[TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir
+[TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+=== List a file, then a missing path
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+Error: not a directory: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+Exit code: 1
+
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing
+Error: no such directory: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
+
+Exit code: 1
