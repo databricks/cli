@@ -1,0 +1,74 @@
+name: registry-proxy-probe
+
+# Temporary probe; runs only on pushes to its own branch. Delete the branch when done.
+on:
+  push:
+    branches:
+      - mohamed-hashi/registry-proxy-probe
+
+permissions:
+  contents: read
+
+env:
+  GO_PROXY_HOST: go-proxy.cloud.databricks.com
+
+jobs:
+  probe:
+    name: "probe (${{ matrix.runner.name }})"
+    runs-on: ${{ matrix.runner.runs-on }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - name: protected-linux
+            runs-on:
+              group: databricks-protected-runner-group
+              labels: linux-ubuntu-latest
+          - name: protected-large-linux
+            runs-on:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+          - name: protected-large-windows
+            runs-on:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+          - name: deco-testing
+            runs-on:
+              group: databricks-deco-testing-runner-group
+              labels: ubuntu-latest-deco
+          - name: release-emu-access
+            runs-on:
+              group: databricks-release-runner-group-emu-access
+              labels: linux-ubuntu-latest-emu-access
+          - name: github-hosted-macos
+            runs-on: macos-latest
+          - name: github-hosted-ubuntu
+            runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Reachability
+        run: |
+          if curl -sf -m 15 -o /dev/null "https://$GO_PROXY_HOST/-/health"; then echo "reachable: yes"; else echo "reachable: no"; fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # Only module@version lines are printed; raw errors (which contain proxy URLs) stay on the runner.
+      - name: Module download
+        run: |
+          if GOPROXY="https://$GO_PROXY_HOST" GOFLAGS=-mod=mod go mod download 2> err.txt; then
+            echo "download: ok"
+          else
+            echo "download: failed ($(grep -c '^go: ' err.txt) errors)"
+            grep -oE '^go: [^ @]+@[^ :]+' err.txt | sort -u | head -50
+            exit 1
+          fi
