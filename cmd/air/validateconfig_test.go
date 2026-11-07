@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -19,6 +20,7 @@ import (
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -185,7 +187,9 @@ func TestPreflightValidationFailsOpenOnInvalidSuccessResponse(t *testing.T) {
 	}
 }
 
-func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
+// The SDK reports a failed body read without the response status, so even a
+// caller-error response counts as validation being unavailable.
+func TestPreflightValidationBodyReadFailureOnCallerErrorFailsOpen(t *testing.T) {
 	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
 		body := io.NopCloser(strings.NewReader(`{}`))
 		status := http.StatusOK
@@ -204,10 +208,28 @@ func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
 	err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
-	require.Error(t, err)
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	require.True(t, ok)
-	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+	require.NoError(t, err)
+}
+
+func TestPreflightValidationReusesSDKConnection(t *testing.T) {
+	var connections atomic.Int32
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			connections.Add(1)
+		}
+	}
+	srv.Start()
+	t.Cleanup(srv.Close)
+	w := validationTestWorkspaceClient(t, srv.URL)
+
+	_, err := w.CurrentUser.Me(t.Context(), iam.MeRequest{})
+	require.NoError(t, err)
+	err = preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), connections.Load())
 }
 
 func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
