@@ -1,0 +1,10 @@
+# Package the CLI under test the way release-build does, then run it through uvx
+# to check that a wheel built by build_cli_wheels.py is usable by Python tooling.
+trace python3 make_archives.py $CLI archives
+trace python3 $TESTROOT/../tools/build_cli_wheels.py archives wheels $TESTROOT/../LICENSE > /dev/null
+trace ls wheels | grep -c '^databricks-1.2.3-py3-none-.*\.whl$'
+
+# uv picks the wheel matching this platform from the directory.
+trace uvx -q --offline --no-index --find-links wheels --from databricks==1.2.3 databricks --version
+
+rm -fr archives wheels
