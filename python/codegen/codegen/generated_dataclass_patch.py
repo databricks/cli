@@ -22,7 +22,7 @@ def reorder_required_fields(models: dict[str, GeneratedDataclass]):
         models[name] = replace(model, fields=required_fields + optional_fields)
 
 
-def quote_recursive_references(models: dict[str, GeneratedDataclass]):
+def quote_recursive_references(models: dict[str, GeneratedDataclass], root: str):
     """
     If there is a cycle between two dataclasses, we need to quote one of them.
 
@@ -33,15 +33,51 @@ def quote_recursive_references(models: dict[str, GeneratedDataclass]):
 
         class Bar:
             foo: "Foo"
+
+    Cycles are found with a DFS from the resource root, and the reference that
+    points back to a dataclass still being visited is quoted, e.g. ForEachTask.task
+    in jobs (Job -> Task -> ForEachTask -> Task).
     """
 
     # see also _append_resolve_recursive_imports
 
-    if "jobs.ForEachTask" in models:
-        models["jobs.ForEachTask"] = _quote_recursive_references_for_model(
-            models["jobs.ForEachTask"],
-            references={"Task", "TaskParam"},
-        )
+    names_by_package = {model.package: name for name, model in models.items()}
+    visiting = set()
+    visited = set()
+    back_references: dict[str, set[str]] = {}
+
+    def visit(name: str):
+        visiting.add(name)
+
+        for field in models[name].fields:
+            for package in _referenced_packages(field.type_name):
+                # None for enums and core types, they can't form a cycle
+                ref = names_by_package.get(package)
+
+                if ref in visiting:
+                    model = models[ref]
+                    back_references.setdefault(name, set()).update(
+                        {model.class_name, f"{model.class_name}Param"}
+                    )
+                elif ref and ref not in visited:
+                    visit(ref)
+
+        visiting.remove(name)
+        visited.add(name)
+
+    visit(root)
+
+    for name, references in back_references.items():
+        models[name] = _quote_recursive_references_for_model(models[name], references)
+
+
+def _referenced_packages(type_name: GeneratedType) -> list[str]:
+    packages = [type_name.package] if type_name.package else []
+
+    for param in type_name.parameters:
+        packages += _referenced_packages(param)
+
+    return packages
 
 
 def _quote_recursive_references_for_model(
