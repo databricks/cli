@@ -1,0 +1,1 @@
+* `databricks aitools install --output json` now reports a more specific `error_category` (`MANIFEST_NOT_FOUND`, `PERMISSION_DENIED`, `FILESYSTEM`) for some failures it reported as `UNCATEGORIZED`. ([#7380](https://github.com/databricks/cli/pull/7380))
