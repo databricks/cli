@@ -11,7 +11,7 @@ import (
 
 // FeatureSpecsCreate fakes POST /api/2.0/feature-engineering/feature-specs. The FeatureSpec body is
 // sent directly, keyed by name, which is also the resource id. Like the real endpoint, it returns
-// the feature spec it was sent.
+// the feature spec it was sent, with the name lowercased.
 func (s *FakeWorkspace) FeatureSpecsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -22,6 +22,9 @@ func (s *FakeWorkspace) FeatureSpecsCreate(req Request) Response {
 			StatusCode: http.StatusInternalServerError,
 		}
 	}
+
+	// UC normalizes feature spec names to lowercase.
+	featureSpec.Name = strings.ToLower(featureSpec.Name)
 
 	if len(strings.Split(featureSpec.Name, ".")) != 3 {
 		return Response{
