@@ -1,0 +1,9 @@
+[[Server]]
+Pattern = "POST /api/2.0/pipelines/{pipeline_id}/updates"
+Response.Body = '''
+{
+    "error_code": "RESOURCE_CONFLICT",
+    "message": "An active update '00000000-0000-0000-0000-000000000001' already exists for pipeline '1234'."
+}
+'''
+Response.StatusCode = 409
