@@ -124,6 +124,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 				permissions,
 				key,
 				lm,
+				b.TargetPermissionsStart(),
 			)...)
 			writePermissions(field, permissions)
 		}
@@ -187,9 +188,10 @@ func convertPermissions(
 	resourcePermissions []resources.Permission,
 	resourceName string,
 	lm map[string]string,
+	targetPermissionsStart int,
 ) []resources.Permission {
 	var permissions []resources.Permission
-	for _, p := range bundlePermissions {
+	for i, p := range bundlePermissions {
 		level, ok := lm[string(p.Level)]
 		// If there is no bundle permission level defined in the map, it means
 		// it's not applicable for the resource, therefore skipping
@@ -197,7 +199,14 @@ func convertPermissions(
 			continue
 		}
 
-		if notifyForPermissionOverlap(ctx, p, resourcePermissions, resourceName) {
+		overlap, diagnostics := isPermissionOverlap(p, resourcePermissions, resourceName)
+		if i < targetPermissionsStart {
+			for _, d := range diagnostics {
+				logdiag.LogDiag(ctx, d)
+			}
+		}
+		if overlap {
+			// Resource permissions override target-wide defaults without a warning.
 			continue
 		}
 
@@ -239,18 +248,4 @@ func isPermissionOverlap(
 	}
 
 	return len(diagnostics) > 0, diagnostics
-}
-
-func notifyForPermissionOverlap(
-	ctx context.Context,
-	permission resources.Permission,
-	resourcePermissions []resources.Permission,
-	resourceName string,
-) bool {
-	isOverlap, diagnostics := isPermissionOverlap(permission, resourcePermissions, resourceName)
-	for _, d := range diagnostics {
-		logdiag.LogDiag(ctx, d)
-	}
-
-	return isOverlap
 }
