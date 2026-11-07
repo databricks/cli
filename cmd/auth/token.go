@@ -80,7 +80,7 @@ and secret is not supported.`,
 		})
 		if err != nil {
 			if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputJSON {
-				if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
+				if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok || errors.Is(err, storage.ErrRefreshRecoveryRequired) {
 					if outputErr := writeTokenErrorOutput(cmd.OutOrStdout(), err); outputErr != nil {
 						return outputErr
 					}

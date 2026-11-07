@@ -1,9 +1,12 @@
 package config
 
 import (
+	"context"
+	"errors"
 	"io/fs"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle/env"
@@ -13,6 +16,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func stubUnavailableWorkspaceMetadata(t *testing.T, hosts ...string) {
+	t.Helper()
+	previous := config.DefaultHostMetadataResolverFactory
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		return func(_ context.Context, host string) (*config.HostMetadata, error) {
+			if !slices.Contains(hosts, host) {
+				t.Error("unexpected fixture metadata host")
+				return nil, errors.New("unexpected fixture metadata host")
+			}
+			return nil, nil
+		}
+	}
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = previous })
+}
 
 func setupWorkspaceTest(t *testing.T) string {
 	testutil.CleanupEnvironment(t)
@@ -27,6 +45,7 @@ func setupWorkspaceTest(t *testing.T) string {
 }
 
 func TestWorkspaceResolveProfileFromHost(t *testing.T) {
+	stubUnavailableWorkspaceMetadata(t, "https://abc.cloud.databricks.com")
 	// If only a workspace host is specified, try to find a profile that uses
 	// the same workspace host (unambiguously).
 	w := Workspace{
@@ -125,6 +144,7 @@ func TestWorkspaceNormalizeHostURL(t *testing.T) {
 }
 
 func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
+	stubUnavailableWorkspaceMetadata(t, "https://spog.databricks.com")
 	// Regression test: Client() must normalize the host URL (strip ?o= and
 	// populate WorkspaceID) before building the SDK config and resolving
 	// profiles. This ensures workspace_id is available for disambiguation.
@@ -156,6 +176,7 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 }
 
 func TestWorkspaceClientProfileOverridesAuthEnv(t *testing.T) {
+	stubUnavailableWorkspaceMetadata(t, "https://tst.cloud.databricks.test")
 	// An explicit profile must win over auth env vars (#5096).
 	setupWorkspaceTest(t)
 
@@ -179,6 +200,7 @@ func TestWorkspaceClientProfileOverridesAuthEnv(t *testing.T) {
 }
 
 func TestWorkspaceClientProfileFillsAuthFromEnv(t *testing.T) {
+	stubUnavailableWorkspaceMetadata(t, "https://tst.cloud.databricks.test")
 	// Host-only profile: the profile wins for the host, but env fills the token
 	// it omits (#5096).
 	setupWorkspaceTest(t)
@@ -201,6 +223,7 @@ func TestWorkspaceClientProfileFillsAuthFromEnv(t *testing.T) {
 }
 
 func TestWorkspaceClientHostAndProfileOverridesAuthEnv(t *testing.T) {
+	stubUnavailableWorkspaceMetadata(t, "https://tst.cloud.databricks.test")
 	// Bundle pins both workspace.host and workspace.profile: the profile wins
 	// for auth and the host check passes because they agree (#5096).
 	setupWorkspaceTest(t)
@@ -247,6 +270,7 @@ func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
 }
 
 func TestWorkspaceVerifyProfileForHost(t *testing.T) {
+	stubUnavailableWorkspaceMetadata(t, "https://abc.cloud.databricks.com", "https://def.cloud.databricks.com")
 	// If both a workspace host and a profile are specified,
 	// verify that the host configured in the profile matches
 	// the host configured in the bundle configuration.

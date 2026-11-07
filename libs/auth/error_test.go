@@ -64,6 +64,7 @@ func TestEnrichAuthError_PreservesOriginalError(t *testing.T) {
 }
 
 func TestEnrichAuthError(t *testing.T) {
+	stubUnavailableAuthArgumentMetadata(t, "https://accounts.cloud.databricks.com")
 	tests := []struct {
 		name       string
 		cfg        *config.Config

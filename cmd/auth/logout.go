@@ -215,7 +215,7 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		// A device code login started for the profile could still complete
 		// and save a token for it. The profile does not use the token store
 		// otherwise, so an unavailable store does not fail its logout.
-		if err := args.tokenStore.Delete(pendingLoginKey(matchedProfile.Name)); err != nil {
+		if err := storage.DeleteWithContext(ctx, args.tokenStore, pendingLoginKey(matchedProfile.Name)); err != nil {
 			log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
 		}
 	}
@@ -278,39 +278,65 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 //     profiles, the cache key includes the OIDC path
 //     (host/oidc/accounts/<account_id>).
 func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenStore storage.Store) error {
-	if err := tokenStore.Delete(p.Name); err != nil {
-		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
-	}
-	// A pending device code login could still complete and restore the
-	// credentials that the user is logging out of.
-	if err := tokenStore.Delete(pendingLoginKey(p.Name)); err != nil {
-		return fmt.Errorf("failed to delete pending device code login for profile %q: %w", p.Name, err)
-	}
-
-	hostCacheKey, matchFn := hostCacheKeyAndMatchFn(p)
-	if hostCacheKey == "" {
-		return fmt.Errorf("failed to get host-based cache key for profile %q", p.Name)
-	}
-
-	// Only preserve the host-keyed token if another U2M profile shares the
-	// same host. Non-U2M profiles (PAT, M2M, etc.) never use the OAuth
-	// token cache, so they should not prevent cleanup.
-	otherProfiles, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
-		return candidate.Name != p.Name && candidate.AuthType == "databricks-cli" && matchFn(candidate)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to load profiles for host cache key %q: %w", hostCacheKey, err)
-	}
-
-	if len(otherProfiles) == 0 {
-		if err := tokenStore.Delete(hostCacheKey); err != nil {
-			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
+	deletePrimary := func(view storage.Store) error {
+		if err := view.Delete(p.Name); err != nil {
+			return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 		}
-		if err := tokenStore.Delete(pendingLoginKey(hostCacheKey)); err != nil {
-			return fmt.Errorf("failed to delete pending device code login for %q: %w", hostCacheKey, err)
+		if err := view.Delete(pendingLoginKey(p.Name)); err != nil {
+			return fmt.Errorf("failed to delete pending login for profile %q: %w", p.Name, err)
 		}
+		return nil
 	}
-	return nil
+	var hostKey string
+	prepareHostCleanup := func() error {
+		key, matchFn := hostCacheKeyAndMatchFn(p)
+		if key == "" {
+			return fmt.Errorf("failed to get host-based cache key for profile %q", p.Name)
+		}
+		otherProfiles, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
+			return candidate.Name != p.Name && candidate.AuthType == "databricks-cli" && matchFn(candidate)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to load profiles for host cache key %q: %w", key, err)
+		}
+		if len(otherProfiles) == 0 {
+			hostKey = key
+		}
+		return nil
+	}
+	deleteHost := func(view storage.Store) error {
+		if hostKey == "" {
+			return nil
+		}
+		if err := view.Delete(hostKey); err != nil {
+			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostKey, err)
+		}
+		if err := view.Delete(pendingLoginKey(hostKey)); err != nil {
+			return fmt.Errorf("failed to delete pending login for host %q: %w", hostKey, err)
+		}
+		return nil
+	}
+	if storage.SupportsFileTransactions(tokenStore) {
+		// Resolve routing before holding the file lease; publish all deletes together.
+		if err := prepareHostCleanup(); err != nil {
+			return err
+		}
+		_, err := storage.WithFileTransaction(ctx, tokenStore, func(view storage.Store) error {
+			if err := deletePrimary(view); err != nil {
+				return err
+			}
+			return deleteHost(view)
+		}, nil)
+		return err
+	}
+	// Preserve mutation and error ordering for other backends.
+	if err := deletePrimary(tokenStore); err != nil {
+		return err
+	}
+	if err := prepareHostCleanup(); err != nil {
+		return err
+	}
+	return deleteHost(tokenStore)
 }
 
 // hostCacheKeyAndMatchFn returns the host-based token cache key and a profile

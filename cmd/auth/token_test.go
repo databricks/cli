@@ -116,6 +116,18 @@ func (m *MockApiClient) GetEndpointsFromURL(_ context.Context, _ string) (*u2m.O
 var _ u2m.OAuthEndpointSupplier = (*MockApiClient)(nil)
 
 func TestToken_loadToken(t *testing.T) {
+	stubFixtureHostMetadata(t, map[string]string{
+		"https://accounts.cloud.databricks.com":    "https://accounts.cloud.databricks.com/oidc/accounts/{account_id}",
+		"https://dev.cloud.databricks.com":         "https://dev.cloud.databricks.com/oidc",
+		"https://legacy-ws.cloud.databricks.com":   "https://legacy-ws.cloud.databricks.com/oidc",
+		"https://m2m.cloud.databricks.com":         "https://m2m.cloud.databricks.com/oidc",
+		"https://no-profile.cloud.databricks.com":  "https://no-profile.cloud.databricks.com/oidc",
+		"https://nonexistent.cloud.databricks.com": "https://nonexistent.cloud.databricks.com/oidc",
+		"https://shared.cloud.databricks.com":      "https://shared.cloud.databricks.com/oidc",
+		"https://unique-ws.cloud.databricks.com":   "https://unique-ws.cloud.databricks.com/oidc",
+		"https://valid-token.cloud.databricks.com": "https://valid-token.cloud.databricks.com/oidc",
+		"https://workspace-a.cloud.databricks.com": "https://workspace-a.cloud.databricks.com/oidc",
+	})
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
 			{
