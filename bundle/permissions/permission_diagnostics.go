@@ -32,7 +32,7 @@ func (m *permissionDiagnostics) Name() string {
 
 func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := runAsAccessDiagnostics(b)
-	// Only recommend deployment-identity access when top-level permissions are explicit.
+	// Without top-level permissions, only run_as access diagnostics apply.
 	if len(b.Config.Permissions) == 0 {
 		return diags
 	}
