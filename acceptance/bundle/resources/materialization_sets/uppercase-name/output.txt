@@ -1,0 +1,237 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created features.feata
+Created features.featb
+Created materialization_sets.set1
+Created schemas.myschema
+Files: 1 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Each feature is created under the schema's spelling
+>>> print_requests.py --keep //feature-engineering/features
+[
+  "main.MySchema.FeatA",
+  "main.MySchema.FeatB"
+]
+
+=== Each member names its feature in lowercase, from a reference or written out
+>>> print_requests.py //feature-engineering/materialization-sets
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/materialization-sets",
+  "q": {
+    "request_id": "[UUID]"
+  },
+  "body": {
+    "materialized_features": [
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.myschema.feata",
+        "offline_store_config": {
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
+        }
+      },
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.myschema.featb",
+        "offline_store_config": {
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
+        }
+      }
+    ]
+  }
+}
+
+=== A plan on an unchanged bundle skips each member's feature name instead of recreating the set
+>>> set_plan
+{
+  "action": "skip",
+  "changes": {
+    "materialized_features[member='feature_name=main.myschema.feata|is_streaming_mode=false'].feature_name": {
+      "action": "skip",
+      "reason": "feature_name_case_only"
+    },
+    "materialized_features[member='feature_name=main.myschema.featb|is_streaming_mode=false'].feature_name": {
+      "action": "skip",
+      "reason": "feature_name_case_only"
+    }
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+
+=== Changing only the case of a written-out feature name is skipped
+>>> update_file.py databricks.yml feature_name: main.MySchema.FeatB feature_name: main.myschema.featb
+
+>>> set_plan
+{
+  "action": "skip",
+  "changes": {
+    "materialized_features[member='feature_name=main.myschema.feata|is_streaming_mode=false'].feature_name": {
+      "action": "skip",
+      "reason": "feature_name_case_only"
+    },
+    "materialized_features[member='feature_name=main.myschema.featb|is_streaming_mode=false'].feature_name": {
+      "action": "skip",
+      "reason": "feature_name_case_only"
+    }
+  }
+}
+
+>>> update_file.py databricks.yml feature_name: main.myschema.featb feature_name: MAIN.MYSCHEMA.FEATB
+
+>>> set_plan
+{
+  "action": "skip",
+  "changes": {
+    "materialized_features[member='feature_name=main.myschema.feata|is_streaming_mode=false'].feature_name": {
+      "action": "skip",
+      "reason": "feature_name_case_only"
+    },
+    "materialized_features[member='feature_name=main.myschema.featb|is_streaming_mode=false'].feature_name": {
+      "action": "skip",
+      "reason": "feature_name_case_only"
+    }
+  }
+}
+
+=== Naming another feature still recreates the set
+>>> update_file.py databricks.yml feature_name: MAIN.MYSCHEMA.FEATB feature_name: main.MySchema.FeatC
+
+>>> set_plan
+Warn: planning resources.materialization_sets.set1: the member for feature "main.MySchema.FeatC" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed
+{
+  "action": "recreate",
+  "changes": {
+    "materialized_features[member='feature_name=main.myschema.feata|is_streaming_mode=false'].feature_name": {
+      "action": "skip",
+      "reason": "feature_name_case_only"
+    },
+    "materialized_features[member='feature_name=main.myschema.featb|is_streaming_mode=false']": {
+      "action": "update",
+      "reason": "custom"
+    },
+    "materialized_features[member='feature_name=main.myschema.featc|is_streaming_mode=false']": {
+      "action": "recreate",
+      "reason": "member_added"
+    }
+  }
+}
+
+>>> update_file.py databricks.yml feature_name: main.MySchema.FeatC feature_name: main.MySchema.FeatB
+
+=== Removing a member updates the set, naming the remaining member's feature in lowercase
+>>> update_file.py databricks.yml         - feature_name: main.MySchema.FeatB
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+ 
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
+
+>>> print_requests.py //feature-engineering/materialization-sets
+{
+  "method": "PATCH",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "q": {
+    "request_id": "[UUID]",
+    "update_mask": "*"
+  },
+  "body": {
+    "materialization_set_id": "[UUID]",
+    "materialized_features": [
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.myschema.feata",
+        "offline_store_config": {
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
+        }
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+
+=== The service refuses a member that names its feature in other than lowercase
+>>> musterr [CLI] feature-engineering create-materialization-set --json {"materialized_features": [{"feature_name": "main.MySchema.FeatA", "offline_store_config": {"catalog_name": "main", "schema_name": "myschema", "table_name_prefix": "direct"}, "cron_schedule_trigger": {"mode": "MANUAL", "cron_expression": "0 0 * * * ?"}}]}
+Error: operation failed: [BAD_REQUEST] Materialized feature requests must include the resolved feature names: main.myschema.feata
+
+>>> print_requests.py //feature-engineering/materialization-sets
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/materialization-sets",
+  "q": {
+    "request_id": "[UUID]"
+  },
+  "body": {
+    "materialized_features": [
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.MySchema.FeatA",
+        "offline_store_config": {
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "direct"
+        }
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.feata
+  delete resources.features.featb
+  delete resources.materialization_sets.set1
+  delete resources.schemas.myschema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.myschema
+
+This action will result in the deletion of the following Feature Views.
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:
+  delete resources.features.feata
+  delete resources.features.featb
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 4 deleted
+
+>>> print_requests.py //feature-engineering/materialization-sets
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "q": {
+    "request_id": "[UUID]"
+  }
+}

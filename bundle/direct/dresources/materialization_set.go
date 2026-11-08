@@ -39,6 +39,8 @@ var (
 	materializedFeaturesPattern = structpath.NewPatternDotString(nil, "materialized_features")
 	materializedFeatureMember   = structpath.NewPatternBracketStar(materializedFeaturesPattern)
 
+	materializedFeatureMemberFeatureName = structpath.NewPatternDotString(materializedFeatureMember, "feature_name")
+
 	// The destination fields the server accepts on write and never returns on read. The whole
 	// offline block is input-only; online_store_name is returned, so it is deliberately absent.
 	redactedDestinationPatterns = []*structpath.PatternNode{
@@ -76,9 +78,11 @@ func isAbsentRemotely(remote any) bool {
 // reasonMemberAdded marks a recreate caused by a configured member the deployed set lacks.
 const reasonMemberAdded = "member_added"
 
+const reasonFeatureNameCaseOnly = "feature_name_case_only"
+
 // OverrideChangeDesc plans a member removed from the set as an update and a member the deployed
-// set lacks as a recreate, and suppresses the drift left behind by an ignore_remote_changes rule
-// that cannot fire.
+// set lacks as a recreate, skips a member's feature name that differs only in case, and suppresses
+// the drift left behind by an ignore_remote_changes rule that cannot fire.
 func (*ResourceMaterializationSet) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remote *ml.MaterializationSet) error {
 	// The immutable field rules also match a whole member, materialized_features[member=...], and
 	// the whole list, materialized_features, because the matcher truncates a longer pattern. The
@@ -97,6 +101,14 @@ func (*ResourceMaterializationSet) OverrideChangeDesc(ctx context.Context, path 
 		}
 		change.Action = deployplan.Recreate
 		change.Reason = reasonMemberAdded
+		return nil
+	}
+
+	// A paired member's feature names differ only in case, because MaterializedFeatureMemberKey
+	// lowercases them.
+	if path.HasPatternPrefix(materializedFeatureMemberFeatureName) {
+		change.Action = deployplan.Skip
+		change.Reason = reasonFeatureNameCaseOnly
 		return nil
 	}
 
@@ -150,6 +162,15 @@ func (r *ResourceMaterializationSet) DoRead(ctx context.Context, id string) (*ml
 	})
 }
 
+// withLowercaseFeatureNames returns a copy of the set with each member's feature name lowercased.
+func withLowercaseFeatureNames(set ml.MaterializationSet) ml.MaterializationSet {
+	set.MaterializedFeatures = slices.Clone(set.MaterializedFeatures)
+	for i := range set.MaterializedFeatures {
+		set.MaterializedFeatures[i].FeatureName = strings.ToLower(set.MaterializedFeatures[i].FeatureName)
+	}
+	return set
+}
+
 // DoCreate submits the set and waits for the long-running operation the create returns. The created
 // set arrives as that operation's response, which Wait reaches by polling GetOperation.
 func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.MaterializationSet) (string, *ml.MaterializationSet, error) {
@@ -157,7 +178,7 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 	// returns the operation the first request with the same idempotency token created. Minted here
 	// so the token the server sees is the one this call chose.
 	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
-		MaterializationSet: *config,
+		MaterializationSet: withLowercaseFeatureNames(*config),
 		RequestId:          uuid.New().String(),
 		ForceSendFields:    nil,
 	})
@@ -234,7 +255,7 @@ func materializationSetOperationTarget(operation materializationSetOperation) st
 // DoUpdate reconciles the set's membership and waits for the long-running operation the update
 // returns. The reconciled set arrives as that operation's response.
 func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, config *ml.MaterializationSet, _ *PlanEntry) (*ml.MaterializationSet, error) {
-	update := *config
+	update := withLowercaseFeatureNames(*config)
 	update.MaterializationSetId = id
 
 	operation, err := r.client.FeatureEngineering.UpdateMaterializationSet(ctx, ml.UpdateMaterializationSetRequest{
