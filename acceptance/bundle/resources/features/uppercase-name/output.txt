@@ -1,0 +1,140 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/features",
+  "body": {
+    "entities": [
+      {
+        "name": "account_id"
+      }
+    ],
+    "full_name": "main.myschema.MyFeature",
+    "function": {
+      "aggregation_function": {
+        "count_function": {
+          "input": "amount"
+        },
+        "time_window": {
+          "sliding": {
+            "slide_duration": "86400s",
+            "window_duration": "604800s"
+          }
+        }
+      }
+    },
+    "source": {
+      "delta_table_source": {
+        "full_name": "main.myschema.mysource"
+      }
+    },
+    "timeseries_column": {
+      "name": "event_ts"
+    }
+  }
+}
+
+=== UC lowercases the name, so the id is lowercase
+>>> [CLI] bundle summary -o json
+"main.myschema.myfeature"
+
+=== A plan on an unchanged bundle skips the name instead of recreating the feature
+>>> [CLI] bundle plan -o json
+{
+  "resources.features.feature1": {
+    "action": "skip",
+    "changes": {
+      "full_name": {
+        "action": "skip",
+        "reason": "id_field"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Renaming the feature still recreates it
+>>> update_file.py databricks.yml main.myschema.MyFeature main.myschema.MyOtherFeature
+
+>>> [CLI] bundle plan
+recreate features.feature1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following Feature Views.
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:
+  recreate resources.features.feature1
+Recreated features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/features/main.myschema.myfeature"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/features",
+  "body": {
+    "entities": [
+      {
+        "name": "account_id"
+      }
+    ],
+    "full_name": "main.myschema.MyOtherFeature",
+    "function": {
+      "aggregation_function": {
+        "count_function": {
+          "input": "amount"
+        },
+        "time_window": {
+          "sliding": {
+            "slide_duration": "86400s",
+            "window_duration": "604800s"
+          }
+        }
+      }
+    },
+    "source": {
+      "delta_table_source": {
+        "full_name": "main.myschema.mysource"
+      }
+    },
+    "timeseries_column": {
+      "name": "event_ts"
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.feature1
+
+This action will result in the deletion of the following Feature Views.
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:
+  delete resources.features.feature1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/features/main.myschema.myotherfeature"
+}
