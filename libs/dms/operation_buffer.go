@@ -32,8 +32,8 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
-	// heartbeat keeps the version's update_time fresh until Stop, past Drain. Each successful
-	// write renews it, since the service counts a write as a heartbeat.
+	// heartbeat keeps the version's update_time fresh until Stop, past Drain. Each write renews
+	// it as it starts, since the service counts a write as a heartbeat.
 	heartbeat *Heartbeat
 
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
@@ -198,6 +198,10 @@ func (b *OperationBuffer) run(ctx context.Context) {
 
 // write sends one update, at the sequence id the resource is at.
 func (b *OperationBuffer) write(ctx context.Context, key string, update OperationUpdate) error {
+	// Renewed when the write starts, not when it succeeds, so a heartbeat only overlaps a write
+	// that has been in flight for a full interval. Both update the version row.
+	b.heartbeat.renew()
+
 	w := cmdctx.WorkspaceClient(ctx)
 	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
 		Name:       OperationName(b.deploymentID, b.versionNum, key),
@@ -210,7 +214,6 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 
 	// The next write for this resource echoes the sequence id this one earned.
 	b.sequenceIDs[key] = result.SequenceId
-	b.heartbeat.renew()
 	return nil
 }
 

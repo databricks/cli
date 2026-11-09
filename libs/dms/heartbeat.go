@@ -58,7 +58,7 @@ func (h *Heartbeat) run(ctx context.Context, send func(context.Context) error) {
 	}
 }
 
-// renew records that a successful write updated the version.
+// renew records that a write started, so the next heartbeat waits a full interval.
 func (h *Heartbeat) renew() {
 	select {
 	case h.renewed <- struct{}{}:
