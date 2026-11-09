@@ -57,6 +57,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
       }
     ],
     "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "main",
@@ -97,9 +98,8 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 === Deploy only records the new name in the state
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Updated volumes.volume1
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //unity-catalog
 

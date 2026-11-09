@@ -29,6 +29,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
   "resources.schemas.schema1": {
     "id": "main.test-schema-renamed-[UNIQUE_NAME]",
     "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "main",
@@ -72,6 +73,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
       }
     ],
     "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "main",
@@ -112,10 +114,8 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 === Deploy only records the new names in the state
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Updated schemas.schema1
-Updated volumes.volume1
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //unity-catalog
 
