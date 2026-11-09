@@ -143,15 +143,6 @@ func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchema
 		secret.FullName = catalogName + "." + newSchemaName + "." + secret.Name
 		s.UCSecrets[secret.FullName] = secret
 	}
-	for key, secret := range s.UCSecrets {
-		if secret.CatalogName != catalogName || secret.SchemaName != oldSchemaName {
-			continue
-		}
-		delete(s.UCSecrets, key)
-		secret.SchemaName = newSchemaName
-		secret.FullName = catalogName + "." + newSchemaName + "." + secret.Name
-		s.UCSecrets[secret.FullName] = secret
-	}
 }
 
 // SchemasDelete mirrors UC, where deleting a schema with force deletes the volumes, registered models and secrets in it too.

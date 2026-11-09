@@ -169,15 +169,6 @@ func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName strin
 		secret.FullName = newCatalogName + "." + secret.SchemaName + "." + secret.Name
 		s.UCSecrets[secret.FullName] = secret
 	}
-	for key, secret := range s.UCSecrets {
-		if secret.CatalogName != oldCatalogName {
-			continue
-		}
-		delete(s.UCSecrets, key)
-		secret.CatalogName = newCatalogName
-		secret.FullName = newCatalogName + "." + secret.SchemaName + "." + secret.Name
-		s.UCSecrets[secret.FullName] = secret
-	}
 }
 
 // CatalogsDelete mirrors UC, where deleting a catalog with force deletes its schemas, volumes, registered models and secrets too.
