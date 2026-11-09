@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // Element is the part of a cluster policy element that materializes a value. The backend
@@ -71,4 +73,53 @@ func ValueEquals(policyValue, value any) bool {
 		}
 	}
 	return reflect.DeepEqual(policyValue, value)
+}
+
+// Supplies reports whether the policy could have set the cluster attribute at path, a path
+// relative to the cluster spec, to value. The backend rejects values that differ from a
+// fixed element, so a fixed field is frozen whatever its value; other elements only set
+// their opted-in default. The policy language's log-delivery aliases are translated, and
+// indexed rules take precedence over wildcards.
+// https://docs.databricks.com/aws/en/admin/clusters/policy-definition
+func (d Definition) Supplies(path *structpath.PathNode, value any, applyDefaults bool) bool {
+	indexed, wildcard := attributes(path)
+	if indexed == "cluster_log_conf.s3.region" {
+		return d["cluster_log_conf.region"].supplies(value, applyDefaults)
+	}
+	if storage, ok := strings.CutPrefix(indexed, "cluster_log_conf."); ok && strings.HasSuffix(storage, ".destination") {
+		storage = strings.ToUpper(strings.TrimSuffix(storage, ".destination"))
+		logType := d["cluster_log_conf.type"].EffectiveValue(applyDefaults)
+		return ValueEquals(logType, storage) && d["cluster_log_conf.path"].supplies(value, applyDefaults)
+	}
+	element, ok := d[indexed]
+	if !ok {
+		element = d[wildcard]
+	}
+	return element.supplies(value, applyDefaults)
+}
+
+func (e Element) supplies(value any, applyDefaults bool) bool {
+	if e.Type == "fixed" {
+		return true
+	}
+	expected := e.EffectiveValue(applyDefaults)
+	return expected != nil && ValueEquals(expected, value)
+}
+
+// attributes renders a path relative to the cluster in the policy language,
+// once with indices and once with "*" in their place. Dotted map keys stay one key,
+// e.g. spark_conf["a.b"] becomes spark_conf.a.b. Map keys are not wildcarded: a rule
+// such as spark_conf.* constrains values but is not treated as supplying them.
+func attributes(path *structpath.PathNode) (indexed, wildcard string) {
+	var indexedParts, wildcardParts []string
+	for _, node := range path.AsSlice() {
+		if key, ok := node.StringKey(); ok {
+			indexedParts = append(indexedParts, key)
+			wildcardParts = append(wildcardParts, key)
+		} else if index, ok := node.Index(); ok {
+			indexedParts = append(indexedParts, strconv.Itoa(index))
+			wildcardParts = append(wildcardParts, "*")
+		}
+	}
+	return strings.Join(indexedParts, "."), strings.Join(wildcardParts, ".")
 }

@@ -7,8 +7,6 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -29,9 +27,12 @@ const clusterPolicyGate = "policy_id"
 // policy cannot be read is left out entirely and reported as skipped: its changes may
 // pair with each other (e.g. autoscale -> num_workers), so a partial result is unsafe.
 func FilterClusterPolicyValues(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, changes Changes) (Changes, []SkippedChange, error) {
-	definitions := make(clusterPolicyDefinitions)
+	var loader *clusterpolicy.Loader
 	lookupPolicy := func(id string) (clusterpolicy.Definition, error) {
-		return definitions.get(ctx, b, id)
+		if loader == nil {
+			loader = clusterpolicy.NewLoader(b.WorkspaceClient(ctx).ClusterPolicies)
+		}
+		return loader.Get(ctx, id)
 	}
 	filtered := make(Changes, len(changes))
 	var skipped []SkippedChange
@@ -45,8 +46,8 @@ func FilterClusterPolicyValues(ctx context.Context, b *bundle.Bundle, plan *depl
 			continue
 		}
 		resourceChanges, err := filter.filterChanges(changes[resourceKey])
-		if lookupErr, ok := errors.AsType[*clusterPolicyLookupError](err); ok {
-			skipped = append(skipped, lookupErr.skippedChange(resourceKey))
+		if lookupErr, ok := errors.AsType[*clusterpolicy.LookupError](err); ok {
+			skipped = append(skipped, policyLookupSkip(resourceKey, lookupErr))
 			continue
 		}
 		if err != nil {
@@ -59,62 +60,15 @@ func FilterClusterPolicyValues(ctx context.Context, b *bundle.Bundle, plan *depl
 	return filtered, skipped, nil
 }
 
-type clusterPolicyDefinition struct {
-	rules clusterpolicy.Definition
-	err   error
-}
-
-type clusterPolicyDefinitions map[string]clusterPolicyDefinition
-
-type clusterPolicyLookupError struct {
-	policyID string
-	err      error
-}
-
-func (e *clusterPolicyLookupError) Error() string {
-	return fmt.Sprintf("reading cluster policy %s: %v", e.policyID, e.err)
-}
-
-func (e *clusterPolicyLookupError) Unwrap() error { return e.err }
-
-func (e *clusterPolicyLookupError) skippedChange(resourceKey string) SkippedChange {
-	skip := SkippedChange{ResourceKey: resourceKey, Reason: SkipReasonClusterPolicyReadFailed, PolicyID: e.policyID, Error: e.err.Error()}
+func policyLookupSkip(resourceKey string, err *clusterpolicy.LookupError) SkippedChange {
+	skip := SkippedChange{ResourceKey: resourceKey, Reason: SkipReasonClusterPolicyReadFailed, PolicyID: err.PolicyID, Error: err.Err.Error()}
 	switch {
-	case errors.Is(e.err, apierr.ErrNotFound):
+	case errors.Is(err.Err, apierr.ErrNotFound):
 		skip.Reason, skip.Error = SkipReasonClusterPolicyNotFound, ""
-	case errors.Is(e.err, apierr.ErrPermissionDenied):
+	case errors.Is(err.Err, apierr.ErrPermissionDenied):
 		skip.Reason = SkipReasonClusterPolicyPermissionDenied
 	}
 	return skip
-}
-
-// get caches definitions and failures per sync. The API returns the effective
-// definition, including policy-family overrides.
-func (definitions clusterPolicyDefinitions) get(ctx context.Context, b *bundle.Bundle, id string) (clusterpolicy.Definition, error) {
-	if definition, ok := definitions[id]; ok {
-		return definition.rules, definition.err
-	}
-	var rules clusterpolicy.Definition
-	policy, err := b.WorkspaceClient(ctx).ClusterPolicies.GetByPolicyId(ctx, id)
-	if err == nil {
-		rules, err = clusterpolicy.ParseDefinition(policy.Definition)
-	}
-	if err != nil {
-		err = &clusterPolicyLookupError{policyID: id, err: err}
-	}
-	definitions[id] = clusterPolicyDefinition{rules: rules, err: err}
-	return rules, err
-}
-
-// elementSupplies reports whether the policy element could have set value. The backend
-// rejects values that differ from a fixed element, so a fixed field is frozen whatever its
-// remote value; other elements only set their opted-in default.
-func elementSupplies(element clusterpolicy.Element, value any, applyDefaults bool) bool {
-	if element.Type == "fixed" {
-		return true
-	}
-	expected := element.EffectiveValue(applyDefaults)
-	return expected != nil && clusterpolicy.ValueEquals(expected, value)
 }
 
 type clusterPolicyFilter struct {
@@ -263,7 +217,7 @@ func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.
 		return false, err
 	}
 	for _, leaf := range leaves {
-		if !policySupplies(definition, leaf.path.SkipPrefix(clusterPath.Len()), leaf.value, applyDefaults == true) {
+		if !definition.Supplies(leaf.path.SkipPrefix(clusterPath.Len()), leaf.value, applyDefaults == true) {
 			return false, nil
 		}
 	}
@@ -331,44 +285,6 @@ func isRequiredField(remote any, path *structpath.PathNode) bool {
 	}
 	field, _, ok := structaccess.FindStructFieldByKeyType(parentValue.Type(), key)
 	return ok && !structtag.JSONTag(field.Tag.Get("json")).OmitEmpty()
-}
-
-// policyAttributes renders a path relative to the cluster in the policy language,
-// once with indices and once with "*" in their place. Dotted map keys stay one key,
-// e.g. spark_conf["a.b"] becomes spark_conf.a.b. Map keys are not wildcarded: a rule
-// such as spark_conf.* constrains values but is not treated as supplying them.
-func policyAttributes(path *structpath.PathNode) (indexed, wildcard string) {
-	var indexedParts, wildcardParts []string
-	for _, node := range path.AsSlice() {
-		if key, ok := node.StringKey(); ok {
-			indexedParts = append(indexedParts, key)
-			wildcardParts = append(wildcardParts, key)
-		} else if index, ok := node.Index(); ok {
-			indexedParts = append(indexedParts, strconv.Itoa(index))
-			wildcardParts = append(wildcardParts, "*")
-		}
-	}
-	return strings.Join(indexedParts, "."), strings.Join(wildcardParts, ".")
-}
-
-// policySupplies reports whether the policy could have set a leaf, translating the
-// policy language's log-delivery aliases. Indexed rules take precedence over wildcards.
-// https://docs.databricks.com/aws/en/admin/clusters/policy-definition
-func policySupplies(definition clusterpolicy.Definition, path *structpath.PathNode, value any, applyDefaults bool) bool {
-	indexed, wildcard := policyAttributes(path)
-	if indexed == "cluster_log_conf.s3.region" {
-		return elementSupplies(definition["cluster_log_conf.region"], value, applyDefaults)
-	}
-	if storage, ok := strings.CutPrefix(indexed, "cluster_log_conf."); ok && strings.HasSuffix(storage, ".destination") {
-		storage = strings.ToUpper(strings.TrimSuffix(storage, ".destination"))
-		logType := definition["cluster_log_conf.type"].EffectiveValue(applyDefaults)
-		return clusterpolicy.ValueEquals(logType, storage) && elementSupplies(definition["cluster_log_conf.path"], value, applyDefaults)
-	}
-	element, ok := definition[indexed]
-	if !ok {
-		element = definition[wildcard]
-	}
-	return elementSupplies(element, value, applyDefaults)
 }
 
 func policyFilterForResource(b *bundle.Bundle, resourceKey string, remote any, lookupPolicy func(string) (clusterpolicy.Definition, error)) (*clusterPolicyFilter, error) {
