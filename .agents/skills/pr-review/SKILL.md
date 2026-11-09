@@ -139,6 +139,14 @@ on code the change adds or modifies, not on pre-existing issues next to it.
      should include the state after the action (list or print it again after
      a sync, a deploy or a migration) and the exact value the change is
      about, not just a successful exit.
+   - The fake server in `libs/testserver` only returns what its handlers were
+     taught, so a test that records the request, or a handler that echoes a
+     field back, shows what the CLI sends, not what the API accepts. When the
+     change sends a new field, a new value format (paths, identifiers,
+     durations) or a new call to a real API, and no test covering it has
+     `Cloud = true` (`Cloud` is inherited, so check `out.test.toml`) and the
+     description does not mention a run against a real workspace, ask whether
+     it was verified against one.
    - Are fixtures readable? Prefer generating archives and other binary
      inputs in the test script over committing opaque files.
    - Does the test reuse the repo's existing test helpers and scripts, and

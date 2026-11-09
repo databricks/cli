@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -79,7 +80,7 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, fil
 		out.Close()
 		return err
 	}
-	if err := tarpack.Write(gz, entries); err != nil {
+	if err := tarpack.Write(ctxWriter{ctx, gz}, entries); err != nil {
 		gz.Close()
 		out.Close()
 		return fmt.Errorf("failed to create plain tarball: %w", err)
@@ -89,6 +90,21 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, fil
 		return fmt.Errorf("failed to finalize gzip: %w", err)
 	}
 	return out.Close()
+}
+
+// ctxWriter fails writes once ctx is done, so a cancelled submission (for
+// example, one whose config validation failed) stops packaging promptly instead
+// of archiving the whole tree.
+type ctxWriter struct {
+	ctx context.Context
+	w   io.Writer
+}
+
+func (w ctxWriter) Write(p []byte) (int, error) {
+	if err := w.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return w.w.Write(p)
 }
 
 // snapshotFile is a file selected for the snapshot: its repo-relative path (native

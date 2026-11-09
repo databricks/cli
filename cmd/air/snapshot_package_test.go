@@ -3,6 +3,7 @@ package aircmd
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"os"
 	"path/filepath"
 	"slices"
@@ -144,6 +145,18 @@ func TestCreatePlainTarball(t *testing.T) {
 	for _, e := range entries {
 		assert.NotContains(t, e, "/.git/")
 	}
+}
+
+func TestCreatePlainTarballStopsWhenCancelled(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "a.txt", "1")
+	files, err := snapshotFiles(t.Context(), repo, nil, false)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err = createPlainTarball(ctx, repo, filepath.Join(t.TempDir(), "snap.tar.gz"), files)
+	require.ErrorIs(t, err, context.Canceled)
 }
 
 func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
