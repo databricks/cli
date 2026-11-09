@@ -10,8 +10,17 @@
         "catalog_type": "MANAGED_CATALOG",
         "comment": "Test catalog for grants",
         "full_name": "catalog_grants_[UNIQUE_NAME]",
+        "id": "[UUID]",
         "name": "catalog_grants_[UNIQUE_NAME]",
         "owner": "[USERNAME]"
+      },
+      "changes": {
+        "id": {
+          "action": "skip",
+          "reason": "internal_id",
+          "old": "[UUID]",
+          "remote": "[UUID]"
+        }
       }
     },
     "resources.catalogs.grants_catalog.grants": {
