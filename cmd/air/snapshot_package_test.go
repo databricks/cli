@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
-	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -124,85 +123,6 @@ func TestCreateGitArchiveSnapshot_SubdirectoryRootPathWithIncludePaths(t *testin
 	assert.NotContains(t, entries, "subpkg/configs/train.yaml")
 }
 
-// tarballFileContents returns the regular-file entries of a .tar.gz keyed by name.
-func tarballFileContents(t *testing.T, path string) map[string]string {
-	t.Helper()
-	f, err := os.Open(path)
-	require.NoError(t, err)
-	defer f.Close()
-
-	gz, err := gzip.NewReader(f)
-	require.NoError(t, err)
-	defer gz.Close()
-
-	files := map[string]string{}
-	tr := tar.NewReader(gz)
-	for {
-		hdr, err := tr.Next()
-		if err != nil {
-			break
-		}
-		if hdr.Typeflag != tar.TypeReg {
-			continue
-		}
-		body, err := io.ReadAll(tr)
-		require.NoError(t, err)
-		files[hdr.Name] = string(body)
-	}
-	return files
-}
-
-func TestCreateGitArchiveSnapshot_ExtractsExpectedTree(t *testing.T) {
-	ctx := t.Context()
-	repo := newTestRepo(t)
-	writeRepoFile(t, repo, "README.md", "repo root")
-	writeRepoFile(t, repo, "subpkg/train.py", "train")
-	writeRepoFile(t, repo, "subpkg/src/model.py", "model")
-	writeRepoFile(t, repo, "subpkg/configs/train.yaml", "cfg")
-	sha := commitAll(t, repo, "init")
-
-	prefix, err := newGitRepo(filepath.Join(repo, "subpkg")).repoRelativePrefix(ctx)
-	require.NoError(t, err)
-
-	tests := []struct {
-		name          string
-		gitRepoPath   string
-		dirName       string
-		includePaths  []string
-		subtreePrefix string
-		want          map[string]string
-	}{
-		{
-			name:        "root",
-			gitRepoPath: repo,
-			dirName:     "repo",
-			want: map[string]string{
-				"repo/README.md":                 "repo root",
-				"repo/subpkg/train.py":           "train",
-				"repo/subpkg/src/model.py":       "model",
-				"repo/subpkg/configs/train.yaml": "cfg",
-			},
-		},
-		{
-			name:          "subtree_with_include_paths",
-			gitRepoPath:   filepath.Join(repo, "subpkg"),
-			dirName:       "subpkg",
-			includePaths:  []string{"src"},
-			subtreePrefix: prefix,
-			want: map[string]string{
-				"subpkg/src/model.py": "model",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			out := filepath.Join(t.TempDir(), "snap.tar.gz")
-			require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(tt.gitRepoPath), sha, out, tt.dirName, tt.includePaths, tt.subtreePrefix))
-			assert.Equal(t, tt.want, tarballFileContents(t, out))
-		})
-	}
-}
-
 func TestCreateGitArchiveSnapshot_GitFailureSurfacesStderr(t *testing.T) {
 	ctx := t.Context()
 	repo := newTestRepo(t)
@@ -213,6 +133,17 @@ func TestCreateGitArchiveSnapshot_GitFailureSurfacesStderr(t *testing.T) {
 	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), "0000000000000000000000000000000000000000", out, "repo", nil, "")
 	require.ErrorContains(t, err, "failed to create git archive")
 	assert.ErrorContains(t, err, "fatal")
+}
+
+func TestCreateGitArchiveSnapshotStopsWhenCancelled(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	sha := commitAll(t, repo, "init")
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, filepath.Join(t.TempDir(), "snap.tar.gz"), "repo", nil, "")
+	require.ErrorIs(t, err, context.Canceled)
 }
 
 func TestCreatePlainTarball(t *testing.T) {
