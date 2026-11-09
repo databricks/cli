@@ -14,9 +14,7 @@
       }
     },
     "bundle": {
-      "environment": true,
-      "name": true,
-      "target": true
+      "name": true
     },
     "experimental": true,
     "presets": {
@@ -35,7 +33,18 @@
       "jobs": {
         "*": {
           "description": true,
-          "email_notifications": true,
+          "email_notifications": {
+            "no_alert_for_skipped_runs": true
+          },
+          "job_clusters": {
+            "[*]": {
+              "job_cluster_key": true,
+              "new_cluster": {
+                "num_workers": true,
+                "spark_version": true
+              }
+            }
+          },
           "max_concurrent_runs": true,
           "name": true,
           "notification_settings": {
@@ -96,6 +105,9 @@
       },
       "jobs": {
         "*": {
+          "notification_settings": {
+            "no_alert_for_skipped_runs": true
+          },
           "queue": {
             "enabled": true
           }
@@ -124,6 +136,9 @@
       },
       "jobs": {
         "*": {
+          "email_notifications": {
+            "no_alert_for_skipped_runs": true
+          },
           "queue": {
             "enabled": true
           },

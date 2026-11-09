@@ -5,12 +5,10 @@ import (
 	"compress/flate"
 	"encoding/base64"
 	"encoding/binary"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
@@ -36,63 +34,6 @@ func TestMergeNoChange(t *testing.T) {
 	assert.Empty(t, added)
 }
 
-func TestWalkSchema(t *testing.T) {
-	schema, err := WalkSchema(reflect.TypeFor[bundle.Telemetry]())
-	require.NoError(t, err)
-
-	for _, p := range schema {
-		assert.NotEqual(t, "targets", p)
-		assert.NotContains(t, p, "targets.")
-		assert.NotContains(t, p, "environments.")
-		assert.NotContains(t, p, "__locations")
-	}
-
-	assert.Contains(t, schema, "bundle.name")
-	assert.Contains(t, schema, "resources.jobs.*.name")
-	assert.Contains(t, schema, "resources.jobs.*.tasks[*].task_key")
-	assert.Contains(t, schema, "variables.*.default")
-	// Telemetry fields are namespaced under "telemetry." and, having no json
-	// tag, keep their Go field name.
-	assert.Contains(t, schema, "telemetry.SelectUsed")
-	assert.Contains(t, schema, "telemetry.RunAsSet")
-	assert.Contains(t, schema, "telemetry.ArtifactFilesIsSet")
-	assert.NotContains(t, schema, "telemetry.ArtifactFilesIsSet[*]")
-
-	// Each bool field, whatever its Go shape, is followed by its value entries.
-	for _, p := range []string{
-		"experimental.use_legacy_run_as",                      // bool, omitempty
-		"resources.jobs.*.queue.enabled",                      // bool, no omitempty
-		"presets.pipelines_development",                       // *bool
-		"telemetry.SelectUsed",                                // telemetry bool
-		"telemetry.RunAsSet",                                  // telemetry *bool
-		"telemetry.ArtifactFilesIsSet",                        // telemetry BoolSet
-		"resources.jobs.*.tasks[*].disable_auto_optimization", // bool in a list element
-	} {
-		i := slices.Index(schema, p)
-		require.GreaterOrEqual(t, i, 0, p)
-		assert.Equal(t, []string{p + "=true", p + "=false"}, schema[i+1:i+3], p)
-	}
-	// Non-bool fields have no value entries.
-	assert.NotContains(t, schema, "bundle.name=true")
-	assert.NotContains(t, schema, "variables.*.default=true")
-}
-
-func TestEmbeddedSchemaIsCompleteAndUnique(t *testing.T) {
-	schema := EmbeddedSchema()
-	fresh, err := WalkSchema(reflect.TypeFor[bundle.Telemetry]())
-	require.NoError(t, err)
-
-	_, added := Merge(schema, fresh)
-	assert.Empty(t, added, "run 'task generate-bitmap-schema'")
-
-	// A duplicate would leave its first bit permanently 0.
-	seen := map[string]bool{}
-	for _, p := range schema {
-		assert.False(t, seen[p], "duplicate schema entry %q", p)
-		seen[p] = true
-	}
-}
-
 // setPaths returns the schema paths whose bit is set, sorted.
 func setPaths(schema []string, bits []bool) []string {
 	var out []string
@@ -103,6 +44,23 @@ func setPaths(schema []string, bits []bool) []string {
 	}
 	slices.Sort(out)
 	return out
+}
+
+// markedBits returns the bits a Builder sets for cfg, without telemetry.
+func markedBits(t *testing.T, cfg dyn.Value, schema []string) []bool {
+	t.Helper()
+	b := NewBuilder(schema)
+	b.Mark(cfg)
+	bits, err := b.Bits(struct{}{})
+	require.NoError(t, err)
+	return bits
+}
+
+func loadValue(t *testing.T, yaml string) dyn.Value {
+	t.Helper()
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+	require.Empty(t, diags)
+	return root.Value()
 }
 
 func TestBitsPresence(t *testing.T) {
@@ -129,8 +87,7 @@ resources:
 	require.Empty(t, diags)
 
 	schema := EmbeddedSchema()
-	bits, err := Bits(root.Value(), bundle.Telemetry{}, schema)
-	require.NoError(t, err)
+	bits := markedBits(t, root.Value(), schema)
 
 	assert.Equal(t, []string{
 		"bundle",
@@ -156,10 +113,12 @@ resources:
 	}, setPaths(schema, bits))
 }
 
-func TestBitsSkipsPrunedTargets(t *testing.T) {
+func TestBitsSkipsPrunedFields(t *testing.T) {
 	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
 bundle:
   name: test-bundle
+  target: dev
+  environment: dev
 targets:
   dev:
     workspace:
@@ -168,8 +127,7 @@ targets:
 	require.Empty(t, diags)
 
 	schema := EmbeddedSchema()
-	bits, err := Bits(root.Value(), bundle.Telemetry{}, schema)
-	require.NoError(t, err)
+	bits := markedBits(t, root.Value(), schema)
 	assert.Equal(t, []string{"bundle", "bundle.name"}, setPaths(schema, bits))
 }
 
@@ -236,53 +194,89 @@ func TestBitsBoolValues(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root, diags := config.LoadFromBytes("databricks.yml", []byte(tc.yaml))
 			require.Empty(t, diags)
-			bits, err := Bits(root.Value(), bundle.Telemetry{}, schema)
-			require.NoError(t, err)
+			bits := markedBits(t, root.Value(), schema)
 			assert.Equal(t, tc.want, setPaths(schema, bits))
 		})
 	}
 }
 
-func TestBitsTelemetry(t *testing.T) {
+func TestBuilderResolveVariables(t *testing.T) {
 	schema := EmbeddedSchema()
+	queue := []string{"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.queue", "resources.jobs.*.queue.enabled"}
 	for _, tc := range []struct {
-		name string
-		tm   bundle.Telemetry
-		want []string
+		name      string
+		config    string
+		variables string
+		want      []string
 	}{
-		// Every field of a zero struct is unmeasured; none may count as present.
-		{"zero value", bundle.Telemetry{}, nil},
-		{"bool false", bundle.Telemetry{SelectUsed: false}, nil},
-		{"bool true", bundle.Telemetry{SelectUsed: true}, []string{"telemetry.SelectUsed", "telemetry.SelectUsed=true"}},
-		{"*bool nil", bundle.Telemetry{RunAsSet: nil}, nil},
-		{"*bool false", bundle.Telemetry{RunAsSet: new(false)}, []string{"telemetry.RunAsSet", "telemetry.RunAsSet=false"}},
-		{"*bool true", bundle.Telemetry{RunAsSet: new(true)}, []string{"telemetry.RunAsSet", "telemetry.RunAsSet=true"}},
-		{"BoolSet unset", bundle.Telemetry{ArtifactFilesIsSet: boolSet()}, nil},
-		{"BoolSet true twice", bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, true)}, []string{
-			"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=true",
-		}},
-		{"BoolSet both values", bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, false)}, []string{
-			"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=false", "telemetry.ArtifactFilesIsSet=true",
-		}},
+		{
+			"bool from a variable",
+			`resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
+			`variables: {flag: {value: false}}`,
+			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+		},
+		{
+			"bool from a string value, as --var passes it",
+			`resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
+			`variables: {flag: {value: "true"}}`,
+			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
+		},
+		{
+			"bool from a field of a complex variable",
+			`resources: {jobs: {j: {queue: {enabled: "${var.settings.queue}"}}}}`,
+			`variables: {settings: {value: {queue: true}}}`,
+			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
+		},
+		{
+			"undefined variable keeps presence only",
+			`resources: {jobs: {j: {queue: {enabled: "${var.missing}"}}}}`,
+			`variables: {flag: {value: true}}`,
+			queue,
+		},
+		{
+			"value that is not a bool keeps presence only",
+			`resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
+			`variables: {flag: {value: "maybe"}}`,
+			queue,
+		},
+		{
+			"other references are left alone",
+			`resources: {jobs: {j: {queue: {enabled: "${resources.jobs.other.queue.enabled}"}}}}`,
+			`resources: {jobs: {other: {queue: {enabled: true}}}}`,
+			queue,
+		},
+		{
+			"complex variable marks the fields inside it",
+			`resources: {jobs: {j: {job_clusters: "${var.clusters}"}}}`,
+			`variables: {clusters: {value: [{job_cluster_key: c, new_cluster: {num_workers: 1}}]}}`,
+			[]string{
+				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.job_clusters", "resources.jobs.*.job_clusters[*]",
+				"resources.jobs.*.job_clusters[*].job_cluster_key", "resources.jobs.*.job_clusters[*].new_cluster",
+				"resources.jobs.*.job_clusters[*].new_cluster.num_workers",
+			},
+		},
+		{
+			"interpolated string is a plain string",
+			`resources: {jobs: {j: {name: "job-${var.suffix}"}}}`,
+			`variables: {suffix: {value: {queue: {enabled: true}}}}`,
+			[]string{"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.name"},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			bits, err := Bits(dyn.NilValue, tc.tm, schema)
+			b := NewBuilder(schema)
+			b.Mark(loadValue(t, tc.config))
+			b.ResolveVariables(loadValue(t, tc.variables))
+			bits, err := b.Bits(struct{}{})
 			require.NoError(t, err)
-			assert.Equal(t, tc.want, setPaths(schema, bits))
+			want := slices.Clone(tc.want)
+			slices.Sort(want)
+			assert.Equal(t, want, setPaths(schema, bits))
 		})
 	}
-}
-
-func boolSet(values ...bool) bundle.BoolSet {
-	var s bundle.BoolSet
-	for _, v := range values {
-		s.SetBool(v)
-	}
-	return s
 }
 
 func TestBitsRejectsUnsupportedTelemetryField(t *testing.T) {
-	_, err := Bits(dyn.NilValue, struct{ Count int }{}, EmbeddedSchema())
+	_, err := NewBuilder(EmbeddedSchema()).Bits(struct{ Count int }{})
 	assert.ErrorContains(t, err, "telemetry field Count has unsupported type int")
 }
 
@@ -391,21 +385,12 @@ resources:
           new_cluster: {num_workers: 2}
 `))
 	require.Empty(b, diags)
-	var tm bundle.Telemetry
-	tm.SelectUsed = true
+	tm := struct{ SelectUsed bool }{SelectUsed: true}
 	b.ReportAllocs()
 	for b.Loop() {
-		_, err := Bits(root.Value(), tm, schema)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkWalkSchema(b *testing.B) {
-	b.ReportAllocs()
-	for b.Loop() {
-		_, err := WalkSchema(reflect.TypeFor[bundle.Telemetry]())
+		builder := NewBuilder(schema)
+		builder.Mark(root.Value())
+		_, err := builder.Bits(tm)
 		if err != nil {
 			b.Fatal(err)
 		}

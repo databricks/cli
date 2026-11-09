@@ -11,6 +11,16 @@ variables:
       key: value
   flag:
     default: true
+  # Set through BUNDLE_VAR_off_flag in test.toml, so its value arrives as a string.
+  off_flag:
+    description: no default
+  clusters:
+    type: complex
+    default:
+      - job_cluster_key: shared
+        new_cluster:
+          spark_version: 15.4.x-scala2.12
+          num_workers: 1
 
 # Known gap: an explicit false on an omitempty bool of a CLI-defined struct (11
 # such fields, all without ForceSendFields) is dropped when the loader syncs typed
@@ -48,7 +58,7 @@ resources:
       tags:
         team: data
         "a.b": c
-      # Unresolved when the bitmap snapshots the config: present, with no value bit.
+      # Set through a variable: the variable's value is recorded.
       notification_settings:
         no_alert_for_skipped_runs: ${var.flag}
       # true here and false in other_job: both value bits are set.
@@ -69,6 +79,10 @@ resources:
       name: Other Job
       queue:
         enabled: false
+      email_notifications:
+        no_alert_for_skipped_runs: ${var.off_flag}
+      # A complex variable: the fields inside its value are recorded.
+      job_clusters: ${var.clusters}
   clusters:
     # lifecycle.started is a *bool, so the explicit false is kept: true on one cluster
     # and false on the other sets both value bits.
