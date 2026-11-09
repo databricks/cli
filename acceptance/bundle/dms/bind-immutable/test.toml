@@ -1,3 +1,4 @@
-# Ensure bind works with immutable folders and deployment history enabled.
-# Reusing bundle deploy code fails here because bind does not upload or stage files.
+# We saw bind succeed without recording deployment history for immutable folders.
+# It reused deploy code that expected staged files, but bind does not stage files.
+# This test prevents that regression.
 Cloud = false # Assert history metadata without requiring snapshot permissions on a real workspace.
