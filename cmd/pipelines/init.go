@@ -10,7 +10,7 @@ func initCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "init",
 		Short:   "Initialize a new pipelines project",
-		PreRunE: root.MustWorkspaceClientForTemplate,
+		PreRunE: root.MustWorkspaceClient,
 		Args:    cobra.NoArgs,
 	}
 	var configFile string

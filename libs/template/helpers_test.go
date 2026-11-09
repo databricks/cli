@@ -2,12 +2,14 @@ package template
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -176,4 +178,60 @@ func TestWorkspaceHostNotConfigured(t *testing.T) {
 
 	err = r.walk()
 	require.ErrorContains(t, err, "cannot determine target workspace")
+}
+
+func TestWorkspaceHostProfile(t *testing.T) {
+	const configFile = `
+[classic]
+host = https://classic.test/
+workspace_id = 111
+
+[other_workspace]
+host = https://classic.test
+workspace_id = 222
+
+[no_workspace]
+host = https://classic.test
+workspace_id = none
+
+[empty_host]
+host =
+workspace_id = 111
+
+[no_host]
+workspace_id = 111
+`
+	tests := []struct {
+		name    string
+		profile string
+		want    string
+		wantErr string
+	}{
+		{name: "unset", want: "https://spog.test"},
+		{name: "same workspace", profile: "classic", want: "https://classic.test"},
+		{name: "other workspace", profile: "other_workspace", wantErr: `profile "other_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE must have the workspace ID of the selected profile, got "222" and "111"`},
+		{name: "no workspace", profile: "no_workspace", wantErr: `profile "no_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE must have the workspace ID of the selected profile, got "none" and "111"`},
+		{name: "empty host", profile: "empty_host", wantErr: `profile "empty_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
+		{name: "no host", profile: "no_host", wantErr: `profile "no_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
+		{name: "missing profile", profile: "missing", wantErr: `profile "missing" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), ".databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(configFile), 0o600))
+			ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
+			ctx = env.Set(ctx, workspaceHostProfileEnvVar, tt.profile)
+			ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+				Config: &workspaceConfig.Config{Host: "https://spog.test", WorkspaceID: "111"},
+			})
+
+			host, err := loadHelpers(ctx)["workspace_host"].(func() (string, error))()
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, host)
+		})
+	}
 }

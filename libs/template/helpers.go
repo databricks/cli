@@ -13,9 +13,13 @@ import (
 	"text/template"
 	"uuid"
 
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -59,8 +63,43 @@ var bundleUuid = uuid.New().String()
 // Temporary: remove it and its callers in the templates once this is the default.
 const deploymentHistoryEnvVar = "DATABRICKS_BUNDLE_INIT_DEPLOYMENT_HISTORY"
 
+// workspaceHostProfileEnvVar names a profile whose host the workspace_host helper returns instead
+// of the selected profile's host. The profile must have the selected profile's workspace ID, so
+// that a template never gets its host from another workspace. Everything else, including
+// .workspace, keeps the selected profile.
+//
+// DABs in the Workspace selects the profile for the host of the page, which can be a host shared
+// by several workspaces, and sets this to a profile for the workspace's own host, so that
+// templates that use workspace_host keep generating that host.
+const workspaceHostProfileEnvVar = "DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE"
+
+// workspaceHost returns the host for the workspace_host helper, see workspaceHostProfileEnvVar.
+func workspaceHost(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	name := env.Get(ctx, workspaceHostProfileEnvVar)
+	if name == "" {
+		if w.Config.Host == "" {
+			return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks auth login'")
+		}
+		return w.Config.Host, nil
+	}
+
+	profiles, err := profile.GetProfiler(ctx).LoadProfiles(ctx, profile.WithName(name))
+	if err != nil {
+		return "", fmt.Errorf("failed to load profile %q from %s: %w", name, workspaceHostProfileEnvVar, err)
+	}
+	if len(profiles) == 0 || profiles[0].Host == "" {
+		return "", fmt.Errorf("profile %q from %s not found or has no host", name, workspaceHostProfileEnvVar)
+	}
+	p := profiles[0]
+	if p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone || p.WorkspaceID != w.Config.WorkspaceID {
+		return "", fmt.Errorf("profile %q from %s must have the workspace ID of the selected profile, got %q and %q", name, workspaceHostProfileEnvVar, p.WorkspaceID, w.Config.WorkspaceID)
+	}
+	// Normalize the host the same way the SDK normalizes the selected profile's host.
+	return (&sdkconfig.Config{Host: p.Host}).CanonicalHostName(), nil
+}
+
 func loadHelpers(ctx context.Context) template.FuncMap {
-	w := helpersClient(ctx)
+	w := cmdctx.WorkspaceClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}
@@ -119,10 +158,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return string(os.PathSeparator)
 		},
 		"workspace_host": func() (string, error) {
-			if w.Config.Host == "" {
-				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks auth login'")
-			}
-			return w.Config.Host, nil
+			return workspaceHost(ctx, w)
 		},
 		"user_name": func() (string, error) {
 			if cachedUser == nil {

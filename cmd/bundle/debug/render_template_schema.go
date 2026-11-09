@@ -27,7 +27,7 @@ func NewRenderTemplateSchemaCommand() *cobra.Command {
 	cmd.Flags().StringVar(&tag, "tag", "", "Git tag to use for template initialization")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch to use for template initialization")
 
-	cmd.PreRunE = root.MustWorkspaceClientForTemplate
+	cmd.PreRunE = root.MustWorkspaceClient
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
