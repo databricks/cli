@@ -8,9 +8,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // Timing is not reachable from acceptance tests, so the heartbeat is tested here on synctest's
@@ -26,16 +24,10 @@ func (f *fakeSend) send(context.Context) error {
 	return f.err
 }
 
-func heartbeatContext(t *testing.T) context.Context {
-	ctx := logdiag.InitContext(t.Context())
-	logdiag.SetCollect(ctx, true)
-	return ctx
-}
-
 func TestHeartbeatBeatsWhileIdle(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		f := &fakeSend{}
-		h := startHeartbeat(heartbeatContext(t), f.send)
+		h := startHeartbeat(t.Context(), f.send)
 		defer h.Stop()
 
 		// CreateVersion counts as the first update, so nothing goes out before the interval.
@@ -56,7 +48,7 @@ func TestHeartbeatBeatsWhileIdle(t *testing.T) {
 func TestHeartbeatSkippedAfterWrite(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		f := &fakeSend{}
-		h := startHeartbeat(heartbeatContext(t), f.send)
+		h := startHeartbeat(t.Context(), f.send)
 		defer h.Stop()
 
 		time.Sleep(20 * time.Second)
@@ -73,20 +65,15 @@ func TestHeartbeatSkippedAfterWrite(t *testing.T) {
 	})
 }
 
-func TestHeartbeatFailureWarnsAndRetriesNextInterval(t *testing.T) {
+func TestHeartbeatFailureRetriesNextInterval(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		ctx := heartbeatContext(t)
 		f := &fakeSend{err: errors.New("connection refused")}
-		h := startHeartbeat(ctx, f.send)
+		h := startHeartbeat(t.Context(), f.send)
 		defer h.Stop()
 
 		time.Sleep(heartbeatInterval + time.Second)
 		synctest.Wait()
 		assert.Equal(t, int32(1), f.calls.Load())
-
-		diags := logdiag.FlushCollected(ctx)
-		require.Len(t, diags, 1)
-		assert.Equal(t, "Failed to send deployment heartbeat, so the deployment may show as interrupted; retrying in 30s: connection refused", diags[0].Summary)
 
 		time.Sleep(heartbeatInterval)
 		synctest.Wait()
@@ -97,7 +84,7 @@ func TestHeartbeatFailureWarnsAndRetriesNextInterval(t *testing.T) {
 func TestHeartbeatStop(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		f := &fakeSend{}
-		h := startHeartbeat(heartbeatContext(t), f.send)
+		h := startHeartbeat(t.Context(), f.send)
 
 		h.Stop()
 		time.Sleep(10 * time.Minute)

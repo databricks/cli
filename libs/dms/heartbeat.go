@@ -2,12 +2,10 @@ package dms
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -54,10 +52,7 @@ func (h *Heartbeat) run(ctx context.Context, send func(context.Context) error) {
 			if ctx.Err() != nil {
 				return
 			}
-			logdiag.LogDiag(ctx, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("Failed to send deployment heartbeat, so the deployment may show as interrupted; retrying in %s: %s", heartbeatInterval, err),
-			})
+			log.Infof(ctx, "Failed to send deployment heartbeat, so the deployment may show as interrupted; retrying in %s: %s", heartbeatInterval, err)
 		}
 		timer.Reset(heartbeatInterval)
 	}
