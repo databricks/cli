@@ -22,7 +22,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-
 Created jobs.extra
 Created jobs.my_job
 Created jobs.other
-Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Files: 2 uploaded, 0 deleted
@@ -77,7 +77,7 @@ Plan: 2 to add, 0 to change, 1 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-ref/default/files...
 Created jobs.other
-Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[WORKSPACE_ID]
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
 Recreated job_runs.my_run
 Files: 0 uploaded, 0 deleted
