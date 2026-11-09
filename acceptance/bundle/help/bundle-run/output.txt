@@ -54,9 +54,9 @@ Job Task Flags:
       --sql-params stringToString            A map from keys to values for jobs with SQL tasks. (default [])
 
 Pipeline Flags:
-      --full-refresh strings   List of tables to reset and recompute.
+      --full-refresh strings   List of tables or source files to reset and recompute. Local paths are relative to the current directory.
       --full-refresh-all       Perform a full graph reset and recompute.
-      --refresh strings        List of tables to update.
+      --refresh strings        List of tables or source files to update. Local paths are relative to the current directory.
       --refresh-all            Perform a full graph update.
       --validate-only          Perform an update to validate graph correctness.
 
