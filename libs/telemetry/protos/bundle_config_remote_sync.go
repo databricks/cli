@@ -112,6 +112,10 @@ type BundleConfigRemoteSyncEvent struct {
 	StateResourceIDs    *BundleConfigRemoteSyncResourceIds `json:"state_resource_ids,omitempty"`
 	SelectedResourceIDs *BundleConfigRemoteSyncResourceIds `json:"selected_resource_ids,omitempty"`
 
+	// Whether the bundle root is inside a git repository. Not omitempty, same as
+	// BundleDeployEvent.InGitRepo.
+	InGitRepo bool `json:"in_git_repo"`
+
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
 	// stays in-region and is stripped from centralized logfood. Unset on success.

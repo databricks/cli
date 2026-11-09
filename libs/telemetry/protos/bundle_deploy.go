@@ -54,6 +54,11 @@ type BundleDeployEvent struct {
 	// beside Git rather than inside it.
 	FromWorkspaceFolder bool `json:"from_workspace_folder,omitempty"`
 
+	// Whether the bundle root is inside a git repository, regardless of
+	// `bundle.git` overrides. Not omitempty: an explicit false tells "no repo"
+	// apart from CLI versions that do not report the field.
+	InGitRepo bool `json:"in_git_repo"`
+
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
 

@@ -143,6 +143,10 @@ type Bundle struct {
 	// https://git-scm.com/docs/git-worktree
 	WorktreeRoot vfs.Path
 
+	// InGitRepo reports whether the bundle root is inside a git repository.
+	// When false, WorktreeRoot falls back to SyncRoot.
+	InGitRepo bool
+
 	// Config contains the bundle configuration.
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root

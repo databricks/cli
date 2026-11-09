@@ -27,6 +27,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		diags = append(diags, diag.WarningFromErr(err)...)
 	}
 
+	b.InGitRepo = info.WorktreeRoot != ""
 	if info.WorktreeRoot == "" {
 		b.WorktreeRoot = b.SyncRoot
 	} else {

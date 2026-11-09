@@ -35,5 +35,6 @@ Resource: resources.pipelines.foo
     "resource_pipeline_ids": [
       "[FOO_ID]"
     ]
-  }
+  },
+  "in_git_repo": false
 }
