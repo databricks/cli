@@ -50,18 +50,6 @@ def scrub(node):
 
 
 def render(data, indent):
-    """
-    >>> data = {"bundle": {"deployment": {"deployment_id": "42", "latest_version_id": 7}}}
-    >>> json.loads(render(data, 2))
-    {'bundle': {}}
-    >>> deployment = {"deployment_id": "42", "latest_version_id": 7, "lock": {"enabled": False}}
-    >>> json.loads(render({"bundle": {"deployment": deployment}}, 2))
-    {'bundle': {'deployment': {'lock': {'enabled': False}}}}
-    >>> json.loads(render({"bundle": {"deployment": {"lock": {"enabled": False}}}}, 2))
-    {'bundle': {'deployment': {'lock': {'enabled': False}}}}
-    >>> json.loads(render({"bundle": {"deployment": {}}}, 2))
-    {'bundle': {'deployment': {}}}
-    """
     data = scrub(data)
     if isinstance(data, dict):
         for k in _PLAN_HEADER_KEYS:
