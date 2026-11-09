@@ -128,7 +128,7 @@ func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *
 	}
 
 	// The catalog comes from config: a renamed catalog moves the schema with it, leaving id
-	// stale (see followParentRenames).
+	// stale (see followsParentRename).
 	fullName := config.CatalogName + "." + nameFromID
 
 	if entry.Changes.OnlyParentRenamed() {
