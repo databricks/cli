@@ -28,6 +28,12 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py //jobs/run-now
 
+title "updating a referenced job in place does not re-fire the run"
+update_file.py databricks.yml "name: other-job" "name: other-job-renamed"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
 title "replacing a referenced job re-fires the run"
 other_id=$(read_id.py other)
 trace $CLI jobs delete "$other_id"

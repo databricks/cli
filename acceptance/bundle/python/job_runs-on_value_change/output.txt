@@ -1,0 +1,51 @@
+
+=== validate keeps a watch from YAML, from Python and from a Python mutator
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+Error: Error while loading job_run
+  at resources.job_runs.py_run
+
+[TRACEBACK]
+ValueError: Unexpected field 'triggers_state' for class JobRunLifecycle
+
+
+Error: Error while loading job_run
+  at resources.job_runs.yaml_run
+
+[TRACEBACK]
+ValueError: Unexpected field 'triggers_state' for class JobRunLifecycle
+
+
+{
+  "py_run": {
+    "job_id": "${resources.jobs.my_job.id}",
+    "lifecycle": {
+      "triggers": [
+        {
+          "on_value_change": "x1"
+        }
+      ],
+      "triggers_state": {
+        "on_value_change": {
+          "${var.x}": "x1"
+        }
+      }
+    }
+  },
+  "yaml_run": {
+    "job_id": "${resources.jobs.my_job.id}",
+    "lifecycle": {
+      "triggers": [
+        {
+          "on_value_change": "x1"
+        }
+      ],
+      "triggers_state": {
+        "on_value_change": {
+          "${var.x}": "x1"
+        }
+      }
+    }
+  }
+}
+
+Exit code: 1

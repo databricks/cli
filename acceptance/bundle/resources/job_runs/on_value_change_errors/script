@@ -12,3 +12,7 @@ trace musterr $CLI bundle validate
 title "an undefined variable is rejected"
 update_file.py databricks.yml '        triggers: [{on_file_change: watched.txt, on_value_change: "${var.value}"}]' '        triggers: [{on_value_change: "${var.missing}"}]'
 trace musterr $CLI bundle validate
+
+title "a complex value is rejected"
+update_file.py databricks.yml '        triggers: [{on_value_change: "${var.missing}"}]' '        triggers: [{on_value_change: "${var.complex}"}]'
+errcode trace $CLI bundle validate

@@ -1,0 +1,13 @@
+
+=== a watch on an empty value deploys and records it
+>>> [CLI] bundle deploy
+Error: lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change
+  in databricks.yml:21:13
+
+
+>>> [CLI] bundle destroy --auto-approve
+Error: lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change
+  in databricks.yml:21:13
+
+
+Exit code: 1

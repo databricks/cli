@@ -65,6 +65,20 @@ Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
 
 >>> print_requests.py //jobs/run-now
 
+=== updating a referenced job in place does not re-fire the run
+>>> [CLI] bundle plan
+update jobs.other
+
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-ref/default/files...
+Updated jobs.other
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
+
+>>> print_requests.py //jobs/run-now
+
 === replacing a referenced job re-fires the run
 >>> [CLI] jobs delete [OTHER_ID]
 

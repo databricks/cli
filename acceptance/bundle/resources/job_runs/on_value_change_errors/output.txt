@@ -2,7 +2,7 @@
 === an empty expression is rejected
 >>> musterr [CLI] bundle validate
 Error: lifecycle.triggers.on_value_change must be non-empty when set
-  in databricks.yml:21:38
+  in databricks.yml:24:38
 
 Name: job-runs-on-value-change-errors
 Target: default
@@ -15,7 +15,7 @@ Found 1 error
 === duplicate expressions are rejected after trimming
 >>> musterr [CLI] bundle validate
 Error: lifecycle.triggers.on_value_change expressions must be unique
-  in databricks.yml:21:73
+  in databricks.yml:24:73
 
 Name: job-runs-on-value-change-errors
 Target: default
@@ -28,7 +28,7 @@ Found 1 error
 === multiple trigger fields in one entry are rejected
 >>> musterr [CLI] bundle validate
 Error: lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change
-  in databricks.yml:21:20
+  in databricks.yml:24:20
 
 Name: job-runs-on-value-change-errors
 Target: default
@@ -49,3 +49,26 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
 
 Found 1 error
+
+=== a complex value is rejected
+>>> [CLI] bundle validate
+Warning: expected string, found map
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_value_change
+  in databricks.yml:24:38
+
+Warning: expected string, found map
+  at resources.job_runs.my_run.lifecycle.triggers_state.on_value_change['${var.complex}']
+  in :0:0
+
+Error: lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change
+  in databricks.yml:24:20
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error and 2 warnings
+
+Exit code: 1

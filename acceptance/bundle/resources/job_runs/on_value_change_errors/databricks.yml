@@ -4,6 +4,9 @@ bundle:
 variables:
   value:
     default: resolved
+  complex:
+    type: complex
+    default: {key: value}
 
 resources:
   jobs:

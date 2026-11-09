@@ -1,0 +1,12 @@
+Cloud = false # tests don't interact with APIs
+
+# job_runs are only supported in the current version of the wheel
+EnvMatrix.PYDAB_VERSION = ["current"]
+
+# Both runs fire in parallel, so their progress lines interleave in any order.
+SuppressLines.run_output = '^Output from job_runs\.'
+
+# Python tracebacks name the local site-packages path and vary by Python version.
+[[Repls]]
+Old = '(?s)Traceback \(most recent call last\):\n.*?\n(ValueError: )'
+New = "[TRACEBACK]\n$1"
