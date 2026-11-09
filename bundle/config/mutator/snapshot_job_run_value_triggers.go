@@ -3,6 +3,8 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -28,7 +30,9 @@ func (*snapshotJobRunValueTriggers) Name() string {
 func (*snapshotJobRunValueTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		for name, jr := range b.Config.Resources.JobRuns {
+		// Sorted so diagnostics from several job_runs come out in a stable order.
+		for _, name := range slices.Sorted(maps.Keys(b.Config.Resources.JobRuns)) {
+			jr := b.Config.Resources.JobRuns[name]
 			if jr == nil || jr.Lifecycle == nil {
 				continue
 			}
