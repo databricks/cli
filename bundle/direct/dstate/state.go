@@ -248,6 +248,9 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	db.reset()
 	db.mu.Unlock()
 
+	// Stopped first: a heartbeat racing the completion would be rejected for nothing.
+	buf.Stop()
+
 	// A recording failure fails the version even when the caller counted the deploy a success: the
 	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
 	// this reads the drained buffer's error so a destroy whose uploads failed keeps its record.

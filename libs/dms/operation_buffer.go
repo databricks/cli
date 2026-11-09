@@ -62,6 +62,10 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
+	// heartbeat keeps the version's update_time fresh until Stop, past Drain. Each write renews
+	// it as it starts, since the service counts a write as a heartbeat.
+	heartbeat *Heartbeat
+
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
 	// second write for a resource replaces the first.
 	queue     chan string
@@ -103,6 +107,8 @@ type OperationBuffer struct {
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
 func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
+	// Started on ctx, not the writer's context below, so it keeps running after Drain.
+	heartbeat := startVersionHeartbeat(ctx, deploymentID, versionNum)
 	// History can stop independently without canceling the deployment.
 	ctx, cancel := context.WithCancel(ctx)
 	capacity := bufferedOperations
@@ -115,6 +121,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
+		heartbeat:    heartbeat,
 		queue:        make(chan string, capacity),
 		done:         make(chan struct{}),
 		cancel:       cancel,
@@ -235,6 +242,10 @@ func (b *OperationBuffer) run(ctx context.Context) {
 
 // write sends one update, at the sequence id the resource is at.
 func (b *OperationBuffer) write(ctx context.Context, key string, entry *bufferedUpdate) error {
+	// Renewed when the write starts, not when it succeeds, so a heartbeat only overlaps a write
+	// that has been in flight for a full interval. Both update the version row.
+	b.heartbeat.renew()
+
 	w := cmdctx.WorkspaceClient(ctx)
 	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
 		Name:       OperationName(b.deploymentID, b.versionNum, key),
@@ -293,6 +304,11 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 		b.cancel()
 		return b.err
 	}
+}
+
+// Stop ends the heartbeat, the buffer's only background work left after Drain.
+func (b *OperationBuffer) Stop() {
+	b.heartbeat.Stop()
 }
 
 // Stats returns a snapshot of the history measurements.
