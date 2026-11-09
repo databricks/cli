@@ -40,6 +40,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "name": "test-schema-[UNIQUE_NAME]",
       "owner": "[USERNAME]",
       "schema_id": "[UUID]"
+    },
+    "changes": {
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID]",
+        "remote": "[UUID]"
+      }
     }
   },
   "resources.volumes.volume1": {
@@ -64,6 +72,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "reason": "id_changes",
         "old": "myvolume",
         "new": "myvolume2"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[VOLUME_ID]"
       }
     }
   }

@@ -53,6 +53,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test-schema-[UNIQUE_NAME]",
         "new": "test-schema-renamed-[UNIQUE_NAME]",
         "remote": "test-schema-[UNIQUE_NAME]"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[SCHEMA_ID]",
+        "remote": "[SCHEMA_ID]"
       }
     }
   }
