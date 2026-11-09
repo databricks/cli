@@ -171,6 +171,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// model, so exposing it to Python would fail resource loading.
 		mutator.ResolveJobRunValueTriggers(),
 
+		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+		// Runs before DropEmptyStrings, which would drop an on_value_change whose value
+		// is "" (a valid value to watch) and leave an entry that sets nothing.
+		mutator.ValidateJobRunTriggers(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
@@ -218,9 +223,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reads (dynamic): resources.postgres_data_apis.*
 		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
 		validate.PostgresDataApiSettings(),
-
-		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
-		mutator.ValidateJobRunTriggers(),
 
 		// Reads (dynamic): resources.*.*.lifecycle.depends_on
 		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.

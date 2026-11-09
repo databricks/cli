@@ -67,7 +67,7 @@ func (t JobRunTrigger) ArmedCount() int {
 type JobRunTriggersState struct {
 	OnBundleDeploy string            `json:"on_bundle_deploy,omitempty"`
 	OnFileChange   map[string]string `json:"on_file_change,omitempty"`
-	OnValueChange  map[string]string `json:"on_value_change,omitempty"`
+	OnValueChange  []string          `json:"on_value_change,omitempty"` // in lifecycle.triggers order
 }
 
 // IsEmpty reports whether no trigger is armed. An empty state is left off the

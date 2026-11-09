@@ -8,8 +8,6 @@ variables:
     default: a1
   number:
     default: 42
-  long:
-    default: a-long-non-hex-watched-value-used-to-exercise-a-lengthy-string-zzz
 
 resources:
   jobs:
@@ -24,10 +22,4 @@ resources:
     my_run:
       job_id: ${resources.jobs.my_job.id}
       lifecycle:
-        triggers:
-          - on_file_change: watched.txt
-          - on_value_change: "  ${var.stamp}  "
-          - on_value_change: ${var.other}
-          - on_value_change: ${var.number}
-          - on_value_change: ${workspace.root_path}
-          - on_value_change: ${var.long}
+        triggers: [{on_file_change: watched.txt}, {on_value_change: "${var.stamp}"}, {on_value_change: "${var.other}"}, {on_value_change: "${var.number}"}, {on_value_change: "${workspace.root_path}"}]

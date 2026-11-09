@@ -27,7 +27,7 @@ class JobRunTrigger:
 
     on_value_change: VariableOrOptional[str] = None
     """
-    Interpolated expression. Re-fire the run when its resolved value differs from the value recorded when the run last fired, or when no value was recorded for it. Resource references in the expression become deployment dependencies. Removing a watch does not re-fire the run.
+    Interpolated expression. Re-fire the run when its resolved value changes. Values are compared by position among the on_value_change entries: adding one re-fires the run, removing the last ones does not, and removing or reordering any other one does. Resource references in the expression become deployment dependencies.
     """
 
     @classmethod
@@ -53,7 +53,7 @@ class JobRunTriggerDict(TypedDict, total=False):
 
     on_value_change: VariableOrOptional[str]
     """
-    Interpolated expression. Re-fire the run when its resolved value differs from the value recorded when the run last fired, or when no value was recorded for it. Resource references in the expression become deployment dependencies. Removing a watch does not re-fire the run.
+    Interpolated expression. Re-fire the run when its resolved value changes. Values are compared by position among the on_value_change entries: adding one re-fires the run, removing the last ones does not, and removing or reordering any other one does. Resource references in the expression become deployment dependencies.
     """
 
 

@@ -49,10 +49,10 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === state records resolved values for pure and mixed references
 >>> print_state.py
-{
-  "${resources.jobs.other.id}": "[OTHER_ID]",
-  "${resources.jobs.other.id}-${var.suffix}-${resources.jobs.extra.id}": "[OTHER_ID]-suffix-[EXTRA_ID]"
-}
+[
+  "[OTHER_ID]",
+  "[OTHER_ID]-suffix-[EXTRA_ID]"
+]
 
 === redeploy with unchanged ids plans nothing
 >>> [CLI] bundle plan

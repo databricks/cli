@@ -22,9 +22,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_state.py
 {
   "triggers_state": {
-    "on_value_change": {
-      "${var.optional}": ""
-    }
+    "on_value_change": [
+      ""
+    ]
   }
 }
 

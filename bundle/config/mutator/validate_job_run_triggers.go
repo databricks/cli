@@ -26,15 +26,9 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		if jr == nil || jr.Lifecycle == nil {
 			continue
 		}
-		recorded := b.JobRunValueTriggers[name]
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
 			armed := t.ArmedCount()
-			// DropEmptyStrings removes an on_value_change whose value is "", which is a
-			// valid value to watch; the expression is still recorded.
-			if t.OnValueChange == nil && i < len(recorded) && recorded[i] != "" {
-				armed++
-			}
 			if armed == 0 {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,

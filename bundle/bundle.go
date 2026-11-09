@@ -161,11 +161,6 @@ type Bundle struct {
 	// to end in those two segments does not count.
 	RootPathIsNameTargetScoped bool
 
-	// JobRunValueTriggers holds, per job_run, the on_value_change expression of each
-	// lifecycle.triggers entry ("" for other entries), recorded before variable
-	// resolution. ResolveJobRunValueTriggers keys the resolved values by them.
-	JobRunValueTriggers map[string][]string
-
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
 	// a bundle deployment.
