@@ -1,6 +1,13 @@
 [
   {
     "method": "POST",
+    "path": "/api/2.1/unity-catalog/catalogs",
+    "body": {
+      "name": "othercat_[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "POST",
     "path": "/api/2.1/unity-catalog/models",
     "body": {
       "catalog_name": "main",
